@@ -147,8 +147,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         // ToDo: Decide what to do about deleted records
       }
       else {
-        if (editStatus.toLowerCase() != 'approved') {
-          log.info("Ignoring Package '${package_name}' because editStatus=='${editStatus}' (required: 'approved')")
+        if (editStatus.toLowerCase() == 'rejected') {
+          log.info("Ignoring Package '${package_name}' because editStatus=='${editStatus}'")
         } else if (listStatus.toLowerCase() != 'checked') {
           log.info("Ignoring Package '${package_name}' because listStatus=='${listStatus}' (required: 'checked')")
         } else {
