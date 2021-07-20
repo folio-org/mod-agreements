@@ -41,6 +41,8 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
   
   
   String id
+  Date dateCreated
+  Date lastUpdated
 
   ErmResource resource
 
@@ -325,6 +327,8 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
             authority column: 'ent_authority'
             reference column: 'ent_reference'
           description column: 'ent_description'
+          dateCreated column: 'ent_date_created'
+          lastUpdated column: 'ent_last_updated'
              poLines cascade: 'all-delete-orphan'
             coverage cascade: 'all-delete-orphan'
                 tags cascade: 'save-update'
@@ -332,6 +336,8 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
 
   static constraints = {
           owner(nullable:true,  blank:false)
+    dateCreated(nullable:true, blank: true)
+    lastUpdated(nullable:true, blank: true)
 
           // Now that resources can be internally or externally defined, the internal resource link CAN be null,
           // but if it is, there should be authorty, and reference properties.

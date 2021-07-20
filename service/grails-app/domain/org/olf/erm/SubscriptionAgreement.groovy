@@ -43,6 +43,8 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
   String vendorReference
   String attachedLicenceId
   String licenseNote
+  Date dateCreated
+  Date lastUpdated
   LocalDate renewalDate
   LocalDate nextReviewDate
 
@@ -145,6 +147,8 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
                startDate column: 'sa_start_date'
                  endDate column: 'sa_end_date'
     cancellationDeadline column: 'sa_cancellation_deadline'
+             dateCreated column: 'sa_date_created'
+             lastUpdated column: 'sa_last_updated'
           alternateNames cascade: 'all-delete-orphan'
                    items cascade: 'all-delete-orphan', lazy: false
                 contacts cascade: 'all-delete-orphan', lazy: false
@@ -164,6 +168,8 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
 
   static constraints = {
                     name(nullable:false, blank:false, unique: true)
+             dateCreated(nullable:true, blank: true)
+             lastUpdated(nullable:true, blank: true)
                startDate(nullable:true, blank:false, bindable: false)
                  endDate(nullable:true, blank:false, bindable: false)
     cancellationDeadline(nullable:true, blank:false, bindable: false)
