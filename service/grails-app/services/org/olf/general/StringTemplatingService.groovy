@@ -16,7 +16,6 @@ import com.k_int.web.toolkit.settings.AppSetting
 @CompileStatic
 @Transactional
 public class StringTemplatingService {
-
   /*
    * This method will take in an id of the form f311d130-8024-47c4-8a86-58f817dbefde
    * It will return a Map of StringTemplates grouped by context, that are relevant for this id
@@ -159,9 +158,14 @@ public class StringTemplatingService {
     // Also create container for the current cursor value
     Date last_refreshed
     AppSetting url_refresh_cursor
+    AppSetting previous_sts_count
+    Long previousStsCount
 
     Tenants.withId(tenantId) {
-      // One transaction for fetching the initial value/creating AppSetting
+      // Start by grabbing the count of StringTemplates currently in the system
+      Long currentStsCount = StringTemplate.executeQuery("select count(*) from StringTemplate")[0]
+
+      // One transaction for fetching the initial values/creating AppSettings
       AppSetting.withNewTransaction {
         // Need to flush this initially so it exists for first instance
         // Set initial cursor to 0 so everything currently in system gets updated
@@ -172,8 +176,16 @@ public class StringTemplatingService {
           value: 0
         ).save(flush: true, failOnError: true)
 
-        // Parse setting String to Date
+        previous_sts_count = AppSetting.findByKey('sts_count') ?: new AppSetting(
+          section:'registry',
+          settingType:'Number',
+          key: 'sts_count',
+          value: 0
+        ).save(flush: true, failOnError: true)
+
+        // Parse setting Strings to Date/Long
         last_refreshed = new Date(Long.parseLong(url_refresh_cursor.value))
+        previousStsCount = Long.parseLong(previous_sts_count.value)
       }
 
       // Fetch stringTemplates that have changed since the last refresh
@@ -185,7 +197,15 @@ public class StringTemplatingService {
         }
       }
 
-      if (sts.size() > 0) {
+      /*
+       * If sts.size is not zero, or the counts differ,
+       * then string templates have been created, deleted or updated
+       * so run refresh for all.
+       */
+      if (
+        currentStsCount != previousStsCount ||
+        sts.size() > 0
+      ) {
         // StringTemplates have changed, ignore more granular changes and just refresh everything
         generateTemplatedUrlsForErmResources(tenantId)
       } else {
@@ -235,10 +255,13 @@ public class StringTemplatingService {
         }
       }
 
-      //One transaction for updating value with new refresh time
+      //One transaction for updating value with new refresh time and new count (count taken from beginning of refresh task)
       AppSetting.withNewTransaction {
         url_refresh_cursor.value = new_cursor_value
         url_refresh_cursor.save(failOnError: true)
+
+        previous_sts_count.value = currentStsCount
+        previous_sts_count.save(failOnError: true)
       }
     }
 
