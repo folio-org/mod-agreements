@@ -2,6 +2,8 @@ package org.olf
 
 import java.time.LocalDate
 
+import org.olf.general.Org;
+import org.olf.kb.Pkg;
 import org.olf.erm.SubscriptionAgreement;
 import org.olf.erm.Period;
 
@@ -71,5 +73,17 @@ class SubscriptionAgreementCleanupService {
         }
       }
     }
+  }
+
+  void triggerOrgsCleanup() {
+    Org.executeUpdate("""
+      DELETE from Org as theOrg WHERE NOT EXISTS (
+        FROM SubscriptionAgreementOrg as sao
+          WHERE sao.org = theOrg
+      ) AND NOT EXISTS (
+        FROM Pkg as p
+          WHERE p.vendor = theOrg
+      )
+    """)
   }
 }
