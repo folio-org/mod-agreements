@@ -17,6 +17,7 @@ class EntitlementLogEntry implements MultiTenant<EntitlementLogEntry>  {
   ErmResource res
   Entitlement directEntitlement
   Entitlement packageEntitlement
+  String eventType
   
 
   static mapping = {
@@ -27,6 +28,7 @@ class EntitlementLogEntry implements MultiTenant<EntitlementLogEntry>  {
                      res column:'ele_res', cascade: 'none'
        directEntitlement column:'ele_direct_entitlement', cascade: 'none'
       packageEntitlement column:'ele_pkg_entitlement', cascade: 'none'
+               eventType column:'ele_event_type'
   }
    
   static constraints = {
@@ -36,6 +38,7 @@ class EntitlementLogEntry implements MultiTenant<EntitlementLogEntry>  {
                       res(nullable:false)
         directEntitlement(nullable:true)
        packageEntitlement(nullable:true)
+                eventType(nullable:true)
   }
   
 }

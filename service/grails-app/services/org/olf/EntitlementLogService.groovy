@@ -114,7 +114,8 @@ public class EntitlementLogService {
                                         endDate:null,
                                         res:it[0],
                                         packageEntitlement:it[1],
-                                        directEntitlement:it[2]
+                                        directEntitlement:it[2],
+                                        eventType:'ADD'
                                       ).save(flush:true, failOnError:true);
       }
 
@@ -123,7 +124,8 @@ public class EntitlementLogService {
         String seq = String.format('%015d-%06d',start_time,seqno++)
 
         log.debug("  -> close out entitlement for ${start_time} ${seq} ${it.id}");
-        EntitlementLogEntry.executeUpdate('UPDATE EntitlementLogEntry set endDate = :ed where id=:id',[ed:today, id:it.id]);
+        // EntitlementLogEntry.executeUpdate('UPDATE EntitlementLogEntry set endDate = :ed where id=:id',[ed:today, id:it.id]);
+        EntitlementLogEntry.executeUpdate('UPDATE EntitlementLogEntry set endDate = :ed, packageEntitlement=null, directEntitlement=null where id=:id',[ed:today, id:it.id]);
 
         log.debug("  -> Create a new log entry that documents the closing out of the entitlement");
         EntitlementLogEntry ele = new EntitlementLogEntry(
@@ -131,8 +133,9 @@ public class EntitlementLogService {
                                         startDate:it.startDate,
                                         endDate:today,
                                         res:it.res,
-                                        packageEntitlement:it.packageEntitlement,
-                                        directEntitlement:it.directEntitlement
+                                        // packageEntitlement:it.packageEntitlement,
+                                        // directEntitlement:it.directEntitlement,
+                                        eventType:'REMOVE'
                                       ).save(flush:true, failOnError:true);
 
       }

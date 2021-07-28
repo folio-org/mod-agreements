@@ -79,4 +79,5 @@ json {
        'suppress' res.suppressFromDiscovery
            'type' resource_type
         'license' license_details
+      'eventType' entitlementLogEntry.eventType
 }

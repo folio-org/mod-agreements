@@ -118,8 +118,8 @@
           "permissionsRequired": [ "erm.files.item.get" ]
         },{
           "methods": ["GET"],
-          "pathPattern": "/erm/files/{id}/*",
-          "permissionsRequired": [ "erm.files.item.get" ]
+          "pathPattern": "/erm/files/{id}/raw",
+          "permissionsRequired": [ "erm.files.item.download" ]
         },{
           "methods": ["POST"],
           "pathPattern": "/erm/files",
@@ -588,6 +588,14 @@
       "subPermissions": [
         "erm.files.collection.get",
         "erm.files.item.get"
+      ]
+    },
+    {
+      "permissionName": "erm.files.item.download",
+      "displayName": "Files item download",
+      "description": "Download a raw files record",
+      "subPermissions": [
+        "erm.files.view"
       ]
     },
     {
