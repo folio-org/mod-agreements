@@ -1,3 +1,6 @@
+## 4.1.1 2021-07-28
+ * ERM-1777 Templated URL not updating on deletion of Proxy
+
 ## 4.1.0 2021-06-15
  * ERM-1730 Add renewalPriority to agreement widget definition
  * ERM-1724 Reduce running time for StringTemplateBulkSpec integration test
