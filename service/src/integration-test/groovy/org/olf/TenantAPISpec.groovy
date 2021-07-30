@@ -10,7 +10,7 @@ import spock.util.concurrent.PollingConditions
 
 @Integration
 @Stepwise
-class TenantAPISpec extends HttpSpec {
+class TenantAPISpec extends BaseSpec {
 
   static final String tenantName = 'tenant_api_tests'
   static final Closure booleanResponder = {
@@ -19,15 +19,6 @@ class TenantAPISpec extends HttpSpec {
     }
     response.failure { FromServer fs, Object body ->
       false
-    }
-  }
-  
-  def setupSpec() {
-    httpClientConfig = {
-      client.clientCustomizer { HttpURLConnection conn ->
-        conn.connectTimeout = 2000
-        conn.readTimeout = 10000 // Need this for activating tenants
-      }
     }
   }
   
