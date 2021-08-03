@@ -71,7 +71,10 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
   def beforeValidate() {
     if (!validating) {
       validating = true
-      CoverageService.changeListener(this)
+      // Attempt to avoid session locking
+      ErmResource.withSession {
+        CoverageService.changeListener(this)
+      }
       validating = false
     }
   }
