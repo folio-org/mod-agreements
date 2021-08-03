@@ -18,6 +18,9 @@ public class ErmHousekeepingService {
 
     // A process to ensure the correct start/end date is stored per agreement
     subscriptionAgreementCleanupService.triggerDateCleanup();
+
+    // A process to ensure any unused Org records are deleted
+    subscriptionAgreementCleanupService.triggerOrgsCleanup();
     
     remoteKbCleanupService.checkLocal();
   }
