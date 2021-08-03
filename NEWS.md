@@ -1,4 +1,5 @@
 ## 4.1.1 2021-07-28
+ * ERM-1781 Error on adding coverage to PCI which overlaps with existing coverage on PTI/TI
  * ERM-1777 Templated URL not updating on deletion of Proxy
 
 ## 4.1.0 2021-06-15
