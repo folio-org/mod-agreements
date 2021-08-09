@@ -1,5 +1,6 @@
 import groovy.transform.Field
 import org.olf.erm.EntitlementLogEntry
+import org.olf.erm.RemoteLicenseLink
 import org.olf.kb.PackageContentItem
 import org.olf.kb.ErmResource
 import com.k_int.okapi.remote_resources.RemoteOkapiLinkListener
@@ -20,7 +21,7 @@ def resource_title = null;
 def license_details = null;
 
 // Get license details
-def controlling_license = null;
+RemoteLicenseLink controlling_license = null;
 if ( entitlementLogEntry.packageEntitlement != null ) {
   controlling_license = entitlementLogEntry.packageEntitlement.owner.getControllingLicense()
 }
@@ -30,8 +31,8 @@ else if ( entitlementLogEntry.directEntitlement != null ) {
 
 // Try to load the license details
 try {
-  def license_details_future = (controlling_license?.getAt(licenseProperty) as Future)
-  license_details = license_details_future.get()
+  // def license_details_future = (controlling_license?.getAt(licenseProperty) as Future)
+  // license_details = license_details_future.get()
 }
 catch(Exception e) {
 }
@@ -79,5 +80,6 @@ json {
        'suppress' res.suppressFromDiscovery
            'type' resource_type
         'license' license_details
+      'licenseId' controlling_license?.remoteId
       'eventType' entitlementLogEntry.eventType
 }
