@@ -73,7 +73,7 @@ class ContentItem implements ContentItemSchema, Validateable {
   }
   
   private static final Map<String,List<String>> known_id_types = [
-    // FIXME ERM-1649 What do we do with eissn here
+    // ERM-1649 Allow this to collect all possible incoming siblings so we can match on them in the citation
     electronic : ['EISSN', 'DOI', 'EZB'],
     print : ['ISSN', 'PISSN']
   ]

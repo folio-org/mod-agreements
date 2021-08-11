@@ -448,7 +448,6 @@ class TitleInstanceResolverService implements DataBinder{
       case 'pissn':
       case 'eisbn':
       case 'pisbn':
-        log.debug("LOGDEBUG Removing first letter of namespace")
         // This will remove the first character from the namespace
         result = lowerCaseNamespace.substring(1)
         break;
