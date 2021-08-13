@@ -175,7 +175,7 @@ public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, 
                         sibling_instance_identifiers.add([namespace:'issn',value:id.id])
                         break;
                       case 2: // ONLINE
-                        instance_identifiers.add([namespace:'eissn',value:id.id])
+                        instance_identifiers.add([namespace:'issn',value:id.id])
                         break;
                       case 7: // INVALID
                         break;

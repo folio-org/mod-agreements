@@ -51,7 +51,7 @@ class TitleInstanceResolverService implements DataBinder{
     'zdb',
     'isbn',
     'issn',  // This really isn't true - we get electronic items identified by the issn of their print sibling.. Needs thought
-    'eissn',
+    'eissn', // We want to accept eissn still as a class-one-namespace, even though internally we flatten to 'issn'. ERM-1649
     'doi'
   ];
   
@@ -141,7 +141,7 @@ class TitleInstanceResolverService implements DataBinder{
    * by matching the print instance, then looking for a sibling with type "electronic"
    */
   private List<TitleInstance> siblingMatch(ContentItemSchema citation) {
-    IdentifierSchema issn_id = citation.siblingInstanceIdentifiers.find { it.namespace == 'issn' } ;
+    IdentifierSchema issn_id = citation.siblingInstanceIdentifiers.find { namespaceMapping(it.namespace) == 'issn' } ;
     String issn = issn_id?.value;
     return TitleInstance.executeQuery(SIBLING_MATCH_HQL,[ns:'issn',value:issn,electronic:'electronic']);
   }
@@ -156,9 +156,8 @@ class TitleInstanceResolverService implements DataBinder{
     // In the bibframe nomenclature, the print and electronic items are two separate instances. Therefore, creating an electronic
     // identifier with the ID of the print item does not seem sensible. HOWEVER, we would still like to be able to be able to match
     // a title if we know that it is a sibling of a print identifier.
-    int num_class_one_identifiers_for_sibling = countClassOneIDs(citation.siblingInstanceIdentifiers)
 
-    Collection<IdentifierSchema> issn_or_isbn_ids = citation.siblingInstanceIdentifiers.findAll { it.namespace.toLowerCase() == 'issn' || it.namespace.toLowerCase() == 'isbn' }
+    Collection<IdentifierSchema> issn_or_isbn_ids = citation.siblingInstanceIdentifiers.findAll { namespaceMapping(it.namespace) == 'issn' || namespaceMapping(it.namespace) == 'isbn' }
     log.debug("Found list of sibling identifiers: ${issn_or_isbn_ids}")
 
 
@@ -169,17 +168,19 @@ class TitleInstanceResolverService implements DataBinder{
         bindData (sibling_citation, [
           "title": citation.title,
           "instanceMedium": "print",
-          "instanceMedia": (id.namespace.toLowerCase() == 'issn') ? "serial" : "monograph",
+          "instanceMedia": (namespaceMapping(id.namespace) == 'issn') ? "serial" : "monograph",
           "instancePublicationMedia": citation.instancePublicationMedia,
           "instanceIdentifiers": [
             [
-              "namespace": id.namespace.toLowerCase(),
+              // This should be dealt with inside the "createTitleInstance" method, 
+              // but for now we can flatten it here too
+              "namespace": namespaceMapping(id.namespace),
               "value": id?.value
             ]
           ]
         ])
 
-        if (id.namespace.toLowerCase() == 'isbn') {
+        if (namespaceMapping(id.namespace) == 'isbn') {
           bindData (sibling_citation, [
             "dateMonographPublished": citation.dateMonographPublishedPrint
           ])
@@ -436,8 +437,32 @@ class TitleInstanceResolverService implements DataBinder{
     return result;
   }
 
+  // ERM-1649. This function acts as a way to manually map incoming namespaces onto known namespaces where we believe the extra information is unhelpful.
+  // This is also the place to do any normalisation (lowercasing etc).
+  private String namespaceMapping(String namespace) {
+
+    String lowerCaseNamespace = namespace.toLowerCase()
+    String result = lowerCaseNamespace
+    switch (lowerCaseNamespace) {
+      case 'eissn':
+      case 'pissn':
+      case 'eisbn':
+      case 'pisbn':
+        // This will remove the first character from the namespace
+        result = lowerCaseNamespace.substring(1)
+        break;
+      default:
+        break;
+    }
+
+    result
+  }
+
+  /*
+   * This is where we can call the namespaceMapping function to ensure consistency in our DB
+   */
   private IdentifierNamespace lookupOrCreateIdentifierNamespace(final String ns) {
-    IdentifierNamespace.findOrCreateByValue(ns).save(flush:true, failOnError:true)
+    IdentifierNamespace.findOrCreateByValue(namespaceMapping(ns)).save(flush:true, failOnError:true)
   }
 
   /**
@@ -483,7 +508,22 @@ class TitleInstanceResolverService implements DataBinder{
 
         // Look up each identifier
         // log.debug("${id} - try class one match");
-        final List<Identifier> id_matches = Identifier.executeQuery('select id from Identifier as id where id.value = :value and id.ns.value = :ns',[value:id.value, ns:id.namespace], [max:2])
+
+
+        /*
+         * At this stage we could be trying to match incoming
+        {
+          namespace: 'eISSN',
+          value: 1234-5678
+        }
+         * with something that in our system looks like:
+        {
+          namespace: 'issn',
+          value: 1234-5678
+        }
+         * We have to know that eissn == issn etc... Use namespaceMapping function
+         */
+        final List<Identifier> id_matches = Identifier.executeQuery('select id from Identifier as id where id.value = :value and id.ns.value = :ns',[value:id.value, ns:namespaceMapping(id.namespace)], [max:2])
 
         assert ( id_matches.size() <= 1 )
 
