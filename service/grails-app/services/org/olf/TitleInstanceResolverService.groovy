@@ -413,7 +413,9 @@ class TitleInstanceResolverService implements DataBinder{
   }
 
   private boolean validateCitationType(ContentItemSchema citation) {
-    return citation.instanceMedia.toLowerCase() == 'monograph' || citation.instanceMedia.toLowerCase() == 'serial'
+    return citation?.instanceMedia != null &&
+           ( citation.instanceMedia.toLowerCase() == 'monograph' || 
+             citation.instanceMedia.toLowerCase() == 'serial' )
   }
 
   /**
