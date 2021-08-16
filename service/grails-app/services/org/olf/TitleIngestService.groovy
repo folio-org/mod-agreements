@@ -52,25 +52,22 @@ class TitleIngestService implements DataBinder {
       startTime: System.currentTimeMillis(),
     ]
     // FIXME does ContentItemSchema need to be able to say trustedSourceTI or not? eg for manual import where you want it to be able to create but not update TIs
-    /*
-      --- TAKEN FROM PACKAGE INGEST SERVICE ---
-      // If we're not explicitly handed trusted information, default to whatever the remote KB setting is
-      Boolean trustedSourceTI = trusted ?: package_data.header?.trustedSourceTI ?: kb.trustedSourceTI
-      if (trustedSourceTI == null) {
-        // If it somehow remains unset, default to false, but with warning
-        log.warn("Could not find trustedSourceTI setting for KB, defaulting to false")
-        trustedSourceTI = false
-      }
-    */
+    //Boolean trustedSourceTI = trusted ?: package_data.header?.trustedSourceTI ?: kb.trustedSourceTI
+
+    // If we're not explicitly handed trusted information, default to whatever the remote KB setting is
+    Boolean trustedSourceTI = trusted ?: kb.trustedSourceTI
+    if (trustedSourceTI == null) {
+      // If it somehow remains unset, default to false, but with warning
+      log.warn("Could not deduce trustedSourceTI setting for title, defaulting to false")
+      trustedSourceTI = false
+    }
 
     TitleInstance.withNewTransaction {
       result.updateTime = System.currentTimeMillis()
-      //FIXME the trustedSourecTI again
-      //TitleInstance title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
 
       // resolve may return null, used to throw exception which causes the whole package to be rejected. Needs
       // discussion to work out best way to handle.
-      TitleInstance title = titleInstanceResolverService.resolve(pc, trusted ?: true)
+      TitleInstance title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
 
 
       if (title != null) {
