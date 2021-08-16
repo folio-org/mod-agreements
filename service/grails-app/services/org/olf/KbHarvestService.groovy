@@ -56,6 +56,7 @@ where rkb.type is not null
   private void triggerUpdateForTenant(final String tenant_schema_id) {
     Tenants.withId(tenant_schema_id) {
 
+      //FIXME include TitleIngestJob here.
       PackageIngestJob job = PackageIngestJob.findByStatusInList([
         PackageIngestJob.lookupStatus('Queued'),
         PackageIngestJob.lookupStatus('In progress')
