@@ -34,6 +34,14 @@ public class KBPlusAdapter implements KBCacheUpdater {
     }
   }
 
+  public void freshenTitleData(String source_name,
+                                 String base_url,
+                                 String current_cursor,
+                                 KBCache cache,
+                                 boolean trustedSourceTI = false) {
+    throw new RuntimeException("Not supported by this KB provider");
+  }
+
   public void freshenHoldingsData(String cursor,
                                   String source_name,
                                   KBCache cache) {
