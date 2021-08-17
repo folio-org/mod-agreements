@@ -4,12 +4,6 @@ import java.util.concurrent.TimeUnit
 
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
-import org.olf.dataimport.internal.PackageSchema.CoverageStatementSchema
-import org.olf.kb.Embargo
-import org.olf.kb.PackageContentItem
-import org.olf.kb.Pkg
-import org.olf.kb.Platform
-import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.RemoteKB
 import org.olf.kb.TitleInstance
 import org.slf4j.MDC
@@ -25,7 +19,6 @@ import groovy.util.logging.Slf4j
 class TitleIngestService implements DataBinder {
 
   TitleInstanceResolverService titleInstanceResolverService
-  TitleEnricherService titleEnricherService
 
   //FIXME is LOCAL_TITLE an acceptable default KB name for local title ingest?
   public Map upsertTitle(ContentItemSchema pc) {
@@ -47,7 +40,9 @@ class TitleIngestService implements DataBinder {
     }
   }
 
+  // Bear in mind the kb's rectype here could be RECTYPE_PACKAGE, if called from packageIngestService
   public Map upsertTitle(ContentItemSchema pc, RemoteKB kb, Boolean trusted = null) {
+    log.debug("TitleIngestService::UpsertTitle called")
     def result = [
       startTime: System.currentTimeMillis(),
     ]
@@ -69,14 +64,7 @@ class TitleIngestService implements DataBinder {
       // discussion to work out best way to handle.
       TitleInstance title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
 
-
       if (title != null) {
-        // Now we have a saved title in the system, we can check whether or not we want to go and grab extra data.
-
-        String sourceIdentifier = pc?.sourceIdentifier
-        // FIXME does this secondary enrichment belong in the title ingest service?
-        titleEnricherService.secondaryEnrichment(kb, sourceIdentifier, title.id);
-
         // Append titleInstanceId to resultList, so we can use it elsewhere to look up titles ingested with this method
         result.titleInstanceId = title.id
         result.finishTime = System.currentTimeMillis()

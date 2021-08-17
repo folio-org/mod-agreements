@@ -333,6 +333,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     return false
   }
   
+  //FIXME In case where we are using GOKB as title data first, we don't need to run this enrichment during title ingest, but we _do_ during package ingest
   @CompileStatic(SKIP)
   public Map getTitleInstance(String source_name, String base_url, String goKbIdentifier, String type, String publicationType, String subType) {
     

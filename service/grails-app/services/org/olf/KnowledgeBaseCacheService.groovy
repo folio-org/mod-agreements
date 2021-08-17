@@ -44,6 +44,7 @@ where ( exists ( select pci.id
       log.debug("Run remote kb sync:: ${rkb.id}/${rkb.name}/${rkb.uri}")
       Class cls = Class.forName(rkb.type)
       KBCacheUpdater cache_updater = cls.newInstance()
+      //FIXME does this need to differ based on rectype? (AND SO NEED TO EXTEND REMOTEKB)
       cache_updater.freshenPackageData(rkb.name, rkb.uri, rkb.cursor, this, rkb.trustedSourceTI)
     }
   }

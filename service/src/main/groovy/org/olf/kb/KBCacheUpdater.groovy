@@ -44,6 +44,7 @@ public interface KBCacheUpdater {
    * @Return updated Cursor object representing the state of the cursor for the next pass
    *
    */
+  //FIXME do we need a freshenTitleData which can be called if remoteKB has rectype=TITLE? -> Then one adapter could be used for both
   public void freshenPackageData(String source_name, 
                                    String base_uri, 
                                    String cursor, 

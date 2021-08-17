@@ -30,6 +30,7 @@ class PackageIngestService implements DataBinder {
   // row.
   private boolean PROXY_MISSING_PLATFORM = true
 
+  TitleEnricherService titleEnricherService
   TitleIngestService titleIngestService
   CoverageService coverageService
 
@@ -135,7 +136,6 @@ class PackageIngestService implements DataBinder {
       return
 
 
-      // log.debug("Try to resolve ${pc}")
     } else {
       package_data.packageContents.eachWithIndex { ContentItemSchema pc, int index ->
 
@@ -144,14 +144,28 @@ class PackageIngestService implements DataBinder {
         try {
 
           PackageContentItem.withNewTransaction { status ->
-            // FIXME should this service delegate to the TitleIngestService? -- If it does then the trustedSourceTI and RemoteKB variables will be confusing, if it doesn't then we end up with repeated logic
+            // Delegate out to TitleIngestService so that any shared steps can move there.
             Map titleIngestResult = titleIngestService.upsertTitle(pc, kb, trustedSourceTI)
 
+            // titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
             if ( titleIngestResult.titleInstanceId != null ) {
-                TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
+              TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
+
+
+              // Now we have a saved title in the system, we can check whether or not we want to go and grab extra data.
+
+              /* ERM-1801.
+               * For now this secondary enrichment step remains in the PackageIngestService rather than the TitleIngestService,
+               * as it's a way to gain extra information from a Package source's title stream,
+               * which would not be necessary for a title only ingest
+               */
+              String sourceIdentifier = pc?.sourceIdentifier
+              titleEnricherService.secondaryEnrichment(kb, sourceIdentifier, title.id);
+              
 
               // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
 
+              // FIXME ERM-1801 do we need to do this for TI ingest?
               // lets try and work out the platform for the item
               def platform_url_to_use = pc.platformUrl
               
