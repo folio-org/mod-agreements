@@ -59,29 +59,27 @@ class TitleIngestService implements DataBinder {
       trustedSourceTI = false
     }
 
-    TitleInstance.withNewTransaction {
-      result.updateTime = System.currentTimeMillis()
+    result.updateTime = System.currentTimeMillis()
 
-      // resolve may return null, used to throw exception which causes the whole package to be rejected. Needs
-      // discussion to work out best way to handle.
-      TitleInstance title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
+    // resolve may return null, used to throw exception which causes the whole package to be rejected. Needs
+    // discussion to work out best way to handle.
+    TitleInstance title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
 
-      if (title != null) {
-        /* ERM-1801
-         * For now this secondary enrichment step is here rather than the PackageIngestService,
-         * as it uses information about electronic vs print which the resolver service might have to separate out first.
-         * So even when ingesting a title stream we want to resolve, sort into print vs electronic, then get the TI and enrich based on subType
-         */
-        String sourceIdentifier = pc?.sourceIdentifier
-        titleEnricherService.secondaryEnrichment(kb, sourceIdentifier, title.id);
+    if (title != null) {
+      /* ERM-1801
+        * For now this secondary enrichment step is here rather than the PackageIngestService,
+        * as it uses information about electronic vs print which the resolver service might have to separate out first.
+        * So even when ingesting a title stream we want to resolve, sort into print vs electronic, then get the TI and enrich based on subType
+        */
+      String sourceIdentifier = pc?.sourceIdentifier
+      titleEnricherService.secondaryEnrichment(kb, sourceIdentifier, title.id);
 
-        // Append titleInstanceId to resultList, so we can use it elsewhere to look up titles ingested with this method
-        result.titleInstanceId = title.id
-        result.finishTime = System.currentTimeMillis()
-      } else {
-        String message = "Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
-        log.error(message)
-      }
+      // Append titleInstanceId to resultList, so we can use it elsewhere to look up titles ingested with this method
+      result.titleInstanceId = title.id
+      result.finishTime = System.currentTimeMillis()
+    } else {
+      String message = "Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
+      log.error(message)
     }
 
     result

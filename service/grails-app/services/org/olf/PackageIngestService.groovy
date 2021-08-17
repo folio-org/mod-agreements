@@ -30,7 +30,6 @@ class PackageIngestService implements DataBinder {
   // row.
   private boolean PROXY_MISSING_PLATFORM = true
 
-  TitleEnricherService titleEnricherService
   TitleIngestService titleIngestService
   CoverageService coverageService
 

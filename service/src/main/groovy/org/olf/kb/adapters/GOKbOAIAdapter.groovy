@@ -218,6 +218,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       def listStatus = record?.metadata?.gokb?.package?.listStatus?.text()
       def packageStatus = record?.metadata?.gokb?.package?.status?.text()
 
+      log.debug("LOGDEBUG PRETTYPRINT PACKAGE RECORD: ${XmlUtil.serialize(record)}")
+
       log.debug("Processing OAI record :: ${result.count} ${record_identifier} ${package_name}")
 
       if ( packageStatus == 'deleted' ) {
@@ -273,8 +275,6 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       result.count++
       def datestamp = record?.header?.datestamp?.text()
 
-      log.debug("LOGDEBUG PRETTYPRINT XML TITLE: ${XmlUtil.serialize(record)}")
-      
       def record_identifier = record?.header?.identifier?.text()
       def title_name = record?.metadata?.gokb?.title?.name?.text()
       // FIXME might have to pass trustedSourceTI here eventually
@@ -344,6 +344,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         def tipp_status = tipp_entry?.status?.text()
         if ( tipp_status != 'Deleted' ) {
           def tipp_id = tipp_entry?.@id?.toString()
+          def tipp_medium = tipp_entry?.medium?.text()
 
           def tipp_coverage = [] // [ "startVolume": "8", "startIssue": "1", "startDate": "1982-01-01", "endVolume": null, "endIssue": null, "endDate": null ],
 
@@ -379,6 +380,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           Map packageContent = parseTitleInformation(tipp_entry?.title, tipp_coverage)
 
           packageContent << [
+            "instanceMedium": tipp_medium,
             "coverage": tipp_coverage,
             "embargo": embargo,
             "coverageDepth": tipp_coverage_depth,
@@ -510,7 +512,6 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   // Include tipp_coverage information for media logic
   private Map parseTitleInformation(GPathResult title, def coverage = null) {
     def titleText = title?.name?.text()
-    def medium = title?.medium?.text()
     def media = null
 
     def instance_identifiers = [] // [ "namespace": "issn", "value": "0278-7393" ]
@@ -551,7 +552,6 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
     return ([
       "title": titleText,
-      "instanceMedium": medium,
       "instanceMedia": media,
       "instancePublicationMedia": pub_media,
       "sourceIdentifier": source_identifier,
