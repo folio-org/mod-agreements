@@ -19,6 +19,8 @@ import groovy.util.logging.Slf4j
 class TitleIngestService implements DataBinder {
 
   TitleInstanceResolverService titleInstanceResolverService
+  TitleEnricherService titleEnricherService
+
 
   //FIXME is LOCAL_TITLE an acceptable default KB name for local title ingest?
   public Map upsertTitle(ContentItemSchema pc) {
@@ -65,6 +67,14 @@ class TitleIngestService implements DataBinder {
       TitleInstance title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
 
       if (title != null) {
+        /* ERM-1801
+         * For now this secondary enrichment step is here rather than the PackageIngestService,
+         * as it uses information about electronic vs print which the resolver service might have to separate out first.
+         * So even when ingesting a title stream we want to resolve, sort into print vs electronic, then get the TI and enrich based on subType
+         */
+        String sourceIdentifier = pc?.sourceIdentifier
+        titleEnricherService.secondaryEnrichment(kb, sourceIdentifier, title.id);
+
         // Append titleInstanceId to resultList, so we can use it elsewhere to look up titles ingested with this method
         result.titleInstanceId = title.id
         result.finishTime = System.currentTimeMillis()

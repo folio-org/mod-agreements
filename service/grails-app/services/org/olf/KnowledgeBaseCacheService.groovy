@@ -1,6 +1,7 @@
 package org.olf
 
 import org.olf.dataimport.internal.PackageSchema
+import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.erm.Entitlement
 import org.olf.kb.ContentActivationRecord
 import org.olf.kb.KBCache
@@ -15,6 +16,7 @@ import org.springframework.transaction.TransactionDefinition
 public class KnowledgeBaseCacheService implements KBCache {
 
   PackageIngestService packageIngestService
+  TitleIngestService titleIngestService
 
   private static final String PLATFORM_TITLES_QUERY = '''select pti, rkb, ent from PlatformTitleInstance as pti, Entitlement as ent, RemoteKB as rkb 
 where ( exists ( select pci.id 
@@ -92,6 +94,17 @@ where ( exists ( select pci.id
       result = packageIngestService.upsertPackage(package_data, rkb_name, false)
     }
     log.debug("onPackageChange(${rkb_name},...) returning ${result}")
+
+    return result
+  }
+
+    public Map onTitleChange(String rkb_name, ContentItemSchema title_data) {
+    Map result = null
+    RemoteKB.withTransaction([propagationBehavior: TransactionDefinition.PROPAGATION_REQUIRES_NEW]) {
+      log.debug("onTitleChange(${rkb_name},...)")
+      result = titleIngestService.upsertTitle(title_data, rkb_name)
+    }
+    log.debug("onTitleChange(${rkb_name},...) returning ${result}")
 
     return result
   }

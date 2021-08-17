@@ -150,19 +150,6 @@ class PackageIngestService implements DataBinder {
             // titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
             if ( titleIngestResult.titleInstanceId != null ) {
               TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
-
-
-              // Now we have a saved title in the system, we can check whether or not we want to go and grab extra data.
-
-              /* ERM-1801.
-               * For now this secondary enrichment step remains in the PackageIngestService rather than the TitleIngestService,
-               * as it's a way to gain extra information from a Package source's title stream,
-               * which would not be necessary for a title only ingest
-               */
-              String sourceIdentifier = pc?.sourceIdentifier
-              titleEnricherService.secondaryEnrichment(kb, sourceIdentifier, title.id);
-              
-
               // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
 
               // FIXME ERM-1801 do we need to do this for TI ingest?
