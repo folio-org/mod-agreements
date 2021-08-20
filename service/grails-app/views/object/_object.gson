@@ -31,6 +31,24 @@ if ( object instanceof String ) {
   
   json tmpl.object(object as List)
 
+} else if (Iterator.isAssignableFrom(object.getClass())) {
+  
+  Iterator iter = object as Iterator
+  out << '['
+  
+  // Handle an unbounded list of results.
+  if (iter.hasNext()) {
+    
+    json g.render (iter.next())
+    
+    while (iter.hasNext()) {
+      out << ','
+      json g.render (iter.next())
+    }
+  }
+  
+  out << ']'
+  
 } else {
   
   // Convert the wrapper class to a primitive, if applicable
