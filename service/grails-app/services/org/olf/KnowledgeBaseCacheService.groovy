@@ -53,7 +53,6 @@ where ( exists ( select pci.id
           cache_updater.freshenPackageData(rkb.name, rkb.uri, rkb.cursor, this, rkb.trustedSourceTI)
           break;
         case RemoteKB.RECTYPE_TITLE: // This is Long 2
-          log.debug("LOGDEBUG FIRED FRESHEN TITLE DATA")
           cache_updater.freshenTitleData(rkb.name, rkb.uri, rkb.cursor, this, rkb.trustedSourceTI)
           break;
         default:

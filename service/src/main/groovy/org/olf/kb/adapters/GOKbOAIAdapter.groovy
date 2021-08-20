@@ -218,8 +218,6 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       def listStatus = record?.metadata?.gokb?.package?.listStatus?.text()
       def packageStatus = record?.metadata?.gokb?.package?.status?.text()
 
-      log.debug("LOGDEBUG PRETTYPRINT PACKAGE RECORD: ${XmlUtil.serialize(record)}")
-
       log.debug("Processing OAI record :: ${result.count} ${record_identifier} ${package_name}")
 
       if ( packageStatus == 'deleted' ) {
@@ -339,8 +337,6 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       ]
 
       package_record.TIPPs?.TIPP.each { tipp_entry ->
-          log.debug("LOGDEBUG PRETTYPRINT XML TITLE: ${XmlUtil.serialize(tipp_entry)}")
-
         def tipp_status = tipp_entry?.status?.text()
         if ( tipp_status != 'Deleted' ) {
           def tipp_id = tipp_entry?.@id?.toString()
@@ -393,8 +389,6 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           ]
 
           // log.debug("consider tipp ${tipp_title}")
-
-          log.debug("LOGDEBUG PACKAGECONTENT: ${packageContent}")
 
           result.packageContents.add(packageContent)
         }
@@ -499,8 +493,17 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
     if (title_record != null && title_record.name != null) {
       result = parseTitleInformation(title_record)
+      // FIXME can we always assume title ingest data is electronic?
+      result.instanceMedium = 'Electronic'
     }
-    result
+
+    PackageContentImpl title = new PackageContentImpl()
+    BindingResult binding = bindData (title, result)
+    if (binding?.hasErrors()) {
+      binding.allErrors.each { log.debug "\t${it}" }
+    }
+    
+    title
   }
 
 
@@ -514,8 +517,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     def titleText = title?.name?.text()
     def media = null
 
-    def instance_identifiers = [] // [ "namespace": "issn", "value": "0278-7393" ]
-    def sibling_identifiers = []
+    List instance_identifiers = [] // [ "namespace": "issn", "value": "0278-7393" ]
+    List sibling_identifiers = []
 
     // If we're processing an electronic record then issn is a sibling identifier
     title.identifiers.identifier.each { ti_id ->

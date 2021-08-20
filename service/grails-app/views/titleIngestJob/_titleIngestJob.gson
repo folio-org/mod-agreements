@@ -1,0 +1,8 @@
+import org.olf.general.jobs.TitleIngestJob
+
+import groovy.transform.Field
+
+@Field
+TitleIngestJob titleIngestJob
+
+json tmpl."/persistentJob/persistentJob" (persistentJob: titleIngestJob)

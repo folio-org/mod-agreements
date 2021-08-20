@@ -7,6 +7,6 @@ class PackageIngestJob extends PersistentJob implements MultiTenant<PackageInges
 
   final Closure work = {
     log.info "Running Package Ingest Job"
-    kbHarvestService.triggerCacheUpdate()
+    kbHarvestService.triggerPackageCacheUpdate()
   }
 }
