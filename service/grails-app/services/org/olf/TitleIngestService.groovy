@@ -22,7 +22,6 @@ class TitleIngestService implements DataBinder {
   TitleEnricherService titleEnricherService
 
 
-  //FIXME is LOCAL_TITLE an acceptable default KB name for local title ingest?
   public Map upsertTitle(ContentItemSchema pc) {
     return upsertTitle(pc, 'LOCAL_TITLE')
   }
@@ -48,7 +47,7 @@ class TitleIngestService implements DataBinder {
     def result = [
       startTime: System.currentTimeMillis(),
     ]
-    // FIXME does ContentItemSchema need to be able to say trustedSourceTI or not? eg for manual import where you want it to be able to create but not update TIs
+    // TODO ERM-1801 Does ContentItemSchema need to be able to say trustedSourceTI or not? eg for manual import where you want it to be able to create but not update TIs
     //Boolean trustedSourceTI = trusted ?: package_data.header?.trustedSourceTI ?: kb.trustedSourceTI
 
     // If we're not explicitly handed trusted information, default to whatever the remote KB setting is

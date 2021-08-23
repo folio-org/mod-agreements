@@ -18,8 +18,6 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import groovy.util.slurpersupport.GPathResult
 import groovyx.net.http.*
-//FIXME we dont need this import
-import groovy.xml.*
 
 /**
  * An adapter to go between the GOKb OAI service, for example the one at
@@ -108,7 +106,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor ${cursor}")
     }
   }
-
+  // TODO Potentially can combine freshenTitleData and freshenPackageData with a new variable "dataType" or something like that.
   public void freshenTitleData(String source_name,
                                  String base_url,
                                  String current_cursor,
@@ -269,13 +267,12 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     log.debug("GOKbOAIAdapter::processPackagePage(${cursor},...")
 
     oai_page.ListRecords.record.each { record ->
-
       result.count++
       def datestamp = record?.header?.datestamp?.text()
 
       def record_identifier = record?.header?.identifier?.text()
       def title_name = record?.metadata?.gokb?.title?.name?.text()
-      // FIXME might have to pass trustedSourceTI here eventually
+      // TODO ERM-1801 might have to pass trustedSourceTI here eventually
       log.debug("Processing OAI record :: ${result.count} ${record_identifier} ${title_name}")
       
       ContentItemSchema json_title_description = gokbToERMTitle(record)
@@ -417,7 +414,6 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     return false
   }
   
-  //FIXME In case where we are using GOKB as title data first, we don't need to run this enrichment during title ingest, but we _do_ during package ingest
   @CompileStatic(SKIP)
   public Map getTitleInstance(String source_name, String base_url, String goKbIdentifier, String type, String publicationType, String subType) {
     
@@ -493,7 +489,6 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
     if (title_record != null && title_record.name != null) {
       result = parseTitleInformation(title_record)
-      // FIXME can we always assume title ingest data is electronic?
       result.instanceMedium = 'Electronic'
     }
 

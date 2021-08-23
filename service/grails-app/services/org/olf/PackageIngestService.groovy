@@ -151,7 +151,6 @@ class PackageIngestService implements DataBinder {
               TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
               // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
 
-              // FIXME ERM-1801 do we need to do this for TI ingest?
               // lets try and work out the platform for the item
               def platform_url_to_use = pc.platformUrl
               
