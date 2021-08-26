@@ -372,7 +372,7 @@ class TitleInstanceResolverService implements DataBinder{
       }
 
       if (validateCitationType(citation)) {
-        if (title.type.value != citation.instanceMedia ) {
+        if ((title.type == null) || (title.type.value != citation.instanceMedia)) {
           title.typeFromString = citation.instanceMedia
           title.markDirty()
         }
@@ -413,7 +413,9 @@ class TitleInstanceResolverService implements DataBinder{
   }
 
   private boolean validateCitationType(ContentItemSchema citation) {
-    return citation.instanceMedia.toLowerCase() == 'monograph' || citation.instanceMedia.toLowerCase() == 'serial'
+    return citation?.instanceMedia != null &&
+           ( citation.instanceMedia.toLowerCase() == 'monograph' || 
+             citation.instanceMedia.toLowerCase() == 'serial' )
   }
 
   /**

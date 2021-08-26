@@ -183,11 +183,13 @@ class JobRunnerService implements EventPublisher {
           final String tenantName = OkapiTenantResolver.schemaNameToTenantId(tid)
           Tenants.withId(tid) {
             try {
+              log.debug("Starting job execution");
               org.slf4j.MDC.clear()
               org.slf4j.MDC.setContextMap( jobId: '' + jid, tenantId: '' + tid, 'tenant': '' + tenantName)
               JobContext.current.set(new JobContext( jobId: jid, tenantId: tid ))
               beginJob(jid)
               wrk()
+              log.debug("Cleanly terminating job execution");
               endJob(jid)
             } catch (Exception e) {
               failJob(jid)

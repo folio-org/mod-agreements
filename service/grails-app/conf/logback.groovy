@@ -83,6 +83,7 @@ if (devEnv && targetDir != null) {
 appender ('JOB', JobAwareAppender)
 
 logger ('org.olf.PackageIngestService', DEBUG, ['JOB'])
+logger ('org.olf.TitleIngestService', DEBUG, ['JOB'])
 logger ('org.olf.TitleInstanceResolverService', DEBUG, ['JOB'])
 logger ('org.olf.TitleEnricherService', DEBUG, ['JOB'])
 logger ('org.olf.kb.adapters.GOKbOAIAdapter', DEBUG, ['JOB'])
