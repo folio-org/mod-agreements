@@ -19,6 +19,7 @@ def coverage_summary = []
 def resource_identifiers = []
 def resource_title = null;
 def license_details = null;
+def pti_url = null;
 
 // Get license details
 RemoteLicenseLink controlling_license = null;
@@ -52,6 +53,8 @@ if ( res instanceof PackageContentItem ) {
     ])
   }
 
+  pti_url = pci.pti.url;
+
   pci.coverage.each { it ->
     coverage_summary.add( 
     [ 
@@ -82,4 +85,5 @@ json {
         'license' license_details
       'licenseId' controlling_license?.remoteId
       'eventType' entitlementLogEntry.eventType
+            'url' pti_url
 }
