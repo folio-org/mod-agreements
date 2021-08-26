@@ -43,6 +43,14 @@ public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     throw new RuntimeException("Not supported by this KB provider");
   }
 
+  public void freshenTitleData(String source_name,
+                                 String base_url,
+                                 String current_cursor,
+                                 KBCache cache,
+                                 boolean trustedSourceTI = false) {
+    throw new RuntimeException("Not supported by this KB provider");
+  }
+
   public void freshenHoldingsData(String cursor,
                                   String source_name,
                                   KBCache cache) {
@@ -175,7 +183,7 @@ public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, 
                         sibling_instance_identifiers.add([namespace:'issn',value:id.id])
                         break;
                       case 2: // ONLINE
-                        instance_identifiers.add([namespace:'eissn',value:id.id])
+                        instance_identifiers.add([namespace:'issn',value:id.id])
                         break;
                       case 7: // INVALID
                         break;

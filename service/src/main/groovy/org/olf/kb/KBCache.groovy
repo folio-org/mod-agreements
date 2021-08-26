@@ -1,6 +1,8 @@
 package org.olf.kb;
 
 import org.olf.dataimport.internal.PackageSchema
+import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
+
 
 /**
  * KBCache. the interface into the KB cache that adapters will call to notify changes
@@ -45,6 +47,9 @@ public interface KBCache {
    */
   public Map onPackageChange(String rkb_name, 
                              PackageSchema canonical_package_definition);
+
+  public Map onTitleChange(String rkb_name,
+                           ContentItemSchema canonical_title_definition);
 
   public void updateCursor(String rkb_name, String cursor);
 

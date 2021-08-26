@@ -215,17 +215,16 @@ public class KBart implements Serializable {
     return header as String[]
   }
 
+  // This method assumes it is being called on identifiers from within our database. Therefore any eissn or pissn will have been flattened to just issn
   static String getIdentifierValue(Object identifiers) {
     if (identifiers) {
       Iterator iter = identifiers.iterator();
       String identifierValue;
-      String doi, eissn, isbn, issn;
+      String doi, isbn, issn;
       while (iter.hasNext()) {
         IdentifierOccurrence thisIdent = iter.next()
         Identifier ident =  thisIdent.identifier
-          if (ident?.ns?.value == "eissn") {
-            eissn = ident.value
-          } else if (ident?.ns?.value == "issn") {
+          if (ident?.ns?.value == "issn") {
             issn = ident.value
           } else if (ident?.ns?.value == "isbn") {
             isbn = ident.value
@@ -234,9 +233,7 @@ public class KBart implements Serializable {
           }
       }
 
-      if (eissn) {
-        identifierValue = eissn
-      } else if (issn) {
+      if (issn) {
         identifierValue = issn
       } else if (isbn) {
         identifierValue = isbn
@@ -293,17 +290,24 @@ public class KBart implements Serializable {
           kbart.date_monograph_published_online = ti.dateMonographPublished
         }
 
+        // ERM-1649 This specifically is coming from our db, so we will have fixed the issn/eissn/pissn to all be issn. BE AWARE that anywhere we deal with incoming namespaces may not be normalised
         Object identifiers_obj = ti.identifiers
 
         if (ti.subType?.value == "print") {
+          // We have a print ti, return the most relevant identifier as print_identifier
           kbart.print_identifier = getIdentifierValue(identifiers_obj);
+
+          // Check through each related title to attempt to find an electronic title, and then if we find one, set kbart.online_identifier
           ti.relatedTitles?.each { relatedTitle ->
-            if (relatedTitle.subType.value == "electronic" && !kbart.online_identifier) {
+            if (!kbart.online_identifier && relatedTitle.subType.value == "electronic") {
               kbart.online_identifier = getIdentifierValue(relatedTitle.identifiers);
             }
           }
         } else if (ti.subType?.value == "electronic") {
+          // We have an electronic ti, return the most relevant identifier as online_identifier
           kbart.online_identifier = getIdentifierValue(identifiers_obj);
+
+          // We will never have a 'pissn' identifier (ERM-1649). We need to instead check through related titles as above
           kbart.print_identifier = identifiers_obj.find { it.identifier.ns.value == "pissn"}?.identifier?.value;
           if (!kbart.print_identifier) {
             ti.relatedTitles?.each { relatedTitle ->
