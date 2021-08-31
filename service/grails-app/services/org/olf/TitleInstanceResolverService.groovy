@@ -527,7 +527,9 @@ class TitleInstanceResolverService implements DataBinder{
          */
         final List<Identifier> id_matches = Identifier.executeQuery('select id from Identifier as id where id.value = :value and id.ns.value = :ns',[value:id.value, ns:namespaceMapping(id.namespace)], [max:2])
 
-        assert ( id_matches.size() <= 1 )
+        if (id_matches.size() > 1) {
+          throw new RuntimeException("Multiple (${id_matches.size()}) class one matches found for identifier ${id.namespace}::${id.value}");
+        }
 
         // For each matched (It should only ever be 1)
         id_matches.each { matched_id ->
