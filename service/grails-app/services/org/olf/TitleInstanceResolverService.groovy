@@ -228,6 +228,15 @@ class TitleInstanceResolverService implements DataBinder{
     // I'm adding this to make the integraiton tests pass again, and try to regain some sanity.
     // It would be more sensible to stick with the single instanceMedia field and if the value is not one we expect, stash the value in
     // a memo field here and convert as best we can.
+
+    // Journal or Book etc
+    def resource_type = citation.instanceMedia?.trim()
+
+    // This means that publication type can no longer be set directly by passing in instanceMedia - that 
+    // cannot be the right thing to do.
+    def resource_pub_type = citation.instancePublicationMedia?.trim()
+
+
     switch( citation.instanceMedia?.toLowerCase() ) {
       case null: // No value, nothing we can do
         break;
@@ -238,14 +247,16 @@ class TitleInstanceResolverService implements DataBinder{
       case 'newspaper':
       case 'journal':
         // If not already set, stash the instanceMedia we are looking at in instancePublicationMedia
-        citation.instancePublicationMedia = citation.instancePublicationMedia ?: citation.instanceMedia
-        citation.instanceMedia = 'serial';
+        // citation.instanceMedia = 'serial';
+        resource_type = 'serial'
+        resource_pub_type = citation.instancePublicationMedia ?: 'serial'
         break;
       case 'BKM':
       case 'book':
         // If not already set, stash the instanceMedia we are looking at in instancePublicationMedia
-        citation.instancePublicationMedia = citation.instancePublicationMedia ?: citation.instanceMedia
-        citation.instanceMedia = 'monograph';
+        // citation.instanceMedia = 'monograph';
+        resource_type = 'monograph'
+        resource_pub_type = citation.instancePublicationMedia ?: 'monograph'
         break;
       default:
         log.warn("Unhandled media type ${citation.instanceMedia}");
@@ -260,7 +271,7 @@ class TitleInstanceResolverService implements DataBinder{
     // 
     Map title_is_valid = [
       titleExists: ( citation.title != null ) && ( citation.title.length() > 0 ),
-      typeMatchesInternal: validateCitationType(citation)
+      typeMatchesInternal: validateCitationType(resource_type)
     ]
 
     // Validate
@@ -272,13 +283,6 @@ class TitleInstanceResolverService implements DataBinder{
 
       // Print or Electronic
       def medium = citation.instanceMedium?.trim()
-
-      // Journal or Book etc
-      def resource_type = citation.instanceMedia?.trim()
-
-      // This means that publication type can no longer be set directly by passing in instanceMedia - that 
-      // cannot be the right thing to do.
-      def resource_pub_type = citation.instancePublicationMedia?.trim()
 
       def resource_coverage = citation?.coverage
       result = new TitleInstance(
@@ -371,7 +375,7 @@ class TitleInstanceResolverService implements DataBinder{
         title.markDirty()
       }
 
-      if (validateCitationType(citation)) {
+      if (validateCitationType(citation?.instanceMedia)) {
         if ((title.type == null) || (title.type.value != citation.instanceMedia)) {
           title.typeFromString = citation.instanceMedia
           title.markDirty()
@@ -412,10 +416,8 @@ class TitleInstanceResolverService implements DataBinder{
     return null;
   }
 
-  private boolean validateCitationType(ContentItemSchema citation) {
-    return citation?.instanceMedia != null &&
-           ( citation.instanceMedia.toLowerCase() == 'monograph' || 
-             citation.instanceMedia.toLowerCase() == 'serial' )
+  private boolean validateCitationType(String tp) {
+    return tp != null && ( tp.toLowerCase() == 'monograph' || tp.toLowerCase() == 'serial' )
   }
 
   /**

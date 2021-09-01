@@ -57,10 +57,10 @@ if (devEnv || Environment.currentEnvironment == Environment.TEST) {
   
   if (Environment.currentEnvironment == Environment.TEST) {
     // Test only.
-//    logger 'org.hibernate', DEBUG
-    logger 'com.k_int.okapi.OkapiClient', TRACE
-    logger 'groovy.net.http.JavaHttpBuilder', DEBUG
-    logger 'org.hibernate.loader.criteria', TRACE
+    // logger 'org.hibernate', DEBUG
+    // logger 'com.k_int.okapi.OkapiClient', TRACE
+    // logger 'groovy.net.http.JavaHttpBuilder', DEBUG
+    // logger 'org.hibernate.loader.criteria', TRACE
     // logger 'org.hibernate.SQL', DEBUG
     // logger 'org.hibernate.type.descriptor.sql.BasicBinder', TRACE
   }
