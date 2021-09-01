@@ -62,7 +62,14 @@ class TitleIngestService implements DataBinder {
 
     // resolve may return null, used to throw exception which causes the whole package to be rejected. Needs
     // discussion to work out best way to handle.
-    TitleInstance title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
+
+    // ERM-1847 Changed assert in TIRS to an explicit exception, which we can catch here. Should stop job from hanging on bad data
+    TitleInstance title;
+    try {
+      title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
+    } catch (Exception e){
+      log.error("Error resolving title (${pc.title}), skipping ${e.message}")
+    }
 
     if (title != null) {
       /* ERM-1801

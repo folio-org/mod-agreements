@@ -134,6 +134,10 @@ Listening at http://localhost:3000
 
 and then be able to access the app
 
-  
+## Kubernetes Deployment Notes
+
+You may need to set `OKAPI_SERVICE_PORT` and/or `OKAPI_SERVICE_HOST` on the mod-agreements container. 
+
+If you create a Service in Kubernetes named "okapi" and expose a port for Hazelcast and a port for HTTP; the Hazelcast port might be the default and mod-agreements will use that default.
 
 

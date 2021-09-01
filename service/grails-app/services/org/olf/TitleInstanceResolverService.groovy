@@ -420,26 +420,6 @@ class TitleInstanceResolverService implements DataBinder{
     return tp != null && ( tp.toLowerCase() == 'monograph' || tp.toLowerCase() == 'serial' )
   }
 
-  /**
-   * Given an identifier in a citation { value:'1234-5678', namespace:'isbn' } lookup or create an identifier in the DB to represent that info
-   */
-  private Identifier lookupOrCreateIdentifier(final String value, final String namespace) {
-    Identifier result = null;
-    def identifier_lookup = Identifier.executeQuery('select id from Identifier as id where id.value = :value and id.ns.value = :ns',[value:value, ns:namespace]);
-    switch(identifier_lookup.size() ) {
-      case 0:
-        IdentifierNamespace ns = lookupOrCreateIdentifierNamespace(namespace);
-        result = new Identifier(ns:ns, value:value).save(flush:true, failOnError:true);
-        break;
-      case 1:
-        result = identifier_lookup.get(0);
-        break;
-      default:
-        throw new RuntimeException("Matched multiple identifiers for ${id}");
-        break;
-    }
-    return result;
-  }
 
   // ERM-1649. This function acts as a way to manually map incoming namespaces onto known namespaces where we believe the extra information is unhelpful.
   // This is also the place to do any normalisation (lowercasing etc).
@@ -460,6 +440,30 @@ class TitleInstanceResolverService implements DataBinder{
     }
 
     result
+  }
+
+  /**
+   * Given an identifier in a citation { value:'1234-5678', namespace:'isbn' } lookup or create an identifier in the DB to represent that info
+   */
+  private Identifier lookupOrCreateIdentifier(final String value, final String namespace) {
+    Identifier result = null;
+
+    // Ensure we are looking up properly mapped namespace (pisbn -> isbn, etc)
+    def identifier_lookup = Identifier.executeQuery('select id from Identifier as id where id.value = :value and id.ns.value = :ns',[value:value, ns:namespaceMapping(namespace)]);
+
+    switch(identifier_lookup.size() ) {
+      case 0:
+        IdentifierNamespace ns = lookupOrCreateIdentifierNamespace(namespace);
+        result = new Identifier(ns:ns, value:value).save(flush:true, failOnError:true);
+        break;
+      case 1:
+        result = identifier_lookup.get(0);
+        break;
+      default:
+        throw new RuntimeException("Matched multiple identifiers for ${id}");
+        break;
+    }
+    return result;
   }
 
   /*
@@ -529,7 +533,9 @@ class TitleInstanceResolverService implements DataBinder{
          */
         final List<Identifier> id_matches = Identifier.executeQuery('select id from Identifier as id where id.value = :value and id.ns.value = :ns',[value:id.value, ns:namespaceMapping(id.namespace)], [max:2])
 
-        assert ( id_matches.size() <= 1 )
+        if (id_matches.size() > 1) {
+          throw new RuntimeException("Multiple (${id_matches.size()}) class one matches found for identifier ${id.namespace}::${id.value}");
+        }
 
         // For each matched (It should only ever be 1)
         id_matches.each { matched_id ->
