@@ -14,4 +14,16 @@ databaseChangeLog = {
     }
   }
 
+  changeSet(author: "efreestone (manual)", id: "20210818-1423-001") {
+    createTable(tableName: "title_ingest_job") {
+      column(name: "id", type: "VARCHAR(255)") {
+        constraints(nullable: "false")
+      }
+    }
+  }
+
+  changeSet(author: "efreestone (manual)", id: "20210818-1423-002") {
+    addPrimaryKey(columnNames: "id", constraintName: "title_ingest_jobPK", tableName: "title_ingest_job")
+  }
+
 }

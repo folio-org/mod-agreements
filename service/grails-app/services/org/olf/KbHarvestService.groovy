@@ -5,6 +5,7 @@ import static groovy.transform.TypeCheckingMode.SKIP
 import java.time.Instant
 
 import org.olf.general.jobs.PackageIngestJob
+import org.olf.general.jobs.TitleIngestJob
 import org.olf.kb.RemoteKB
 import org.springframework.scheduling.annotation.Scheduled
 
@@ -14,6 +15,9 @@ import com.k_int.okapi.OkapiTenantResolver
 import grails.events.annotation.Subscriber
 import grails.gorm.multitenancy.Tenants
 import groovy.transform.CompileStatic
+
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import groovy.util.logging.Slf4j
 
 /**
@@ -36,6 +40,7 @@ class KbHarvestService {
 from RemoteKB as rkb
 where rkb.type is not null
   and rkb.active = :true
+  and rkb.rectype = :rectype
   and ( ( rkb.lastCheck is null ) OR ( ( :current_time - rkb.lastCheck ) > 1*60*60*1000 ) )
   and ( ( rkb.syncStatus is null ) OR ( rkb.syncStatus <> :inprocess ) )
 '''
@@ -54,19 +59,42 @@ where rkb.type is not null
 
   @CompileStatic(SKIP)
   private void triggerUpdateForTenant(final String tenant_schema_id) {
+    /* ERM-1801.
+     * We need to ensure TitleIngest happens BEFORE PackageIngest.
+     * To avoid syncronisation errors, we trigger both daily and hourly tasks from the same method,
+     * but add an extra condition to daily task query to find any that are fresher than a day old
+    */
     Tenants.withId(tenant_schema_id) {
 
-      PackageIngestJob job = PackageIngestJob.findByStatusInList([
+      // Look for jobs queued, in progress or created more recently than a day ago (Grabbing the first will suffice)
+      TitleIngestJob titleJob = TitleIngestJob.executeQuery("""
+        SELECT tj FROM TitleIngestJob AS tj
+          WHERE (
+            (tj.status.value = 'queued' OR tj.status.value = 'in_progress') OR
+            (tj.dateCreated > :created)
+          )
+      """.toString(), [created: Instant.now().minus(1L, ChronoUnit.DAYS)])[0]
+
+      PackageIngestJob packageJob = PackageIngestJob.findByStatusInList([
         PackageIngestJob.lookupStatus('Queued'),
         PackageIngestJob.lookupStatus('In progress')
       ])
 
-      if (!job) {
-        job = new PackageIngestJob(name: "Scheduled Ingest Job ${Instant.now()}")
-        job.setStatusFromString('Queued')
-        job.save(failOnError: true, flush: true)
+      // ERM-1801 Ensure titleIngestJob gets created, saved and flushed first, so that the job runner can set that up in the queue ahead of packageIngestJob
+      if (!titleJob) {
+        titleJob = new TitleIngestJob(name: "Scheduled Title Ingest Job ${Instant.now()}")
+        titleJob.setStatusFromString('Queued')
+        titleJob.save(failOnError: true, flush: true)
       } else {
-        log.debug('Harvester already running or scheduled. Ignore.')
+        log.debug('Title harvester already running or scheduled. Ignore.')
+      }
+
+      if (!packageJob) {
+        packageJob = new PackageIngestJob(name: "Scheduled Package Ingest Job ${Instant.now()}")
+        packageJob.setStatusFromString('Queued')
+        packageJob.save(failOnError: true, flush: true)
+      } else {
+        log.debug('Package harvester already running or scheduled. Ignore.')
       }
     }
   }
@@ -87,15 +115,11 @@ where rkb.type is not null
     }
   }
 
+  // Want this closure to be accessible by each of the triggerCacheUpdate methods below, but compileStatic can't seem to SKIP a Closure declaration, so declare as return from a method instead
   @CompileStatic(SKIP)
-  public void triggerCacheUpdate() {
-    log.debug("KBHarvestService::triggerCacheUpdate()")
-
-    // List all pending jobs that are eligible for processing - That is everything enabled and not currently in-process and has not been processed in the last hour
-    RemoteKB.executeQuery(PENDING_JOBS_HQL,['true':true,
-                                            'inprocess':'in-process',
-                                            'current_time':System.currentTimeMillis()],[lock:false]).each { remotekb_id ->
-
+  private Closure getClosure() {
+    // Run the actual procession once we have a remotekb_id
+    return { remotekb_id ->
       try {
         // We will check each candidate job to see if it has been picked up by some other thread or load balanced
         // instance of mod-agreements. We assume it has
@@ -133,7 +157,7 @@ where rkb.type is not null
             // Finally, set the state to idle
             RemoteKB.withNewSession {
               RemoteKB rkb = RemoteKB.lock(remotekb_id)
-  
+
               rkb.syncStatus = 'idle'
               rkb.lastCheck = System.currentTimeMillis()
               rkb.save(flush:true, failOnError:true)
@@ -148,7 +172,61 @@ where rkb.type is not null
         log.error("Unexpected problem in RemoteKB Update",e);
       }
     }
+  } 
+  
+
+  // ERM-1801 We split the cache updating into package vs title, so that we can set up title ingest and package ingest jobs separately
+  @CompileStatic(SKIP)
+  public void triggerPackageCacheUpdate() {
+    log.debug("KBHarvestService::triggerPackageCacheUpdate()")
+    Closure remoteKBProcessing = getClosure()
+    // List all pending jobs that are eligible for processing - That is everything enabled and not currently in-process and has not been processed in the last hour
+
+    RemoteKB.executeQuery(PENDING_JOBS_HQL,['true':true,
+                                            'inprocess':'in-process',
+                                            'rectype': RemoteKB.RECTYPE_PACKAGE,
+                                            'current_time':System.currentTimeMillis()],[lock:false]).each(remoteKBProcessing)
+
+    log.debug("KbHarvestService::triggerPackageCacheUpdate() completed")
+  }
+
+  @CompileStatic(SKIP)
+  public void triggerTitleCacheUpdate() {
+    log.debug("KBHarvestService::triggerTitleCacheUpdate()")
+    Closure remoteKBProcessing = getClosure()
+    // List all pending jobs that are eligible for processing - That is everything enabled and not currently in-process and has not been processed in the last hour
+
+    RemoteKB.executeQuery(PENDING_JOBS_HQL,['true':true,
+                                            'inprocess':'in-process',
+                                            'rectype': RemoteKB.RECTYPE_TITLE,
+                                            'current_time':System.currentTimeMillis()],[lock:false]).each(remoteKBProcessing)
+
+    log.debug("KbHarvestService::triggerTitleCacheUpdate() completed")
+  }
+
+
+  // ERM-1801 For those times where a manual cache update is required, this unified method will run through title ingest first and package ingest second
+  @CompileStatic(SKIP)
+  public void triggerCacheUpdate() {
+    log.debug("KBHarvestService::triggerCacheUpdate()")
+    Closure remoteKBProcessing = getClosure()
+    // List all pending jobs that are eligible for processing - That is everything enabled and not currently in-process and has not been processed in the last hour
+
+    // Run through remote KBs of rectype TITLE first
+    RemoteKB.executeQuery(PENDING_JOBS_HQL,['true':true,
+                                            'inprocess':'in-process',
+                                            'rectype': RemoteKB.RECTYPE_TITLE,
+                                            'current_time':System.currentTimeMillis()],[lock:false]).each(remoteKBProcessing)
+    
+    // Run through remote KBs of rectype PACKAGE second
+    RemoteKB.executeQuery(PENDING_JOBS_HQL,['true':true,
+                                            'inprocess':'in-process',
+                                            'rectype': RemoteKB.RECTYPE_PACKAGE,
+                                            'current_time':System.currentTimeMillis()],[lock:false]).each(remoteKBProcessing)
 
     log.debug("KbHarvestService::triggerCacheUpdate() completed")
   }
+
+
+
 }

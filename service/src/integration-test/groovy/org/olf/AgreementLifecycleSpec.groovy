@@ -7,6 +7,7 @@ import static org.springframework.http.HttpStatus.*
 import org.olf.kb.PackageContentItem
 import org.olf.kb.Pkg
 import org.olf.kb.PlatformTitleInstance
+import org.olf.kb.TitleInstance
 
 import com.k_int.okapi.OkapiHeaders
 import com.k_int.okapi.OkapiTenantResolver
@@ -39,8 +40,16 @@ class AgreementLifecycleSpec extends BaseSpec {
       def package_data = jsonSlurper.parse(new File(test_package_file))
       int result = 0
       final String tenantid = currentTenant.toLowerCase()
+      log.debug("Create new package with tenant ${tenantid}");
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
-        result = importService.importPackageUsingInternalSchema( package_data )
+        Pkg.withTransaction { status ->
+          result = importService.importPackageUsingInternalSchema( package_data )
+          log.debug("Package import complete - num packages: ${Pkg.executeQuery('select count(p.id) from Pkg as p')}");
+          log.debug("                            num titles: ${TitleInstance.executeQuery('select count(t.id) from TitleInstance as t')}");
+          Pkg.executeQuery('select p.id, p.name from Pkg as p').each { p ->
+            log.debug("Package: ${p}");
+          }
+        }
       }
 
     then: 'Package imported'
@@ -183,7 +192,7 @@ class AgreementLifecycleSpec extends BaseSpec {
       
     where:
       agreement_name        | status    | packageName
-      'My first agreement'  | 'Active'   | "American Psychological Association:Master"
+      'My first agreement'  | 'Active'  | "American Psychological Association:Master"
   }
   
   @Unroll

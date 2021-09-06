@@ -70,6 +70,14 @@ public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, Da
     }
   }
 
+  public void freshenTitleData(String source_name,
+                                 String base_url,
+                                 String current_cursor,
+                                 KBCache cache,
+                                 boolean trustedSourceTI = false) {
+    throw new RuntimeException("Not supported by this KB provider");
+  }
+
 
   private Map processPage(String cursor, Map<String, ?> package_list, String source_name, KBCache cache) {
     def result = [:]

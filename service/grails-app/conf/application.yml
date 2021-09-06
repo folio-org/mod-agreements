@@ -71,7 +71,7 @@ grails:
 
 # Datasource used by default.
 dataSource:
-#  logSql: true
+  logSql: false
   pooled: true
   jmxExport: false
   dbCreate: none

@@ -30,8 +30,7 @@ class PackageIngestService implements DataBinder {
   // row.
   private boolean PROXY_MISSING_PLATFORM = true
 
-  TitleInstanceResolverService titleInstanceResolverService
-  TitleEnricherService titleEnricherService
+  TitleIngestService titleIngestService
   CoverageService coverageService
 
   // dependentModuleProxyService is a service which hides the fact that we might be dependent upon other
@@ -78,7 +77,7 @@ class PackageIngestService implements DataBinder {
       
       if (!kb) {
        kb = new RemoteKB( name:remotekbname,
-                          rectype: new Long(1),
+                          rectype: RemoteKB.RECTYPE_PACKAGE,
                           active: Boolean.TRUE,
                           readonly:readOnly,
                           trustedSourceTI:false).save(flush:true, failOnError:true)
@@ -136,7 +135,6 @@ class PackageIngestService implements DataBinder {
       return
 
 
-      // log.debug("Try to resolve ${pc}")
     } else {
       package_data.packageContents.eachWithIndex { ContentItemSchema pc, int index ->
 
@@ -145,17 +143,12 @@ class PackageIngestService implements DataBinder {
         try {
 
           PackageContentItem.withNewTransaction { status ->
+            // Delegate out to TitleIngestService so that any shared steps can move there.
+            Map titleIngestResult = titleIngestService.upsertTitle(pc, kb, trustedSourceTI)
 
-            // resolve may return null, used to throw exception which causes the whole package to be rejected. Needs
-            // discussion to work out best way to handle.
-            TitleInstance title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
-
-            if ( title != null ) {
-              // Now we have a saved title in the system, we can check whether or not we want to go and grab extra data.
-
-              String sourceIdentifier = pc?.sourceIdentifier
-              titleEnricherService.secondaryEnrichment(kb, sourceIdentifier, title.id);
-
+            // titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
+            if ( titleIngestResult.titleInstanceId != null ) {
+              TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
               // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
 
               // lets try and work out the platform for the item
