@@ -192,6 +192,19 @@
           "methods": ["GET"],
           "pathPattern": "/erm/jobs/{id}/infoLog",
           "permissionsRequired": [ "erm.jobs.item.get" ]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/erm/jobs/{id}/fullLogStream",
+          "permissionsRequired": [ "erm.jobs.item.get" ]
+        },{
+          "methods": ["GET"],
+          "pathPattern": "/erm/jobs/{id}/errorLogStream",
+          "permissionsRequired": [ "erm.jobs.item.get" ]
+        },{
+          "methods": ["GET"],
+          "pathPattern": "/erm/jobs/{id}/infoLogStream",
+          "permissionsRequired": [ "erm.jobs.item.get" ]
         },{
           "methods": ["GET"],
           "pathPattern": "/erm/jobs/{id}/downloadFileObject",

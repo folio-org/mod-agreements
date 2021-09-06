@@ -137,9 +137,9 @@ class UrlMappings {
       }
       
       "/fullLog" ( controller: 'persistentJob', action: 'fullLog', method: 'GET' )
-      "/fullLogStream" ( controller: 'persistentJob', action: 'infoLogStream', method: 'GET' )
+      "/fullLogStream" ( controller: 'persistentJob', action: 'fullLogStream', method: 'GET' )
       "/errorLog" ( controller: 'persistentJob', action: 'errorLog', method: 'GET' )
-      "/errorLogStream" ( controller: 'persistentJob', action: 'infoLogStream', method: 'GET' )
+      "/errorLogStream" ( controller: 'persistentJob', action: 'errorLogStream', method: 'GET' )
       "/infoLog" ( controller: 'persistentJob', action: 'infoLog', method: 'GET' )
       "/infoLogStream" ( controller: 'persistentJob', action: 'infoLogStream', method: 'GET' )
       "/downloadFileObject" ( controller: 'persistentJob', action: 'downloadFileObject', method: 'GET' )
