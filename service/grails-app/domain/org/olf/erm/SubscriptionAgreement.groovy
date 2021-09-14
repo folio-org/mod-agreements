@@ -34,7 +34,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     periods: { [new Period('owner': delegate, 'startDate': LocalDate.now())] },
     name: { "Copy of: ${owner.name}" /* Owner is the current object. */ }
   ]  
-  static copyByCloning = ['supplementaryDocs', 'docs', 'externalLicenseDocs']
+  static copyByCloning = ['customProperties', 'supplementaryDocs', 'docs', 'externalLicenseDocs']
   
   String description
   String id
