@@ -1,4 +1,4 @@
-package org.olf
+package org.olf.dataimport.internal.titleInstanceResolvers
 
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
@@ -12,6 +12,7 @@ import org.olf.kb.Work
 import grails.gorm.transactions.Transactional
 import grails.web.databinding.DataBinder
 
+import org.olf.dataimport.internal.TitleInstanceResolverService
 
 import groovy.json.*
 
@@ -19,7 +20,7 @@ import groovy.json.*
  * This service works at the module level, it's often called without a tenant context.
  */
 @Transactional
-class TitleInstanceResolverService implements DataBinder{
+class IdFirstTIRSImpl implements DataBinder, TitleInstanceResolverService{
 
   private static final float MATCH_THRESHOLD = 0.775f
   private static final String TEXT_MATCH_TITLE_HQL = '''
