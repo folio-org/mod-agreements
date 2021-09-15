@@ -328,14 +328,6 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
                 ge 'activeTo', today
               }
             }
-            or {
-              isNull 'accessStart'
-              le 'accessStart', today
-            }
-            or {
-              isNull 'accessEnd'
-              ge 'accessEnd', today
-            }
               
             projections {
               property ('id')
@@ -432,7 +424,6 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
             // Line or Resource in the past
             or {
               lt 'direct_ent.activeTo', today
-              lt 'accessEnd', today
             }
           }
           
@@ -515,7 +506,6 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
             // Line or Resource in the future
             or {
               gt 'direct_ent.activeFrom', today
-              gt 'accessStart', today
             }
           }
           
