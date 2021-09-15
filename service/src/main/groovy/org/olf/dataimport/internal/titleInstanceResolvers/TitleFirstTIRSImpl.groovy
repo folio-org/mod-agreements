@@ -24,8 +24,23 @@ import groovy.util.logging.Slf4j
  */
 @Slf4j
 @Transactional
-class TitleFirstTIRSImpl implements TitleInstanceResolverService{
+class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverService {
+  private static final String TEXT_MATCH_TITLE_HQL = '''
+      SELECT ti from TitleInstance as ti
+        WHERE 
+          ti.name = :queryTitle
+          AND ti.subType.value like :subtype
+      '''
+
+  /* This method lowercases, strips all leading and trailing whitespace,
+   * and replaces all internal duplicated whitespaces with a single space
+   */
+  private String titleNormaliser(String s) {
+    return s.toLowerCase().trim().replaceAll("\\s+", " ")
+  }
+
   public TitleInstance resolve (ContentItemSchema citation, boolean trustedSourceTI) {
-    return RuntimeException("This isn't implemented yet");
+
+    throw new RuntimeException("This isn't implemented yet");
   }
 }
