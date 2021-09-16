@@ -50,6 +50,13 @@ public interface KBCacheUpdater {
                                    KBCache cache,
                                    boolean trustedSourceTI);
 
+
+  public void freshenTitleData(String source_name,
+                               String base_uri,
+                               String cursor, 
+                               KBCache cache,
+                               boolean trustedSourceTI);
+
   public void freshenHoldingsData(String cursor,
                                   String source_name,
                                   KBCache cache);

@@ -565,7 +565,7 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
     'linkedLicenses': ['linkedLicenses', 'licenseNote'],
     'externalLicenses': ['externalLicenseDocs'],
     'organizations': ['orgs'],
-    'supplementaryInformation': ['supplementaryDocs'],
+    'supplementaryProperties': ['customProperties'],
     'usageData': ['usageDataProviders'],
 //    'tags': ['tags']
   ]

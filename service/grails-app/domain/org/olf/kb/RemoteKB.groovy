@@ -27,9 +27,10 @@ public class RemoteKB implements MultiTenant<RemoteKB> {
   String credentials
   String syncStatus
   Long lastCheck
-  Long rectype  // 1-PACKAGE
+  Long rectype  // 1-PACKAGE, 2-TITLE
 
   public static final Long RECTYPE_PACKAGE = 1L;
+  public static final Long RECTYPE_TITLE = 2L;
 
   // Mark KB as protected/readonly, e.g. the LOCAL KB
   boolean readonly = false

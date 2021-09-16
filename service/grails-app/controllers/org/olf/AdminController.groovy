@@ -91,9 +91,11 @@ class AdminController implements DataBinder{
   }
 
   public triggerHousekeeping() {
+    log.info("AdminController::triggerHousekeeping()");
     def result = [:]
     ermHousekeepingService.triggerHousekeeping()
     result.status = 'OK'
+    log.info("AdminController::triggerHousekeeping() complete: ${result}");
     render result as JSON
   }
 

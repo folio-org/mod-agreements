@@ -207,6 +207,7 @@ class ImportService implements DataBinder {
     }
     if (missingFields.size() != 0) {
       log.error("The import file is missing the mandatory fields: ${missingFields}")
+      throw new RuntimeException("The import file is missing the mandatory fields: ${missingFields}")
       return (false);
     }
     

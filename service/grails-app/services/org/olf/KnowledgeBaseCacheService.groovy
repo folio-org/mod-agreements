@@ -1,6 +1,7 @@
 package org.olf
 
 import org.olf.dataimport.internal.PackageSchema
+import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.erm.Entitlement
 import org.olf.kb.ContentActivationRecord
 import org.olf.kb.KBCache
@@ -15,6 +16,7 @@ import org.springframework.transaction.TransactionDefinition
 public class KnowledgeBaseCacheService implements KBCache {
 
   PackageIngestService packageIngestService
+  TitleIngestService titleIngestService
 
   private static final String PLATFORM_TITLES_QUERY = '''select pti, rkb, ent from PlatformTitleInstance as pti, Entitlement as ent, RemoteKB as rkb 
 where ( exists ( select pci.id 
@@ -44,7 +46,19 @@ where ( exists ( select pci.id
       log.debug("Run remote kb sync:: ${rkb.id}/${rkb.name}/${rkb.uri}")
       Class cls = Class.forName(rkb.type)
       KBCacheUpdater cache_updater = cls.newInstance()
-      cache_updater.freshenPackageData(rkb.name, rkb.uri, rkb.cursor, this, rkb.trustedSourceTI)
+
+      // Depending on rectype, we may want to freshenPackageData or freshenTitleData
+      switch (rkb.rectype) {
+        case RemoteKB.RECTYPE_PACKAGE: // This is Long 1
+          cache_updater.freshenPackageData(rkb.name, rkb.uri, rkb.cursor, this, rkb.trustedSourceTI)
+          break;
+        case RemoteKB.RECTYPE_TITLE: // This is Long 2
+          cache_updater.freshenTitleData(rkb.name, rkb.uri, rkb.cursor, this, rkb.trustedSourceTI)
+          break;
+        default:
+          log.warn("No behaviour currently defined for RemoteKB rectype: ${rkb.rectype}")
+          break;
+      }
     }
   }
 
@@ -79,6 +93,17 @@ where ( exists ( select pci.id
       result = packageIngestService.upsertPackage(package_data, rkb_name, false)
     }
     log.debug("onPackageChange(${rkb_name},...) returning ${result}")
+
+    return result
+  }
+
+    public Map onTitleChange(String rkb_name, ContentItemSchema title_data) {
+    Map result = null
+    RemoteKB.withTransaction([propagationBehavior: TransactionDefinition.PROPAGATION_REQUIRES_NEW]) {
+      log.debug("onTitleChange(${rkb_name},...)")
+      result = titleIngestService.upsertTitle(title_data, rkb_name)
+    }
+    log.debug("onTitleChange(${rkb_name},...) returning ${result}")
 
     return result
   }
