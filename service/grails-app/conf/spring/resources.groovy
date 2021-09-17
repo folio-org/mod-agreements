@@ -7,6 +7,6 @@ beans = {
     Behaviour pre-Kiwi: IdFirstTIRSImpl
     Behaviour post-Kiwi: TitleFirstTIRSImpl
   */
-  titleInstanceResolverService(IdFirstTIRSImpl)
-  //titleInstanceResolverService(TitleFirstTIRSImpl)
+  //titleInstanceResolverService(IdFirstTIRSImpl)
+  titleInstanceResolverService(TitleFirstTIRSImpl)
 }

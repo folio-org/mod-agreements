@@ -58,8 +58,6 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     'doi'
   ];
   
-  private static final def APPROVED = 'approved'
-
   /**
    * Given a -valid- title citation with the minimum properties below, attempt to resolve the citation
    * into a local instance record. If no instance record is located, create one, and perform the necessary
@@ -217,84 +215,6 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
       }
     }
   }
-
-  /**
-   * Check to see if the citation has properties that we really want to pull through to
-   * the DB. In particular, for the case where we have created a stub title record without
-   * an identifier, we will need to add identifiers to that record when we see a record that
-   * suggests identifiers for that title match.
-   */ 
-  private void checkForEnrichment(TitleInstance title, ContentItemSchema citation, boolean trustedSourceTI) {
-    log.debug("Checking for enrichment of Title Instance: ${title} :: trusted: ${trustedSourceTI}")
-    if (trustedSourceTI == true) {
-      log.debug("Trusted source for TI enrichment--enriching")
-
-      if (title.name != citation.title) {
-        title.name = citation.title
-      }
-
-      /*
-       * For some reason whenever a title is updated with just refdata fields it fails to properly mark as dirty.
-       * The below solution of '.markDirty()' is not ideal, but it does solve the problem for now.
-       * TODO: Ian to Review with Ethan - this makes no sense to me at the moment
-       *
-       * If the "Authoritative" publication type is not equal to whatever mad value a remote site has sent then
-       * replace the authortiative value with the one sent?
-       */
-      if (title.publicationType?.value != citation.instancePublicationMedia) {
-       
-        title.publicationTypeFromString = citation.instancePublicationMedia
-        title.markDirty()
-      }
-
-      if (validateCitationType(citation?.instanceMedia)) {
-        if ((title.type == null) || (title.type.value != citation.instanceMedia)) {
-          title.typeFromString = citation.instanceMedia
-          title.markDirty()
-        }
-      } else {
-        log.error("Type (${citation.instanceMedia}) does not match 'serial' or 'monograph' for title \"${citation.title}\", skipping field enrichment.")
-      }
-
-      if (title.dateMonographPublished != citation.dateMonographPublished) {
-        title.dateMonographPublished = citation.dateMonographPublished
-      }
-
-      if (title.firstAuthor != citation.firstAuthor) {
-        title.firstAuthor = citation.firstAuthor
-      }
-      
-      if (title.firstEditor != citation.firstEditor) {
-        title.firstEditor = citation.firstEditor
-      }
-
-      if (title.monographEdition != citation.monographEdition) {
-        title.monographEdition = citation.monographEdition
-      }
-
-      if (title.monographVolume != citation.monographVolume) {
-        title.monographVolume = citation.monographVolume
-      }
-      
-      if(! title.save(flush: true) ) {
-        title.errors.fieldErrors.each {
-          log.error("Error saving title. Field ${it.field} rejected value: \"${it.rejectedValue}\".")
-        }
-      }
-
-    } else {
-      log.debug("Not a trusted source for TI enrichment--skipping")
-    }
-    return null;
-  }
-
-  private boolean validateCitationType(String tp) {
-    return tp != null && ( tp.toLowerCase() == 'monograph' || tp.toLowerCase() == 'serial' )
-  }
-
-
-
-
 
   /**
    * Attempt a fuzzy match on the title
