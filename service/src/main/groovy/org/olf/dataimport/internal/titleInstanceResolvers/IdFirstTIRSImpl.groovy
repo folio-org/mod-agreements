@@ -307,4 +307,25 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     // log.debug("At end of classOneMatch, resut contains ${result.size()} titles");
     return result;
   }
+
+  private TitleInstance createNewTitleInstance(final ContentItemSchema citation, Work work = null) {
+    TitleInstance result = createNewTitleInstanceWithoutIdentifiers(citation, work)
+
+    citation.instanceIdentifiers.each{ id ->
+      def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
+      
+      def io_record = new IdentifierOccurrence(
+        title: result,
+        identifier: id_lookup)
+      
+      io_record.setStatusFromString(APPROVED)
+      io_record.save(flush:true, failOnError:true)
+    }
+    
+    if (result != null) {
+      // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
+      result.refresh()
+    }
+    result
+  }
 }

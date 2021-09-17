@@ -82,7 +82,19 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
           break;
       }
     }
+  }
+
+  private TitleInstance createNewTitleInstance(final ContentItemSchema citation, Work work = null) {
+    TitleInstance result = createNewTitleInstanceWithoutIdentifiers(citation, work)
+
+    citation.instanceIdentifiers.each{ id ->
+      log.debug("LOGDEBUG DO SOMETHING WITH ID: ${id}")
+    }
     
-    
+    if (result != null) {
+      // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
+      result.refresh()
+    }
+    result
   }
 }

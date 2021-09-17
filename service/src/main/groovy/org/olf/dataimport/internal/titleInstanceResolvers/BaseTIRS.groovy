@@ -21,7 +21,7 @@ import groovy.json.*
  */
 @Transactional
 class BaseTIRS {
-    private static final def APPROVED = 'approved'
+    protected static final def APPROVED = 'approved'
 
   // ERM-1649. This function acts as a way to manually map incoming namespaces onto known namespaces where we believe the extra information is unhelpful.
   // This is also the place to do any normalisation (lowercasing etc).
@@ -76,140 +76,7 @@ class BaseTIRS {
   }
 
 
-  // FIXME, looks like this method is different from the method we want to use on new TIRS
-  protected TitleInstance createNewTitleInstance(final ContentItemSchema citation, Work work = null) {
-
-    TitleInstance result = null
-
-
-    // Ian: adding this - Attempt to make sense of the instanceMedia value we have been passed
-    //
-    // I'm entirely befuddled by whats going on in this service with the handling of instanceMedia, resource_type and instancePublicationMedia -
-    // it's a confused mess. This method is about fuzzily absorbing a citation doing the best we can. To reject an entry out of hand because a value
-    // does not match an arbitrarily internally decided upon string leaves callers with no way of resolving what went wrong or what to do about it.
-    // I'm adding this to make the integraiton tests pass again, and try to regain some sanity.
-    // It would be more sensible to stick with the single instanceMedia field and if the value is not one we expect, stash the value in
-    // a memo field here and convert as best we can.
-
-    // Journal or Book etc
-    def resource_type = citation.instanceMedia?.trim()
-
-    // This means that publication type can no longer be set directly by passing in instanceMedia - that 
-    // cannot be the right thing to do.
-    def resource_pub_type = citation.instancePublicationMedia?.trim()
-
-
-    switch( citation.instanceMedia?.toLowerCase() ) {
-      case null: // No value, nothing we can do
-        break;
-      case 'serial': // One of our approved values
-        break;
-      case 'monograph': // One of our approved values
-        break;
-      case 'newspaper':
-      case 'journal':
-        // If not already set, stash the instanceMedia we are looking at in instancePublicationMedia
-        // citation.instanceMedia = 'serial';
-        resource_type = 'serial'
-        resource_pub_type = citation.instancePublicationMedia ?: 'serial'
-        break;
-      case 'BKM':
-      case 'book':
-        // If not already set, stash the instanceMedia we are looking at in instancePublicationMedia
-        // citation.instanceMedia = 'monograph';
-        resource_type = 'monograph'
-        resource_pub_type = citation.instancePublicationMedia ?: 'monograph'
-        break;
-      default:
-        log.warn("Unhandled media type ${citation.instanceMedia}");
-        break;
-    }
-
-    // With the introduction of fuzzy title matching, we are relaxing this constraint and
-    // will expect to enrich titles without identifiers when we next see a record. BUT
-    // this needs elaboration and experimentation.
-    //
-    // boolean title_is_valid =  ( ( citation.title?.length() > 0 ) && ( citation.instanceIdentifiers.size() > 0 ) )
-    // 
-    Map title_is_valid = [
-      titleExists: ( citation.title != null ) && ( citation.title.length() > 0 ),
-      typeMatchesInternal: validateCitationType(resource_type)
-    ]
-
-    // Validate
-    if ( title_is_valid.count { k,v -> v == false} == 0 ) {
-
-      if ( work == null ) {
-        work = new Work(title:citation.title).save(flush:true, failOnError:true)
-      }
-
-      // Print or Electronic
-      def medium = citation.instanceMedium?.trim()
-
-      def resource_coverage = citation?.coverage
-      result = new TitleInstance(
-        name: citation.title,
-
-        dateMonographPublished: citation.dateMonographPublished,
-        firstAuthor: citation.firstAuthor,
-        firstEditor: citation.firstEditor,
-        monographEdition: citation.monographEdition,
-        monographVolume: citation.monographVolume,
-
-        work: work
-      )
-
-      // We can trust these by the check above for file imports and through logic in the adapters to set pubType and type correctly
-      result.typeFromString = resource_type
-
-      if ( ( resource_pub_type != null ) && ( resource_pub_type.length() > 0 ) ) {
-        result.publicationTypeFromString = resource_pub_type
-      }
-      
-      if ((medium?.length() ?: 0) > 0) {
-        result.subTypeFromString = medium
-      }
-      
-      result.save(flush:true, failOnError:true)
-
-      // Iterate over all idenifiers in the citation and add them to the title record. We manually create the identifier occurrence 
-      // records rather than using the groovy collection, but it makes little difference.
-      citation.instanceIdentifiers.each { id ->
-        
-        def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
-        
-        def io_record = new IdentifierOccurrence(
-          title: result, 
-          identifier: id_lookup)
-        
-        io_record.setStatusFromString(APPROVED)
-        io_record.save(flush:true, failOnError:true)
-      }
-    }
-    else {
-
-      // Run through the failed validation one by one and throw relavent errors
-      if (!title_is_valid.titleExists) {
-        log.error("Create title failed validation check - insufficient data to create a title record");
-      }
-
-      if (!title_is_valid.typeMatchesInternal) {
-        log.error("Create title \"${citation.title}\" failed validation check - type (${citation.instanceMedia.toLowerCase()}) does not match 'serial' or 'monograph'");
-      }
-      
-      // We will return null, which means no title
-      // throw new RuntimeException("Insufficient detail to create title instance record");
-    }
-    
-    if (result != null) {
-      // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
-      result.refresh()
-    }
-    result
-  }
-
-
-    /**
+  /*
    * Check to see if the citation has properties that we really want to pull through to
    * the DB. In particular, for the case where we have created a stub title record without
    * an identifier, we will need to add identifiers to that record when we see a record that
@@ -282,4 +149,134 @@ class BaseTIRS {
   private boolean validateCitationType(String tp) {
     return tp != null && ( tp.toLowerCase() == 'monograph' || tp.toLowerCase() == 'serial' )
   }
+
+  // Different TIRS implementations will have different workflows with identifiers, but the vast majority of the creation will be the same
+  protected TitleInstance createNewTitleInstanceWithoutIdentifiers(final ContentItemSchema citation, Work work = null) {
+    TitleInstance result = null
+
+    // Ian: adding this - Attempt to make sense of the instanceMedia value we have been passed
+    //
+    // I'm entirely befuddled by whats going on in this service with the handling of instanceMedia, resource_type and instancePublicationMedia -
+    // it's a confused mess. This method is about fuzzily absorbing a citation doing the best we can. To reject an entry out of hand because a value
+    // does not match an arbitrarily internally decided upon string leaves callers with no way of resolving what went wrong or what to do about it.
+    // I'm adding this to make the integraiton tests pass again, and try to regain some sanity.
+    // It would be more sensible to stick with the single instanceMedia field and if the value is not one we expect, stash the value in
+    // a memo field here and convert as best we can.
+
+    // Journal or Book etc
+    def resource_type = citation.instanceMedia?.trim()
+
+    // This means that publication type can no longer be set directly by passing in instanceMedia - that 
+    // cannot be the right thing to do.
+    def resource_pub_type = citation.instancePublicationMedia?.trim()
+
+
+    switch( citation.instanceMedia?.toLowerCase() ) {
+      case null: // No value, nothing we can do
+        break;
+      case 'serial': // One of our approved values
+        break;
+      case 'monograph': // One of our approved values
+        break;
+      case 'newspaper':
+      case 'journal':
+        // If not already set, stash the instanceMedia we are looking at in instancePublicationMedia
+        // citation.instanceMedia = 'serial';
+        resource_type = 'serial'
+        resource_pub_type = citation.instancePublicationMedia ?: 'serial'
+        break;
+      case 'BKM':
+      case 'book':
+        // If not already set, stash the instanceMedia we are looking at in instancePublicationMedia
+        // citation.instanceMedia = 'monograph';
+        resource_type = 'monograph'
+        resource_pub_type = citation.instancePublicationMedia ?: 'monograph'
+        break;
+      default:
+        log.warn("Unhandled media type ${citation.instanceMedia}");
+        break;
+    }
+
+    // With the introduction of fuzzy title matching, we are relaxing this constraint and
+    // will expect to enrich titles without identifiers when we next see a record. BUT
+    // this needs elaboration and experimentation.
+
+    // Validate
+    Map title_is_valid = [
+      titleExists: ( citation.title != null ) && ( citation.title.length() > 0 ),
+      typeMatchesInternal: validateCitationType(resource_type)
+    ]
+
+    if ( title_is_valid.count { k,v -> v == false} == 0 ) {
+
+      if ( work == null ) {
+        work = new Work(title:citation.title).save(flush:true, failOnError:true)
+      }
+
+      // Print or Electronic
+      def medium = citation.instanceMedium?.trim()
+
+      def resource_coverage = citation?.coverage
+      result = new TitleInstance(
+        name: citation.title,
+
+        dateMonographPublished: citation.dateMonographPublished,
+        firstAuthor: citation.firstAuthor,
+        firstEditor: citation.firstEditor,
+        monographEdition: citation.monographEdition,
+        monographVolume: citation.monographVolume,
+
+        work: work
+      )
+
+      // We can trust these by the check above for file imports and through logic in the adapters to set pubType and type correctly
+      result.typeFromString = resource_type
+
+      if ( ( resource_pub_type != null ) && ( resource_pub_type.length() > 0 ) ) {
+        result.publicationTypeFromString = resource_pub_type
+      }
+      
+      if ((medium?.length() ?: 0) > 0) {
+        result.subTypeFromString = medium
+      }
+      
+      result.save(flush:true, failOnError:true)
+
+      // Iterate over all idenifiers in the citation and add them to the title record. We manually create the identifier occurrence 
+      // records rather than using the groovy collection, but it makes little difference.
+
+      // Logic may differ here depending on whether we have match on ids or titles first
+      citation.instanceIdentifiers.each{ id ->
+        def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
+        
+        def io_record = new IdentifierOccurrence(
+          title: result,
+          identifier: id_lookup)
+        
+        io_record.setStatusFromString(APPROVED)
+        io_record.save(flush:true, failOnError:true)
+      }
+    }
+    else {
+
+      // Run through the failed validation one by one and throw relavent errors
+      if (!title_is_valid.titleExists) {
+        log.error("Create title failed validation check - insufficient data to create a title record");
+      }
+
+      if (!title_is_valid.typeMatchesInternal) {
+        log.error("Create title \"${citation.title}\" failed validation check - type (${citation.instanceMedia.toLowerCase()}) does not match 'serial' or 'monograph'");
+      }
+      
+      // We will return null, which means no title
+      // throw new RuntimeException("Insufficient detail to create title instance record");
+    }
+    
+    if (result != null) {
+      // Refresh the newly minted title so we have access to all the related objects
+      result.refresh()
+    }
+    result
+  }
+
 }
