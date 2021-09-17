@@ -242,20 +242,7 @@ class BaseTIRS {
       
       result.save(flush:true, failOnError:true)
 
-      // Iterate over all idenifiers in the citation and add them to the title record. We manually create the identifier occurrence 
-      // records rather than using the groovy collection, but it makes little difference.
-
-      // Logic may differ here depending on whether we have match on ids or titles first
-      citation.instanceIdentifiers.each{ id ->
-        def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
-        
-        def io_record = new IdentifierOccurrence(
-          title: result,
-          identifier: id_lookup)
-        
-        io_record.setStatusFromString(APPROVED)
-        io_record.save(flush:true, failOnError:true)
-      }
+     // Leave identifier work out, as this may differ between implementations of "resolve" method
     }
     else {
 
