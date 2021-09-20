@@ -16,12 +16,16 @@ import org.olf.dataimport.internal.TitleInstanceResolverService
 
 import groovy.json.*
 
+import groovy.util.logging.Slf4j
+
 /**
  * This is a base TIRS class to give any implementing classes some shared tools to use 
  */
+@Slf4j
 @Transactional
 class BaseTIRS {
     protected static final def APPROVED = 'approved'
+    protected static final def ERROR = 'error'
 
   // ERM-1649. This function acts as a way to manually map incoming namespaces onto known namespaces where we believe the extra information is unhelpful.
   // This is also the place to do any normalisation (lowercasing etc).
@@ -151,6 +155,7 @@ class BaseTIRS {
   }
 
   // Different TIRS implementations will have different workflows with identifiers, but the vast majority of the creation will be the same
+  // We assume that the incoming citation already has split ids and siblingIds
   protected TitleInstance createNewTitleInstanceWithoutIdentifiers(final ContentItemSchema citation, Work work = null) {
     TitleInstance result = null
 
@@ -216,6 +221,7 @@ class BaseTIRS {
       // Print or Electronic
       def medium = citation.instanceMedium?.trim()
 
+      // FIXME This seems to be unused
       def resource_coverage = citation?.coverage
       result = new TitleInstance(
         name: citation.title,
@@ -258,11 +264,7 @@ class BaseTIRS {
       // We will return null, which means no title
       // throw new RuntimeException("Insufficient detail to create title instance record");
     }
-    
-    if (result != null) {
-      // Refresh the newly minted title so we have access to all the related objects
-      result.refresh()
-    }
+
     result
   }
 

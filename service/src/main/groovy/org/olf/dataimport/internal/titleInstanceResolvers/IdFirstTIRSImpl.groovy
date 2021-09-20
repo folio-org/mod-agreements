@@ -118,6 +118,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
           log.debug("No title match, create new title")
           result = createNewTitleInstance(citation)
           if (result != null) {
+            // We assume that the incoming citation already has split ids and siblingIds
             createOrLinkSiblings(citation, result.work)
           }
           break;
@@ -309,7 +310,11 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
   }
 
   private TitleInstance createNewTitleInstance(final ContentItemSchema citation, Work work = null) {
-    TitleInstance result = createNewTitleInstanceWithoutIdentifiers(citation, work)
+    TitleInstance result = null;
+
+    TitleInstance.withNewTransaction {
+      result = createNewTitleInstanceWithoutIdentifiers(citation, work)
+    }
 
     citation.instanceIdentifiers.each{ id ->
       def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
