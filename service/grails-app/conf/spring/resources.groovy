@@ -3,9 +3,8 @@ import org.olf.dataimport.internal.titleInstanceResolvers.*
 beans = {
   /* 
     --- Swapping these will change the way mod-agreements handles resolution of TitleInstances --- 
-    TODO check if this is actually going into Kiwi
-    Behaviour pre-Kiwi: IdFirstTIRSImpl
-    Behaviour post-Kiwi: TitleFirstTIRSImpl
+    Behaviour pre-Lotus: IdFirstTIRSImpl
+    Behaviour post-Lotus: TitleFirstTIRSImpl
   */
   //titleInstanceResolverService(IdFirstTIRSImpl)
   titleInstanceResolverService(TitleFirstTIRSImpl)

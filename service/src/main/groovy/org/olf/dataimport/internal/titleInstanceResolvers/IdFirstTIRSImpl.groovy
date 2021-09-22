@@ -50,13 +50,6 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
         ti.subType.value = :electronic
   '''
 
-  private static def class_one_namespaces = [
-    'zdb',
-    'isbn',
-    'issn',  // This really isn't true - we get electronic items identified by the issn of their print sibling.. Needs thought
-    'eissn', // We want to accept eissn still as a class-one-namespace, even though internally we flatten to 'issn'. ERM-1649
-    'doi'
-  ];
   
   /**
    * Given a -valid- title citation with the minimum properties below, attempt to resolve the citation

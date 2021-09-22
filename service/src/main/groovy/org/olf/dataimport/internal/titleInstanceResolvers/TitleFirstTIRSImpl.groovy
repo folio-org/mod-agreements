@@ -1,5 +1,7 @@
 package org.olf.dataimport.internal.titleInstanceResolvers
 
+import org.olf.general.StringUtils
+
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
@@ -14,6 +16,8 @@ import grails.web.databinding.DataBinder
 
 import org.olf.dataimport.internal.TitleInstanceResolverService
 
+import java.util.StringTokenizer
+
 
 import groovy.json.*
 
@@ -25,10 +29,11 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Transactional
 class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverService {
+  /* normalizedName is created using StringUtils.normaliseWhitespaceAndCase, as below */
   private static final String TEXT_MATCH_TITLE_HQL = '''
       SELECT ti from TitleInstance as ti
         WHERE 
-          ti.name = :queryTitle
+          ti.normalizedName = :queryTitle
           AND ti.subType.value like :subtype
       '''
 
@@ -40,18 +45,20 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
         AND io.identifier.id = :id_id
     '''
 
-  /* This method lowercases, strips all leading and trailing whitespace,
-   * and replaces all internal duplicated whitespaces with a single space
-   */
-  private String titleNormaliser(String s) {
-    return s.toLowerCase().trim().replaceAll("\\s+", " ")
-  }
-
   private List<TitleInstance> titleMatch(final String title, final String subtype) {
     List<TitleInstance> result = new ArrayList<TitleInstance>()
     TitleInstance.withSession { session ->
       try {
-        result = TitleInstance.executeQuery(TEXT_MATCH_TITLE_HQL,[queryTitle: titleNormaliser(title), subtype:subtype], [max:20])
+        result = TitleInstance.executeQuery(
+          TEXT_MATCH_TITLE_HQL,
+          [
+            queryTitle: StringUtils.normaliseWhitespaceAndCase(title),
+            subtype:subtype
+          ],
+          [
+            max:20
+          ]
+        )
       }
       catch ( Exception e ) {
         log.debug("Problem attempting to run HQL Query ${TEXT_MATCH_TITLE_HQL} on string ${title} with subtype ${subtype}",e)
@@ -65,14 +72,82 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
     return titleMatch(title, 'electronic');
   }
 
+  private List<TitleInstance> classOneMatch(final Iterable<IdentifierSchema> identifiers, final List<String> titleCandidateIds = []) {
+    // If given a list of current title candidates' ids then we will only search for the given identifiers on those TIs
+    final List<TitleInstance> result = new ArrayList<TitleInstance>()
+
+    identifiers.each { IdentifierSchema id ->
+       /*
+        * At this stage we could be trying to match incoming
+      {
+        namespace: 'eISSN',
+        value: 1234-5678
+      }
+        * with something that in our system looks like:
+      {
+        namespace: 'issn',
+        value: 1234-5678
+      }
+        * We have to know that eissn == issn etc... Use namespaceMapping function
+        */
+      String IO_MATCH_HQL = """
+        SELECT io FROM IdentifierOccurrence AS io
+          LEFT JOIN io.identifier AS id
+          LEFT JOIN io.title AS title
+          WHERE
+            id.value = :value AND
+            id.ns.value = :ns AND
+            io.status.value = :approved"""
+
+      String IO_MATCH_TITLE_IDS = """ AND
+            title.id IN :titleCandidateIds
+      """
+
+      if (titleCandidateIds.size() > 0) {
+        IO_MATCH_HQL += IO_MATCH_TITLE_IDS
+      }
+
+      final List<IdentifierOccurrence> io_matches = IdentifierOccurrence.executeQuery(
+        IO_MATCH_HQL.toString(),
+        [
+          value: id.value,
+          ns: namespaceMapping(id.namespace),
+          approved: APPROVED,
+          titleCandidateIds: titleCandidateIds
+        ],
+        [max:2]
+      )
+
+      // For each matched IdentifierOccurrence, add title if we haven't already
+      io_matches.each {io ->
+        if ( !result.contains(io.title) ) {
+          result << io.title
+        }
+      }
+    }
+
+
+
+    log.debug("LOGDEBUG RESULT: ${result}")
+    return result;
+  }
+
   public TitleInstance resolve (ContentItemSchema citation, boolean trustedSourceTI) {
     TitleInstance result = null;
 
     List<TitleInstance> candidate_list = titleMatch(citation.title)
+
     if ( candidate_list != null ) {
+
+      if (candidate_list.size() > 1) {
+        log.debug("LOGDEBUG MATCHED MULTIPLE CANDIDATES, RUNNING SECONDARY ID MATCH")
+        // If we initially have multiple matches, then use IDs as a secondary matching tactic.
+        candidate_list = classOneMatch(citation.instanceIdentifiers, candidate_list.collect { it.id });
+      }
+
       switch ( candidate_list.size() ) {
         case(0):
-          log.debug("No title match, create new title")
+          log.debug("LOGDEBUG No title match, create new title")
           result = createNewTitleInstance(citation)
           // TODO implement this as per issue
           /* if (result != null) {
@@ -82,16 +157,19 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
         case(1):
           log.debug("Exact match. Enrich title.")
           result = candidate_list.get(0)
-          // TODO Link any new identifiers
           checkForEnrichment(result, citation, trustedSourceTI)
+
+          // Link any new identifiers
           linkIdentifiers(result, citation)
           break;
         default:
-          log.warn("title matched ${num_matches} records . Unable to continue. Matching IDs: ${candidate_list.collect { it.id }}.");
+          log.warn("Unable to uniquely match title ${citation.title} with identifiers: ${citation.instanceIdentifiers}. Matched IDs: ${candidate_list.collect { it.id }}.");
           throw new RuntimeException("LOGDEBUG MULTIPLE MATCHES. (This isn't implemented yet");
           break;
       }
     }
+
+    return result;
   }
 
   private TitleInstance createNewTitleInstance(final ContentItemSchema citation, Work work = null) {
@@ -121,7 +199,7 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
   }
 
   private void linkIdentifier(IdentifierSchema id, TitleInstance title, ContentItemSchema citation) {
-    // Lookup or create identifier. If not already on an approved IdentifierOccurence we'll need to create it anyway
+    // Lookup or create identifier. If not already on an approved IdentifierOccurrence we'll need to create it anyway
     def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace);
 
     ArrayList<IdentifierOccurrence> io_lookup = IdentifierOccurrence.executeQuery(
