@@ -80,7 +80,7 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
         CoverageService.changeListener(this)
       }
 
-      //normalizedName = StringUtils.normaliseWhitespaceAndCase(name)
+      normalizedName = StringUtils.normaliseWhitespaceAndCase(name)
       validating = false
     }
   }

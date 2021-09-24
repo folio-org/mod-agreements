@@ -45,6 +45,20 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
         AND io.identifier.id = :id_id
     '''
 
+  private static final String SIBLING_LOOKUP_HQL = '''
+    SELECT ti from TitleInstance as ti
+      LEFT JOIN ErmResource as res
+        ON ti.id = res.id
+      LEFT JOIN RefdataValue as rdv
+        ON res.subType = rdv.id
+      WHERE
+        rdv.value = :subType
+          AND
+        ti.work.id = :work
+          AND
+        ti.id != :tiId
+      '''
+
   private List<TitleInstance> titleMatch(final String title, final String subtype) {
     List<TitleInstance> result = new ArrayList<TitleInstance>()
     TitleInstance.withSession { session ->
@@ -70,6 +84,47 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
 
   private List<TitleInstance> titleMatch(String title) {
     return titleMatch(title, 'electronic');
+  }
+
+  /* SubType here is the type of sibling you want to find. So for siblings of TI:
+   * [
+   *   id: 12345,
+   *   work: [
+   *     id: abcde
+   *   ],
+   *   subType: [
+   *     value: 'electronic'
+   *   ]
+   * ]
+   * You would call siblingMatch(12345, abcde, 'print')
+  */
+  private List<TitleInstance> siblingMatch(final String tiId, final String workId, final String subType) {
+    List<TitleInstance> result = new ArrayList<TitleInstance>()
+    TitleInstance.withSession { session ->
+      try {
+        // TODO This might return multiple siblings, for now we just grab the first one and treat that as "THE" print sibling
+        result = TitleInstance.executeQuery(
+          SIBLING_LOOKUP_HQL,
+          [
+           tiId: tiId,
+           work: workId,
+           subType: subType
+          ],
+          [
+            max:1
+          ]
+        )
+      }
+      catch ( Exception e ) {
+        log.debug("Problem attempting to run HQL Query ${SIBLING_LOOKUP_HQL} with tiID ${tiId}, work: ${workId} and subtype ${subtype}",e)
+      }
+    }
+ 
+    return result
+  }
+
+  private List<TitleInstance> siblingMatch(final String tiId, final String workId) {
+    return siblingMatch(tiId, workId, 'print');
   }
 
   private List<TitleInstance> classOneMatch(final Iterable<IdentifierSchema> identifiers, final List<String> titleCandidateIds = []) {
@@ -126,9 +181,6 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
       }
     }
 
-
-
-    log.debug("LOGDEBUG RESULT: ${result}")
     return result;
   }
 
@@ -140,19 +192,17 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
     if ( candidate_list != null ) {
 
       if (candidate_list.size() > 1) {
-        log.debug("LOGDEBUG MATCHED MULTIPLE CANDIDATES, RUNNING SECONDARY ID MATCH")
         // If we initially have multiple matches, then use IDs as a secondary matching tactic.
         candidate_list = classOneMatch(citation.instanceIdentifiers, candidate_list.collect { it.id });
       }
 
       switch ( candidate_list.size() ) {
         case(0):
-          log.debug("LOGDEBUG No title match, create new title")
+          log.debug("No title match, create new title")
           result = createNewTitleInstance(citation)
-          // TODO implement this as per issue
-          /* if (result != null) {
-            createOrLinkSiblings(citation, result.work)
-          } */
+          if (result != null) {
+            createPrintSibling(citation, result.work)
+          }
           break;
         case(1):
           log.debug("Exact match. Enrich title.")
@@ -161,15 +211,42 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
 
           // Link any new identifiers
           linkIdentifiers(result, citation)
+          List<TitleInstance> siblings = siblingMatch(result.id, result.work.id)
+          // TODO As above, we for now treat the first result as "THE" print sibling
+          linkIdentifiers(siblings[0], citation, true)
+
+
+
+
           break;
         default:
-          log.warn("Unable to uniquely match title ${citation.title} with identifiers: ${citation.instanceIdentifiers}. Matched IDs: ${candidate_list.collect { it.id }}.");
-          throw new RuntimeException("LOGDEBUG MULTIPLE MATCHES. (This isn't implemented yet");
+          // This should be caught by calling code
+          throw new RuntimeException("Unable to uniquely match title ${citation.title} with identifiers: ${citation.instanceIdentifiers}. Matched IDs: ${candidate_list.collect { it.id }}.");
           break;
       }
     }
 
     return result;
+  }
+
+  private TitleInstance createPrintSibling(final ContentItemSchema citation, Work work = null) {
+    TitleInstance result = null;
+
+    ContentItemSchema sibling_citation = citation
+    sibling_citation.instanceMedium = "print"
+
+    TitleInstance.withNewTransaction {
+      result = createNewTitleInstanceWithoutIdentifiers(sibling_citation, work)
+    }
+
+    // This will assign the siblingInstanceIds to the sibling TI
+    linkIdentifiers(result, citation, true)
+    
+    if (result != null) {
+      // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
+      result.refresh()
+    }
+    result
   }
 
   private TitleInstance createNewTitleInstance(final ContentItemSchema citation, Work work = null) {
@@ -222,7 +299,7 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
       io_record.save(flush:true, failOnError:true)
     } else {
       // Log warning allows for multiple TIs to have the same identifier through different occurences, I don't believe this should happen in production though
-      log.warn("Identifier ${id} not assigned to ${title.name} as it is already assigned to title${io_lookup.size() > 1 ? "s" : ""}: ${io_lookup}")
+      log.info("Identifier ${id} not assigned to ${title.name} as it is already assigned to title${io_lookup.size() > 1 ? "s" : ""}: ${io_lookup}")
       // TODO Ethan -- do we want to create an IdentifierOccurrence with status "Error" here rather than ignoring?
     }
   }
