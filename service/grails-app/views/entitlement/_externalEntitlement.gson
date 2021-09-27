@@ -49,7 +49,6 @@ json {
   'haveAccess' entitlement.getHaveAccess()
   'suppressFromDiscovery' entitlement.suppressFromDiscovery
   'note' entitlement.note
-  'tags' entitlement.tags
   
   if (renderOwnerSnippet) {
     'owner' g.render(entitlement.owner, [includes: ['id', 'name']])
@@ -72,5 +71,9 @@ json {
   
   if (remoteObjValue) {
     call( objectProperty, remoteObjValue )
+  }
+
+  if (entitlement.tags) {
+    'tags' g.render(entitlement.tags)
   }
 }
