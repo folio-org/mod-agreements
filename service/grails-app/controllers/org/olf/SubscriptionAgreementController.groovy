@@ -328,14 +328,6 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
                 ge 'activeTo', today
               }
             }
-            or {
-              isNull 'accessStart'
-              le 'accessStart', today
-            }
-            or {
-              isNull 'accessEnd'
-              ge 'accessEnd', today
-            }
               
             projections {
               property ('id')
@@ -415,24 +407,9 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
             eq 'class', PackageContentItem
             eq 'direct_ent.owner.id', subscriptionAgreementId
             
-            // Valid access start
-            or {
-              isNull 'accessStart'
-              isNull 'direct_ent.activeTo'
-              ltProperty 'accessStart', 'direct_ent.activeTo'
-            }
-            
-            // Valid access end
-            or {
-              isNull 'accessEnd'
-              isNull 'direct_ent.activeFrom'
-              gtProperty 'accessEnd', 'direct_ent.activeFrom'
-            }
-            
             // Line or Resource in the past
             or {
               lt 'direct_ent.activeTo', today
-              lt 'accessEnd', today
             }
           }
           
@@ -498,24 +475,9 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
             eq 'class', PackageContentItem
             eq 'direct_ent.owner.id', subscriptionAgreementId
             
-            // Valid access start
-            or {
-              isNull 'accessStart'
-              isNull 'direct_ent.activeTo'
-              ltProperty 'accessStart', 'direct_ent.activeTo'
-            }
-            
-            // Valid access end
-            or {
-              isNull 'accessEnd'
-              isNull 'direct_ent.activeFrom'
-              gtProperty 'accessEnd', 'direct_ent.activeFrom'
-            }
-            
             // Line or Resource in the future
             or {
               gt 'direct_ent.activeFrom', today
-              gt 'accessStart', today
             }
           }
           

@@ -8,7 +8,7 @@ import spock.lang.*
 
 @Stepwise
 @Integration
-class AgreementViewsSpec extends BaseSpec {
+class AgreementResourcesViewSpec extends BaseSpec {
   
   @Shared
   String pkg_id
@@ -21,6 +21,18 @@ class AgreementViewsSpec extends BaseSpec {
 
   @Shared
   int expectedItems = 0;
+
+  @Shared
+  List<String> endpoints = ['current', 'future', 'dropped']
+
+  def fetchResourcesForAgreement() {
+    Map resourceMap = [:]
+    for (final String endpoint : endpoints) {
+      List resources = doGet("/erm/sas/${agg_id}/resources/${endpoint}").collect { it.id }
+      resourceMap[endpoint] = resources
+    }
+    return resourceMap
+  }
   
   def 'Ingest a test package' () {
       
@@ -183,115 +195,97 @@ class AgreementViewsSpec extends BaseSpec {
           startDate today.toString()
           endDate tomorrow.toString()
         }])
-        items ([{
-          'resource' pkg_id
-        }])
         name 'Test agreement'
         agreementStatus 'Active'
       }
       agg_id = httpResult?.id
 
-      expectedItems += 1;
-    then: 'Agreement added'
+    then: 'Agreement saved'
       assert agg_id != null
-      assert (httpResult?.items?.size() ?: 0) == expectedItems
   }
-  
+
   @Unroll
-  def 'Test agreement line range #agreement_line_start - #agreement_line_end' (final String agreement_line_start, final String agreement_line_end, final Map<String, List<String>> expected) {
-    
-    final List<String> endpoints = ['current', 'future', 'dropped'] 
-    
+  def 'Test direct PCI access dates are ignored for PCI #name' (final String name) {
+    def pci_id = "";
+
     when: 'Agreement read'
-      Map httpResult = doGet("/erm/sas/${agg_id}", [expand: 'items', excludes: 'items.owner'])
-      
-    and: 'Order-line dates set to #agreement_line_start - #agreement_line_end'
-      httpResult.items[0].activeFrom = agreement_line_start
-      httpResult.items[0].activeTo = agreement_line_end
-    
+      Map httpResult = doGet("/erm/sas/${agg_id}", [expand: 'items'])
+    and: 'Find package by name'
+      List pci_resp = doGet("/erm/pci", [filters: ["pkg.id==${pkg_id}", "pti.titleInstance.name==${name}"]])
+      pci_id = pci_resp[0]?.id
+    then: 'PCI exists'
+      assert pci_id != null
+
+    when: 'attach PCI directly to agreement'
+      httpResult.items << [resource: [id: pci_id]]
+
     and: 'Update put'
-      httpResult = doPut("/erm/sas/${agg_id}", httpResult)
+      httpResult = doPut("/erm/sas/${agg_id}", httpResult, [expand: 'items'])
+
+      expectedItems += 1;
       
     then: 'Agreement saved'
       assert httpResult?.id == agg_id
-      assert (httpResult?.items?.size() ?: 0) == 1
-      
-    // We no longer expand the items array by default, so removing this test for now, but leaving it
-    // in place for now.
-    // when: 'Agreement re-read'
-    //   httpResult = doGet("/erm/sas/${agg_id}", ['expand': 'items', exclude: 'items.owner'])
-    
-    // then: 'Dates are correct'
-    //   assert httpResult.items[0].activeFrom == agreement_line_start
-    //   assert httpResult.items[0].activeTo == agreement_line_end
-    
-    when: 'Enpoints checked'
-      final List<String> nevers_not_seen = expected['never']?.collect() ?: []
-      final Map<String,List<String>> seen_resources = [:].withDefault { [] }
-      
-      // We must check all endpoints to ensure the 'never' are met.
-      for ( final String endpoint : endpoints ) {
-        if (endpoint != 'never') {
-          log.debug "Finding ${endpoint} resources"
-          List epResult = doGet("/erm/sas/${agg_id}/resources/${endpoint}")
-          for ( def result : epResult ) {
-            final String name = result['_object'].pti.titleInstance.name
-            seen_resources[endpoint] << name
-            nevers_not_seen.remove(name)
-          }
-        }
-      }
-    then: 'Dropped resources match expected dropped resources'
-      assert seen_resources['dropped'].size() == (expected['dropped']?.size() ?: 0)
-    
-    and: 'Future resources match expected future resources'
-      assert seen_resources['future'].size() == (expected['future']?.size() ?: 0)
-    
-    and: 'Current resources match expected current resources'
-      assert seen_resources['current'].size() == (expected['current']?.size() ?: 0)
-    
-    and: 'Never resources were not seen in the previous matches'
-     assert nevers_not_seen.size() == (expected['never']?.size() ?: 0)
-    
+      // One new
+      assert (httpResult?.items?.size() ?: 0) == expectedItems
+
+    when: 'agreement line is set to be active this year'
+      // set agreement line to be activeFrom/activeTo dates
+      def index = httpResult.items.findIndexOf{ it.resource.id == pci_id }
+      httpResult.items[index].activeFrom = "${thisYear - 1}-01-01"
+      httpResult.items[index].activeTo = "${thisYear + 1}-12-31"
+
+    and: 'Update put'
+      httpResult = doPut("/erm/sas/${agg_id}", httpResult, [expand: 'items'])
+      println("LOGDEBUG CURRENT HTTP AFTER PUT: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}")
+      Map resourceMap = fetchResourcesForAgreement()
+      println("LOGDEBUG CURRENT RESOURCE MAP: ${JsonOutput.prettyPrint(JsonOutput.toJson(resourceMap))}")
+
+    then: 'Agreement saved and pci in current block'
+      assert httpResult?.id == agg_id
+      assert resourceMap['current'].contains(pci_id)
+
+    when: 'agreement line is set to be active in the past'
+      // set agreement line to be activeFrom/activeTo dates
+      index = httpResult.items.findIndexOf{ it.resource.id == pci_id }
+      httpResult.items[index].activeFrom = "${thisYear - 12}-01-01"
+      httpResult.items[index].activeTo = "${thisYear -10}-12-31"
+
+    and: 'Update put'
+      httpResult = doPut("/erm/sas/${agg_id}", httpResult, [expand: 'items'])
+      println("LOGDEBUG DROPPED HTTP AFTER PUT: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}")
+      resourceMap = fetchResourcesForAgreement()
+      println("LOGDEBUG DROPPED RESOURCE MAP: ${JsonOutput.prettyPrint(JsonOutput.toJson(resourceMap))}")
+
+
+    then: 'Agreement saved and pci in dropped block'
+      assert httpResult?.id == agg_id
+      assert resourceMap['dropped'].contains(pci_id)
+
+    when: 'agreement line is set to be active in the future'
+      // set agreement line to be activeFrom/activeTo dates
+      index = httpResult.items.findIndexOf{ it.resource.id == pci_id }
+      httpResult.items[index].activeFrom = "${thisYear + 10}-01-01"
+      httpResult.items[index].activeTo = "${thisYear + 12}-12-31"
+
+    and: 'Update put'
+      httpResult = doPut("/erm/sas/${agg_id}", httpResult, [expand: 'items'])
+      println("LOGDEBUG FUTURE HTTP AFTER PUT: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}")
+
+      resourceMap = fetchResourcesForAgreement()
+      println("LOGDEBUG FUTURE RESOURCE MAP: ${JsonOutput.prettyPrint(JsonOutput.toJson(resourceMap))}")
+
+
+    then: 'Agreement saved and pci in future block'
+      assert httpResult?.id == agg_id
+      assert resourceMap['future'].contains(pci_id)
+
     where:
-      agreement_line_start        | agreement_line_end
-      "${thisYear - 12}-01-01"    | "${thisYear - 10}-12-31"
-      "${thisYear - 12}-01-01"    | "${thisYear - 7}-12-31"
-      "${thisYear}-01-01"         | "${thisYear + 1}-12-31"
-      "${thisYear - 13}-01-01"    | "${thisYear + 1}-12-31"
-      "${thisYear - 13}-01-01"    | "${thisYear + 11}-12-31"
-      "${thisYear + 1}-01-01"     | "${thisYear + 11}-12-31"
-      null                        | "${thisYear + 11}-12-31"
-      "${thisYear - 12}-01-01"    | null
-      
-      expected << [[
-        never: ['Afghanistan', 'Archaeological and Environmental Forensic Science', 'Bethlehem University Journal'],
-        dropped: ['Archives of Natural History']
-      ],[
-        never: ['Bethlehem University Journal'],
-        dropped: ['Afghanistan', 'Archaeological and Environmental Forensic Science','Archives of Natural History']
-      ],[
-        never: ['Afghanistan', 'Archives of Natural History', 'Bethlehem University Journal'],
-        current: ['Archaeological and Environmental Forensic Science']
-      ],[
-        never: ['Bethlehem University Journal'],
-        dropped: ['Afghanistan', 'Archives of Natural History'],
-        current: ['Archaeological and Environmental Forensic Science']
-      ],[
-        future: ['Bethlehem University Journal'],
-        dropped: ['Afghanistan', 'Archives of Natural History'],
-        current: ['Archaeological and Environmental Forensic Science']
-      ],[
-        never: ['Afghanistan', 'Archives of Natural History'],
-        future: ['Archaeological and Environmental Forensic Science','Bethlehem University Journal']
-      ],[
-        future: ['Bethlehem University Journal'],
-        dropped: ['Afghanistan', 'Archives of Natural History'],
-        current: ['Archaeological and Environmental Forensic Science']
-      ],[
-        future: ['Bethlehem University Journal'],
-        dropped: ['Afghanistan', 'Archives of Natural History'],
-        current: ['Archaeological and Environmental Forensic Science']
-      ]]
+      name << [
+        "Afghanistan",
+        "Archaeological and Environmental Forensic Science",
+        "Archives of Natural History",
+        "Bethlehem University Journal"
+      ]
   }
 }
