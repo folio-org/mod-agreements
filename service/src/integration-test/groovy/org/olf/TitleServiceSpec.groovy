@@ -1,5 +1,7 @@
 package org.olf
 
+import org.olf.dataimport.internal.TitleInstanceResolverService
+
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.kb.TitleInstance
 
@@ -15,8 +17,8 @@ import spock.lang.*
 @Stepwise
 class TitleServiceSpec extends BaseSpec {
 
-  TitleInstanceResolverService titleInstanceResolverService
-  
+  // titleInstanceResolverService is injected in baseSpec now
+
   @Shared PackageContentImpl content
   
   void 'Bind to content' () {
@@ -63,7 +65,9 @@ class TitleServiceSpec extends BaseSpec {
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
         // N.B. This is a groovy MAP, not a JSON document.
         title_instance = titleInstanceResolverService.resolve(content, true)
-        num_identifiers = title_instance.identifiers.size()
+        println("LOGDEBUG TI: ${title_instance}")
+        println("LOGDEBUG TI IDS: ${title_instance.identifiers}")
+        num_identifiers = title_instance.identifiers?.size() ?: 0
       }
 
     then: 'New title created and identifier count matches'

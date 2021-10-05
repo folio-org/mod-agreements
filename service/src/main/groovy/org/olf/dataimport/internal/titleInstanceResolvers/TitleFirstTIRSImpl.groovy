@@ -232,8 +232,13 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
   private TitleInstance createPrintSibling(final ContentItemSchema citation, Work work = null) {
     TitleInstance result = null;
 
-    ContentItemSchema sibling_citation = citation
-    sibling_citation.instanceMedium = "print"
+    /* We can ignore the instance identifiers for now as we create the TI without them initially */
+    PackageContentImpl sibling_citation = new PackageContentImpl([
+      "title": citation.title,
+      "instanceMedium": "print",
+      "instanceMedia": citation.instanceMedia,
+      "instancePublicationMedia": citation.instancePublicationMedia
+    ])
 
     TitleInstance.withNewTransaction {
       result = createNewTitleInstanceWithoutIdentifiers(sibling_citation, work)
@@ -259,6 +264,8 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
     // This will assign the instanceIds to the TI and 'createOrLinkSiblings' will create a sibling for each sibling id
     linkIdentifiers(result, citation)
     
+
+    IdentifierOccurrence.findAll().collect{ println("LOGDEBUG: ${it}") }
     if (result != null) {
       // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
       result.refresh()
@@ -268,6 +275,7 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
 
   // When method passed with sibling = true, link Sibling identifiers, else link identifiers
   private void linkIdentifiers(TitleInstance title, ContentItemSchema citation, boolean sibling = false) {
+    println("LOGDEBUG: ${citation.instanceIdentifiers}")
     if (sibling) {
       citation.siblingInstanceIdentifiers.each {id -> linkIdentifier(id, title, citation)}
     } else {
@@ -297,10 +305,14 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
       
       io_record.setStatusFromString(APPROVED)
       io_record.save(flush:true, failOnError:true)
+
+      //TODO remove this
+      log.info("Identifier ${id} assigned to ${title.name} with IO: ${io_record}")
     } else {
       // Log warning allows for multiple TIs to have the same identifier through different occurences, I don't believe this should happen in production though
       log.info("Identifier ${id} not assigned to ${title.name} as it is already assigned to title${io_lookup.size() > 1 ? "s" : ""}: ${io_lookup}")
       // TODO Ethan -- do we want to create an IdentifierOccurrence with status "Error" here rather than ignoring?
     }
+    println("LOGDEBUG this ran")
   }
 }

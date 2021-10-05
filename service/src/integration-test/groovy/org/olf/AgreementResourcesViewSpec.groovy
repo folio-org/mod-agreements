@@ -237,9 +237,7 @@ class AgreementResourcesViewSpec extends BaseSpec {
 
     and: 'Update put'
       httpResult = doPut("/erm/sas/${agg_id}", httpResult, [expand: 'items'])
-      println("LOGDEBUG CURRENT HTTP AFTER PUT: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}")
       Map resourceMap = fetchResourcesForAgreement()
-      println("LOGDEBUG CURRENT RESOURCE MAP: ${JsonOutput.prettyPrint(JsonOutput.toJson(resourceMap))}")
 
     then: 'Agreement saved and pci in current block'
       assert httpResult?.id == agg_id
@@ -253,9 +251,7 @@ class AgreementResourcesViewSpec extends BaseSpec {
 
     and: 'Update put'
       httpResult = doPut("/erm/sas/${agg_id}", httpResult, [expand: 'items'])
-      println("LOGDEBUG DROPPED HTTP AFTER PUT: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}")
       resourceMap = fetchResourcesForAgreement()
-      println("LOGDEBUG DROPPED RESOURCE MAP: ${JsonOutput.prettyPrint(JsonOutput.toJson(resourceMap))}")
 
 
     then: 'Agreement saved and pci in dropped block'
@@ -270,11 +266,7 @@ class AgreementResourcesViewSpec extends BaseSpec {
 
     and: 'Update put'
       httpResult = doPut("/erm/sas/${agg_id}", httpResult, [expand: 'items'])
-      println("LOGDEBUG FUTURE HTTP AFTER PUT: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}")
-
       resourceMap = fetchResourcesForAgreement()
-      println("LOGDEBUG FUTURE RESOURCE MAP: ${JsonOutput.prettyPrint(JsonOutput.toJson(resourceMap))}")
-
 
     then: 'Agreement saved and pci in future block'
       assert httpResult?.id == agg_id
