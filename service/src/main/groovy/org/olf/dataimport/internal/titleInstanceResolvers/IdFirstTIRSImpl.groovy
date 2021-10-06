@@ -309,8 +309,9 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
       result = createNewTitleInstanceWithoutIdentifiers(citation, work)
     }
 
-    citation.instanceIdentifiers.each{ id ->
-      IdentifierOccurrence.withNewTransaction{
+    IdentifierOccurrence.withNewTransaction{
+      citation.instanceIdentifiers.each{ id ->
+        
         def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
       
         def io_record = new IdentifierOccurrence(

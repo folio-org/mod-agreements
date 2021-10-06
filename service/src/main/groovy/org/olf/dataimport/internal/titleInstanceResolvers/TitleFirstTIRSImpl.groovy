@@ -273,16 +273,12 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
 
   // When method passed with sibling = true, link Sibling identifiers, else link identifiers
   private void linkIdentifiers(TitleInstance title, ContentItemSchema citation, boolean sibling = false) {
-    Closure linkIds = {id -> 
-      IdentifierOccurrence.withNewTransaction {
-        linkIdentifier(id, title, citation)
+    IdentifierOccurrence.withNewTransaction {
+      if (sibling) {
+        citation.siblingInstanceIdentifiers.each { id -> linkIdentifier(id, title, citation) }
+      } else {
+        citation.instanceIdentifiers.each { id -> linkIdentifier(id, title, citation) }
       }
-    }
-
-    if (sibling) {
-      citation.siblingInstanceIdentifiers.each(linkIds)
-    } else {
-      citation.instanceIdentifiers.each(linkIds)
     }
   }
 
