@@ -200,7 +200,7 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
         case(0):
           log.debug("No title match, create new title")
           result = createNewTitleInstance(citation)
-          if (result != null) {
+          if (result != null && (citation.siblingInstanceIdentifiers?.size() ?: 0) > 0) {
             createPrintSibling(citation, result.work)
           }
           break;
