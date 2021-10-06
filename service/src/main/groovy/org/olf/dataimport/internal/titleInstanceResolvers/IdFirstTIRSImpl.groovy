@@ -310,14 +310,16 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     }
 
     citation.instanceIdentifiers.each{ id ->
-      def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
+      IdentifierOccurrence.withNewTransaction{
+        def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
       
-      def io_record = new IdentifierOccurrence(
-        title: result,
-        identifier: id_lookup)
-      
-      io_record.setStatusFromString(APPROVED)
-      io_record.save(flush:true, failOnError:true)
+        def io_record = new IdentifierOccurrence(
+          title: result,
+          identifier: id_lookup)
+        
+        io_record.setStatusFromString(APPROVED)
+        io_record.save(flush:true, failOnError:true)
+      }
     }
     
     if (result != null) {

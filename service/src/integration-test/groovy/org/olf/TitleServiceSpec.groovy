@@ -65,9 +65,7 @@ class TitleServiceSpec extends BaseSpec {
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
         // N.B. This is a groovy MAP, not a JSON document.
         title_instance = titleInstanceResolverService.resolve(content, true)
-        println("LOGDEBUG TI: ${title_instance}")
-        println("LOGDEBUG TI IDS: ${title_instance.identifiers}")
-        num_identifiers = title_instance.identifiers?.size() ?: 0
+        num_identifiers = title_instance.identifiers.size()
       }
 
     then: 'New title created and identifier count matches'
@@ -84,7 +82,6 @@ class TitleServiceSpec extends BaseSpec {
 
     when: 'Resolve the same title again'
       def title_instance = null
-      def num_identifiers = 0
       def num_titles = 0
       final String tenantid = currentTenant.toLowerCase()
 
@@ -93,7 +90,6 @@ class TitleServiceSpec extends BaseSpec {
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
         title_instance = titleInstanceResolverService.resolve(content, true)
         assert title_instance != null
-        num_identifiers = title_instance.identifiers.size()
         def matching_titles = TitleInstance.findAllByName('Brain of the firm')
         num_titles = matching_titles.size()
 
