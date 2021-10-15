@@ -231,7 +231,7 @@ class AgreementResourcesViewSpec extends BaseSpec {
 
     when: 'agreement line is set to be active this year'
       // set agreement line to be activeFrom/activeTo dates
-      def index = httpResult.items.findIndexOf{ it.resource.id == pci_id }
+      def index = httpResult.items.findIndexOf{ it.resource?.id == pci_id }
       httpResult.items[index].activeFrom = "${thisYear - 1}-01-01"
       httpResult.items[index].activeTo = "${thisYear + 1}-12-31"
 
@@ -245,7 +245,7 @@ class AgreementResourcesViewSpec extends BaseSpec {
 
     when: 'agreement line is set to be active in the past'
       // set agreement line to be activeFrom/activeTo dates
-      index = httpResult.items.findIndexOf{ it.resource.id == pci_id }
+      index = httpResult.items.findIndexOf{ it.resource?.id == pci_id }
       httpResult.items[index].activeFrom = "${thisYear - 12}-01-01"
       httpResult.items[index].activeTo = "${thisYear -10}-12-31"
 
@@ -260,7 +260,7 @@ class AgreementResourcesViewSpec extends BaseSpec {
 
     when: 'agreement line is set to be active in the future'
       // set agreement line to be activeFrom/activeTo dates
-      index = httpResult.items.findIndexOf{ it.resource.id == pci_id }
+      index = httpResult.items.findIndexOf{ it.resource?.id == pci_id }
       httpResult.items[index].activeFrom = "${thisYear + 10}-01-01"
       httpResult.items[index].activeTo = "${thisYear + 12}-12-31"
 

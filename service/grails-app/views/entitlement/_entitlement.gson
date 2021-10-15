@@ -11,12 +11,8 @@ if (entitlement.type == 'external') {
 } else {
   final def should_expand = ['poLines', 'resource', 'tags' ]
   final def should_exclude = []
-  boolean renderOwnerSnippet = true
   if ( controllerName != 'subscriptionAgreement' ) {
     should_expand << 'owner'
-    renderOwnerSnippet = false
-  } else {
-    should_exclude << 'owner'
   }
   
   json g.render(entitlement, [expand: should_expand, excludes: should_exclude]) {
@@ -33,10 +29,6 @@ if (entitlement.type == 'external') {
     } else {
       'coverage' []
       'customCoverage' false
-    }
-    
-    if (renderOwnerSnippet) {
-      'owner' g.render(entitlement.owner, [includes: ['id', 'name']])
     }
     
     'explanation' entitlement.getExplanation()
