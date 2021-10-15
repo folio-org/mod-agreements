@@ -150,6 +150,7 @@ class PersistentJobController extends OkapiTenantAwareController<PersistentJob> 
     }
   }
 
+  @Transactional(readOnly=true)
   def downloadFileObject(String persistentJobId) {
 
     ComparisonJob instance = ComparisonJob.read(persistentJobId)
