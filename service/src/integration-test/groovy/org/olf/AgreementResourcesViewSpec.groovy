@@ -231,15 +231,13 @@ class AgreementResourcesViewSpec extends BaseSpec {
 
     when: 'agreement line is set to be active this year'
       // set agreement line to be activeFrom/activeTo dates
-      def index = httpResult.items.findIndexOf{ it.resource.id == pci_id }
+      def index = httpResult.items.findIndexOf{ it.resource?.id == pci_id }
       httpResult.items[index].activeFrom = "${thisYear - 1}-01-01"
       httpResult.items[index].activeTo = "${thisYear + 1}-12-31"
 
     and: 'Update put'
       httpResult = doPut("/erm/sas/${agg_id}", httpResult, [expand: 'items'])
-      println("LOGDEBUG CURRENT HTTP AFTER PUT: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}")
       Map resourceMap = fetchResourcesForAgreement()
-      println("LOGDEBUG CURRENT RESOURCE MAP: ${JsonOutput.prettyPrint(JsonOutput.toJson(resourceMap))}")
 
     then: 'Agreement saved and pci in current block'
       assert httpResult?.id == agg_id
@@ -247,15 +245,13 @@ class AgreementResourcesViewSpec extends BaseSpec {
 
     when: 'agreement line is set to be active in the past'
       // set agreement line to be activeFrom/activeTo dates
-      index = httpResult.items.findIndexOf{ it.resource.id == pci_id }
+      index = httpResult.items.findIndexOf{ it.resource?.id == pci_id }
       httpResult.items[index].activeFrom = "${thisYear - 12}-01-01"
       httpResult.items[index].activeTo = "${thisYear -10}-12-31"
 
     and: 'Update put'
       httpResult = doPut("/erm/sas/${agg_id}", httpResult, [expand: 'items'])
-      println("LOGDEBUG DROPPED HTTP AFTER PUT: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}")
       resourceMap = fetchResourcesForAgreement()
-      println("LOGDEBUG DROPPED RESOURCE MAP: ${JsonOutput.prettyPrint(JsonOutput.toJson(resourceMap))}")
 
 
     then: 'Agreement saved and pci in dropped block'
@@ -264,17 +260,14 @@ class AgreementResourcesViewSpec extends BaseSpec {
 
     when: 'agreement line is set to be active in the future'
       // set agreement line to be activeFrom/activeTo dates
-      index = httpResult.items.findIndexOf{ it.resource.id == pci_id }
+      index = httpResult.items.findIndexOf{ it.resource?.id == pci_id }
       httpResult.items[index].activeFrom = "${thisYear + 10}-01-01"
       httpResult.items[index].activeTo = "${thisYear + 12}-12-31"
 
     and: 'Update put'
       httpResult = doPut("/erm/sas/${agg_id}", httpResult, [expand: 'items'])
-      println("LOGDEBUG FUTURE HTTP AFTER PUT: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}")
 
       resourceMap = fetchResourcesForAgreement()
-      println("LOGDEBUG FUTURE RESOURCE MAP: ${JsonOutput.prettyPrint(JsonOutput.toJson(resourceMap))}")
-
 
     then: 'Agreement saved and pci in future block'
       assert httpResult?.id == agg_id
