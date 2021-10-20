@@ -44,6 +44,10 @@ if ( controllerName != 'usageDataProvider' ) {
   should_expand << 'usageDataProviders'
 }
 
+if ( controllerName != 'entitlement' ) {
+  should_expand << 'items'
+}
+
 def altNames = subscriptionAgreement.alternateNames?.toSorted { AlternateName a, AlternateName b -> a.name <=> b.name } ?: []
 
 json g.render(subscriptionAgreement, [expand: should_expand, excludes:['alternateNames']]) {
