@@ -6,23 +6,26 @@ import org.olf.erm.Entitlement
 
 @Field Entitlement entitlement
 
+def should_render_default_coverage = false
+
 if (entitlement.type == 'external') {
   json tmpl."externalEntitlement"(entitlement)
 } else {
   final def should_expand = ['poLines', 'resource', 'tags' ]
-  final def should_exclude = []
+  final def should_exclude = ['coverage']
   if ( controllerName != 'subscriptionAgreement' ) {
     should_expand << 'owner'
+    should_render_default_coverage = true
   }
   
   json g.render(entitlement, [expand: should_expand, excludes: should_exclude]) {
-        
+    
     if (entitlement.coverage) {
-      
+    
       'coverage' g.render (entitlement.coverage)
       'customCoverage' true
-       
-    } else if (entitlement?.resource?.coverage) {
+      
+    } else if (entitlement?.resource?.coverage && should_render_default_coverage) {
       'coverage' g.render (entitlement?.resource?.coverage)
       'customCoverage' false
       
