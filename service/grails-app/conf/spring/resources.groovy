@@ -6,6 +6,6 @@ beans = {
     Behaviour pre-Lotus: IdFirstTIRSImpl
     Behaviour post-Lotus: TitleFirstTIRSImpl
   */
-  //titleInstanceResolverService(IdFirstTIRSImpl)
-  titleInstanceResolverService(TitleFirstTIRSImpl)
+  titleInstanceResolverService(IdFirstTIRSImpl)
+  //titleInstanceResolverService(TitleFirstTIRSImpl)
 }
