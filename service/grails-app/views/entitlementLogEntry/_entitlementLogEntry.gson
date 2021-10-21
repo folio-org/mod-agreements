@@ -7,6 +7,10 @@ import com.k_int.okapi.remote_resources.RemoteOkapiLinkListener
 import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 import java.util.concurrent.Future
 
+import groovy.json.JsonSlurper;
+
+def jsonSlurper = new JsonSlurper()
+
 final String licenseProperty = "remoteId${RemoteOkapiLinkListener.FETCHED_PROPERTY_SUFFIX}"
 
 @Field
@@ -15,7 +19,10 @@ entitlementLogEntry = GrailsHibernateUtil.unwrapIfProxy(entitlementLogEntry) as 
 ErmResource res = GrailsHibernateUtil.unwrapIfProxy(entitlementLogEntry.res) as ErmResource
 def resource_type = null
 
+def default_coverage_summary = []
 def coverage_summary = []
+def custom_coverage = false
+
 def resource_identifiers = []
 def resource_title = null;
 def license_details = null;
@@ -26,14 +33,32 @@ def the_suppress_value = false;
 // Get license details
 RemoteLicenseLink controlling_license = null;
 
+Entitlement entitlement = null;
+
+
+
 // Any differing logic between direct/package entitlement
 if ( entitlementLogEntry.packageEntitlement != null ) {
-  controlling_license = entitlementLogEntry.packageEntitlement.owner.getControllingLicense()
-  the_suppress_value = entitlementLogEntry.packageEntitlement?.suppressFromDiscovery ?: false
+  entitlement = entitlementLogEntry.packageEntitlement
 }
 else if ( entitlementLogEntry.directEntitlement != null ) {
-  controlling_license = entitlementLogEntry.directEntitlement.owner.getControllingLicense()
-  the_suppress_value = entitlementLogEntry.directEntitlement?.suppressFromDiscovery ?: false
+  entitlement = entitlementLogEntry.directEntitlement
+}
+
+controlling_license = entitlement?.owner.getControllingLicense()
+the_suppress_value = entitlement?.suppressFromDiscovery ?: false
+// TODO this logic is repeated in the entitlement view. Perhaps should be refactored out
+if (entitlement?.coverage) {
+  coverage_summary =  g.render (entitlement.coverage)
+  custom_coverage =  true
+  
+} else if (entitlement?.resource?.coverage) {
+  coverage_summary =  g.render (entitlement.resource.coverage)
+  custom_coverage = false
+  
+} else {
+  coverage_summary = []
+  custom_coverage = false
 }
 
 // Try to load the license details
@@ -62,7 +87,7 @@ if ( res instanceof PackageContentItem ) {
   pti_url = pci.pti.url;
 
   pci.coverage.each { it ->
-    coverage_summary.add( 
+    default_coverage_summary.add( 
     [ 
       'startDate': it.startDate,
       'endDate': it.endDate,
@@ -90,15 +115,17 @@ if ( res instanceof PackageContentItem ) {
  * linkedLicenses.remoteObject.type.value
  */
 json {
-          'seqid' entitlementLogEntry.seqid
-  'resource_name' res.name
-          'title' resource_title
-       'coverage' coverage_summary
-    'identifiers' resource_identifiers
-       'suppress' the_suppress_value
-           'type' resource_type
-        'license' license_details
-      'licenseId' controlling_license?.remoteId
-      'eventType' entitlementLogEntry.eventType
-            'url' pti_url
+              'seqid' entitlementLogEntry.seqid
+      'resource_name' res.name
+              'title' resource_title
+  'defaultCoverage' default_coverage_summary
+          'coverage' coverage_summary
+    'customCoverage' custom_coverage
+        'identifiers' resource_identifiers
+          'suppress' the_suppress_value
+              'type' resource_type
+            'license' license_details
+          'licenseId' controlling_license?.remoteId
+          'eventType' entitlementLogEntry.eventType
+                'url' pti_url
 }
