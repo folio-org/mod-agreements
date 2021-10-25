@@ -29,6 +29,10 @@ import groovy.util.logging.Slf4j
 @Integration
 @Stepwise
 class AgreementLifecycleSpec extends BaseSpec {
+  Map expectedBeanResult = [
+    (TITLE_TIRS): 140,
+    (ID_TIRS): 137
+  ]
 
   def importService
   
@@ -350,9 +354,8 @@ class AgreementLifecycleSpec extends BaseSpec {
         ]
       ])
 
-
     then: 'we check that the expected number of log events are returned'
-      resp.totalRecords == 137
+      resp.totalRecords == expectedBeanResult[injectedTIRS()]
       log.debug("Got response ${resp}");
   }
 }

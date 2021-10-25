@@ -1,5 +1,7 @@
 package org.olf
 
+import org.olf.dataimport.internal.TitleInstanceResolverService
+
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.kb.TitleInstance
 
@@ -15,8 +17,8 @@ import spock.lang.*
 @Stepwise
 class TitleServiceSpec extends BaseSpec {
 
-  TitleInstanceResolverService titleInstanceResolverService
-  
+  // titleInstanceResolverService is injected in baseSpec now
+
   @Shared PackageContentImpl content
   
   void 'Bind to content' () {
@@ -80,7 +82,6 @@ class TitleServiceSpec extends BaseSpec {
 
     when: 'Resolve the same title again'
       def title_instance = null
-      def num_identifiers = 0
       def num_titles = 0
       final String tenantid = currentTenant.toLowerCase()
 
@@ -89,7 +90,6 @@ class TitleServiceSpec extends BaseSpec {
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
         title_instance = titleInstanceResolverService.resolve(content, true)
         assert title_instance != null
-        num_identifiers = title_instance.identifiers.size()
         def matching_titles = TitleInstance.findAllByName('Brain of the firm')
         num_titles = matching_titles.size()
 

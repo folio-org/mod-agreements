@@ -12,6 +12,8 @@ import grails.util.GrailsNameUtils
 import grails.web.databinding.DataBinder
 import groovy.util.logging.Slf4j
 
+import org.olf.dataimport.internal.TitleInstanceResolverService
+
 /**
  * This service works at the module level, it's often called without a tenant context.
  */

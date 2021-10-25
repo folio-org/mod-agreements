@@ -1,7 +1,6 @@
 package org.olf
 
 import java.time.LocalDate
-import groovy.json.JsonOutput
 
 import grails.testing.mixin.integration.Integration
 import spock.lang.*

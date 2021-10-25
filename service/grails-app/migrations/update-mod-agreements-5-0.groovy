@@ -26,4 +26,28 @@ databaseChangeLog = {
     addPrimaryKey(columnNames: "id", constraintName: "title_ingest_jobPK", tableName: "title_ingest_job")
   }
 
+  changeSet(author: "efreestone (manual)", id: "20210922-1534-001") {
+    addColumn (tableName: "erm_resource" ) {
+      column(name: "res_normalized_name", type: "VARCHAR(255)")
+    }
+  }
+
+  changeSet(author: "efreestone (manual)", id: "20210922-1534-002") {
+    // Need to normalise name for each existing erm_resource
+    grailsChange {
+      change {
+        sql.eachRow("SELECT id, res_name FROM ${database.defaultSchemaName}.erm_resource".toString()) { def row ->
+            sql.execute(
+              """
+                UPDATE ${database.defaultSchemaName}.erm_resource SET res_normalized_name = :normName WHERE id = :id;
+              """.toString(),
+              [
+                'normName': org.olf.general.StringUtils.normaliseWhitespaceAndCase(row.res_name),
+                'id': row.id
+              ]
+            )
+        }
+      }
+    }
+  }
 }

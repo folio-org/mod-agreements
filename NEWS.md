@@ -1,6 +1,33 @@
-## 5.0.0 (In Progress)
+## 5.1.0 (In progress)
+ * ERM-1903 On editing an agreement with an agreement line for a PCI, "custom coverage" incorrectly populated
+ * ERM-1892 Error on attempting to view comparison job report
+ * ERM-1891 Agreement Lines do not display in Agreement edit screen
+
+## 5.0.0 2021-10-04
+ * ERM-1848 Support duplicating supplementary docs and supplementary properties separately on duplicating an agreement
+ * ERM-1847 Failure to resolve a title should lead to skipping title
+ * ERM-1819 Add PTI URL to entitlement log entries
+ * ERM-1816 Error on tagging an agreement line which references an external (eHoldings) resource
+ * ERM-1801 Implement Title Ingest process
+ * ERM-1781 Error on adding coverage to PCI which overlaps with existing coverage on PTI/TI
+ * ERM-1777 Templated URL not updating on deletion of Proxy
+ * ERM-1774 Regularly remove organizations that do not have any links to Agreements/Packages
+ * ERM-1766 Change restriction on GOKb harvest `editStatus` value
+ * ERM-1765 triggerEntitlementLogUpdate fails after deletion of agreement line
+ * ERM-1755 If a KBART file fails to load, the job outcome should be "failure"
+ * ERM-1754 PCI accessStart and accessEnd dates should be ignored when PCI added as individual resource to agreement
+ * ERM-1753 Migration to new Org / Org role structure leads to duplicate notes
+ * ERM-1747 Bump versions across ERM apps follow Organization management changes
+ * ERM-1739 Remove duplicate stanzas from application.yml
+ * ERM-1723 Use label rather than name when sorting custom properties in agreements
+ * ERM-1649 Strictly enforce ISSN and ISBN vs eISSN/pISSN and eISBN/pISBN
+ * ERM-1645 The package resourceCount incorrectly includes PCIs with a removedTimestamp
  * ERM-1542 Make organization roles for agreements editable in tenant settings
  * ERM-1540 Support for multiple roles per organisation in Agreements
+ * ERM-1459 Support a log of resources that have been added/removed from a library collection
+ * ERM-1231 Add date created/last updated metadata to Agreements
+ * ERM-1001 Separate permissions for file download in Licenses/Agreements
+ * ERM-506 KB Local Admin | Export import logs as JSON
 
 ## 4.1.0 2021-06-15
  * ERM-1730 Add renewalPriority to agreement widget definition
