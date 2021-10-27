@@ -29,7 +29,6 @@ switch (resource) {
     via_package = tuple[1]
     ent = GrailsHibernateUtil.unwrapIfProxy(via_package ? tuple[1] : tuple[2]) as Entitlement
     ti = pci.pti.titleInstance
-    rti = ti.relatedTitles
     the_platform = pci.pti.platform
     the_url = pci.pti.url
     the_templated_urls = pci.pti.templatedUrls
@@ -43,7 +42,6 @@ switch (resource) {
     PlatformTitleInstance pti = resource as PlatformTitleInstance
     ent = GrailsHibernateUtil.unwrapIfProxy(tuple[2]) as Entitlement
     ti = pti.titleInstance
-    rti = ti.relatedTitles
     the_platform = pti.platform
     the_url = pti.url
     the_templated_urls = pti.templatedUrls
@@ -52,7 +50,6 @@ switch (resource) {
     
   case { it instanceof TitleInstance}:
     ti = resource as TitleInstance
-    rti = ti.relatedTitles
   
     // These resources can only be directly associated.
     via_package = false
@@ -60,6 +57,7 @@ switch (resource) {
     break
 }
 
+rti = ti.relatedTitles
  
 Map customCoverageMap = request?.getAttribute("${controllerName}.${actionName}.customCoverage") as Map 
 
