@@ -45,7 +45,7 @@ else if ( entitlementLogEntry.directEntitlement != null ) {
   entitlement = entitlementLogEntry.directEntitlement
 }
 
-controlling_license = entitlement?.owner.getControllingLicense()
+controlling_license = entitlement?.owner?.getControllingLicense()
 the_suppress_value = entitlement?.suppressFromDiscovery ?: false
 // TODO this logic is repeated in the entitlement view. Perhaps should be refactored out
 if (entitlement?.coverage) {
