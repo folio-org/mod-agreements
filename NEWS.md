@@ -1,4 +1,7 @@
 ## 5.1.0 (In progress)
+ * ERM-1903 On editing an agreement with an agreement line for a PCI, "custom coverage" incorrectly populated
+ * ERM-1892 Error on attempting to view comparison job report
+ * ERM-1891 Agreement Lines do not display in Agreement edit screen
 
 ## 5.0.0 2021-10-04
  * ERM-1848 Support duplicating supplementary docs and supplementary properties separately on duplicating an agreement
@@ -21,6 +24,7 @@
  * ERM-1645 The package resourceCount incorrectly includes PCIs with a removedTimestamp
  * ERM-1542 Make organization roles for agreements editable in tenant settings
  * ERM-1540 Support for multiple roles per organisation in Agreements
+ * ERM-1459 Support a log of resources that have been added/removed from a library collection
  * ERM-1231 Add date created/last updated metadata to Agreements
  * ERM-1001 Separate permissions for file download in Licenses/Agreements
  * ERM-506 KB Local Admin | Export import logs as JSON

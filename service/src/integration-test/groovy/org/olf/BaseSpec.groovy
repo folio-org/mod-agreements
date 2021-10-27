@@ -2,6 +2,7 @@ package org.olf
 
 import com.k_int.okapi.OkapiHeaders
 import com.k_int.web.toolkit.testing.HttpSpec
+import org.olf.dataimport.internal.TitleInstanceResolverService
 
 import groovyx.net.http.HttpException
 import spock.lang.Stepwise
@@ -60,5 +61,16 @@ abstract class BaseSpec extends HttpSpec {
       conditions.eventually {
         (list = doGet('/erm/refdata')).size() > 0
       }
+  }
+
+  private static String baseTIRSPath = "org.olf.dataimport.internal.titleInstanceResolvers"
+  static String TITLE_TIRS = "${baseTIRSPath}.TitleFirstTIRSImpl"
+  static String ID_TIRS = "${baseTIRSPath}.IdFirstTIRSImpl"
+
+  // TIRS gets injected as a spring bean, this can help figure out which is being used
+  // Used to work out which TIRS we're using
+  TitleInstanceResolverService titleInstanceResolverService
+  def injectedTIRS() {
+    titleInstanceResolverService?.class?.name
   }
 }

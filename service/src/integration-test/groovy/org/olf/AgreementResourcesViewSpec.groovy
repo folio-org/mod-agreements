@@ -266,7 +266,6 @@ class AgreementResourcesViewSpec extends BaseSpec {
 
     and: 'Update put'
       httpResult = doPut("/erm/sas/${agg_id}", httpResult, [expand: 'items'])
-
       resourceMap = fetchResourcesForAgreement()
 
     then: 'Agreement saved and pci in future block'
