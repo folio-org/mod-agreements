@@ -96,11 +96,9 @@ public class EntitlementLogService {
   '''
 
   /*
-   * Find all the active entitlements that have "significantly" changed since the last time.
-   * (what 'significantly' means tbd in greater detail)
-   * Find all resources which have a corresponding 'add' entry but not a corresponding 'remove' entry
-   * In addition, query the entitlement's contentUpdated date, as well as the entitlement's lastUpdated date,
-   * to see if it has been updated since the last cursor.
+   * Find all the entitlementLogEntries of type "ADD" where no "REMOVE" event exists,
+   * and where the entitlement or its resource has been "significantly" changed since the last run
+   * ("significantly" to be defined as we go on, to begin with suppressFromDiscovery or coverage)
    */
   private static final String UPDATED_ENTITLEMENTS_QUERY = '''
     SELECT ele
@@ -216,7 +214,6 @@ public class EntitlementLogService {
 
       // UPDATED ENTITLEMENTS
       def updated_entitlements = EntitlementLogEntry.executeQuery(UPDATED_ENTITLEMENTS_QUERY, ['cursor': last_run], [readOnly: true])
-      log.debug("LOGDEBUG UPDATED ENTS: ${updated_entitlements}")
       updated_entitlements.each {
         String seq = String.format('%015d-%06d',start_time,seqno++)
         
