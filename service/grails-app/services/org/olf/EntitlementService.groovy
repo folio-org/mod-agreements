@@ -40,11 +40,7 @@ public class EntitlementService {
   public void handleErmResourceChange(ErmResource res) {
     Date now = new Date();
 
-    log.debug("LOGDEBUG handleErmResourceChange called with resource: ${res.name}")
-    log.debug("LOGDEBUG res id: ${res.id}")
-
     List<String> resourcesToQuery = ermResourceService.getFullResourceList(res)
-    log.debug("LOGDEBUG RESOURCES TO QUERY FOR RES: ${res.name}: ${resourcesToQuery}")
 
     List<Entitlement> entitlements = [];
 
@@ -56,16 +52,12 @@ public class EntitlementService {
         )
       }
 
-      log.debug("LOGDEBUG ENTITLEMENTS FOR RES: ${res.name}: ${entitlements}")
-
       entitlements.each {
-        log.debug("LOGDEBUG Updating contentUpdated on entitlement: ${it.id}")
         it.contentUpdated = now
         it.save(failOnError: true)
       }
     }
 
   }
-
 }
 
