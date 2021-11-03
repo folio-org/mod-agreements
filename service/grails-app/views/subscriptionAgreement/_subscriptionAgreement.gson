@@ -44,7 +44,7 @@ if ( controllerName != 'usageDataProvider' ) {
   should_expand << 'usageDataProviders'
 }
 
-if ( controllerName != 'entitlement' ) {
+if ( controllerName == 'subscriptionAgreement' ) {
   should_expand << 'items'
 }
 
