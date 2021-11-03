@@ -1,4 +1,4 @@
-## 5.0.3 2021-11-03
+## 5.0.4 2021-11-03
  * ERM-1914 Exception thrown on rendering the agreement / entitlement gson templates
 
 ## 5.0.1 2021-10-20
