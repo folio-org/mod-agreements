@@ -268,7 +268,10 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
         }
          * We have to know that eissn == issn etc... Use namespaceMapping function
          */
-        final List<Identifier> id_matches = Identifier.executeQuery('select id from Identifier as id where id.value = :value and id.ns.value = :ns',[value:id.value, ns:namespaceMapping(id.namespace)], [max:2])
+
+         // TODO we have the possibility for Kiwi that an existing TI is in place with namespace eissn, since cleanup is a complicated matter
+         // For the time being, allow matching BOTH of `eissn` to `issn` (As per the story), but also `issn` to `eissn` in our db
+        final List<Identifier> id_matches = Identifier.executeQuery('select id from Identifier as id where id.value = :value and (id.ns.value = :mns or id.ns.value = :ns)',[value:id.value, ns:id.namespace, mns:namespaceMapping(id.namespace)], [max:2])
 
         if (id_matches.size() > 1) {
           throw new RuntimeException("Multiple (${id_matches.size()}) class one matches found for identifier ${id.namespace}::${id.value}");
