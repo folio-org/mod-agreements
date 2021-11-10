@@ -1,3 +1,6 @@
+## 5.0.5 2021-11-10
+ * ERM-1917 Duplicate title instance created on package import in Kiwi bugfest
+
 ## 5.0.4 2021-11-03
  * ERM-1914 Exception thrown on rendering the agreement / entitlement gson templates
 
