@@ -1,3 +1,6 @@
+## 5.0.6 2021-11-12
+* ERM-1917 Duplicate title instance created on package import in Kiwi bugfest (incoming issn now maps to eissn in system)
+
 ## 5.0.5 2021-11-10
  * ERM-1917 Duplicate title instance created on package import in Kiwi bugfest
 
