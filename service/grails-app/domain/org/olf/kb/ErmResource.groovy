@@ -3,6 +3,7 @@ package org.olf.kb
 import org.olf.CoverageService
 import org.olf.erm.Entitlement
 import org.olf.general.TemplatedUrl
+import org.olf.general.StringUtils
 
 import com.k_int.web.toolkit.refdata.RefdataValue
 import com.k_int.web.toolkit.tags.Tag
@@ -16,6 +17,7 @@ import grails.gorm.MultiTenant
 public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource> {
  
   String name
+  String normalizedName
   String description
   
   RefdataValue type
@@ -43,6 +45,7 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
   static mapping = {
               tablePerHierarchy false
                    name column: 'res_name'
+         normalizedName column: 'res_normalized_name'
             description column: 'res_description', type:'text'
                    type column: 'res_type_fk'
         publicationType column: 'res_publication_type_fk'
@@ -57,6 +60,7 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
 
   static constraints = {
                    name (nullable:true, blank:false)
+         normalizedName (nullable:true, blank:false, bindable: false)
             description (nullable:true, blank:false)
                    type (nullable:true, blank:false)
         publicationType (nullable:true, blank:false)
@@ -75,6 +79,8 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
       ErmResource.withSession {
         CoverageService.changeListener(this)
       }
+
+      normalizedName = StringUtils.normaliseWhitespaceAndCase(name)
       validating = false
     }
   }

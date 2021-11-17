@@ -50,10 +50,10 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
   // what content is "Live" in an agreement. Content can be "Live" without being switched on, and 
   // vice versa. The dates indicate that we believe the agreement is in force for the items specified.
   // For Trials, these dates will indicate the dates of the trial, for live agreements the agreement item dates
-  LocalDate activeFrom
+  LocalDate activeFrom 
   LocalDate activeTo
 
-  LocalDate contentUpdated
+  Date contentUpdated
 
   // Type - must be set to external for externally defined packages, null or local for things defined in the local DB, or detached if added without resource, just description
   String type

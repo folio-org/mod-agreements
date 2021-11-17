@@ -43,6 +43,7 @@ where rkb.type is not null
   and rkb.rectype = :rectype
   and ( ( rkb.lastCheck is null ) OR ( ( :current_time - rkb.lastCheck ) > 1*60*60*1000 ) )
   and ( ( rkb.syncStatus is null ) OR ( rkb.syncStatus <> :inprocess ) )
+  and rkb.name <> :local
 '''
 
   @Subscriber('okapi:dataload:sample')
@@ -185,7 +186,8 @@ where rkb.type is not null
     RemoteKB.executeQuery(PENDING_JOBS_HQL,['true':true,
                                             'inprocess':'in-process',
                                             'rectype': RemoteKB.RECTYPE_PACKAGE,
-                                            'current_time':System.currentTimeMillis()],[lock:false]).each(remoteKBProcessing)
+                                            'current_time':System.currentTimeMillis(),
+                                            'local':'LOCAL'],[lock:false]).each(remoteKBProcessing)
 
     log.debug("KbHarvestService::triggerPackageCacheUpdate() completed")
   }
@@ -199,7 +201,8 @@ where rkb.type is not null
     RemoteKB.executeQuery(PENDING_JOBS_HQL,['true':true,
                                             'inprocess':'in-process',
                                             'rectype': RemoteKB.RECTYPE_TITLE,
-                                            'current_time':System.currentTimeMillis()],[lock:false]).each(remoteKBProcessing)
+                                            'current_time':System.currentTimeMillis(),
+                                            'local':'LOCAL'],[lock:false]).each(remoteKBProcessing)
 
     log.debug("KbHarvestService::triggerTitleCacheUpdate() completed")
   }
@@ -216,13 +219,15 @@ where rkb.type is not null
     RemoteKB.executeQuery(PENDING_JOBS_HQL,['true':true,
                                             'inprocess':'in-process',
                                             'rectype': RemoteKB.RECTYPE_TITLE,
-                                            'current_time':System.currentTimeMillis()],[lock:false]).each(remoteKBProcessing)
+                                            'current_time':System.currentTimeMillis(),
+                                            'local':'LOCAL'],[lock:false]).each(remoteKBProcessing)
     
     // Run through remote KBs of rectype PACKAGE second
     RemoteKB.executeQuery(PENDING_JOBS_HQL,['true':true,
                                             'inprocess':'in-process',
                                             'rectype': RemoteKB.RECTYPE_PACKAGE,
-                                            'current_time':System.currentTimeMillis()],[lock:false]).each(remoteKBProcessing)
+                                            'current_time':System.currentTimeMillis(),
+                                            'local':'LOCAL'],[lock:false]).each(remoteKBProcessing)
 
     log.debug("KbHarvestService::triggerCacheUpdate() completed")
   }
