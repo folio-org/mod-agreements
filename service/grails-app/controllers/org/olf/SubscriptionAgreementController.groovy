@@ -382,39 +382,47 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
       return
     }
   }
-  
+
+
   def droppedResources () {
     
     final String subscriptionAgreementId = params.get("subscriptionAgreementId")
     if (subscriptionAgreementId) {
-
       // Now
       final LocalDate today = LocalDate.now()
-        
       final def results = doTheLookup (ErmResource) {
-        createAlias 'entitlements', 'direct_ent', JoinType.LEFT_OUTER_JOIN
-        createAlias 'pkg', 'ind_pci_pkg', JoinType.LEFT_OUTER_JOIN
-        createAlias 'ind_pci_pkg.entitlements', 'pkg_ent', JoinType.LEFT_OUTER_JOIN
-          
         or {
-          and {
-            eq 'class', PlatformTitleInstance
-            eq 'direct_ent.owner.id', subscriptionAgreementId
-            lt 'direct_ent.activeTo', today
-          }
-          
-          and {
-            eq 'class', PackageContentItem
-            eq 'direct_ent.owner.id', subscriptionAgreementId
+          // Direct PTIs
+          'in' 'id', new DetachedCriteria(PlatformTitleInstance, 'pti_sub').build {
             
-            // Line or Resource in the past
-            or {
-              lt 'direct_ent.activeTo', today
+            entitlements {
+              eq 'owner.id', subscriptionAgreementId
+              lt 'activeTo', today
+            }
+              
+            projections {
+              property ('id')
             }
           }
           
-          and {
-            eq 'class', PackageContentItem
+          // Direct PCIs
+          'in' 'id', new DetachedCriteria(PackageContentItem, 'pci_direct_sub').build {
+            
+            entitlements { 
+              eq 'owner.id', subscriptionAgreementId
+              lt 'activeTo', today
+            }
+              
+            projections {
+              property ('id')
+            }
+          }
+          
+          // Pci linked via package.
+          'in' 'id', new DetachedCriteria(PackageContentItem,'pci_pkg_sub').build {
+            createAlias 'pkg', 'ind_pci_pkg', JoinType.LEFT_OUTER_JOIN
+            createAlias 'ind_pci_pkg.entitlements', 'pkg_ent', JoinType.LEFT_OUTER_JOIN
+            
             isNull 'removedTimestamp'
             eq 'pkg_ent.owner.id', subscriptionAgreementId
             
@@ -436,6 +444,10 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
               lt 'pkg_ent.activeTo', today
               lt 'accessEnd', today
             }
+
+            projections {
+              property ('id')
+            }
           }
         }
         
@@ -449,40 +461,46 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
       return
     }
   }
-  
-  def futureResources () {
+
+    def futureResources () {
     
     final String subscriptionAgreementId = params.get("subscriptionAgreementId")
     if (subscriptionAgreementId) {
-
       // Now
       final LocalDate today = LocalDate.now()
-        
       final def results = doTheLookup (ErmResource) {
-        
-        createAlias 'entitlements', 'direct_ent', JoinType.LEFT_OUTER_JOIN
-        createAlias 'pkg', 'ind_pci_pkg', JoinType.LEFT_OUTER_JOIN
-        createAlias 'ind_pci_pkg.entitlements', 'pkg_ent', JoinType.LEFT_OUTER_JOIN
-        
         or {
-          and {
-            eq 'class', PlatformTitleInstance
-            eq 'direct_ent.owner.id', subscriptionAgreementId
-            gt 'direct_ent.activeFrom', today
-          }
-          
-          and {
-            eq 'class', PackageContentItem
-            eq 'direct_ent.owner.id', subscriptionAgreementId
+          // Direct PTIs
+          'in' 'id', new DetachedCriteria(PlatformTitleInstance, 'pti_sub').build {
             
-            // Line or Resource in the future
-            or {
-              gt 'direct_ent.activeFrom', today
+            entitlements {
+              eq 'owner.id', subscriptionAgreementId
+              gt 'activeFrom', today
+            }
+              
+            projections {
+              property ('id')
             }
           }
           
-          and {
-            eq 'class', PackageContentItem
+          // Direct PCIs
+          'in' 'id', new DetachedCriteria(PackageContentItem, 'pci_direct_sub').build {
+            
+            entitlements { 
+              eq 'owner.id', subscriptionAgreementId
+              gt 'activeFrom', today
+            }
+              
+            projections {
+              property ('id')
+            }
+          }
+          
+          // Pci linked via package.
+          'in' 'id', new DetachedCriteria(PackageContentItem,'pci_pkg_sub').build {
+            createAlias 'pkg', 'ind_pci_pkg', JoinType.LEFT_OUTER_JOIN
+            createAlias 'ind_pci_pkg.entitlements', 'pkg_ent', JoinType.LEFT_OUTER_JOIN
+            
             isNull 'removedTimestamp'
             eq 'pkg_ent.owner.id', subscriptionAgreementId
             
@@ -492,7 +510,6 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
               isNull 'pkg_ent.activeTo'
               ltProperty 'accessStart', 'pkg_ent.activeTo'
             }
-            
             // Valid access end
             or {
               isNull 'accessEnd'
@@ -505,6 +522,10 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
               gt 'pkg_ent.activeFrom', today
               gt 'accessStart', today
             }
+
+            projections {
+              property ('id')
+            }
           }
         }
         
@@ -518,7 +539,6 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
       return
     }
   }
-  
   
   private static final Map<String, List<String>> CLONE_GROUPING = [
     'agreementInfo': ['name', 'description', 'renewalPriority' , 'isPerpetual'],
