@@ -3,6 +3,8 @@ version: "2.1"
 volumes:
   lsp_pgdata:
     driver: local
+  minio_data:
+    driver: local
 
 services:
   postgres:
