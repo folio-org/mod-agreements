@@ -116,7 +116,9 @@ if ( res instanceof PackageContentItem ) {
  */
 json {
                               'seqid' entitlementLogEntry.seqid
+                     'entitlement_id' entitlement.id
                       'resource_name' res.name
+                        'resource_id' res.id
   'activeEntitlementCountForResource' entitlementLogEntry.activeEntitlementCountForResource
                               'title' resource_title
                     'defaultCoverage' default_coverage_summary
