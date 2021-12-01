@@ -155,8 +155,12 @@ public class EntitlementLogService {
    '''
 
   def triggerUpdate() {
+    log.debug("EntitlementLogService::triggerUpdate()");
+
     long start_time = System.currentTimeMillis();
     long seqno = 0;
+    final LocalDate today = LocalDate.now()
+
 
     // Set up/read cursor values
     AppSetting entitlement_log_update_cursor
@@ -178,9 +182,6 @@ public class EntitlementLogService {
     }
 
     EntitlementLogEntry.withNewTransaction {
-      log.debug("EntitlementLogService::triggerUpdate()");
-      final LocalDate today = LocalDate.now()
-
       // NEW ENTITLEMENTS
       //def new_entitlements = EntitlementLogEntry.executeQuery(NEW_ENTITLEMENTS_QUERY, ['today': today], [readOnly: true])
 
@@ -200,7 +201,7 @@ public class EntitlementLogService {
                                         packageEntitlement:null,
                                         directEntitlement:it[1],
                                         eventType:'ADD'
-                                      ).save(flush:true, failOnError:true);
+                                      ).save(failOnError:true);
       }
 
       new_pkg_entitlements.each {
@@ -215,9 +216,10 @@ public class EntitlementLogService {
                                         packageEntitlement:it[1],
                                         directEntitlement:null,
                                         eventType:'ADD'
-                                      ).save(flush:true, failOnError:true);
+                                      ).save(failOnError:true);
       }
-
+    }
+    EntitlementLogEntry.withNewTransaction {
       // TERMINATED ENTITLEMENTS
       def terminated_entitlements = EntitlementLogEntry.executeQuery(TERMINATED_ENTITLEMENTS_QUERY, ['today': today], [readOnly: true])
       terminated_entitlements.each {
@@ -241,10 +243,11 @@ public class EntitlementLogService {
             // packageEntitlement:it.packageEntitlement,
             // directEntitlement:it.directEntitlement,
             eventType:'REMOVE'
-          ).save(flush:true, failOnError:true);
+          ).save(failOnError:true);
         }
       }
-
+    }
+    EntitlementLogEntry.withNewTransaction {
       // UPDATED ENTITLEMENTS
       def updated_entitlements = EntitlementLogEntry.executeQuery(UPDATED_ENTITLEMENTS_QUERY, ['cursor': last_run], [readOnly: true])
       updated_entitlements.each {
@@ -259,7 +262,7 @@ public class EntitlementLogService {
           packageEntitlement:it.packageEntitlement,
           directEntitlement:it.directEntitlement,
           eventType:'UPDATE'
-        ).save(flush:true, failOnError:true);
+        ).save(failOnError:true);
 
       }
     }
