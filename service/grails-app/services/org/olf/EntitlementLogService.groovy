@@ -24,8 +24,10 @@ import com.k_int.web.toolkit.settings.AppSetting
 public class EntitlementLogService {
   // This HQL is based firmly on the query in ExportService. Changes there need to be reviewed and may
   // need to be applied here. This should be refactored into a single static repo of queries.
-  private static final String NEW_ENTITLEMENTS_QUERY = '''
-      SELECT res, pkg_ent, direct_ent
+
+  // Splitting these up so that we can get distinct rows for direct and package entitlements
+  private static final String NEW_DIRECT_ENTITLEMENTS_QUERY = '''
+      SELECT res, direct_ent
         FROM ErmResource as res
           LEFT JOIN res.entitlements as direct_ent
             ON (
@@ -39,8 +41,22 @@ public class EntitlementLogService {
                   res.class != Pkg
                 )
             )
-          LEFT JOIN res.pkg as pkg
+        WHERE (
+          (direct_ent IS NOT NULL)
+        ) AND (
+          NOT EXISTS (
+            SELECT ele FROM EntitlementLogEntry as ele 
+              WHERE ele.res = res
+                AND ( ( ( ele.directEntitlement is null ) AND ( direct_ent is null ) ) OR ele.directEntitlement=direct_ent )
+                AND ele.endDate is null ) 
+        )
+       
+   '''
 
+   private static final String NEW_PKG_ENTITLEMENTS_QUERY = '''
+      SELECT res, pkg_ent
+        FROM ErmResource as res
+          LEFT JOIN res.pkg as pkg
             ON (res.class = PackageContentItem
               AND (
                   (res.accessEnd IS NULL OR res.accessEnd >= :today)
@@ -53,20 +69,16 @@ public class EntitlementLogService {
                 (pkg_ent.activeTo IS NULL OR pkg_ent.activeTo >= :today)
                   AND
                    (pkg_ent.activeFrom IS NULL OR pkg_ent.activeFrom  <= :today)
-                  AND
-                    (pkg_ent.owner IS NOT NULL)
+                  AND pkg_ent.owner IS NOT NULL
               )
         WHERE (
-          (direct_ent IS NOT NULL)
-            OR
           (pkg_ent IS NOT NULL)
         ) AND (
-          NOT EXISTS ( SELECT ele 
-                         FROM EntitlementLogEntry as ele 
-                        WHERE ele.res = res 
-                          AND ( ( ( ele.directEntitlement is null ) AND ( direct_ent is null ) ) OR ele.directEntitlement=direct_ent )
-                          AND ( ( ( ele.packageEntitlement is null ) AND ( pkg_ent is null ) ) OR ele.packageEntitlement=pkg_ent )
-                          AND ele.endDate is null ) 
+          NOT EXISTS (
+            SELECT ele FROM EntitlementLogEntry as ele 
+              WHERE ele.res = res
+                AND ( ( ( ele.packageEntitlement is null ) AND ( pkg_ent is null ) ) OR ele.packageEntitlement=pkg_ent )
+                AND ele.endDate is null ) 
         )
        
    '''
@@ -75,24 +87,25 @@ public class EntitlementLogService {
    * Find all the current live resources that do not have a corresponding entitlement.
    * Do this by joining to the package or direct entitlement and looking for the resource
    */
+
   private static final String TERMINATED_ENTITLEMENTS_QUERY = '''
     SELECT ele.id, ele.startDate, ele.res, ele.eventType
       FROM EntitlementLogEntry as ele 
      WHERE ele.endDate is null
-        AND NOT EXISTS ( SELECT ent
-                            FROM Entitlement as ent
-                              JOIN ent.resource as package_resource
-                                JOIN package_resource.contentItems as package_content_item
-                          WHERE ele.packageEntitlement = ent
-                            AND ent.resource.class = Pkg
-                            AND package_content_item = ele.res
-                            AND ( ent.activeTo IS NULL OR ent.activeTo >= :today ) 
-                            AND ( ent.activeFrom IS NULL OR ent.activeFrom  <= :today ) )
-        AND NOT EXISTS ( SELECT ent
-                          FROM Entitlement as ent
-                         WHERE ele.directEntitlement = ent 
-                           AND ( ent.activeTo IS NULL OR ent.activeTo >= :today ) 
-                           AND ( ent.activeFrom IS NULL OR ent.activeFrom  <= :today ) )
+        AND NOT EXISTS (
+          SELECT ent FROM Entitlement as ent
+            JOIN ent.resource as package_resource
+            JOIN package_resource.contentItems as package_content_item
+            WHERE ele.packageEntitlement = ent
+              AND ent.resource.class = Pkg
+              AND package_content_item = ele.res
+              AND ( ent.activeTo IS NULL OR ent.activeTo >= :today ) 
+              AND ( ent.activeFrom IS NULL OR ent.activeFrom  <= :today ) )
+        AND NOT EXISTS (
+          SELECT ent FROM Entitlement as ent
+            WHERE ele.directEntitlement = ent 
+              AND ( ent.activeTo IS NULL OR ent.activeTo >= :today ) 
+              AND ( ent.activeFrom IS NULL OR ent.activeFrom  <= :today ) )
   '''
 
   /*
@@ -142,8 +155,12 @@ public class EntitlementLogService {
    '''
 
   def triggerUpdate() {
+    log.debug("EntitlementLogService::triggerUpdate()");
+
     long start_time = System.currentTimeMillis();
     long seqno = 0;
+    final LocalDate today = LocalDate.now()
+
 
     // Set up/read cursor values
     AppSetting entitlement_log_update_cursor
@@ -165,14 +182,31 @@ public class EntitlementLogService {
     }
 
     EntitlementLogEntry.withNewTransaction {
-      log.debug("EntitlementLogService::triggerUpdate()");
-      final LocalDate today = LocalDate.now()
-
       // NEW ENTITLEMENTS
-      def new_entitlements = EntitlementLogEntry.executeQuery(NEW_ENTITLEMENTS_QUERY, ['today': today], [readOnly: true])
-      new_entitlements.each {
+      //def new_entitlements = EntitlementLogEntry.executeQuery(NEW_ENTITLEMENTS_QUERY, ['today': today], [readOnly: true])
+
+      // In Hibernate 6 we'll have access to UNION and could do this in one query
+      def new_direct_entitlements = EntitlementLogEntry.executeQuery(NEW_DIRECT_ENTITLEMENTS_QUERY, ['today': today], [readOnly: true])
+      def new_pkg_entitlements = EntitlementLogEntry.executeQuery(NEW_PKG_ENTITLEMENTS_QUERY, ['today': today], [readOnly: true])
+
+      new_direct_entitlements.each {
         String seq = String.format('%015d-%06d',start_time,seqno++)
-        log.debug("  -> add entitlement for ${start_time} ${seq} ${it[0].id} pkg:${it[1]?.id} direct:${it[2]?.id}");
+        log.debug("  -> add entitlement for ${start_time} ${seq} ${it[0].id} pkg:${null} direct:${it[1]?.id}");
+        
+        EntitlementLogEntry ele = new EntitlementLogEntry(
+                                        seqid: seq,
+                                        startDate:today,
+                                        endDate:null,
+                                        res:it[0],
+                                        packageEntitlement:null,
+                                        directEntitlement:it[1],
+                                        eventType:'ADD'
+                                      ).save(failOnError:true);
+      }
+
+      new_pkg_entitlements.each {
+        String seq = String.format('%015d-%06d',start_time,seqno++)
+        log.debug("  -> add entitlement for ${start_time} ${seq} ${it[0].id} pkg:${it[1]?.id} direct:${null}");
         
         EntitlementLogEntry ele = new EntitlementLogEntry(
                                         seqid: seq,
@@ -180,11 +214,12 @@ public class EntitlementLogService {
                                         endDate:null,
                                         res:it[0],
                                         packageEntitlement:it[1],
-                                        directEntitlement:it[2],
+                                        directEntitlement:null,
                                         eventType:'ADD'
-                                      ).save(flush:true, failOnError:true);
+                                      ).save(failOnError:true);
       }
-
+    }
+    EntitlementLogEntry.withNewTransaction {
       // TERMINATED ENTITLEMENTS
       def terminated_entitlements = EntitlementLogEntry.executeQuery(TERMINATED_ENTITLEMENTS_QUERY, ['today': today], [readOnly: true])
       terminated_entitlements.each {
@@ -208,10 +243,11 @@ public class EntitlementLogService {
             // packageEntitlement:it.packageEntitlement,
             // directEntitlement:it.directEntitlement,
             eventType:'REMOVE'
-          ).save(flush:true, failOnError:true);
+          ).save(failOnError:true);
         }
       }
-
+    }
+    EntitlementLogEntry.withNewTransaction {
       // UPDATED ENTITLEMENTS
       def updated_entitlements = EntitlementLogEntry.executeQuery(UPDATED_ENTITLEMENTS_QUERY, ['cursor': last_run], [readOnly: true])
       updated_entitlements.each {
@@ -226,7 +262,7 @@ public class EntitlementLogService {
           packageEntitlement:it.packageEntitlement,
           directEntitlement:it.directEntitlement,
           eventType:'UPDATE'
-        ).save(flush:true, failOnError:true);
+        ).save(failOnError:true);
 
       }
     }

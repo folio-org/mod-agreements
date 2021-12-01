@@ -1,10 +1,14 @@
 package org.olf.erm
 
+import javax.persistence.Transient
+
 import java.time.LocalDate
 import grails.compiler.GrailsCompileStatic
 import grails.gorm.MultiTenant
 import groovy.util.logging.Slf4j
 import org.olf.kb.ErmResource
+import org.olf.kb.PackageContentItem
+
 
 @Slf4j
 @GrailsCompileStatic
@@ -39,6 +43,53 @@ class EntitlementLogEntry implements MultiTenant<EntitlementLogEntry>  {
         directEntitlement(nullable:true)
        packageEntitlement(nullable:true)
                 eventType(nullable:true)
+  }
+
+  @Transient
+  public String getActiveEntitlementCountForResource() {
+    final LocalDate today = LocalDate.now()
+
+    PackageContentItem resAsPci = PackageContentItem.findById(res.id);
+
+    List<Integer> direct_count = Entitlement.executeQuery(
+      """
+        SELECT COUNT(ent) FROM Entitlement ent
+        WHERE ent.resource.id = :resId
+          AND (ent.activeTo IS NULL OR ent.activeTo >= :today)
+          AND (ent.activeFrom IS NULL OR ent.activeFrom <= :today)
+          AND (ent.owner IS NOT NULL)
+          AND ent.resource.class != Pkg
+      """.toString(),
+      [
+        'resId': res.id,
+        'today': today
+      ], [readOnly: true]
+    )
+
+    List<Integer> package_count = [0]
+    if (resAsPci != null) {
+      package_count = Entitlement.executeQuery(
+        """
+          SELECT COUNT(ent) FROM Entitlement ent
+          WHERE
+            ent.resource.id = :resPkgId
+            AND (
+              (ent.resource.accessEnd IS NULL OR ent.resource.accessEnd >= :today)
+              AND
+              (ent.resource.accessStart IS NULL OR ent.resource.accessStart <= :today)
+            )
+            AND (ent.activeTo IS NULL OR ent.activeTo >= :today)
+            AND (ent.activeFrom IS NULL OR ent.activeFrom <= :today)
+            AND (ent.owner IS NOT NULL)
+        """.toString(),
+        [
+          'resPkgId': resAsPci.pkg.id,
+          'today': today
+        ], [readOnly: true]
+      )
+    }
+
+    return direct_count[0] + package_count[0];
   }
   
 }
