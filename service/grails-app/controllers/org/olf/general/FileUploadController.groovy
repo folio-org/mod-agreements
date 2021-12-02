@@ -12,6 +12,10 @@ import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
 
+// This shouldn't be necessary - but just checking that hibernate is seeing the .class files
+import com.k_int.web.toolkit.files.S3FileObject
+import com.k_int.web.toolkit.files.LOBFileObject
+
 
 @Slf4j
 @CurrentTenant
@@ -25,30 +29,36 @@ class FileUploadController extends OkapiTenantAwareController<FileUpload> {
 
   @Transactional
   def uploadFile() {
-    if(handleReadOnly()) {
-      return
-    }
-    
-    MultipartFile f = request.getFile('upload')
-    
-    FileUpload fileUpload = fileUploadService.save(f)
-    if (fileUpload.hasErrors()) {
-        transactionStatus.setRollbackOnly()
-        respond fileUpload.errors, view:'create' // STATUS CODE 422
+     
+    LOBFileObject.withTransaction {
+      if(handleReadOnly()) {
         return
+      }
+    
+      MultipartFile f = request.getFile('upload')
+    
+      FileUpload fileUpload = fileUploadService.save(f)
+      if (fileUpload.hasErrors()) {
+          transactionStatus.setRollbackOnly()
+          respond fileUpload.errors, view:'create' // STATUS CODE 422
+          return
+      }
+
+      respond fileUpload, [status: CREATED]
     }
 
-    respond fileUpload, [status: CREATED]
   }
   
   @Transactional(readOnly=true)
   def downloadFile() {
-    FileUpload fileUpload = FileUpload.read(params.fileUploadId)
+    S3FileObject.withTransaction {
+      FileUpload fileUpload = FileUpload.read(params.fileUploadId)
 
-    // Do the right thing depending upon the fileObject type - currently S3 or LOB
-    InputStream is = fileUploadService.getInputStreamFor(fileUpload.fileObject);
+      // Do the right thing depending upon the fileObject type - currently S3 or LOB
+      InputStream is = fileUploadService.getInputStreamFor(fileUpload.fileObject);
     
-    // render file: fileUpload.fileObject.fileContents.binaryStream, contentType: fileUpload.fileContentType
-    render file: is, contentType: fileUpload.fileContentType
+      // render file: fileUpload.fileObject.fileContents.binaryStream, contentType: fileUpload.fileContentType
+      render file: is, contentType: fileUpload.fileContentType
+    }
   }
 }
