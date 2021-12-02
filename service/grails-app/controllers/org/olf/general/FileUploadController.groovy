@@ -12,11 +12,6 @@ import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
 
-// This shouldn't be necessary - but just checking that hibernate is seeing the .class files
-import com.k_int.web.toolkit.files.S3FileObject
-import com.k_int.web.toolkit.files.LOBFileObject
-
-
 @Slf4j
 @CurrentTenant
 class FileUploadController extends OkapiTenantAwareController<FileUpload> {
@@ -30,7 +25,7 @@ class FileUploadController extends OkapiTenantAwareController<FileUpload> {
   @Transactional
   def uploadFile() {
      
-    LOBFileObject.withTransaction {
+    FileUpload.withTransaction {
       if(handleReadOnly()) {
         return
       }
@@ -51,7 +46,7 @@ class FileUploadController extends OkapiTenantAwareController<FileUpload> {
   
   @Transactional(readOnly=true)
   def downloadFile() {
-    S3FileObject.withTransaction {
+    FileUpload.withTransaction {
       FileUpload fileUpload = FileUpload.read(params.fileUploadId)
 
       // Do the right thing depending upon the fileObject type - currently S3 or LOB
