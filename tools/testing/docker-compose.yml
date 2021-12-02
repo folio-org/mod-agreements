@@ -3,6 +3,8 @@ version: "2.1"
 volumes:
   lsp_pgdata:
     driver: local
+  minio_data:
+    driver: local
 
 services:
   postgres:
@@ -52,3 +54,48 @@ services:
       - ./zk-single-kafka-single/kafka1/data:/var/lib/kafka/data
     depends_on:
       - zoo1
+
+  minio:
+    container_name: minio
+    hostname: minio
+    image:  docker.io/bitnami/minio:2021
+    environment:
+      - MINIO_ROOT_USER=DEVDEVDEV001
+      - MINIO_ROOT_PASSWORD=DEVDEVDEV001
+      - MINIO_DEFAULT_BUCKETS=my-first-bucket,my-second-bucket
+      - MINIO_CONFIG_DIR=/minio_config
+    volumes:
+      - minio_data:/data
+      - ./minio_config:/minio_config
+    ports:
+      - 9000:9000
+      - 9001:9001
+
+  setup:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      echo sleeping;
+      sleep 20;
+      echo This command adds an alias to the mc config file so we can refer to the server as minio;
+      /usr/bin/mc config host add minio http://minio:9000 DEVDEVDEV001 DEVDEVDEV001;
+      /usr/bin/mc admin policy add minio/ diku-readwrite /minio_config/diku-readwrite-policy.json;
+      /usr/bin/mc admin user add minio DIKU_AGG_ACCESS_KEY DIKU_AGG_SECRET_KEY;
+      /usr/bin/mc admin policy set minio diku-readwrite user=DIKU_AGG_ACCESS_KEY;
+      /usr/bin/mc mb minio/diku-shared;
+      /usr/bin/mc mb minio/diku-mod-agreements;
+      echo List policies known;
+      /usr/bin/mc admin policy list minio/;
+      echo List users using json
+      /usr/bin/mc admin user list --json minio/;
+      # /usr/bin/mc rm -r --force tn-diku/somebucketname;
+      # /usr/bin/mc mb tn-diku/somebucketname;
+      # /usr/bin/mc policy download tn-diku/somebucketname;
+      # /usr/bin/mc admin config export
+      # echo Minio user creation: https://docs.min.io/docs/minio-multi-user-quickstart-guide.html
+      # echo https://github.com/minio/minio/issues/6811 - policy example
+      exit 0;
+      "
+
