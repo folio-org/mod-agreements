@@ -215,6 +215,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       def editStatus = record?.metadata?.gokb?.package?.editStatus?.text()
       def listStatus = record?.metadata?.gokb?.package?.listStatus?.text()
       def packageStatus = record?.metadata?.gokb?.package?.status?.text()
+      def package_shortcode = record?.metadata?.gokb?.package?.shortcode?.text()
 
       log.debug("Processing OAI record :: ${result.count} ${record_identifier} ${package_name}")
 
@@ -222,7 +223,11 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         // ToDo: Decide what to do about deleted records
       }
       else {
-        if (editStatus.toLowerCase() == 'rejected') {
+        if (!package_name) {
+          log.info("Ignoring Package '${record_identifier}' because package_name is missing")
+        } else if (!package_shortcode) {
+          log.info("Ignoring Package '${record_identifier}' because package_shortcode is missing")
+        } else if (editStatus.toLowerCase() == 'rejected') {
           log.info("Ignoring Package '${package_name}' because editStatus=='${editStatus}'")
         } else if (listStatus.toLowerCase() != 'checked') {
           log.info("Ignoring Package '${package_name}' because listStatus=='${listStatus}' (required: 'checked')")

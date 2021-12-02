@@ -167,7 +167,10 @@ public class CoverageService {
           } else {
             // Not valid coverage statement
             cs.errors.allErrors.each { ObjectError error ->
-              log.error (messageSource.getMessage(error, LocaleContextHolder.locale))
+             // ERM-1932 coverage startDate nullable errors should not make it in the user's error log
+             if (!(error.getArguments()[0] == 'startDate' && error.getCode() == 'nullable')) {
+               log.error (messageSource.getMessage(error, LocaleContextHolder.locale))
+             }
             }
           }
         }
