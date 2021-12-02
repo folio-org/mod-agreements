@@ -1,7 +1,8 @@
 
-psql -U folio_admin -h localhost okapi_modules
+psql -U postgres -h localhost olftest
 
-set search_path to diku_mod_agreements, public;
+set search_path to agreementlifecyclespec_mod_agreements, public;
+
 
 # Dump schema only
 pg_dump --schema-only -U folio_admin -h localhost -n diku_mod_agreements okapi_modules

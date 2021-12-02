@@ -61,13 +61,13 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     GPathResult xml
     while ( found_records ) {
 
-      log.debug("** GET ${packagesUrl} ${query_params}")
+      log.info("OAI/HTTP GET url=${packagesUrl} params=${query_params}")
 
       // Built in parser for XML returns GPathResult
       xml = (GPathResult) getSync(packagesUrl, query_params) {
 
         response.failure { FromServer fromServer ->
-          log.debug "Request failed with status ${fromServer.statusCode}"
+          log.error "HTTP/OAI Request failed with status ${fromServer.statusCode}"
           found_records = false
         }
       }
@@ -141,7 +141,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       xml = (GPathResult) getSync(titlesUrl, query_params) {
 
         response.failure { FromServer fromServer ->
-          log.debug "Request failed with status ${fromServer.statusCode}"
+          log.error "Request failed with status ${fromServer.statusCode}"
           found_records = false
         }
       }
