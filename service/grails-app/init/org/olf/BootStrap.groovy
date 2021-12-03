@@ -3,6 +3,9 @@ package org.olf
 import com.k_int.okapi.OkapiTenantAdminService
 import org.olf.general.jobs.JobRunnerService
 
+import com.k_int.web.toolkit.files.S3FileObject;
+import com.k_int.web.toolkit.files.LOBFileObject;
+
 class BootStrap {
 
   def grailsApplication

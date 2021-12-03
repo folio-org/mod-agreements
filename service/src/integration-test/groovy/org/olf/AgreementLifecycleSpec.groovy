@@ -367,23 +367,26 @@ class AgreementLifecycleSpec extends BaseSpec {
 
   void "test file upload"() {
 
-    FileUpload fu = null;
-
+    boolean ok = false;
     when: 'We upload a file'
       final String tenantid = currentTenant.toLowerCase()
       log.debug("Create new package with tenant ${tenantid}");
 
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+        FileUpload fu = null;
+
         FileUpload.withTransaction { status ->
           MultipartFile mf = new MockMultipartFile("foo-lob.txt", "foo-lob.txt", "text/plain", "Hello World - LOB version".getBytes())
           fu = fileUploadService.save(mf);
           log.debug("Saved LOB test file as ${fu.fileName}");
+          if ( fu != null )
+            ok = true;
         }
       }
 
 
     then: 'File uploaded'
-      fu != null
+      ok==true
   }
 
 }
