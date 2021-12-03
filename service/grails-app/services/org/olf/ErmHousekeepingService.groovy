@@ -46,12 +46,12 @@ public class ErmHousekeepingService {
           log.debug("Check app settings for file storage are in place");
 
           // Bootstrap refdata - controlled vocabulary of storage engines
-          RefdataValue.lookupOrCreate('FileStorageEngines', 'LOB');
+          RefdataValue.lookupOrCreate('FileStorageEngines', 'DB');
           RefdataValue.lookupOrCreate('FileStorageEngines', 'S3');
  
           // Bootstrap any app settings we may need
           [
-            [ 'fileStorage', 'storageEngine', 'String', 'FileStorageEngines', 'LOB' ],
+            [ 'fileStorage', 'storageEngine', 'String', 'FileStorageEngines', 'DB' ],
             [ 'fileStorage', 'S3Endpoint',    'String', null,                 'http://s3_endpoint_host.domain:9000' ],
             [ 'fileStorage', 'S3AccessKey',   'String', null,                 'ACCESS_KEY' ],
             [ 'fileStorage', 'S3SecretKey',   'String', null,                 'SECRET_KEY' ],

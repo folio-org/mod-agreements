@@ -75,6 +75,8 @@ services:
     image: minio/mc
     depends_on:
       - minio
+    volumes:
+      - ./minio_config:/minio_config
     entrypoint: >
       /bin/sh -c "
       echo sleeping;
@@ -88,7 +90,7 @@ services:
       /usr/bin/mc mb minio/diku-mod-agreements;
       echo List policies known;
       /usr/bin/mc admin policy list minio/;
-      echo List users using json
+      echo List users using json;
       /usr/bin/mc admin user list --json minio/;
       # /usr/bin/mc rm -r --force tn-diku/somebucketname;
       # /usr/bin/mc mb tn-diku/somebucketname;

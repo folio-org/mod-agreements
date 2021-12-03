@@ -23,6 +23,11 @@ import java.time.LocalDate
 import spock.lang.Stepwise
 import spock.lang.Unroll
 
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile
+import com.k_int.web.toolkit.files.FileUpload;
+
+
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -35,6 +40,7 @@ class AgreementLifecycleSpec extends BaseSpec {
   ]
 
   def importService
+  def fileUploadService
   
   void "Load Packages" (test_package_file) {
 
@@ -358,5 +364,30 @@ class AgreementLifecycleSpec extends BaseSpec {
       resp.totalRecords == expectedBeanResult[injectedTIRS()]
       log.debug("Got response ${resp}");
   }
+
+  void "test file upload"() {
+
+    boolean ok = false;
+    when: 'We upload a file'
+      final String tenantid = currentTenant.toLowerCase()
+      log.debug("Create new package with tenant ${tenantid}");
+
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+        FileUpload fu = null;
+
+        FileUpload.withTransaction { status ->
+          MultipartFile mf = new MockMultipartFile("foo-lob.txt", "foo-lob.txt", "text/plain", "Hello World - LOB version".getBytes())
+          fu = fileUploadService.save(mf);
+          log.debug("Saved LOB test file as ${fu.fileName}");
+          if ( fu != null )
+            ok = true;
+        }
+      }
+
+
+    then: 'File uploaded'
+      ok==true
+  }
+
 }
 
