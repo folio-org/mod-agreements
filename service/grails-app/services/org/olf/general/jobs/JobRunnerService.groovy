@@ -28,6 +28,8 @@ import grails.events.annotation.Subscriber
 import grails.gorm.multitenancy.Tenants
 import groovy.util.logging.Slf4j
 
+import com.k_int.web.toolkit.files.FileUploadService
+
 @Slf4j
 class JobRunnerService implements EventPublisher {
   
@@ -40,6 +42,11 @@ class JobRunnerService implements EventPublisher {
   ImportService importService
   ComparisonService comparisonService
   SessionFactory sessionFactory
+
+  // Access to the inputStream of FileObjects is now via this service instead of directly
+  // to the LOB attached to the FileObject. Inject this here so it is available to the work
+  // closure in ./grails-app/domain/org/olf/general/jobs/KbartImportJob.groovy and ./grails-app/domain/org/olf/general/jobs/PackageImportJob.groovy
+  FileUploadService fileUploadService
   
   final int CONCURRENT_JOBS_GLOBAL = 2 // We need to be careful to not completely tie up all our resource
   final int CONCURRENT_JOBS_TENANT = 1

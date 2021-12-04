@@ -18,7 +18,8 @@ class PackageImportJob extends PersistentJob implements MultiTenant<PackageImpor
         // in a future session and we need to reread the event in.
         final PersistentJob job = PersistentJob.read(eventId)
         if (job.fileUpload) {
-          importService.importFromFile(js.parse( job.fileUpload.fileObject.fileContents.binaryStream ))
+          // importService.importFromFile(js.parse( job.fileUpload.fileObject.fileContents.binaryStream ))
+          importService.importFromFile(js.parse( fileUploadService.getInputStreamFor(job.fileUpload.fileObject) ))
         } else {
           log.error "No file attached to the Job."
         }
