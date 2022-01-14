@@ -181,7 +181,7 @@
         {
           "name":"orgs.role",
           "label": "Organization role",
-          "filterPath":"orgs.role.value",
+          "filterPath":"orgs.roles.role.label",
           "valueType": "String",
           "comparators": ["==", "!="]
         }
