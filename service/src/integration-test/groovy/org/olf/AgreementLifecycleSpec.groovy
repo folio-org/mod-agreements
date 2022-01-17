@@ -192,6 +192,7 @@ class AgreementLifecycleSpec extends BaseSpec {
       
     then: "Agreement found and ID matches returned one from before"
       resp.size() == 1
+      log.debug("Looked up agreement ${resp[0]}");
       resp[0].id == agreementId
       
     when:"We ask the titles controller to list the titles we can access"

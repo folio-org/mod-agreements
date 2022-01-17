@@ -65,7 +65,13 @@ grails:
     defaultScope: singleton
   converters:
     encoding: UTF-8
-
+    gson:
+      domain:
+        include:
+          version: true
+    domain:
+      include:
+        version: true
 ---
 #### Place _ALL_ app specifics here. Makes it easier to migrate. ####
 
