@@ -26,4 +26,24 @@ databaseChangeLog = {
       }
     }
   }
+
+  changeSet(author: "efreestone (manual)", id: "20210118-1432-001") {
+    createTable(tableName: "match_key") {
+      column(name: "mk_id", type: "VARCHAR(36)") {
+        constraints(nullable: "false")
+      }
+
+      column(name: "mk_version", type: "BIGINT") {
+        constraints(nullable: "false")
+      }
+
+      column(name: "mk_key", type: "VARCHAR(255)") {
+        constraints(nullable: "false")
+      }
+
+      column(name: "mk_value", type: "VARCHAR(255)") {
+        constraints(nullable: "false")
+      }
+    }
+  }
 }
