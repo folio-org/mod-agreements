@@ -17,10 +17,6 @@ import groovy.util.logging.Slf4j
 import org.olf.dataimport.internal.TitleInstanceResolverService
 import org.olf.kb.MatchKey
 
-// TODO ERM-1799 this likely isn't needed
-import groovy.json.JsonOutput
-
-
 /**
  * This service works at the module level, it's often called without a tenant context.
  */
@@ -100,7 +96,6 @@ class TitleIngestService implements DataBinder {
     result
   }
 
-  //TODO ERM-1799 centralise the ContentItemSchema -> match key process to this service?
   // This returns a List<Map> which can then be used to set up matchKeys on an ErmResource
   public List<Map> collectMatchKeyInformation(ContentItemSchema pc) {
     // InstanceMedium Electronic vs Print lets us switch between instanceIdentifiers and siblingInstanceIdentifiers

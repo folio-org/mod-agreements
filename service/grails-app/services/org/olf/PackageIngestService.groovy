@@ -150,7 +150,7 @@ class PackageIngestService implements DataBinder {
             // titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
             if ( titleIngestResult.titleInstanceId != null ) {
 
-              // TODO ERM-1799 TI has been created, harvest matchKey information at this point to apply to any PTI/PCIs
+              // ERM-1799 TI has been created, harvest matchKey information at this point to apply to any PTI/PCIs
               List<Map> matchKeys = titleIngestService.collectMatchKeyInformation(pc)
 
               TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
