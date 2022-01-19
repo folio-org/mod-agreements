@@ -11,12 +11,14 @@ public class MatchKey implements MultiTenant<MatchKey> {
   String id
   String key
   String value
+  ErmResource resource
 
   static mapping = {
-                   id column:'mk_id', generator: 'uuid2', length:36
-              version column:'mk_version'
-                  key column:'mk_key'
-                value column:'mk_value'
+           id column: 'mk_id', generator: 'uuid2', length:36
+      version column: 'mk_version'
+          key column: 'mk_key'
+        value column: 'mk_value'
+     resource column: 'mk_resource_fk'
   }
 
   static constraints = {

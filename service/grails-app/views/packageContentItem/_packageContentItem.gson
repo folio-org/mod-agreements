@@ -5,7 +5,9 @@ import groovy.transform.*
 @Field
 PackageContentItem packageContentItem
 
-json g.render(packageContentItem, [expand: ['pkg', 'pti', 'coverage', 'embargo', 'tags']]) {
+def should_expand = ['pkg', 'pti', 'coverage', 'embargo', 'tags', 'matchKeys']
+
+json g.render(packageContentItem, [expand: should_expand]) {
   longName packageContentItem.longName
   'class' PackageContentItem.name
 }

@@ -27,7 +27,7 @@ databaseChangeLog = {
     }
   }
 
-  changeSet(author: "efreestone (manual)", id: "20210118-1432-001") {
+  changeSet(author: "efreestone (manual)", id: "20220118-1432-001") {
     createTable(tableName: "match_key") {
       column(name: "mk_id", type: "VARCHAR(36)") {
         constraints(nullable: "false")
@@ -44,6 +44,20 @@ databaseChangeLog = {
       column(name: "mk_value", type: "VARCHAR(255)") {
         constraints(nullable: "false")
       }
+
+      column(name: "mk_resource_fk", type: "VARCHAR(36)")
     }
+  }
+
+  changeSet(author: "efreestone (manual)", id: "20220119-1108-001") {
+    addForeignKeyConstraint(
+      baseColumnNames: "mk_resource_fk",
+      baseTableName: "match_key",
+      constraintName: "match_key_erm_resourceFK",
+      deferrable: "false",
+      initiallyDeferred: "false",
+      referencedColumnNames: "id",
+      referencedTableName: "erm_resource"
+    )
   }
 }
