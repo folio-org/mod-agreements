@@ -2,6 +2,7 @@ import groovy.transform.Field
 import org.olf.kb.MatchKey
 
 @Field
-MatchKey matchkey
+MatchKey matchKey
 
-json g.render(matchkey, [include: ['key', 'value']])
+json g.render(matchKey, [includes: ['key', 'value']]) {
+}
