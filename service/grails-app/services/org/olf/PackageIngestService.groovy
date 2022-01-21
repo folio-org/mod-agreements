@@ -33,6 +33,7 @@ class PackageIngestService implements DataBinder {
 
   TitleIngestService titleIngestService
   CoverageService coverageService
+  MatchKeyService matchKeyService
 
   // dependentModuleProxyService is a service which hides the fact that we might be dependent upon other
   // services for our reference data. In this class - vendors are erm Org entries, but in folio these are
@@ -151,7 +152,7 @@ class PackageIngestService implements DataBinder {
             if ( titleIngestResult.titleInstanceId != null ) {
 
               // ERM-1799 TI has been created, harvest matchKey information at this point to apply to any PTI/PCIs
-              List<Map> matchKeys = titleIngestService.collectMatchKeyInformation(pc)
+              List<Map> matchKeys = matchKeyService.collectMatchKeyInformation(pc)
 
               TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
               // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
