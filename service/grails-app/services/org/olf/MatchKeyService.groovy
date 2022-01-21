@@ -30,37 +30,49 @@ class MatchKeyService {
       value: pc.title
     ])
 
-    log.debug("ContentItemSchema type: ${pc.class.name}")
-
    /* ERM-1799 not sure about this. PackageContentImpl contains a dateMonographPublishedPrint,
     * but org.olf.dataimport.erm.TitleInstance does not.
     * This means that Ingest can use dateMonographPublishedPrint, and Import using ERMSchema cannot.
     * (Import using InternalSchema will work fine, as will KBART import)
     * We can attempt to switch on the particular 
     */
-
-  
-
-    if (pc.instanceMedium?.toLowerCase() == 'electronic') {
-      // The instance identifiers are the electronic versions
-      matchKeys.addAll(parseMatchKeyIdentifiers(pc.instanceIdentifiers, pc.siblingInstanceIdentifiers))
-
+    if (pc.class.name == 'org.olf.dataimport.erm.ContentItem') { // internal import does not contain dateMonographPublishedPrint
+      // Attempt to use the instanceMedium combined with the dateMonographPublished to split them
+      if (pc.instanceMedium?.toLowerCase() == 'electronic' && pc.dateMonographPublished) {
+        matchKeys.add([
+          key: 'date_electronic_published',
+          value: pc.dateMonographPublished
+        ])
+      } else if (pc.instanceMedium?.toLowerCase() != 'electronic' && pc.dateMonographPublished) {
+        matchKeys.add([
+          key: 'date_print_published',
+          value: pc.dateMonographPublished
+        ])
+      }
+    } else {
+      // In this case we should have potentially dateMonographPublished AND dateMonographPublishedPrint
       if (pc.dateMonographPublished) {
         matchKeys.add([
           key: 'date_electronic_published',
           value: pc.dateMonographPublished
         ])
       }
+
+      if (pc.dateMonographPublishedPrint) {
+        matchKeys.add([
+          key: 'date_print_published',
+          value: pc.dateMonographPublishedPrint
+        ])
+      }
+    }
+
+    // Deal with identifiers and sibling identifiers
+    if (pc.instanceMedium?.toLowerCase() == 'electronic') {
+      // The instance identifiers are the electronic versions
+      matchKeys.addAll(parseMatchKeyIdentifiers(pc.instanceIdentifiers, pc.siblingInstanceIdentifiers))
     } else {
       // the sibling instance identifiers can be treated as the electronic versions
       matchKeys.addAll(parseMatchKeyIdentifiers(pc.siblingInstanceIdentifiers, pc.instanceIdentifiers))
-
-      if (pc.dateMonographPublished) {
-        matchKeys.add([
-          key: 'date_print_published',
-          value: pc.dateMonographPublished
-        ])
-      }
     }
 
     if (pc.firstAuthor) {
