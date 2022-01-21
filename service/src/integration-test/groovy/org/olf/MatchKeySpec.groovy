@@ -82,11 +82,11 @@ class MatchKeySpec extends BaseSpec {
       assert ptiMatchKeys.find { mk -> mk.key == 'print_issn' }?.value == printIssn
 
     where:
-    name | electronicIssn | printIssn
-    "Iran and the Caucasus" | "1573-384x" | "1609-8498"
-    "Abgadiyat" | "2213-8609" | "1687-8280"
-    "Indo-Iranian Journal" | "1572-8536" | "0019-7246"
-    "Journal of the Economic and Social History of the Orient" | "1568-5209" | "0022-4995"
+    name                                                       | electronicIssn | printIssn
+    "Iran and the Caucasus"                                    | "1573-384x"    | "1609-8498"
+    "Abgadiyat"                                                | "2213-8609"    | "1687-8280"
+    "Indo-Iranian Journal"                                     | "1572-8536"    | "0019-7246"
+    "Journal of the Economic and Social History of the Orient" | "1568-5209"    | "0022-4995"
   }
 
 
@@ -145,26 +145,23 @@ class MatchKeySpec extends BaseSpec {
 
 
     where:
-    name | electronicIssn | printIssn | doi
-    "American Journal of Orthopsychiatry" | "1939-0025" | "0002-9432" | "10.1111/(ISSN)1939-0025"
-    "European Journal of Psychological Assessment" | "2151-2426" | "1015-5759" | null
-    "Emotion" | "1931-1516" | "1528-3542" | null
-    "Dreaming" | "1573-3351" | "1053-0797" | null
+    name                                           | electronicIssn | printIssn   | doi
+    "American Journal of Orthopsychiatry"          | "1939-0025"    | "0002-9432" | "10.1111/(ISSN)1939-0025"
+    "European Journal of Psychological Assessment" | "2151-2426"    | "1015-5759" | null
+    "Emotion"                                      | "1931-1516"    | "1528-3542" | null
+    "Dreaming"                                     | "1573-3351"    | "1053-0797" | null
   }
 
-  def 'Import a kbart package' (final String package_name) {
+  def 'Import kbart packages' (final String package_name, final String fileName) {
     when: 'File loaded'
       Map packageInfo = [
         packageName: package_name,
-        packageSource: 'a test source',
-        packageReference: 'a test reference',
-        packageProvider: 'a package provider',
+        packageSource: package_name,
+        packageReference: package_name,
+        packageProvider: package_name,
         trustedSourceTI: true
       ]
   
-      // This is only separate for quick switching
-      String fileName = "Springer_Global_J.B._Metzler_Humanities_eBooks_2021_2021-05-01.tsv"
-
       BOMInputStream bis = new BOMInputStream(new FileInputStream(new File("src/integration-test/resources/packages/${fileName}")));
       Reader fr = new InputStreamReader(bis);
       CSVParser parser = new CSVParserBuilder().withSeparator('\t' as char)
@@ -191,13 +188,17 @@ class MatchKeySpec extends BaseSpec {
       assert resp?.getAt(0)?.name == package_name
 
     where:
-      package_name << ["Test package"]
+      package_name     | fileName
+      "Test package 1" | "Springer_Global_J.B._Metzler_Humanities_eBooks_2021_2021-05-01.tsv"
+      "Test package 2" | "CanadianSciencePublishing_Global_AllTitles_2020-10-21-1603278035587.tsv"
   }
 
  def 'Check MatchKeys are established as expected for each PCI and PTI' (
     final String name,
     final String electronicIsbn,
     final String printIsbn,
+    final String electronicIssn,
+    final String printIssn,
     final String author,
     final String editor,
     final String dateElectronicPublished,
@@ -210,13 +211,15 @@ class MatchKeySpec extends BaseSpec {
       ArrayList httpResult = doGet("/erm/pci?match=name&term=${URLEncoder.encode(name, "UTF-8")}")
       ArrayList matchKeys = httpResult[0].matchKeys
       ArrayList ptiMatchKeys = httpResult[0].pti.matchKeys
-    
+
     then:
       assert httpResult[0].id != null
       // PCI matchkeys
       assert matchKeys.find { mk -> mk.key == 'title_string' }?.value == name
       assert matchKeys.find { mk -> mk.key == 'electronic_isbn' }?.value == electronicIsbn
       assert matchKeys.find { mk -> mk.key == 'print_isbn' }?.value == printIsbn
+      assert matchKeys.find { mk -> mk.key == 'electronic_issn' }?.value == electronicIssn
+      assert matchKeys.find { mk -> mk.key == 'print_issn' }?.value == printIssn
       assert matchKeys.find { mk -> mk.key == 'author' }?.value == author
       assert matchKeys.find { mk -> mk.key == 'editor' }?.value == editor
       assert matchKeys.find { mk -> mk.key == 'date_electronic_published' }?.value == dateElectronicPublished
@@ -224,11 +227,12 @@ class MatchKeySpec extends BaseSpec {
       assert matchKeys.find { mk -> mk.key == 'edition' }?.value == edition
       assert matchKeys.find { mk -> mk.key == 'monograph_volume' }?.value == monographVolume
 
-
       // PTI matchKeys ( should be the same)
       assert ptiMatchKeys.find { mk -> mk.key == 'title_string' }?.value == name
       assert ptiMatchKeys.find { mk -> mk.key == 'electronic_isbn' }?.value == electronicIsbn
       assert ptiMatchKeys.find { mk -> mk.key == 'print_isbn' }?.value == printIsbn
+      assert ptiMatchKeys.find { mk -> mk.key == 'electronic_issn' }?.value == electronicIssn
+      assert ptiMatchKeys.find { mk -> mk.key == 'print_issn' }?.value == printIssn
       assert ptiMatchKeys.find { mk -> mk.key == 'author' }?.value == author
       assert ptiMatchKeys.find { mk -> mk.key == 'editor' }?.value == editor
       assert ptiMatchKeys.find { mk -> mk.key == 'date_electronic_published' }?.value == dateElectronicPublished
@@ -237,10 +241,14 @@ class MatchKeySpec extends BaseSpec {
       assert ptiMatchKeys.find { mk -> mk.key == 'monograph_volume' }?.value == monographVolume
 
     where:
-    name | electronicIsbn | printIsbn | author | editor | dateElectronicPublished | datePrintPublished | edition | monographVolume
-    "Die Alice-Maschine" | "978-3-476-05707-5" | "978-3-476-05706-8" | "Lötscher" | null | "2020" | "2020" | "1" | "6"
-    "Alexander von Humboldt: Geographie der Pflanzen" | "978-3-476-04965-0" | "978-3-476-04964-3" | null | "Päßler" | "2020" | "2020" | "1" | "1"
-    "Europa im Umbruch" | "978-3-476-05730-3" | "978-3-476-05729-7" | null | "Raß" | "2020" | "2020" | "1" | null
-
+    name                                                              | electronicIsbn      | printIsbn           | electronicIssn | printIssn   | author      | editor   | dateElectronicPublished | datePrintPublished | edition | monographVolume
+    "Science, Agriculture and Food Security"                          | "978-0-9877172-8-3" | "978-0-660-16210-2" | null           | null        | "Hulse"     | null     | "2011-11-04"            | "1996-01-01"       | null    | null
+    "Canadian Journal of Community Mental Health"                     | null                | null                | null           | "0713-3936" | null        | null     | null                    | null               | null    | null 
+    "STEM Fellowship Journal"                                         | null                | null                | "2369-0399"    | null        | null        | null     | null                    | null               | null    | null
+    "Molecular Symmetry and Spectroscopy, 2nd Ed."                    | "978-0-660-18464-7" | "978-0-660-19628-2" | null           | null        | "Bunker"    | null     | "2011-11-30"            | "2006-01-01"       | null    | null
+    "Amua-gaig-e: The ethnobotany of the Amungme of Papua, Indonesia" | "978-1-927346-22-8" | "978-1-927346-21-1" | null           | null        | "Cook"      | null     | "2016-05-06"            | "2016-01-01"       | null    | null
+    "Die Alice-Maschine"                                              | "978-3-476-05707-5" | "978-3-476-05706-8" | null           | null        | "Lötscher"  | null     | "2020"                  | "2020"             | "1"     | "6"
+    "Alexander von Humboldt: Geographie der Pflanzen"                 | "978-3-476-04965-0" | "978-3-476-04964-3" | null           | null        | null        | "Päßler" | "2020"                  | "2020"             | "1"     | "1"
+    "Europa im Umbruch"                                               | "978-3-476-05730-3" | "978-3-476-05729-7" | null           | null        | null        | "Raß"    | "2020"                  | "2020"             | "1"     | null
   }
 }
