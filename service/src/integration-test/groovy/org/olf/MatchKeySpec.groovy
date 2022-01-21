@@ -72,14 +72,14 @@ class MatchKeySpec extends BaseSpec {
     then:
       assert httpResult[0].id != null
       // PCI matchkeys
-      assert matchKeys.find { mk -> mk.key == 'title_string' }.value == name
-      assert matchKeys.find { mk -> mk.key == 'electronic_issn' }.value == electronicIssn
-      assert matchKeys.find { mk -> mk.key == 'print_issn' }.value == printIssn
+      assert matchKeys.find { mk -> mk.key == 'title_string' }?.value == name
+      assert matchKeys.find { mk -> mk.key == 'electronic_issn' }?.value == electronicIssn
+      assert matchKeys.find { mk -> mk.key == 'print_issn' }?.value == printIssn
 
       // PTI matchKeys ( should be the same)
-      assert ptiMatchKeys.find { mk -> mk.key == 'title_string' }.value == name
-      assert ptiMatchKeys.find { mk -> mk.key == 'electronic_issn' }.value == electronicIssn
-      assert ptiMatchKeys.find { mk -> mk.key == 'print_issn' }.value == printIssn
+      assert ptiMatchKeys.find { mk -> mk.key == 'title_string' }?.value == name
+      assert ptiMatchKeys.find { mk -> mk.key == 'electronic_issn' }?.value == electronicIssn
+      assert ptiMatchKeys.find { mk -> mk.key == 'print_issn' }?.value == printIssn
 
     where:
     name | electronicIssn | printIssn
@@ -131,16 +131,16 @@ class MatchKeySpec extends BaseSpec {
     then:
       assert httpResult[0].id != null
       // PCI matchkeys
-      assert matchKeys.find { mk -> mk.key == 'title_string' }.value == name
-      assert matchKeys.find { mk -> mk.key == 'electronic_issn' }.value == electronicIssn
-      assert matchKeys.find { mk -> mk.key == 'print_issn' }.value == printIssn
+      assert matchKeys.find { mk -> mk.key == 'title_string' }?.value == name
+      assert matchKeys.find { mk -> mk.key == 'electronic_issn' }?.value == electronicIssn
+      assert matchKeys.find { mk -> mk.key == 'print_issn' }?.value == printIssn
       assert matchKeys.find { mk -> mk.key == 'doi' }?.value == doi
 
 
       // PTI matchKeys ( should be the same)
-      assert ptiMatchKeys.find { mk -> mk.key == 'title_string' }.value == name
-      assert ptiMatchKeys.find { mk -> mk.key == 'electronic_issn' }.value == electronicIssn
-      assert ptiMatchKeys.find { mk -> mk.key == 'print_issn' }.value == printIssn
+      assert ptiMatchKeys.find { mk -> mk.key == 'title_string' }?.value == name
+      assert ptiMatchKeys.find { mk -> mk.key == 'electronic_issn' }?.value == electronicIssn
+      assert ptiMatchKeys.find { mk -> mk.key == 'print_issn' }?.value == printIssn
       assert ptiMatchKeys.find { mk -> mk.key == 'doi' }?.value == doi
 
 
@@ -208,45 +208,39 @@ class MatchKeySpec extends BaseSpec {
     when: "PCI for ${name} is fetched"
       
       ArrayList httpResult = doGet("/erm/pci?match=name&term=${URLEncoder.encode(name, "UTF-8")}")
-      log.debug(" LOGDEBUG PCI ${name}: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult[0]))}")
-      /* ArrayList httpResult = doGet("/erm/pci?filters=pkg.id=${pkg_id}")
-      log.debug("LOGDEBUG PCIS FOR PACKAGE: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}") */
-      
       ArrayList matchKeys = httpResult[0].matchKeys
-
       ArrayList ptiMatchKeys = httpResult[0].pti.matchKeys
     
     then:
       assert httpResult[0].id != null
       // PCI matchkeys
-      assert matchKeys.find { mk -> mk.key == 'title_string' }.value == name
-      assert matchKeys.find { mk -> mk.key == 'electronic_isbn' }.value == electronicIsbn
-      assert matchKeys.find { mk -> mk.key == 'print_isbn' }.value == printIsbn
-      assert matchKeys.find { mk -> mk.key == 'author' }.value == author
-      assert matchKeys.find { mk -> mk.key == 'editor' }.value == editor
-      assert matchKeys.find { mk -> mk.key == 'date_electronic_published' }.value == dateElectronicPublished
-      assert matchKeys.find { mk -> mk.key == 'date_print_published' }.value == datePrintPublished
-      assert matchKeys.find { mk -> mk.key == 'edition' }.value == edition
-      assert matchKeys.find { mk -> mk.key == 'monograph_volume' }.value == monographVolume
+      assert matchKeys.find { mk -> mk.key == 'title_string' }?.value == name
+      assert matchKeys.find { mk -> mk.key == 'electronic_isbn' }?.value == electronicIsbn
+      assert matchKeys.find { mk -> mk.key == 'print_isbn' }?.value == printIsbn
+      assert matchKeys.find { mk -> mk.key == 'author' }?.value == author
+      assert matchKeys.find { mk -> mk.key == 'editor' }?.value == editor
+      assert matchKeys.find { mk -> mk.key == 'date_electronic_published' }?.value == dateElectronicPublished
+      assert matchKeys.find { mk -> mk.key == 'date_print_published' }?.value == datePrintPublished
+      assert matchKeys.find { mk -> mk.key == 'edition' }?.value == edition
+      assert matchKeys.find { mk -> mk.key == 'monograph_volume' }?.value == monographVolume
 
 
       // PTI matchKeys ( should be the same)
-      assert ptiMatchKeys.find { mk -> mk.key == 'title_string' }.value == name
-      assert ptiMatchKeys.find { mk -> mk.key == 'electronic_isbn' }.value == electronicIsbn
-      assert ptiMatchKeys.find { mk -> mk.key == 'print_isbn' }.value == printIsbn
-      assert ptiMatchKeys.find { mk -> mk.key == 'author' }.value == author
-      assert ptiMatchKeys.find { mk -> mk.key == 'editor' }.value == editor
-      assert ptiMatchKeys.find { mk -> mk.key == 'date_electronic_published' }.value == dateElectronicPublished
-      assert ptiMatchKeys.find { mk -> mk.key == 'date_print_published' }.value == datePrintPublished
-      assert ptiMatchKeys.find { mk -> mk.key == 'edition' }.value == edition
-      assert ptiMatchKeys.find { mk -> mk.key == 'monograph_volume' }.value == monographVolume
-
+      assert ptiMatchKeys.find { mk -> mk.key == 'title_string' }?.value == name
+      assert ptiMatchKeys.find { mk -> mk.key == 'electronic_isbn' }?.value == electronicIsbn
+      assert ptiMatchKeys.find { mk -> mk.key == 'print_isbn' }?.value == printIsbn
+      assert ptiMatchKeys.find { mk -> mk.key == 'author' }?.value == author
+      assert ptiMatchKeys.find { mk -> mk.key == 'editor' }?.value == editor
+      assert ptiMatchKeys.find { mk -> mk.key == 'date_electronic_published' }?.value == dateElectronicPublished
+      assert ptiMatchKeys.find { mk -> mk.key == 'date_print_published' }?.value == datePrintPublished
+      assert ptiMatchKeys.find { mk -> mk.key == 'edition' }?.value == edition
+      assert ptiMatchKeys.find { mk -> mk.key == 'monograph_volume' }?.value == monographVolume
 
     where:
     name | electronicIsbn | printIsbn | author | editor | dateElectronicPublished | datePrintPublished | edition | monographVolume
-    "Die Alice-Maschine" | "978-3-476-05707-5" | "978-3-476-05706-8" | "L\u00f6tscher" | null | "2020" | "2020" | "1" | "6"
-    "Hermann Schweppenh\u00e4user: Kultur, Ausdruck und Bild" | "978-3-476-05719-8" | "978-3-476-05718-1" | null | "Friedrich" | "2020" | "2020" | "1" | null
-    "Europa im Umbruch" | "978-3-476-05730-3" | "978-3-476-05729-7" | null | "Ra\u00df" | "2020" | "2020" | "1" | null
+    "Die Alice-Maschine" | "978-3-476-05707-5" | "978-3-476-05706-8" | "Lötscher" | null | "2020" | "2020" | "1" | "6"
+    "Alexander von Humboldt: Geographie der Pflanzen" | "978-3-476-04965-0" | "978-3-476-04964-3" | null | "Päßler" | "2020" | "2020" | "1" | "1"
+    "Europa im Umbruch" | "978-3-476-05730-3" | "978-3-476-05729-7" | null | "Raß" | "2020" | "2020" | "1" | null
 
   }
 }
