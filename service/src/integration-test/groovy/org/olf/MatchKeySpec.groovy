@@ -2,7 +2,22 @@ package org.olf
 
 import java.time.LocalDate
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
+import org.apache.commons.io.input.BOMInputStream
+import org.springframework.web.multipart.MultipartFile
+
+import com.opencsv.ICSVParser
+import com.opencsv.CSVParser
+import com.opencsv.CSVParserBuilder
+import com.opencsv.CSVReader
+import com.opencsv.CSVReaderBuilder
+
 import java.net.URLEncoder
+
+import com.k_int.okapi.OkapiTenantResolver
+import grails.gorm.multitenancy.Tenants
+import org.olf.kb.Pkg
 
 import grails.testing.mixin.integration.Integration
 import spock.lang.*
@@ -17,173 +32,221 @@ class MatchKeySpec extends BaseSpec {
   @Shared
   int thisYear = LocalDate.now().year
 
-  def 'Ingest a test package' () {
+  // Importing from file mimics the behaviour of packageImportJob
+  // Importing fromKBART mimics the behaviour of kbartImportKob
+  def importService
+
+  def 'Import an erm schema test package' (final String package_name) {
+    when: 'File loaded'
+
+      def jsonSlurper = new JsonSlurper()
+      def package_data = jsonSlurper.parse(new File('src/integration-test/resources/packages/mod-agreement-package-import-sample.json'))
       
-    when: 'Testing package added'
-      doPost('/erm/packages/import') {
-        header {
-          dataSchema {
-            name "mod-agreements-package"
-            version 1.0
-          }
+      final String tenantid = currentTenant.toLowerCase()
+      log.debug("Create new package with tenant ${tenantid}");
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+        Pkg.withTransaction { status ->
+          importService.importFromFile( package_data )
         }
-        records ([
-          {
-            source "Folio Testing"
-            reference "access_start_access_end_examples"
-            name "access_start_access_end_tests Package"
-            packageProvider {
-              name "DIKU"
-            }
-            contentItems ([
-              {
-                depth "fulltext"
-                accessStart "${thisYear - 8}-01-01"
-                accessEnd "${thisYear - 1}-12-31"
-                coverage ([
-                  {
-                    startDate "${thisYear - 1}-04-01"
-                    startVolume "1"
-                    startIssue "1"
-                  }
-                ])
-                platformTitleInstance {
-                  platform "EUP Publishing"
-                  platform_url "https://www.euppublishing.com"
-                  url "https://www.euppublishing.com/loi/afg"
-                  titleInstance {
-                    name "Afghanistan"
-                    identifiers ([
-                      {
-                        value "2399-357X"
-                        namespace "issn"
-                      }
-                      {
-                        value "2399-3588"
-                        namespace "eissn"
-                      }
-                    ])
-                    type "serial"
-                  }
-                }
-              },
-              {
-                depth "fulltext"
-                accessStart "${thisYear - 8}-01-01"
-                coverage ([
-                  {
-                    startDate "${thisYear - 2}-01-01"
-                    startVolume "1"
-                    startIssue "1"
-                  }
-                ])
-                platformTitleInstance {
-                  platform "Archaeological and Environmental Forensic Science"
-                  platform_url "http://www.equinoxjournals.com"
-                  url "http://www.equinoxjournals.com/AEFS/"
-                  titleInstance {
-                    name "Archaeological and Environmental Forensic Science"
-                    identifiers ([
-                      {
-                        value "2052-3378"
-                        namespace "issn"
-                      }
-                      {
-                        value "2052-3386"
-                        namespace "eissn"
-                      }
-                    ])
-                    type "serial"
-                  }
-                }
-              },
-              {
-                depth "fulltext"
-                accessEnd "${thisYear - 1}-12-31"
-                coverage ([
-                  {
-                    startDate "${thisYear - 9}-02-01"
-                    startVolume "27"
-                    startIssue "1"
-                  }
-                ])
-                platformTitleInstance {
-                  platform "EUP Publishing"
-                  platform_url "https://www.euppublishing.com"
-                  url "https://www.euppublishing.com/loi/anh"
-                  titleInstance {
-                    name "Archives of Natural History"
-                    identifiers ([
-                      {
-                        value "0260-9541"
-                        namespace "issn"
-                      }
-                      {
-                        value "1755-6260"
-                        namespace "eissn"
-                      }
-                    ])
-                    type "serial"
-                  }
-                }
-              },
-              {
-                depth "fulltext"
-                accessStart "${thisYear + 6}-01-01"
-                coverage ([
-                  {
-                    startDate "${thisYear - 4}-01-01"
-                    startVolume "33"
-                  }
-                ])
-                platformTitleInstance {
-                  platform "JSTOR"
-                  platform_url "https://www.jstor.org"
-                  url "https://www.jstor.org/journal/bethunivj"
-                  titleInstance {
-                    name "Bethlehem University Journal"
-                    identifiers ([
-                      {
-                        value "2521-3695"
-                        namespace "issn"
-                      }
-                      {
-                        value "2410-5449"
-                        namespace "eissn"
-                      }
-                    ])
-                    type "serial"
-                  }
-                }
-              }
-            ])
-          }
-        ])
       }
+
     and: 'Find the package by name'
-      List resp = doGet("/erm/packages", [filters: ['name==access_start_access_end_tests Package']])
+      List resp = doGet("/erm/packages?match=name&term=${URLEncoder.encode(package_name, "UTF-8")}")
       pkg_id = resp[0].id
       
     then: 'Expect package found'
       assert pkg_id != null
-      assert resp?.getAt(0)?.name == 'access_start_access_end_tests Package'
+      assert resp?.getAt(0)?.name == package_name
+
+    where:
+      package_name << ["Middle East & Islamic Studies Journal Collection"]
   }
 
-  def 'Check MatchKeys are established as expected for each PCI' (final String name) {
+  def 'Check MatchKeys are established as expected for each PCI and PTI' (final String name, final String electronicIssn, final String printIssn) {
     when: "PCI for ${name} is fetched"
-      //ArrayList httpResult = doGet("/erm/pci?match=name&term=${URLEncoder.encode(name, "UTF-8")}")
-      ArrayList httpResult = doGet("/erm/pci")
-      List resp = doGet("/erm/packages", [filters: ['name==access_start_access_end_tests Package']])
-      log.debug("LOGDEBUG RESULT for ${name}: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}")
-      log.debug("LOGDEBUG PKG RESULT for ${name}: ${JsonOutput.prettyPrint(JsonOutput.toJson(resp))}")
+      ArrayList httpResult = doGet("/erm/pci?match=name&term=${URLEncoder.encode(name, "UTF-8")}")
+      ArrayList matchKeys = httpResult[0].matchKeys
+
+      ArrayList ptiMatchKeys = httpResult[0].pti.matchKeys
+    
     then:
-      true == true
+      assert httpResult[0].id != null
+      // PCI matchkeys
+      assert matchKeys.find { mk -> mk.key == 'title_string' }.value == name
+      assert matchKeys.find { mk -> mk.key == 'electronic_issn' }.value == electronicIssn
+      assert matchKeys.find { mk -> mk.key == 'print_issn' }.value == printIssn
+
+      // PTI matchKeys ( should be the same)
+      assert ptiMatchKeys.find { mk -> mk.key == 'title_string' }.value == name
+      assert ptiMatchKeys.find { mk -> mk.key == 'electronic_issn' }.value == electronicIssn
+      assert ptiMatchKeys.find { mk -> mk.key == 'print_issn' }.value == printIssn
+
     where:
-      name << [
-        "Afghanistan",
-        "Archaeological and Environmental Forensic Science",
-        "Archives of Natural History",
-        "Bethlehem University Journal"
+    name | electronicIssn | printIssn
+    "Iran and the Caucasus" | "1573-384x" | "1609-8498"
+    "Abgadiyat" | "2213-8609" | "1687-8280"
+    "Indo-Iranian Journal" | "1572-8536" | "0019-7246"
+    "Journal of the Economic and Social History of the Orient" | "1568-5209" | "0022-4995"
+  }
+
+
+  def 'Import an internal schema test package' (final String package_name) {
+    when: 'File loaded'
+
+      def jsonSlurper = new JsonSlurper()
+      def package_data = jsonSlurper.parse(new File('src/integration-test/resources/packages/apa_1062.json'))
+      
+      final String tenantid = currentTenant.toLowerCase()
+      log.debug("Create new package with tenant ${tenantid}");
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+        Pkg.withTransaction { status ->
+          importService.importFromFile( package_data )
+        }
+      }
+
+    and: 'Find the package by name'
+      List resp = doGet("/erm/packages?match=name&term=${URLEncoder.encode(package_name, "UTF-8")}")
+      pkg_id = resp[0].id
+      
+    then: 'Expect package found'
+      assert pkg_id != null
+      assert resp?.getAt(0)?.name == package_name
+    
+     where:
+      package_name << ["American Psychological Association:Master"]
+  }
+
+  def 'Check MatchKeys are established as expected for each PCI and PTI' (
+    final String name,
+    final String electronicIssn,
+    final String printIssn,
+    final String doi
+  ) {
+    when: "PCI for ${name} is fetched"
+      ArrayList httpResult = doGet("/erm/pci?match=name&term=${URLEncoder.encode(name, "UTF-8")}")
+      ArrayList matchKeys = httpResult[0].matchKeys
+
+      ArrayList ptiMatchKeys = httpResult[0].pti.matchKeys
+    
+    then:
+      assert httpResult[0].id != null
+      // PCI matchkeys
+      assert matchKeys.find { mk -> mk.key == 'title_string' }.value == name
+      assert matchKeys.find { mk -> mk.key == 'electronic_issn' }.value == electronicIssn
+      assert matchKeys.find { mk -> mk.key == 'print_issn' }.value == printIssn
+      assert matchKeys.find { mk -> mk.key == 'doi' }?.value == doi
+
+
+      // PTI matchKeys ( should be the same)
+      assert ptiMatchKeys.find { mk -> mk.key == 'title_string' }.value == name
+      assert ptiMatchKeys.find { mk -> mk.key == 'electronic_issn' }.value == electronicIssn
+      assert ptiMatchKeys.find { mk -> mk.key == 'print_issn' }.value == printIssn
+      assert ptiMatchKeys.find { mk -> mk.key == 'doi' }?.value == doi
+
+
+    where:
+    name | electronicIssn | printIssn | doi
+    "American Journal of Orthopsychiatry" | "1939-0025" | "0002-9432" | "10.1111/(ISSN)1939-0025"
+    "European Journal of Psychological Assessment" | "2151-2426" | "1015-5759" | null
+    "Emotion" | "1931-1516" | "1528-3542" | null
+    "Dreaming" | "1573-3351" | "1053-0797" | null
+  }
+
+  def 'Import a kbart package' (final String package_name) {
+    when: 'File loaded'
+      Map packageInfo = [
+        packageName: package_name,
+        packageSource: 'a test source',
+        packageReference: 'a test reference',
+        packageProvider: 'a package provider',
+        trustedSourceTI: true
       ]
+  
+      // This is only separate for quick switching
+      String fileName = "Springer_Global_J.B._Metzler_Humanities_eBooks_2021_2021-05-01.tsv"
+
+      BOMInputStream bis = new BOMInputStream(new FileInputStream(new File("src/integration-test/resources/packages/${fileName}")));
+      Reader fr = new InputStreamReader(bis);
+      CSVParser parser = new CSVParserBuilder().withSeparator('\t' as char)
+        .withQuoteChar(ICSVParser.DEFAULT_QUOTE_CHARACTER)
+        .withEscapeChar(ICSVParser.DEFAULT_ESCAPE_CHARACTER)
+      .build();
+
+      CSVReader package_data = new CSVReaderBuilder(fr).withCSVParser(parser).build();
+
+      final String tenantid = currentTenant.toLowerCase()
+      log.debug("Create new package with tenant ${tenantid}");
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+        Pkg.withTransaction { status ->
+          importService.importPackageFromKbart( package_data, packageInfo )
+        }
+      }
+
+    and: 'Find the package by name'
+      List resp = doGet("/erm/packages?match=name&term=${URLEncoder.encode(package_name, "UTF-8")}")
+      pkg_id = resp[0].id
+      
+    then: 'Expect package found'
+      assert pkg_id != null
+      assert resp?.getAt(0)?.name == package_name
+
+    where:
+      package_name << ["Test package"]
+  }
+
+ def 'Check MatchKeys are established as expected for each PCI and PTI' (
+    final String name,
+    final String electronicIsbn,
+    final String printIsbn,
+    final String author,
+    final String editor,
+    final String dateElectronicPublished,
+    final String datePrintPublished,
+    final String edition,
+    final String monographVolume
+  ) {
+    when: "PCI for ${name} is fetched"
+      
+      ArrayList httpResult = doGet("/erm/pci?match=name&term=${URLEncoder.encode(name, "UTF-8")}")
+      log.debug(" LOGDEBUG PCI ${name}: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult[0]))}")
+      /* ArrayList httpResult = doGet("/erm/pci?filters=pkg.id=${pkg_id}")
+      log.debug("LOGDEBUG PCIS FOR PACKAGE: ${JsonOutput.prettyPrint(JsonOutput.toJson(httpResult))}") */
+      
+      ArrayList matchKeys = httpResult[0].matchKeys
+
+      ArrayList ptiMatchKeys = httpResult[0].pti.matchKeys
+    
+    then:
+      assert httpResult[0].id != null
+      // PCI matchkeys
+      assert matchKeys.find { mk -> mk.key == 'title_string' }.value == name
+      assert matchKeys.find { mk -> mk.key == 'electronic_isbn' }.value == electronicIsbn
+      assert matchKeys.find { mk -> mk.key == 'print_isbn' }.value == printIsbn
+      assert matchKeys.find { mk -> mk.key == 'author' }.value == author
+      assert matchKeys.find { mk -> mk.key == 'editor' }.value == editor
+      assert matchKeys.find { mk -> mk.key == 'date_electronic_published' }.value == dateElectronicPublished
+      assert matchKeys.find { mk -> mk.key == 'date_print_published' }.value == datePrintPublished
+      assert matchKeys.find { mk -> mk.key == 'edition' }.value == edition
+      assert matchKeys.find { mk -> mk.key == 'monograph_volume' }.value == monographVolume
+
+
+      // PTI matchKeys ( should be the same)
+      assert ptiMatchKeys.find { mk -> mk.key == 'title_string' }.value == name
+      assert ptiMatchKeys.find { mk -> mk.key == 'electronic_isbn' }.value == electronicIsbn
+      assert ptiMatchKeys.find { mk -> mk.key == 'print_isbn' }.value == printIsbn
+      assert ptiMatchKeys.find { mk -> mk.key == 'author' }.value == author
+      assert ptiMatchKeys.find { mk -> mk.key == 'editor' }.value == editor
+      assert ptiMatchKeys.find { mk -> mk.key == 'date_electronic_published' }.value == dateElectronicPublished
+      assert ptiMatchKeys.find { mk -> mk.key == 'date_print_published' }.value == datePrintPublished
+      assert ptiMatchKeys.find { mk -> mk.key == 'edition' }.value == edition
+      assert ptiMatchKeys.find { mk -> mk.key == 'monograph_volume' }.value == monographVolume
+
+
+    where:
+    name | electronicIsbn | printIsbn | author | editor | dateElectronicPublished | datePrintPublished | edition | monographVolume
+    "Die Alice-Maschine" | "978-3-476-05707-5" | "978-3-476-05706-8" | "L\u00f6tscher" | null | "2020" | "2020" | "1" | "6"
+    "Hermann Schweppenh\u00e4user: Kultur, Ausdruck und Bild" | "978-3-476-05719-8" | "978-3-476-05718-1" | null | "Friedrich" | "2020" | "2020" | "1" | null
+    "Europa im Umbruch" | "978-3-476-05730-3" | "978-3-476-05729-7" | null | "Ra\u00df" | "2020" | "2020" | "1" | null
+
   }
 }
