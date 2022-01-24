@@ -52,6 +52,7 @@ repositories {
   maven { url 'https://maven.indexdata.com/' }
   maven { url "https://maven.k-int.com/content/repositories/public" }
   maven { url "https://repo.gradle.org/gradle/libs-releases-local" }
+  maven { url "https://steamcleaner.jfrog.io/artifactory/grails-plugins" }
 }
 
 sourceSets {
@@ -115,6 +116,8 @@ dependencies {
   compile "org.grails.plugins:events"
   compile "org.grails.plugins:hibernate5"
   compileOnly "io.micronaut:micronaut-inject-groovy"
+
+  compile "org.grails.plugins:swagger-grails:0.4.0"
 
   console ("org.grails:grails-console") {
     // The gpars transient depends on an older version of groovy-all.
