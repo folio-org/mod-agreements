@@ -4,6 +4,8 @@ import java.util.concurrent.TimeUnit
 
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
+import org.olf.dataimport.erm.Identifier
+
 import org.olf.kb.RemoteKB
 import org.olf.kb.TitleInstance
 import org.slf4j.MDC
@@ -13,6 +15,7 @@ import grails.web.databinding.DataBinder
 import groovy.util.logging.Slf4j
 
 import org.olf.dataimport.internal.TitleInstanceResolverService
+import org.olf.kb.MatchKey
 
 /**
  * This service works at the module level, it's often called without a tenant context.

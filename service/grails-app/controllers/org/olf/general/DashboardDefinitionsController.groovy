@@ -13,6 +13,7 @@ class DashboardDefinitionsController  {
   static String definitionsCache;
 
   public getDefinitions() {
+    log.debug("DashboardDefinitionsController::getDefinitions")
     if (!definitionsCache) {
       Resource[] widgetDefs = resolver.getResources("classpath:sample_data/widgetDefinitions/*")
       definitionsCache = "[${widgetDefs.collect { new String( it.getInputStream().readAllBytes()) }.join(',')}]"

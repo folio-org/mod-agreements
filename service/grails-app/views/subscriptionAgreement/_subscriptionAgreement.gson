@@ -60,4 +60,5 @@ json g.render(subscriptionAgreement, [expand: should_expand, excludes:['alternat
   }
   
   alternateNames g.render(altNames)
+  version subscriptionAgreement.version
 }
