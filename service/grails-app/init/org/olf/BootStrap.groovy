@@ -29,6 +29,9 @@ class BootStrap {
     log.info("            build time -> ${grailsApplication.metadata['build.time']}");
     log.info("            build host -> ${grailsApplication.metadata['build.host']}");
     log.info("         Base JDBC URL -> ${grailsApplication.config.dataSource.url} / ${grailsApplication.config.dataSource.username}");
+    log.info("    default_aws_region -> ${grailsApplication.config.kiwt?.filestore?.aws_region}");
+    log.info("       default_aws_url -> ${grailsApplication.config.kiwt?.filestore?.aws_url}");
+    log.info("    default_aws_bucket -> ${grailsApplication.config.kiwt?.filestore?.aws_bucket}");
 
     jobRunnerService.populateJobQueue()
   }

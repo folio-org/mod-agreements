@@ -220,6 +220,14 @@ environments:
   test:
     dataSource:
       url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olftest}"
+    kiwt:
+      # Filestore values from the minio config defined in the docker-compose file at ../tools/testing
+      filestore:
+        aws_region: "us-east-1"
+        aws_url: "http://localhost:9000"
+        aws_secret: "DIKU_AGG_SECRET_KEY"
+        aws_bucket: "diku-shared"
+        aws_access_key_id: "DIKU_AGG_ACCESS_KEY"
 
   dbGen:
     grails:
@@ -236,11 +244,25 @@ environments:
   production:
     dataSource:
       url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olf}"
-
+    kiwt:
+      filestore:
+        aws_region: "${aws.region:us-east-1}"
+        aws_url: "${aws.url}"
+        aws_secret: "${aws.secret.access.key}"
+        aws_bucket: "${aws.bucket}"
+        aws_access_key_id: "${aws.access.key.id}"
   development:
     logging:
       level:
         web: DEBUG
+    kiwt:
+      # Filestore values from the minio config defined in the docker-compose file at ../tools/testing
+      filestore:
+        aws_region: "us-east-1"
+        aws_url: "http://localhost:9000"
+        aws_secret: "DIKU_AGG_SECRET_KEY"
+        aws_bucket: "diku-shared"
+        aws_access_key_id: "DIKU_AGG_ACCESS_KEY"
     # This is only used when the there is no request from okapi coming to the module or a none-okapi request.
     # OKAPI supplies information about how to reach it to the modules. These options are used for self reg and other calls
     # when the request did not come through OKAPI.
