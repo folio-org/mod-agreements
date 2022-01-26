@@ -19,6 +19,7 @@ Platform the_platform
 String the_depth
 String the_note
 String the_url
+Set<TitleInstance> rti
 Set<TemplatedUrl> the_templated_urls
 boolean the_suppress_from_discovery
 
@@ -56,6 +57,7 @@ switch (resource) {
     break
 }
 
+rti = ti.relatedTitles
  
 Map customCoverageMap = request?.getAttribute("${controllerName}.${actionName}.customCoverage") as Map 
 
@@ -126,6 +128,16 @@ json {
     'customCoverage' false
   }
   
+  if (rti) {
+    relatedTitles (rti) { TitleInstance relation ->
+
+    // Also render a minimal title instance for the relation
+    g.inline (relation, [includes: ['id', 'name', 'type', 'publicationType', 'subType', 'identifiers'], expand: ['type', 'publicationType', 'subType', 'identifiers']]) {
+      longName ti.longName
+      }
+    }
+  }
+
   title g.render(ti, [expand: ['identifiers', 'type', 'subType', 'tags'], excludes: ['entitlements', 'coverage', 'work', 'platformInstances']])
 
 }

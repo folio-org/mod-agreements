@@ -1,4 +1,5 @@
 ## 5.1.0 (In progress)
+ * ERM-1914 Exception thrown on rendering the agreement / entitlement gson templates
  * ERM-1903 On editing an agreement with an agreement line for a PCI, "custom coverage" incorrectly populated
  * ERM-1892 Error on attempting to view comparison job report
  * ERM-1891 Agreement Lines do not display in Agreement edit screen

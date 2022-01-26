@@ -236,6 +236,37 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     identifiers?.findAll( { IdentifierSchema id -> class_one_namespaces?.contains( id.namespace.toLowerCase() ) })?.size() ?: 0
   }
 
+
+  // On the rare chance that we have `eissn` in our db (From before Kiwi namespace flattening)
+  // We attempt to map an incoming `issn` -> `eissn` in our DB
+  private String mapNamespaceToElectronic(final String incomingNs) {
+    String ouput;
+    switch (incomingNs.toLowerCase()) {
+      case 'issn':
+        ouput = 'eissn'
+        break;
+      case 'isbn':
+        ouput = 'eisbn'
+      default:
+        break;
+    }
+  }
+
+  // On the rare chance that we have `pissn` in our db (From before Kiwi namespace flattening)
+  // We attempt to map an incoming `issn` -> `pissn` in our DB
+  private String mapNamespaceToPrint(final String incomingNs) {
+    String ouput;
+    switch (incomingNs.toLowerCase()) {
+      case 'issn':
+        ouput = 'pissn'
+        break;
+      case 'isbn':
+        ouput = 'pisbn'
+      default:
+        break;
+    }
+  }
+
   /**
    * Being passed a map of namespace, value pair maps, attempt to locate any title instances with class 1 identifiers (ISSN, ISBN, DOI)
    */
@@ -268,7 +299,33 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
         }
          * We have to know that eissn == issn etc... Use namespaceMapping function
          */
-        final List<Identifier> id_matches = Identifier.executeQuery('select id from Identifier as id where id.value = :value and id.ns.value = :ns',[value:id.value, ns:namespaceMapping(id.namespace)], [max:2])
+
+        /* NOTE: We have the possibility for Kiwi that an existing TI is in place with namespace eissn,
+         * since cleanup is a complicated matter.
+         * For the time being, allow matching BOTH of `eissn` -> `issn` (As per the story),
+         * but also `eissn` -> `eissn` AND `issn` -> `eissn` in our db.
+         * To allow for `eissn` -> `eissn` the (ns:id.namespace) case is sufficient.
+         * To allow for `issn` -> `eissn` we also need
+         */
+        final List<Identifier> id_matches = Identifier.executeQuery("""
+          SELECT id FROM Identifier AS id
+          WHERE
+            id.value = :value AND
+            (
+              id.ns.value = :nsm OR
+              id.ns.value = :ns OR
+              id.ns.value = :ens OR
+              id.ns.value = :pns
+            )""".toString(),
+          [
+            value:id.value,
+            ns:id.namespace.toLowerCase(),
+            nsm:namespaceMapping(id.namespace),
+            ens:mapNamespaceToElectronic(id.namespace),
+            pns:mapNamespaceToPrint(id.namespace)
+          ],
+          [max:2]
+        )
 
         if (id_matches.size() > 1) {
           throw new RuntimeException("Multiple (${id_matches.size()}) class one matches found for identifier ${id.namespace}::${id.value}");

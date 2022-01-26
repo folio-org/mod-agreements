@@ -45,7 +45,7 @@ else if ( entitlementLogEntry.directEntitlement != null ) {
   entitlement = entitlementLogEntry.directEntitlement
 }
 
-controlling_license = entitlement?.owner.getControllingLicense()
+controlling_license = entitlement?.owner?.getControllingLicense()
 the_suppress_value = entitlement?.suppressFromDiscovery ?: false
 // TODO this logic is repeated in the entitlement view. Perhaps should be refactored out
 if (entitlement?.coverage) {
@@ -115,17 +115,20 @@ if ( res instanceof PackageContentItem ) {
  * linkedLicenses.remoteObject.type.value
  */
 json {
-              'seqid' entitlementLogEntry.seqid
-      'resource_name' res.name
-              'title' resource_title
-  'defaultCoverage' default_coverage_summary
-          'coverage' coverage_summary
-    'customCoverage' custom_coverage
-        'identifiers' resource_identifiers
-          'suppress' the_suppress_value
-              'type' resource_type
-            'license' license_details
-          'licenseId' controlling_license?.remoteId
-          'eventType' entitlementLogEntry.eventType
-                'url' pti_url
+                              'seqid' entitlementLogEntry.seqid
+                     'entitlement_id' entitlement?.id
+                      'resource_name' res.name
+                        'resource_id' res.id
+  'activeEntitlementCountForResource' entitlementLogEntry.activeEntitlementCountForResource
+                              'title' resource_title
+                    'defaultCoverage' default_coverage_summary
+                           'coverage' coverage_summary
+                     'customCoverage' custom_coverage
+                        'identifiers' resource_identifiers
+                           'suppress' the_suppress_value
+                               'type' resource_type
+                            'license' license_details
+                          'licenseId' controlling_license?.remoteId
+                          'eventType' entitlementLogEntry.eventType
+                                'url' pti_url
 }

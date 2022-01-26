@@ -215,7 +215,8 @@ public class KBart implements Serializable {
     return header as String[]
   }
 
-  // This method assumes it is being called on identifiers from within our database. Therefore any eissn or pissn will have been flattened to just issn
+  // This method assumes it is being called on identifiers from within our database.
+  // Therefore any eissn or pissn *should* have been flattened to just issn, but may not have been
   static String getIdentifierValue(Object identifiers) {
     if (identifiers) {
       Iterator iter = identifiers.iterator();
@@ -224,9 +225,17 @@ public class KBart implements Serializable {
       while (iter.hasNext()) {
         IdentifierOccurrence thisIdent = iter.next()
         Identifier ident =  thisIdent.identifier
-          if (ident?.ns?.value == "issn") {
+          if (
+            ident?.ns?.value == "issn" ||
+            ident?.ns?.value == "eissn" ||
+            ident?.ns?.value == "pissn"
+          ) {
             issn = ident.value
-          } else if (ident?.ns?.value == "isbn") {
+          } else  if (
+            ident?.ns?.value == "isbn" ||
+            ident?.ns?.value == "eisbn" ||
+            ident?.ns?.value == "pisbn"
+          ) {
             isbn = ident.value
           } else if (ident?.ns?.value == "doi") {
             doi = ident.value
