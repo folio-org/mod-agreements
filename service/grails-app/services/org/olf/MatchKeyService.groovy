@@ -7,6 +7,7 @@ import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.erm.Identifier
 
 import org.olf.kb.RemoteKB
+import org.olf.kb.ErmResource
 import org.olf.kb.TitleInstance
 import org.slf4j.MDC
 
@@ -16,6 +17,8 @@ import groovy.util.logging.Slf4j
 
 import org.olf.dataimport.internal.TitleInstanceResolverService
 import org.olf.kb.MatchKey
+
+import grails.plugin.json.builder.JsonOutput
 
 @Slf4j
 class MatchKeyService {
@@ -146,6 +149,34 @@ class MatchKeyService {
                          printIdentifiers.find {ident -> ident.namespace == key}?.value // fall back to print list
     if (returnValue) {
       map.add([key: key, value: returnValue])
+    }
+  }
+
+  /*
+    This method takes a resource and a map of match keys.
+    Any new keys will be added to the resource and any keys
+    with mismatched values will be updated.
+    NOTE this function does not care about "trusted" sources, that logic belongs elsewhere
+   */
+  void upsertMatchKeys(ErmResource resource, List<Map> matchKeyData, boolean saveOnExit = true) {
+    /*
+     * ERM-1799 What do we do if there's match keys on the resource
+     * which are missing from incoming data? -- Do we ignore deletion or allow it? 
+     */
+    matchKeyData.each {mk -> 
+      def resourceMatchKey = resource.matchKeys.find {rmk -> rmk.key == mk.key}
+
+      // If there was no matching key then simply create a new one
+      if (!resourceMatchKey) {
+        resource.addToMatchKeys(new MatchKey(mk))
+      } else if (mk.value != resourceMatchKey.value) {
+        // Mismatched value, update
+        resourceMatchKey.value = mk.value
+      }
+
+      if (saveOnExit) {
+        resource.save(failOnError: true) // This save will cascade to all matchKeys
+      }
     }
   }
 }

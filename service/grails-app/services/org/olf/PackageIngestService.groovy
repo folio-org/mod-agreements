@@ -179,15 +179,20 @@ class PackageIngestService implements DataBinder {
 
                 // See if we already have a title platform record for the presence of this title on this platform
                 PlatformTitleInstance pti = PlatformTitleInstance.findByTitleInstanceAndPlatform(title, platform)
-
                 if ( pti == null ) {
                   pti = new PlatformTitleInstance(titleInstance:title,
                     platform:platform,
                     url:pc.url,
-                  ).save(flush: true, failOnError: true)
-
-                  matchKeys.each {mk -> pti.addToMatchKeys(new MatchKey(mk))}
-                  pti.save(flush: true, failOnError: true)
+                  ).save(failOnError: true)
+                  
+                  // ERM-1799 Ensure initial matchKeyCreation
+                  matchKeyService.upsertMatchKeys(pti, matchKeys)
+                } else if (trustedSourceTI) {
+                  /*
+                   * We may need to update the match key information
+                   * from the incoming package for existing PTIs
+                   */
+                  matchKeyService.upsertMatchKeys(pti, matchKeys)
                 }
 
                 // Lookup or create a package content item record for this title on this platform in this package
@@ -208,14 +213,21 @@ class PackageIngestService implements DataBinder {
                     addedTimestamp:result.updateTime,
                   )
 
-                  matchKeys.each {mk -> pci.addToMatchKeys(new MatchKey(mk))}
-
+                  // ERM-1799, match keys need adding to PCI 
+                  matchKeyService.upsertMatchKeys(pci, matchKeys, false)
                   isNew = true
                 }
                 else {
                   // Note that we have seen the package content item now - so we don't delete it at the end.
                   log.debug("Record ${result.titleCount} - Update package content item (${pci.id})")
                   isUpdate = true
+                  if (trustedSourceTI) {
+                    /*
+                    * We may need to update the match key information
+                    * from the incoming package for existing PCIs
+                    */
+                    matchKeyService.upsertMatchKeys(pci, matchKeys, false)
+                  }
                 }
 
                 String embStr = pc.embargo?.trim()
