@@ -30,12 +30,26 @@ class ResourceController extends OkapiTenantAwareController<ErmResource>  {
   def electronic () {
     
     respond doTheLookup ({
-      or {
-        eq 'class', Pkg
-        
-        and {
-          eq 'class', TitleInstance
-          eq 'subType', TitleInstance.lookupOrCreateSubType('electronic')
+//      or {
+//        eq 'class', Pkg
+//        
+//        and {
+//          eq 'class', TitleInstance
+//          eq 'subType', TitleInstance.lookupOrCreateSubType('electronic')
+//        }
+//      }
+      
+//      aim: any package or resource that has a PCI (a TI that has at least one PI/platformInstance that has at least one PCI/packageOccurence
+
+//      // Direct PTIs
+      'in' 'id', new DetachedCriteria(PlatformTitleInstance, 'pti_sub').build {
+
+        platformtitleinstance {
+          eq 'owner.id', subscriptionAgreementId
+        }
+
+        projections {
+          property('id')
         }
       }
     })
