@@ -65,6 +65,9 @@ if (devEnv || Environment.currentEnvironment == Environment.TEST) {
     // logger 'org.hibernate.type.descriptor.sql.BasicBinder', TRACE
   }
 }
+else {
+  logger 'org.olf', INFO
+}
 
 def targetDir = BuildSettings.TARGET_DIR
 if (devEnv && targetDir != null) {
