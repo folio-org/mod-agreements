@@ -115,7 +115,7 @@ class AdminController implements DataBinder{
    */
   public triggerDocMigration() {
     def result = [:]
-    log.debug("AdminController::triggerEntitlementLogUpdate");
+    log.debug("AdminController::triggerDocMigration");
     fileUploadService.migrateAtMost(0,'LOB','S3'); // n, FROM, TO
     result.status = 'OK'
     render result as JSON
