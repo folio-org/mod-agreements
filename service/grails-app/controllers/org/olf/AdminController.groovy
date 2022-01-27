@@ -18,6 +18,7 @@ class AdminController implements DataBinder{
   def knowledgeBaseCacheService
   def ermHousekeepingService
   def entitlementLogService
+  def fileUploadService
 
   public AdminController() {
   }
@@ -105,6 +106,17 @@ class AdminController implements DataBinder{
 
     entitlementLogService.triggerUpdate()
 
+    result.status = 'OK'
+    render result as JSON
+  }
+
+  /**
+   * Trigger migration of uploaded LOB objects from PostgresDB to configured S3/MinIO
+   */
+  public triggerDocMigration() {
+    def result = [:]
+    log.debug("AdminController::triggerEntitlementLogUpdate");
+    fileUploadService.migrateAtMost(0,'LOB','S3'); // n, FROM, TO
     result.status = 'OK'
     render result as JSON
   }

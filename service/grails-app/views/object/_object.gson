@@ -59,7 +59,6 @@ if ( object instanceof String ) {
     out << JsonOutput.toJson(object)
   } else {
     // Use the built in rendering.
-    System.out.println "Attempting to render type: ${object.class}"
     json g.render (object)
   }
 }
