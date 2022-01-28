@@ -421,19 +421,19 @@ public class CoverageService {
 
     final PackageContentItem pci = asPCI(res)
     if ( pci ) {
-      log.debug "PCI updated, regenerate PTI's coverage"
+      log.trace "PCI updated, regenerate PTI's coverage"
       calculateCoverage( pci.pti )
     }
 
     final PlatformTitleInstance pti = asPTI(res)
     if ( pti ) {
-      log.debug "PTI updated regenerate TI's coverage"
+      log.trace "PTI updated regenerate TI's coverage"
       calculateCoverage( pti.titleInstance )
     }
 
     final TitleInstance ti = asTI(res)
     if ( ti ) {
-      log.debug 'TI updated'
+      log.trace 'TI updated'
     }
   }
 
@@ -495,7 +495,7 @@ public class CoverageService {
       ptis.each { final PlatformTitleInstance pti ->
 
         PlatformTitleInstance.withNewTransaction {
-          log.info "Recalculating coverage for PTI ${pti.id}"
+          log.trace "Recalculating coverage for PTI ${pti.id}"
           calculateCoverage( pti )
         }
       }
