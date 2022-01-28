@@ -9,6 +9,9 @@ import groovy.util.logging.Slf4j
 import com.k_int.okapi.OkapiTenantResolver
 import com.k_int.web.toolkit.settings.AppSetting
 import com.k_int.web.toolkit.refdata.RefdataValue;
+import com.k_int.web.toolkit.custprops.CustomPropertyDefinition
+import com.k_int.web.toolkit.refdata.RefdataCategory
+
 
 /**
  * This service works at the module level, it's often called without a tenant context.
@@ -74,6 +77,47 @@ public class ErmHousekeepingService {
                                               vocab:st_row[3],
                                               value:st_row[4]).save(flush:true, failOnError:true);
  
+          }
+
+          // Ensure the categories for the License properties.
+          RefdataValue.lookupOrCreate('Yes/No/Other', 'Yes')
+          RefdataValue.lookupOrCreate('Yes/No/Other', 'No')
+          RefdataValue.lookupOrCreate('Yes/No/Other', 'Other (see notes)')
+
+          RefdataValue.lookupOrCreate('AuthIdent', 'Other')
+          RefdataValue.lookupOrCreate('AuthIdent', 'Email Domain')
+          RefdataValue.lookupOrCreate('AuthIdent', 'ORCID')
+          RefdataValue.lookupOrCreate('AuthIdent', 'Over Institute')
+          RefdataValue.lookupOrCreate('AuthIdent', 'Over IP Range')
+          RefdataValue.lookupOrCreate('AuthIdent', 'Ringgold ID')
+          RefdataValue.lookupOrCreate('AuthIdent', 'ROR ID')
+
+          // Read the categories.
+          final String yesno = RefdataCategory.findByDesc('Yes/No/Other').id
+          final String authident = RefdataCategory.findByDesc('AuthIdent').id
+
+          [
+            [
+              "ctx" : "OpenAccess",
+              "name" : "AuthorIdentification",
+              "category" : authident,
+              "type" : "Refdata",
+              "label" : "Author Identification",
+              "description" : "Author Identification",
+              "primary": true
+            ],
+            [
+              "ctx" : "OpenAccess",
+              "name" : "Eligible authors",
+              "type" : "Text",
+              "label" : "Does this agreement support publishing",
+              "description" : "Does this agreement support publishing",
+              "primary": true
+            ]
+          ].each { Map definition ->
+            final String type = definition.remove('type')
+            CustomPropertyDefinition cpd = CustomPropertyDefinition.forType(type, definition)
+            cpd.save(failOnError:true)
           }
         }
       }
