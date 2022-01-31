@@ -10,6 +10,10 @@ import org.springframework.validation.BindingResult
 import org.olf.dataimport.internal.InternalPackageImpl
 import org.olf.kb.KBCacheUpdater
 
+// import jakarta.ws.rs.GET
+// import jakarta.ws.rs.Path
+import io.swagger.annotations.ApiOperation;
+
 @Slf4j
 @CurrentTenant
 class AdminController implements DataBinder{
@@ -99,6 +103,12 @@ class AdminController implements DataBinder{
     render result as JSON
   }
 
+  // These annotations seem to cause the method NOT to appear in the swagger docs - digging into why
+  //@GET
+  //@Path("/erm/triggerEntitlementLogUpdate")
+  //@ApiOperation(value = "Requests that the system generate new entitlement log entries based on recently activated and deactivated titles",
+  //  notes = "Some notes on triggerEntitlementLogUpdate",
+  //  responseContainer = "Map")
   public triggerEntitlementLogUpdate() {
     def result = [:]
     log.debug("AdminController::triggerEntitlementLogUpdate");
