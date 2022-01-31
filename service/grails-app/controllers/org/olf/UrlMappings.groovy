@@ -187,5 +187,7 @@ class UrlMappings {
     "/erm/settings/appSettings" (resources: 'setting');
 
     "/dashboard/definitions" (controller: 'dashboardDefinitions', action: 'getDefinitions' ,method: 'GET')
+
+    "/erm/swagger/api"(controller: "swagger", action: "api")
   }
 }
