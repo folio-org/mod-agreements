@@ -9,6 +9,11 @@ import org.olf.dataimport.erm.Identifier
 import org.olf.kb.RemoteKB
 import org.olf.kb.ErmResource
 import org.olf.kb.TitleInstance
+import org.olf.kb.PackageContentItem
+import org.olf.kb.MatchKey
+import org.olf.kb.IdentifierOccurrence
+
+
 import org.slf4j.MDC
 
 import grails.util.GrailsNameUtils
@@ -27,6 +32,9 @@ class MatchKeyService {
     // InstanceMedium Electronic vs Print lets us switch between instanceIdentifiers and siblingInstanceIdentifiers
 
     List<Map> matchKeys = []
+
+    // FIXME ERM-1799 remove this!!!
+    return matchKeys
 
     matchKeys.add([
       key: 'title_string',
@@ -144,7 +152,7 @@ class MatchKeyService {
     matchKeys
   }
 
-  void addKeyFromIdentifierMaps(List<Map> map, String key, Collection<Identifier> electronicIdentifiers, Collection<Identifier> printIdentifiers) {
+  void addKeyFromIdentifierMaps(List<Map> map, String key, Collection<Identifier> electronicIdentifiers = [], Collection<Identifier> printIdentifiers = []) {
     String returnValue = electronicIdentifiers.find {ident -> ident.namespace == key}?.value ?: // Check electronic list first
                          printIdentifiers.find {ident -> ident.namespace == key}?.value // fall back to print list
     if (returnValue) {
@@ -177,6 +185,110 @@ class MatchKeyService {
       if (saveOnExit) {
         resource.save(failOnError: true) // This save will cascade to all matchKeys
       }
+    }
+  }
+
+  /*
+   * This method checks for any PCIs without appended match_key information in the DB,
+   * and attempts to generate them directly from the data.
+   * Care should be taken when calling this method, as it will proliferate inaccuracies
+   * to a deeper part of the matching process.
+   * PCIs without match keys are batch fetched in case of large numbers
+   */
+  void generateMatchKeys() {
+    final int pciBatchSize = 100
+    int pciBatchCount = 0
+    int pciCount = 0
+    List<PackageContentItem> pcis = PackageContentItem.createCriteria().list([
+        max: pciBatchSize,
+        offset: pciBatchSize * pciBatchCount
+      ]) {
+      isEmpty('matchKeys') 
+    }
+    while (pcis && pcis.size() > 0) {
+      pciBatchCount ++
+      pcis.each { pci ->
+        naiveAssignMatchKeys(pci)
+        pciCount++
+      }
+
+      // Next page
+      pcis = PackageContentItem.createCriteria().list([
+        max: pciBatchSize,
+        offset: pciBatchSize * pciBatchCount
+      ]) {
+        isEmpty('matchKeys') 
+      }
+    }
+
+    log.info("Attempted to generate match keys for ${pciCount} PCIs in system")
+  }
+
+  void naiveAssignMatchKeys(PackageContentItem pci) {
+    log.info("Attempting to naively assign match keys for PCI (${pci})")
+    List<Map> matchKeys = []
+    /* Attempt to assign match keys from ingested data.
+      * The actual model allows fore more complicated setups than this,
+      * but any errors can be fixed by reimporting specific packages
+      */
+    TitleInstance electronicTI
+    TitleInstance printTI
+    if (pci.pti.titleInstance.subType.value.toLowerCase() == 'electronic') {
+      electronicTI = pci.pti.titleInstance
+      printTI = pci.pti.titleInstance.getRelatedTitles()?.find {relti -> relti.subType.value.toLowerCase() == 'print'}
+    } else {
+      printTI = pci.pti.titleInstance
+      electronicTI = pci.pti.titleInstance.getRelatedTitles()?.find {relti -> relti.subType.value.toLowerCase() == 'electronic'}
+    }
+
+    naiveAssignPropertyMatchKey(matchKeys, 'title_string', 'name', electronicTI, printTI)
+    naiveAssignPropertyMatchKey(matchKeys, 'author', 'firstAuthor', electronicTI, printTI)
+    naiveAssignPropertyMatchKey(matchKeys, 'editor', 'firstEditor', electronicTI, printTI)
+    naiveAssignPropertyMatchKey(matchKeys, 'monograph_volume', 'monographVolume', electronicTI, printTI)
+    naiveAssignPropertyMatchKey(matchKeys, 'edition', 'monographEdition', electronicTI, printTI)
+
+    // Add the easy identifiers first
+    naiveAssignIdentifierMatchKey(matchKeys, 'doi', 'doi', electronicTI?.identifiers, printTI?.identifiers)
+    naiveAssignIdentifierMatchKey(matchKeys, 'zdbid', 'zdbid', electronicTI?.identifiers, printTI?.identifiers)
+    naiveAssignIdentifierMatchKey(matchKeys, 'ezbid', 'ezbid', electronicTI?.identifiers, printTI?.identifiers)
+
+    // Differences in electronic vs print logic
+    if (electronicTI) {
+      // Set about adding match keys from electronic TI
+      naiveAssignIdentifierMatchKey(matchKeys, 'electronic_issn', 'issn', electronicTI?.identifiers)
+      naiveAssignIdentifierMatchKey(matchKeys, 'electronic_isbn', 'isbn', electronicTI?.identifiers)
+
+      naiveAssignPropertyMatchKey(matchKeys, 'date_electronic_published', 'dateMonographPublished', electronicTI, null)
+    }
+
+    if (printTI) {
+      naiveAssignIdentifierMatchKey(matchKeys, 'print_issn', 'issn', [], printTI?.identifiers)
+      naiveAssignIdentifierMatchKey(matchKeys, 'print_isbn', 'isbn', [], printTI?.identifiers)
+
+      naiveAssignPropertyMatchKey(matchKeys, 'date_print_published', 'dateMonographPublished', null, printTI)
+    }
+
+    // Upsert generated match keys
+    PackageContentItem.withNewTransaction{
+      upsertMatchKeys(pci, matchKeys, true)
+    }
+  }
+
+
+  void naiveAssignIdentifierMatchKey(List<Map> matchKeys, String key, String namespace, Collection<IdentifierOccurrence> electronicIdentifiers = [], Collection<IdentifierOccurrence> printIdentifiers = []) {
+    org.olf.kb.Identifier identifier = electronicIdentifiers?.find { ident -> ident.identifier?.ns?.value?.toLowerCase() == namespace}?.identifier ?:
+               printIdentifiers?.find { ident -> ident.identifier?.ns?.value?.toLowerCase() == namespace}?.identifier
+    
+    if (identifier?.value) {
+      matchKeys.add([key: key, value: identifier.value])
+    }
+  }
+
+  void naiveAssignPropertyMatchKey(List<Map> matchKeys, String key, String property, TitleInstance electronicTI, TitleInstance printTI) {
+    String value = (electronicTI ?: [:])[property] ?: (printTI ?: [:])[property] // Attempt to fetch property from null safe electronic or print TIs
+
+    if (value) {
+      matchKeys.add([key: key, value: value])
     }
   }
 }

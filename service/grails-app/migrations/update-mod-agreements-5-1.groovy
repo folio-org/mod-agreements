@@ -79,4 +79,12 @@ databaseChangeLog = {
     }
   }
 
+  changeSet(author: "efreestone (manual)", id: "20220202-1032-001") {
+    createTable(tableName: "naive_match_key_assignment_job") {
+      column(name: "id", type: "VARCHAR(36)") {
+        constraints(nullable: "false")
+      }
+    }
+  }
+
 }

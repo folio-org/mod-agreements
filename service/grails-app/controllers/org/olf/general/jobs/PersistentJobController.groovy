@@ -64,6 +64,9 @@ class PersistentJobController extends OkapiTenantAwareController<PersistentJob> 
   @Transactional
   def save () {
     final Class type = params.type ? Class.forName("org.olf.general.jobs.${GrailsNameUtils.getClassName(params.type as String)}Job") : null
+    if (params.type.toLowerCase() == 'naivematchkeyassignment') {
+      return render (text: "NaiveMatchKeyAssignmentJob can only be created from admin controller", status: HttpStatus.FORBIDDEN) 
+    }
 
     if(!(type && PersistentJob.isAssignableFrom(type))) {
       return render (status: HttpStatus.NOT_FOUND)

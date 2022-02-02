@@ -5,10 +5,17 @@ import grails.web.databinding.DataBinder
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import grails.converters.JSON
+
+import com.k_int.web.toolkit.refdata.RefdataValue
+
 import org.olf.kb.RemoteKB
 import org.springframework.validation.BindingResult
 import org.olf.dataimport.internal.InternalPackageImpl
 import org.olf.kb.KBCacheUpdater
+import org.olf.general.jobs.NaiveMatchKeyAssignmentJob
+import org.olf.general.jobs.PersistentJob
+
+import java.time.Instant
 
 @Slf4j
 @CurrentTenant
@@ -19,6 +26,7 @@ class AdminController implements DataBinder{
   def ermHousekeepingService
   def entitlementLogService
   def fileUploadService
+  def matchKeyService
 
   public AdminController() {
   }
@@ -117,6 +125,30 @@ class AdminController implements DataBinder{
     def result = [:]
     log.debug("AdminController::triggerDocMigration");
     fileUploadService.migrateAtMost(0,'LOB','S3'); // n, FROM, TO
+    result.status = 'OK'
+    render result as JSON
+  }
+
+  /*
+   * For situations where we are left with ingested PCI/PTIs without match key coverage,
+   * this will trigger an attempt to parse that information back out of the data.
+   * Obviously this match_key information will still contain any inaccuracies present,
+   * so this should ONLY be used when necessary.
+   */
+  public triggerMatchKeyGeneration() {
+    def result = [:]
+    log.debug("AdminController::triggerMatchKeyGeneration");
+    NaiveMatchKeyAssignmentJob.withNewTransaction {
+      final RefdataValue queuedStatus = PersistentJob.lookupStatus('queued')
+
+      NaiveMatchKeyAssignmentJob nmkaj = new NaiveMatchKeyAssignmentJob([
+        name: "NaiveMatchKeyAssignmentJob: ${Instant.now()}",
+      ])
+      nmkaj.status = queuedStatus
+
+      nmkaj.save(failOnError: true)
+    }
+
     result.status = 'OK'
     render result as JSON
   }
