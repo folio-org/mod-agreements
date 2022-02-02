@@ -525,12 +525,19 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     List sibling_identifiers = []
 
     // If we're processing an electronic record then issn is a sibling identifier
+    // Ensure issn, pissn, pisbn end up in siblingInstanceIdentifiers
     title.identifiers.identifier.each { ti_id ->
-      if ( ti_id.@namespace == 'issn' ) {
-        sibling_identifiers.add(["namespace": "issn", "value": ti_id.@value?.toString() ])
-      }
-      else {
-        instance_identifiers.add(["namespace": ti_id.@namespace?.toString(), "value": ti_id.@value?.toString() ])
+      switch(ti_id.@namespace) {
+        case 'issn':
+        case 'pissn':
+          sibling_identifiers.add(["namespace": "issn", "value": ti_id.@value?.toString() ])
+          break;
+        case 'pisbn':
+          sibling_identifiers.add(["namespace": "isbn", "value": ti_id.@value?.toString() ])
+          break;
+        default:
+          instance_identifiers.add(["namespace": ti_id.@namespace?.toString(), "value": ti_id.@value?.toString() ])
+          break;
       }
     }
 
