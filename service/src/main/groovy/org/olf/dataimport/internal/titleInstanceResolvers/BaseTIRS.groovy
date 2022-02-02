@@ -3,6 +3,9 @@ package org.olf.dataimport.internal.titleInstanceResolvers
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
+
+import org.olf.IdentifierService
+
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierNamespace
 import org.olf.kb.IdentifierOccurrence
@@ -24,31 +27,17 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Transactional
 class BaseTIRS {
+    IdentifierService identifierService
     protected static final def APPROVED = 'approved'
     protected static final def ERROR = 'error'
 
   // ERM-1649. This function acts as a way to manually map incoming namespaces onto known namespaces where we believe the extra information is unhelpful.
   // This is also the place to do any normalisation (lowercasing etc).
   protected String namespaceMapping(String namespace) {
-
-    String lowerCaseNamespace = namespace.toLowerCase()
-    String result = lowerCaseNamespace
-    switch (lowerCaseNamespace) {
-      case 'eissn':
-      case 'pissn':
-      case 'eisbn':
-      case 'pisbn':
-        // This will remove the first character from the namespace
-        result = lowerCaseNamespace.substring(1)
-        break;
-      default:
-        break;
-    }
-
-    result
+    identifierService.namespaceMapping(namespace)
   }
 
-    protected static def class_one_namespaces = [
+  protected static def class_one_namespaces = [
     'zdb',
     'isbn',
     'issn',  // This really isn't true - we get electronic items identified by the issn of their print sibling.. Needs thought

@@ -6,6 +6,8 @@ import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.erm.Identifier
 
+import org.olf.IdentifierService
+
 import org.olf.kb.RemoteKB
 import org.olf.kb.ErmResource
 import org.olf.kb.TitleInstance
@@ -27,6 +29,8 @@ import grails.plugin.json.builder.JsonOutput
 
 @Slf4j
 class MatchKeyService {
+  IdentifierService identifierService
+
   // This returns a List<Map> which can then be used to set up matchKeys on an ErmResource
   public List<Map> collectMatchKeyInformation(ContentItemSchema pc) {
     // InstanceMedium Electronic vs Print lets us switch between instanceIdentifiers and siblingInstanceIdentifiers
@@ -77,12 +81,12 @@ class MatchKeyService {
     // Deal with identifiers and sibling identifiers
     if (pc.instanceMedium?.toLowerCase() == 'electronic') {
       // The instance identifiers are the electronic versions
-      (pc.instanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "electronic_${ident.namespace.toLowerCase()}", value: ident.value])}
-      (pc.siblingInstanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "print_${ident.namespace.toLowerCase()}", value: ident.value])}
+      (pc.instanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "electronic_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])}
+      (pc.siblingInstanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "print_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])}
     } else {
       // the sibling instance identifiers can be treated as the electronic versions
-      (pc.siblingInstanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "electronic_${ident.namespace.toLowerCase()}", value: ident.value])}
-      (pc.instanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "print_${ident.namespace.toLowerCase()}", value: ident.value])}
+      (pc.siblingInstanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "electronic_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])}
+      (pc.instanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "print_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])}
     }
 
     if (pc.firstAuthor) {
@@ -216,13 +220,13 @@ class MatchKeyService {
     List<Map> matchKeys = []
     electronicIdentifiers.each {ident -> 
       if (ident.status.value.toLowerCase() == 'approved') {
-        matchKeys.add([key: "electronic_${ident.identifier?.ns?.value?.toLowerCase()}", value: ident.identifier?.value])
+        matchKeys.add([key: "electronic_${identifierService.namespaceMapping(ident.identifier?.ns?.value)}", value: ident.identifier?.value])
       }
     }
 
     printIdentifiers.each {ident -> 
       if (ident.status.value.toLowerCase() == 'approved') {
-        matchKeys.add([key: "print_${ident.identifier?.ns?.value?.toLowerCase()}", value: ident.identifier?.value])
+        matchKeys.add([key: "print_${identifierService.namespaceMapping(ident.identifier?.ns?.value)}", value: ident.identifier?.value])
       }
     }
 

@@ -92,5 +92,26 @@ public class IdentifierService {
       }
     }
   }
+
+  // ERM-1649. This function acts as a way to manually map incoming namespaces onto known namespaces where we believe the extra information is unhelpful.
+  // This is also the place to do any normalisation (lowercasing etc).
+  public String namespaceMapping(String namespace) {
+
+    String lowerCaseNamespace = namespace.toLowerCase()
+    String result = lowerCaseNamespace
+    switch (lowerCaseNamespace) {
+      case 'eissn':
+      case 'pissn':
+      case 'eisbn':
+      case 'pisbn':
+        // This will remove the first character from the namespace
+        result = lowerCaseNamespace.substring(1)
+        break;
+      default:
+        break;
+    }
+
+    result
+  }
 }
 
