@@ -33,9 +33,6 @@ class MatchKeyService {
 
     List<Map> matchKeys = []
 
-    // FIXME ERM-1799 remove this!!!
-    return matchKeys
-
     matchKeys.add([
       key: 'title_string',
       value: pc.title
