@@ -81,12 +81,20 @@ class MatchKeyService {
     // Deal with identifiers and sibling identifiers
     if (pc.instanceMedium?.toLowerCase() == 'electronic') {
       // The instance identifiers are the electronic versions
-      (pc.instanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "electronic_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])}
-      (pc.siblingInstanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "print_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])}
+      (pc.instanceIdentifiers ?: []).each {ident ->
+        matchKeys.add([key: "electronic_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])
+      }
+      (pc.siblingInstanceIdentifiers ?: []).each {ident ->
+        matchKeys.add([key: "print_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])
+      }
     } else {
       // the sibling instance identifiers can be treated as the electronic versions
-      (pc.siblingInstanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "electronic_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])}
-      (pc.instanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "print_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])}
+      (pc.siblingInstanceIdentifiers ?: []).each {ident ->
+        matchKeys.add([key: "electronic_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])
+      }
+      (pc.instanceIdentifiers ?: []).each {ident ->
+        matchKeys.add([key: "print_${identifierService.namespaceMapping(ident.namespace)}", value: ident.value])
+      }
     }
 
     if (pc.firstAuthor) {

@@ -4,6 +4,7 @@ import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
 
+import org.springframework.beans.factory.annotation.Autowired
 import org.olf.IdentifierService
 
 import org.olf.kb.Identifier
@@ -27,6 +28,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Transactional
 class BaseTIRS {
+    @Autowired
     IdentifierService identifierService
     protected static final def APPROVED = 'approved'
     protected static final def ERROR = 'error'
@@ -37,7 +39,7 @@ class BaseTIRS {
     identifierService.namespaceMapping(namespace)
   }
 
-  protected static def class_one_namespaces = [
+    protected static def class_one_namespaces = [
     'zdb',
     'isbn',
     'issn',  // This really isn't true - we get electronic items identified by the issn of their print sibling.. Needs thought
