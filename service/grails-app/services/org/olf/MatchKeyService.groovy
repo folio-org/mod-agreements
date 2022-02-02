@@ -77,10 +77,12 @@ class MatchKeyService {
     // Deal with identifiers and sibling identifiers
     if (pc.instanceMedium?.toLowerCase() == 'electronic') {
       // The instance identifiers are the electronic versions
-      matchKeys.addAll(parseMatchKeyIdentifiers(pc.instanceIdentifiers, pc.siblingInstanceIdentifiers))
+      (pc.instanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "electronic_${ident.namespace.toLowerCase()}", value: ident.value])}
+      (pc.siblingInstanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "print_${ident.namespace.toLowerCase()}", value: ident.value])}
     } else {
       // the sibling instance identifiers can be treated as the electronic versions
-      matchKeys.addAll(parseMatchKeyIdentifiers(pc.siblingInstanceIdentifiers, pc.instanceIdentifiers))
+      (pc.siblingInstanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "electronic_${ident.namespace.toLowerCase()}", value: ident.value])}
+      (pc.instanceIdentifiers ?: []).each {ident -> matchKeys.add([key: "print_${ident.namespace.toLowerCase()}", value: ident.value])}
     }
 
     if (pc.firstAuthor) {
@@ -112,49 +114,6 @@ class MatchKeyService {
     }
 
     matchKeys
-  }
-
-  public List<Map> parseMatchKeyIdentifiers(Collection<Identifier> electronicIdentifiers, Collection<Identifier> printIdentifiers) {
-    List<Map> matchKeys = []
-    
-    // Find first identifier which could be the electronic_issn
-    String electronic_issn = electronicIdentifiers.find {ident -> ident.namespace ==~ /.*issn/}?.value // Should match eissn or issn
-    if (electronic_issn) {
-      matchKeys.add([key: 'electronic_issn', value: electronic_issn])
-    }
-
-    // Find first identifier which could be the electronic_isbn
-    String electronic_isbn = electronicIdentifiers.find {ident -> ident.namespace ==~ /.*isbn/}?.value // Should match eisbn or isbn
-    if (electronic_isbn) {
-      matchKeys.add([key: 'electronic_isbn', value: electronic_isbn])
-    }
-
-    // Find first identifier which could be the print_issn
-    String print_issn = printIdentifiers.find {ident -> ident.namespace ==~ /.*issn/}?.value // Should match pissn or issn
-    if (print_issn) {
-      matchKeys.add([key: 'print_issn', value: print_issn])
-    }
-
-    // Find first identifier which could be the print_isbn
-    String print_isbn = printIdentifiers.find {ident -> ident.namespace ==~ /.*isbn/}?.value // Should match eisbn or isbn
-    if (print_isbn) {
-      matchKeys.add([key: 'print_isbn', value: print_isbn])
-    }
-
-    // Other identifiers could feasibly be in either
-    addKeyFromIdentifierMaps(matchKeys, 'zdbid', electronicIdentifiers, printIdentifiers)
-    addKeyFromIdentifierMaps(matchKeys, 'ezbid', electronicIdentifiers, printIdentifiers)
-    addKeyFromIdentifierMaps(matchKeys, 'doi', electronicIdentifiers, printIdentifiers)
-
-    matchKeys
-  }
-
-  void addKeyFromIdentifierMaps(List<Map> map, String key, Collection<Identifier> electronicIdentifiers = [], Collection<Identifier> printIdentifiers = []) {
-    String returnValue = electronicIdentifiers.find {ident -> ident.namespace == key}?.value ?: // Check electronic list first
-                         printIdentifiers.find {ident -> ident.namespace == key}?.value // fall back to print list
-    if (returnValue) {
-      map.add([key: key, value: returnValue])
-    }
   }
 
   /*
@@ -238,32 +197,14 @@ class MatchKeyService {
       electronicTI = pci.pti.titleInstance.getRelatedTitles()?.find {relti -> relti.subType.value.toLowerCase() == 'electronic'}
     }
 
-    naiveAssignPropertyMatchKey(matchKeys, 'title_string', 'name', electronicTI, printTI)
-    naiveAssignPropertyMatchKey(matchKeys, 'author', 'firstAuthor', electronicTI, printTI)
-    naiveAssignPropertyMatchKey(matchKeys, 'editor', 'firstEditor', electronicTI, printTI)
-    naiveAssignPropertyMatchKey(matchKeys, 'monograph_volume', 'monographVolume', electronicTI, printTI)
-    naiveAssignPropertyMatchKey(matchKeys, 'edition', 'monographEdition', electronicTI, printTI)
+    matchKeys.add(naiveGetPropertyMatchKey('title_string', 'name', electronicTI, printTI))
+    matchKeys.add(naiveGetPropertyMatchKey('author', 'firstAuthor', electronicTI, printTI))
+    matchKeys.add(naiveGetPropertyMatchKey('editor', 'firstEditor', electronicTI, printTI))
+    matchKeys.add(naiveGetPropertyMatchKey('monograph_volume', 'monographVolume', electronicTI, printTI))
+    matchKeys.add(naiveGetPropertyMatchKey('edition', 'monographEdition', electronicTI, printTI))
 
-    // Add the easy identifiers first
-    naiveAssignIdentifierMatchKey(matchKeys, 'doi', 'doi', electronicTI?.identifiers, printTI?.identifiers)
-    naiveAssignIdentifierMatchKey(matchKeys, 'zdbid', 'zdbid', electronicTI?.identifiers, printTI?.identifiers)
-    naiveAssignIdentifierMatchKey(matchKeys, 'ezbid', 'ezbid', electronicTI?.identifiers, printTI?.identifiers)
-
-    // Differences in electronic vs print logic
-    if (electronicTI) {
-      // Set about adding match keys from electronic TI
-      naiveAssignIdentifierMatchKey(matchKeys, 'electronic_issn', 'issn', electronicTI?.identifiers)
-      naiveAssignIdentifierMatchKey(matchKeys, 'electronic_isbn', 'isbn', electronicTI?.identifiers)
-
-      naiveAssignPropertyMatchKey(matchKeys, 'date_electronic_published', 'dateMonographPublished', electronicTI, null)
-    }
-
-    if (printTI) {
-      naiveAssignIdentifierMatchKey(matchKeys, 'print_issn', 'issn', [], printTI?.identifiers)
-      naiveAssignIdentifierMatchKey(matchKeys, 'print_isbn', 'isbn', [], printTI?.identifiers)
-
-      naiveAssignPropertyMatchKey(matchKeys, 'date_print_published', 'dateMonographPublished', null, printTI)
-    }
+    // Add the identifiers
+    matchKeys.addAll(naiveGetIdentifierMatchKeys(electronicTI?.identifiers, printTI?.identifiers))
 
     // Upsert generated match keys
     PackageContentItem.withNewTransaction{
@@ -271,21 +212,28 @@ class MatchKeyService {
     }
   }
 
-
-  void naiveAssignIdentifierMatchKey(List<Map> matchKeys, String key, String namespace, Collection<IdentifierOccurrence> electronicIdentifiers = [], Collection<IdentifierOccurrence> printIdentifiers = []) {
-    org.olf.kb.Identifier identifier = electronicIdentifiers?.find { ident -> ident.identifier?.ns?.value?.toLowerCase() == namespace}?.identifier ?:
-               printIdentifiers?.find { ident -> ident.identifier?.ns?.value?.toLowerCase() == namespace}?.identifier
-    
-    if (identifier?.value) {
-      matchKeys.add([key: key, value: identifier.value])
+  List<Map> naiveGetIdentifierMatchKeys(Collection<IdentifierOccurrence> electronicIdentifiers = [], Collection<IdentifierOccurrence> printIdentifiers = []) {
+    List<Map> matchKeys = []
+    electronicIdentifiers.each {ident -> 
+      if (ident.status.value.toLowerCase() == 'approved') {
+        matchKeys.add([key: "electronic_${ident.identifier?.ns?.value?.toLowerCase()}", value: ident.identifier?.value])
+      }
     }
+
+    printIdentifiers.each {ident -> 
+      if (ident.status.value.toLowerCase() == 'approved') {
+        matchKeys.add([key: "print_${ident.identifier?.ns?.value?.toLowerCase()}", value: ident.identifier?.value])
+      }
+    }
+
+    matchKeys
   }
 
-  void naiveAssignPropertyMatchKey(List<Map> matchKeys, String key, String property, TitleInstance electronicTI, TitleInstance printTI) {
+  Map naiveGetPropertyMatchKey(List<Map> matchKeys, String key, String property, TitleInstance electronicTI, TitleInstance printTI) {
     String value = (electronicTI ?: [:])[property] ?: (printTI ?: [:])[property] // Attempt to fetch property from null safe electronic or print TIs
 
     if (value) {
-      matchKeys.add([key: key, value: value])
+      return [key: key, value: value];
     }
   }
 }
