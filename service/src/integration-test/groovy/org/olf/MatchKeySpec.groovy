@@ -134,14 +134,14 @@ class MatchKeySpec extends BaseSpec {
       assert matchKeys.find { mk -> mk.key == 'title_string' }?.value == name
       assert matchKeys.find { mk -> mk.key == 'electronic_issn' }?.value == electronicIssn
       assert matchKeys.find { mk -> mk.key == 'print_issn' }?.value == printIssn
-      assert matchKeys.find { mk -> mk.key == 'doi' }?.value == doi
+      assert matchKeys.find { mk -> mk.key == 'electronic_doi' }?.value == doi
 
 
       // PTI matchKeys ( should be the same)
       assert ptiMatchKeys.find { mk -> mk.key == 'title_string' }?.value == name
       assert ptiMatchKeys.find { mk -> mk.key == 'electronic_issn' }?.value == electronicIssn
       assert ptiMatchKeys.find { mk -> mk.key == 'print_issn' }?.value == printIssn
-      assert ptiMatchKeys.find { mk -> mk.key == 'doi' }?.value == doi
+      assert ptiMatchKeys.find { mk -> mk.key == 'electronic_doi' }?.value == doi
 
 
     where:
