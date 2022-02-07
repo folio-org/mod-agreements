@@ -20,6 +20,7 @@ import org.olf.ImportService
 import org.olf.IdentifierService
 import org.olf.MatchKeyService
 import org.olf.KbHarvestService
+import org.olf.KbManagementService
 
 import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.okapi.OkapiTenantResolver
@@ -39,6 +40,7 @@ class JobRunnerService implements EventPublisher {
   // of the job itself.
   OkapiTenantAdminService okapiTenantAdminService
   KbHarvestService kbHarvestService
+  KbManagementService kbManagementService
   CoverageService coverageService
   DocumentAttachmentService documentAttachmentService
   ImportService importService

@@ -100,6 +100,7 @@ where rkb.type is not null
     }
   }
 
+  // Any changes that happen to this logic will likely need reflecting in the KbManagementService::triggerRematch
   @Scheduled(fixedDelay = 3600000L, initialDelay = 60000L) // Run task every hour, wait 1 minute.
   void triggerSync() {
     log.debug "Running scheduled KB sync for all tenants :{}", Instant.now()

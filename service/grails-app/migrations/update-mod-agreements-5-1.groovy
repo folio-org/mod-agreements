@@ -87,4 +87,13 @@ databaseChangeLog = {
     }
   }
 
+
+  changeSet(author: "efreestone (manual)", id: "20220207-1310-001") {
+    createTable(tableName: "resource_rematch_job") {
+      column(name: "id", type: "VARCHAR(36)") {
+        constraints(nullable: "false")
+      }
+    }
+  }
+
 }
