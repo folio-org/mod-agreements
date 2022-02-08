@@ -7,6 +7,6 @@ class ResourceRematchJob extends PersistentJob implements MultiTenant<ResourceRe
 
   final Closure work = {
     log.info "Running Resource Rematch Job"
-    // TODO add actual job here
+    kbManagementService.runRematchProcess()
   }
 }

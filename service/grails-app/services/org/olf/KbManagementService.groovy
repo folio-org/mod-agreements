@@ -2,6 +2,22 @@ package org.olf
 
 import static groovy.transform.TypeCheckingMode.SKIP
 
+import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
+
+import org.olf.kb.ErmResource
+import org.olf.kb.PackageContentItem
+import org.olf.kb.TitleInstance
+import org.olf.kb.IdentifierOccurrence
+import org.olf.kb.MatchKey
+import org.olf.MatchKeyService
+
+import org.olf.dataimport.internal.TitleInstanceResolverService
+
+import com.k_int.web.toolkit.settings.AppSetting
+
+import org.hibernate.sql.JoinType
+import grails.gorm.DetachedCriteria
+
 import org.olf.general.jobs.ResourceRematchJob
 import org.springframework.scheduling.annotation.Scheduled
 
@@ -24,7 +40,8 @@ import groovy.util.logging.Slf4j
 @CompileStatic
 class KbManagementService {
   OkapiTenantAdminService okapiTenantAdminService
-
+  MatchKeyService matchKeyService
+  TitleInstanceResolverService titleInstanceResolverService
 
   // This code is essentially the same logic which creates scheduled Title and Package ingest jobs over in the KbHarvestService
   //@Scheduled(fixedDelay = 3600000L, initialDelay = 60000L) // Run task every hour, wait 1 minute.
@@ -66,6 +83,123 @@ class KbManagementService {
     }
   }
 
+  @CompileStatic(SKIP)
+  List<String> batchFetchTIs(int tiBatchSize, int tiBatchCount, Date last_refreshed) {
+    List<String> tis = TitleInstance.createCriteria().list([max: tiBatchSize, offset: tiBatchSize * tiBatchCount]) {
+      order 'id'
+      createAlias('identifiers', 'titleIdentifiers', JoinType.LEFT_OUTER_JOIN) 
+
+      or {
+        // TI was updated directly since last run
+        gt('lastUpdated', last_refreshed)
+        gt('titleIdentifiers.lastUpdated', last_refreshed)
+      }
+
+      projections {
+        property('id')
+      }
+    }
+
+    tis
+  }
+
+  @CompileStatic(SKIP)
+  List<String> batchFetchPcisForTi(int pciBatchSize, int pciBatchCount, String tiId) {
+    List<String> pciIds = PackageContentItem.createCriteria().list([max: pciBatchSize, offset: pciBatchSize * pciBatchCount]) {
+      order 'id'
+      pti {
+        eq ('titleInstance.id', tiId)
+      }
+
+      projections {
+        property('id')
+      }
+    }
+  }
 
 
+  // "Rematch" process for ErmResources using matchKeys (Only available for PCI at the moment)
+  @CompileStatic(SKIP)
+  public void runRematchProcess() {
+    // Work out when job last ran
+    String new_cursor_value = System.currentTimeMillis()
+    Date last_refreshed
+    AppSetting resource_rematch_cursor;
+
+    // One transaction for fetching the initial values/creating AppSettings
+    AppSetting.withNewTransaction {
+      // Need to flush this initially so it exists for first instance
+      // Set initial cursor to 0 so everything currently in system gets updated
+      resource_rematch_cursor = AppSetting.findByKey('resource_rematch_cursor') ?: new AppSetting(
+        section:'registry',
+        settingType:'Date',
+        key: 'resource_rematch_cursor',
+        value: 0
+      ).save(flush: true, failOnError: true)
+
+      // Parse setting Strings to Date/Long
+      last_refreshed = new Date(Long.parseLong(resource_rematch_cursor.value))
+    }
+
+
+    // Batch fetch all TIs changed since last run
+    final int tiBatchSize = 100
+    int tiBatchCount = 0
+    TitleInstance.withNewTransaction {
+      List<String> tisUpdated = batchFetchTIs(tiBatchSize, tiBatchCount, last_refreshed)
+      while (tisUpdated && tisUpdated.size() > 0) {
+        tiBatchCount++
+        
+        log.debug("LOGDEBUG TIS UPDATED SINCE LAST RUN (BATCH ${tiBatchCount}): ${tisUpdated}")
+        tisUpdated.each {tiId -> 
+          // For each TI look up all PCIs for that TI
+          // FIXME Should we batch fetch these too?
+          final int pciBatchSize = 100
+          int pciBatchCount = 0
+          List<String> pciIds = batchFetchPcisForTi(pciBatchSize, pciBatchCount, tiId)
+          log.debug("LOGDEBUG PCIS for TI ${tiId} (BATCH ${pciBatchCount}): ${pciIds}")
+
+          while (pciIds && pciIds.size()) {
+            pciBatchCount++
+            // FIXME ERM-1800 Do something with the PCIs
+            rematchResources(pciIds)
+
+            pciIds = batchFetchPcisForTi(pciBatchSize, pciBatchCount, tiId)
+          }
+        }
+
+        // Next page
+        tisUpdated = batchFetchTIs(tiBatchSize, tiBatchCount, last_refreshed)
+      }
+    }
+    
+    // At end of job, set cursor value created at beginning of job as new cursor
+    AppSetting.withNewTransaction {
+      resource_rematch_cursor.value = new_cursor_value
+      resource_rematch_cursor.save(failOnError: true)
+    }
+  }
+
+  public void rematchResources(List<String> resourceIds) {
+    resourceIds.each {id -> 
+      ErmResource res = ErmResource.get(id)
+      TitleInstance ti; // To compare existing TI to one which we match later
+      Collection<MatchKey> matchKeys = res.matchKeys;
+
+      if (res instanceof PackageContentItem) {
+        ti = res.pti.titleInstance
+      } else {
+        throw new RuntimeException("Currently unable to rematch resource of type: ${res.getClass()}")
+      }
+
+      ContentItemSchema content_item_schema = matchKeyService.matchKeysToSchema(matchKeys)
+      log.debug("RESOLVED SCHEMA: ${content_item_schema}")
+      TitleInstance matchKeyTitleInstance = titleInstanceResolverService.resolve(content_item_schema, false)
+      log.debug("RESOLVED TI: ${matchKeyTitleInstance}")
+      log.debug("ORIGINAL TI: ${ti}")
+
+
+      // FIXME 1800 fill this in
+    }
+  }
 }

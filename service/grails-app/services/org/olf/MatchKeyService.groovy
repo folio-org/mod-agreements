@@ -2,7 +2,9 @@ package org.olf
 
 import java.util.concurrent.TimeUnit
 
+import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema
+import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.erm.Identifier
 
@@ -20,15 +22,15 @@ import org.slf4j.MDC
 
 import grails.util.GrailsNameUtils
 import grails.web.databinding.DataBinder
+import org.springframework.validation.BindingResult
 import groovy.util.logging.Slf4j
 
-import org.olf.dataimport.internal.TitleInstanceResolverService
 import org.olf.kb.MatchKey
 
 import grails.plugin.json.builder.JsonOutput
 
 @Slf4j
-class MatchKeyService {
+class MatchKeyService implements DataBinder{
   IdentifierService identifierService
 
   // This returns a List<Map> which can then be used to set up matchKeys on an ErmResource
@@ -247,5 +249,71 @@ class MatchKeyService {
     if (value) {
       return [key: key, value: value];
     }
+  }
+
+  // This method should take in a collection of matchKeys and return a ContentItemSchema, which can then be used to "rematch" a resource
+  ContentItemSchema matchKeysToSchema(Collection<MatchKey> matchKeys) {
+    Map schemaShape = [
+      instanceIdentifiers: [],
+      siblingInstanceIdentifiers: [],
+      instanceMedium: 'Electronic'
+    ]
+
+    matchKeys.each { mk -> 
+      // First check for ids
+      def electronic_id = mk.key =~ /electronic_(.*)/
+      if (electronic_id?.size()) {
+        schemaShape.instanceIdentifiers.add([
+          namespace: electronic_id[0][1],
+          value: mk.value
+        ])
+      }
+
+      def print_id = mk.key =~ /print_(.*)/
+      if (print_id?.size()) {
+        schemaShape.siblingInstanceIdentifiers.add([
+          namespace: print_id[0][1],
+          value: mk.value
+        ])
+      }
+
+      if (mk.key == 'date_electronic_published') {
+        schemaShape.dateMonographPublished = mk.value
+      }
+
+      if (mk.key == 'date_print_published') {
+        schemaShape.dateMonographPublishedPrint = mk.value
+      }
+
+      if (mk.key == 'author') {
+        schemaShape.firstAuthor = mk.value
+      }
+
+      if (mk.key == 'author') {
+        schemaShape.firstAuthor = mk.value
+      }
+
+      if (mk.key == 'editor') {
+        schemaShape.firstAuthor = mk.value
+      }
+
+      if (mk.key == 'monograph_volume') {
+        schemaShape.firstAuthor = mk.value
+      }
+
+      if (mk.key == 'edition') {
+        schemaShape.firstAuthor = mk.value
+      }
+    }
+
+    log.debug("LOGDEBUG SCHEMA SHAPE: ${schemaShape}")
+    
+    PackageContentImpl title = new PackageContentImpl()
+    BindingResult binding = bindData (title, schemaShape)
+    if (binding?.hasErrors()) {
+      binding.allErrors.each { log.debug "\t${it}" }
+    }
+    
+    title
   }
 }
