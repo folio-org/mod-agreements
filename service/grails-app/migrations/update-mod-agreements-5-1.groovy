@@ -96,4 +96,10 @@ databaseChangeLog = {
     }
   }
 
+  changeSet(author: "efreestone (manual)", id: "20220208-1107-001") {
+    addColumn (tableName: "identifier_occurrence" ) {
+      column(name: "io_date_created", type: "TIMESTAMP")
+      column(name: "io_last_updated", type: "TIMESTAMP")
+    }
+  }
 }

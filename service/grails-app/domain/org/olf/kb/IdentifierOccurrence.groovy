@@ -27,6 +27,9 @@ public class IdentifierOccurrence implements MultiTenant<IdentifierOccurrence> {
   @CategoryId(defaultInternal=true)
   RefdataValue status
 
+  Date dateCreated
+  Date lastUpdated
+
 
   static mapping = {
                    id column:'io_id', generator: 'uuid2', length:36
@@ -34,12 +37,17 @@ public class IdentifierOccurrence implements MultiTenant<IdentifierOccurrence> {
            identifier column:'io_identifier_fk'
                 title column:'io_ti_fk'
                status column:'io_status_fk'
+          dateCreated column:'io_date_created'
+          lastUpdated column:'io_last_updated'
+
   }
 
   static constraints = {
       identifier(nullable:false, blank:false)
            title(nullable:true, blank:false)
           status(nullable:false, blank:false)
+     dateCreated(nullable:true, blank:false)
+     lastUpdated(nullable:true, blank:false)
   }
 
 
