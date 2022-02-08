@@ -121,8 +121,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
           checkForEnrichment(result, citation, trustedSourceTI)
           break;
         default:
-          log.warn("title matched ${num_matches} records with a threshold >= ${MATCH_THRESHOLD} . Unable to continue. Matching IDs: ${candidate_list.collect { it.id }}. class one identifier count: ${num_class_one_identifiers}");
-          // throw new RuntimeException("Title match returned too many items (${num_matches})");
+          throw new RuntimeException("title matched ${num_matches} records with a threshold >= ${MATCH_THRESHOLD} . Unable to continue. Matching IDs: ${candidate_list.collect { it.id }}. class one identifier count: ${num_class_one_identifiers}");
           break;
       }
     }

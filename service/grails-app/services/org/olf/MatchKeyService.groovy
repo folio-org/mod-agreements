@@ -306,8 +306,6 @@ class MatchKeyService implements DataBinder{
       }
     }
 
-    log.debug("LOGDEBUG SCHEMA SHAPE: ${schemaShape}")
-    
     PackageContentImpl title = new PackageContentImpl()
     BindingResult binding = bindData (title, schemaShape)
     if (binding?.hasErrors()) {

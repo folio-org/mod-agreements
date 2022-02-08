@@ -96,7 +96,7 @@ class KbManagementService {
       }
 
       projections {
-        property('id')
+        distinct 'id'
       }
     }
 
@@ -112,7 +112,7 @@ class KbManagementService {
       }
 
       projections {
-        property('id')
+        distinct 'id'
       }
     }
   }
@@ -148,21 +148,23 @@ class KbManagementService {
     TitleInstance.withNewTransaction {
       List<String> tisUpdated = batchFetchTIs(tiBatchSize, tiBatchCount, last_refreshed)
       while (tisUpdated && tisUpdated.size() > 0) {
+
         tiBatchCount++
-        
-        log.debug("LOGDEBUG TIS UPDATED SINCE LAST RUN (BATCH ${tiBatchCount}): ${tisUpdated}")
-        tisUpdated.each {tiId -> 
+        tisUpdated.each {tiId ->
+          log.info("TI ${tiId} changed since last rematch run.")
           // For each TI look up all PCIs for that TI
-          // FIXME Should we batch fetch these too?
           final int pciBatchSize = 100
           int pciBatchCount = 0
           List<String> pciIds = batchFetchPcisForTi(pciBatchSize, pciBatchCount, tiId)
-          log.debug("LOGDEBUG PCIS for TI ${tiId} (BATCH ${pciBatchCount}): ${pciIds}")
 
           while (pciIds && pciIds.size()) {
             pciBatchCount++
-            // FIXME ERM-1800 Do something with the PCIs
-            rematchResources(pciIds)
+
+            try {
+              rematchResources(pciIds)
+            } catch (Exception e) {
+              log.error("Error running rematchResources for TI (${tiId}): ${e}")
+            }
 
             pciIds = batchFetchPcisForTi(pciBatchSize, pciBatchCount, tiId)
           }
@@ -181,7 +183,8 @@ class KbManagementService {
   }
 
   public void rematchResources(List<String> resourceIds) {
-    resourceIds.each {id -> 
+    resourceIds.each {id ->
+      log.info("Attempting to rematch ErmResource ${id}")
       ErmResource res = ErmResource.get(id)
       TitleInstance ti; // To compare existing TI to one which we match later
       Collection<MatchKey> matchKeys = res.matchKeys;
@@ -192,14 +195,20 @@ class KbManagementService {
         throw new RuntimeException("Currently unable to rematch resource of type: ${res.getClass()}")
       }
 
-      ContentItemSchema content_item_schema = matchKeyService.matchKeysToSchema(matchKeys)
-      log.debug("RESOLVED SCHEMA: ${content_item_schema}")
-      TitleInstance matchKeyTitleInstance = titleInstanceResolverService.resolve(content_item_schema, false)
+      // This is within a try/catch above
+      TitleInstance matchKeyTitleInstance = titleInstanceResolverService.resolve(
+        matchKeyService.matchKeysToSchema(matchKeys),
+        false
+      )
       log.debug("RESOLVED TI: ${matchKeyTitleInstance}")
       log.debug("ORIGINAL TI: ${ti}")
+      if (matchKeyTitleInstance) {
+        // FIXME 1800 fill this in
+      } else {
+        log.error("An error occurred resolving TI from matchKey information: ${matchKeys}.")
+      }
 
 
-      // FIXME 1800 fill this in
     }
   }
 }
