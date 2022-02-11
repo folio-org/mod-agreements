@@ -379,6 +379,11 @@
           "permissionsRequired": [ "erm.custprops.item.delete" ]
         },
         {
+          "methods": ["GET"],
+          "pathPattern": "/erm/custprops/contexts",
+          "permissionsRequired": [ "erm.custprops.collection.get" ]
+        },
+        {
           "methods": ["POST"],
           "pathPattern": "/erm/packages/import",
           "permissionsRequired": [ "erm.packages.collection.import" ]

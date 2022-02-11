@@ -170,6 +170,7 @@ class UrlMappings {
         "/" (controller: 'customPropertyDefinition', action: 'index') {
           perPage = { params.perPage ?: 100 }
         }
+        "/contexts" (controller: 'customPropertyDefinition', action: "fetchContexts", method: 'GET')
       }
     }
     
