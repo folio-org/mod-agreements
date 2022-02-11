@@ -61,4 +61,14 @@ class CustomPropertyDefinitionController extends OkapiTenantAwareController<Cust
     bindData instance, (json ? new SimpleMapDataBindingSource(json) : getObjectToBind()), ['exclude': ['type']]
     instance
   }
+
+  List<String> fetchContexts() {
+    List<String> contexts = CustomPropertyDefinition.createCriteria().list() {
+      projections {
+        distinct 'ctx'
+      }
+    }
+
+    respond contexts
+  }
 }
