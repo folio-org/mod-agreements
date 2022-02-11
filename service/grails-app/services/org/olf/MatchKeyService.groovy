@@ -286,7 +286,7 @@ class MatchKeyService implements DataBinder{
       }
 
       if (mk.key == 'author') {
-        schemaShape.firstAuthor = mk.value
+        schemaShape.firstAuthor = mk.value // FIXME 
       }
 
       if (mk.key == 'author') {

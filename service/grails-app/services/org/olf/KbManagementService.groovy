@@ -45,9 +45,10 @@ class KbManagementService {
 
   // This code is essentially the same logic which creates scheduled Title and Package ingest jobs over in the KbHarvestService
   //@Scheduled(fixedDelay = 3600000L, initialDelay = 60000L) // Run task every hour, wait 1 minute.
-  @Scheduled(fixedDelay = 60000L) // Run task every 1 minute, wait 1 minute.
+  @Scheduled(fixedDelay = 300000L, initialDelay = 60000L) // Run task every 5 minute, wait 1 minute.
   void triggerRematch() {
     log.debug "Running scheduled rematch job for all tenants :{}", Instant.now()
+    return
 
     // ToDo: Don't think this will work for newly added tenants - need to investigate.
     okapiTenantAdminService.getAllTenantSchemaIds().each { tenant_schema_id ->
@@ -200,15 +201,18 @@ class KbManagementService {
         matchKeyService.matchKeysToSchema(matchKeys),
         false
       )
-      log.debug("RESOLVED TI: ${matchKeyTitleInstance}")
-      log.debug("ORIGINAL TI: ${ti}")
+      log.debug("LOGDEBUG RESOLVED TI: ${matchKeyTitleInstance}")
+      log.debug("LOGDEBUG ORIGINAL TI: ${ti}")
       if (matchKeyTitleInstance) {
-        // FIXME 1800 fill this in
+        if (matchKeyTitleInstance.id == ti.id) {
+          log.info ("ErmResource (${id}) already matched to correct TI according to match keys.")
+        } else {
+          // FIXME 1800 fill this in
+          // At this point we have a PCI resource which needs to be linked to a different TI
+        }
       } else {
         log.error("An error occurred resolving TI from matchKey information: ${matchKeys}.")
       }
-
-
     }
   }
 }
