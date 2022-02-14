@@ -528,6 +528,13 @@
           "pathPattern": "/erm/sts/template",
           "unit": "minute",
           "delay": "2"
+        },
+        {
+          "permissionsRequired" : [],
+          "methods": [ "GET" ],
+          "pathPattern": "/erm/admin/triggerRematch",
+          "unit": "minute",
+          "delay": "5"
         }
       ]
     }

@@ -6,7 +6,9 @@ import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 
 import org.olf.kb.ErmResource
 import org.olf.kb.PackageContentItem
+import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.TitleInstance
+import org.olf.kb.Platform
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.MatchKey
 import org.olf.MatchKeyService
@@ -21,7 +23,6 @@ import grails.gorm.DetachedCriteria
 import org.olf.general.jobs.ResourceRematchJob
 import org.springframework.scheduling.annotation.Scheduled
 
-import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.okapi.OkapiTenantResolver
 
 import grails.events.annotation.Subscriber
@@ -39,48 +40,40 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @CompileStatic
 class KbManagementService {
-  OkapiTenantAdminService okapiTenantAdminService
   MatchKeyService matchKeyService
   TitleInstanceResolverService titleInstanceResolverService
 
-  // This code is essentially the same logic which creates scheduled Title and Package ingest jobs over in the KbHarvestService
-  //@Scheduled(fixedDelay = 3600000L, initialDelay = 60000L) // Run task every hour, wait 1 minute.
-  @Scheduled(fixedDelay = 300000L, initialDelay = 60000L) // Run task every 5 minute, wait 1 minute.
-  void triggerRematch() {
-    log.debug "Running scheduled rematch job for all tenants :{}", Instant.now()
-    return
+  // Queue for changed IdentifierOccurrences
+  private Set<TitleInstance> changedTiQueue = [];
 
-    // ToDo: Don't think this will work for newly added tenants - need to investigate.
-    okapiTenantAdminService.getAllTenantSchemaIds().each { tenant_schema_id ->
-      log.debug "Perform trigger rematch for tenant schema ${tenant_schema_id}"
-      try {
-        triggerRematchForTenant(tenant_schema_id as String, true)
-      }
-      catch ( Exception e ) {
-        log.error("Unexpected error in triggerRematch for tenant ${tenant_schema_id}", e);
-      }
-    }
+  public void addTiToQueue(TitleInstance ti) {
+    changedTiQueue.add(ti)
   }
 
+  public void clearTiQueue() {
+    changedTiQueue = []
+  };
+
   @CompileStatic(SKIP)
-  private void triggerRematchForTenant(final String tenant_schema_id, boolean scheduled = false) {
-    Tenants.withId(tenant_schema_id) {
+  private void triggerRematch() {
+    // Look for jobs already queued or in progress
 
-      // Look for jobs already queued or in progress
+    ResourceRematchJob rematchJob = ResourceRematchJob.findByStatusInList([
+      ResourceRematchJob.lookupStatus('Queued'),
+      ResourceRematchJob.lookupStatus('In progress')
+    ])
 
-      ResourceRematchJob rematchJob = ResourceRematchJob.findByStatusInList([
-        ResourceRematchJob.lookupStatus('Queued'),
-        ResourceRematchJob.lookupStatus('In progress')
-      ])
-
-      if (!rematchJob) {
-        String jobTitle = scheduled ? "Scheduled Resource Rematch Job ${Instant.now()}" : "Manual Resource Rematch Job ${Instant.now()}"
+    if (!rematchJob) {
+      if (changedTiQueue.size() > 0) {
+        String jobTitle = "Resource Rematch Job ${Instant.now()}"
         rematchJob = new ResourceRematchJob(name: jobTitle)
         rematchJob.setStatusFromString('Queued')
         rematchJob.save(failOnError: true, flush: true)
       } else {
-        log.debug('Resource rematch already running or scheduled. Ignore.')
+        log.debug('No TitleInstances changed since last run, resource rematch job not scheduled')
       }
+    } else {
+      log.debug('Resource rematch already running or scheduled. Ignore.')
     }
   }
 
@@ -122,6 +115,11 @@ class KbManagementService {
   // "Rematch" process for ErmResources using matchKeys (Only available for PCI at the moment)
   @CompileStatic(SKIP)
   public void runRematchProcess() {
+    // Firstly we need to save the current state of the queue and clear existing queue so more TIs can be added during run
+    Set<TitleInstance> processTis = changedTiQueue.collect()
+    clearTiQueue()
+
+    // FIXME might not be needed
     // Work out when job last ran
     String new_cursor_value = System.currentTimeMillis()
     Date last_refreshed
@@ -143,8 +141,12 @@ class KbManagementService {
     }
 
 
-    // Batch fetch all TIs changed since last run
-    final int tiBatchSize = 100
+    /* Batch fetch all TIs changed since last run
+     TODO Ian thinks this would be better to run based on events.
+     Essentially every time an IdentifierOccurrence changes, store it in a queue
+     Then if the queue is non-empty, run this job.
+     */
+/*     final int tiBatchSize = 100
     int tiBatchCount = 0
     TitleInstance.withNewTransaction {
       List<String> tisUpdated = batchFetchTIs(tiBatchSize, tiBatchCount, last_refreshed)
@@ -174,8 +176,30 @@ class KbManagementService {
         // Next page
         tisUpdated = batchFetchTIs(tiBatchSize, tiBatchCount, last_refreshed)
       }
+    } */
+
+    TitleInstance.withNewTransaction {
+      processTis.each {ti ->
+        log.info("TI ${ti} changed since last rematch run.")
+        // For each TI look up all PCIs for that TI
+        final int pciBatchSize = 100
+        int pciBatchCount = 0
+        List<String> pciIds = batchFetchPcisForTi(pciBatchSize, pciBatchCount, ti?.id)
+
+        while (pciIds && pciIds.size()) {
+          pciBatchCount++
+
+          try {
+            rematchResources(pciIds)
+          } catch (Exception e) {
+            log.error("Error running rematchResources for TI (${ti}): ${e}")
+          }
+
+          pciIds = batchFetchPcisForTi(pciBatchSize, pciBatchCount, ti?.id)
+        }
+      }
     }
-    
+
     // At end of job, set cursor value created at beginning of job as new cursor
     AppSetting.withNewTransaction {
       resource_rematch_cursor.value = new_cursor_value
@@ -183,6 +207,7 @@ class KbManagementService {
     }
   }
 
+  @CompileStatic(SKIP)
   public void rematchResources(List<String> resourceIds) {
     resourceIds.each {id ->
       log.info("Attempting to rematch ErmResource ${id}")
@@ -192,26 +217,43 @@ class KbManagementService {
 
       if (res instanceof PackageContentItem) {
         ti = res.pti.titleInstance
+        Platform platform = res.pti.platform
+
+        // This is within a try/catch above
+        TitleInstance matchKeyTitleInstance = titleInstanceResolverService.resolve(
+          matchKeyService.matchKeysToSchema(matchKeys),
+          false
+        )
+        log.debug("LOGDEBUG RESOLVED TI: ${matchKeyTitleInstance}")
+        log.debug("LOGDEBUG ORIGINAL TI: ${ti}")
+        if (matchKeyTitleInstance) {
+          if (matchKeyTitleInstance.id == ti.id) {
+            log.info ("ErmResource (${id}) already matched to correct TI according to match keys.")
+          } else {
+            // FIXME 1800 fill this in
+            // At this point we have a PCI resource which needs to be linked to a different TI
+            log.debug("LOGDEBUG USING PLATFORM: ${platform}")
+            log.debug("LOGDEBUG CHECKING FOR EXISTING PLATFORM/TI PAIR")
+            PlatformTitleInstance targetPti = PlatformTitleInstance.findByPlatformAndTitleInstance(platform, matchKeyTitleInstance)          
+            if (targetPti) {
+              log.debug("LOGDEBUG TARGETPTI EXISTS: ${targetPti}")
+              res.pti = targetPti; // Move PCI to new target PTI
+            } else {
+              log.debug("LOGDEBUG NO TARGETPTI, CREATE ONE")
+              res.pti = new PlatformTitleInstance(
+                titleInstance: matchKeyTitleInstance,
+                platform: platform,
+                url: res.pti.url // Fill new PTI url with existing PTI url from resource
+              )
+            }
+          }
+        } else {
+          log.error("An error occurred resolving TI from matchKey information: ${matchKeys}.")
+        }
+
+        res.save(failOnError: true)
       } else {
         throw new RuntimeException("Currently unable to rematch resource of type: ${res.getClass()}")
-      }
-
-      // This is within a try/catch above
-      TitleInstance matchKeyTitleInstance = titleInstanceResolverService.resolve(
-        matchKeyService.matchKeysToSchema(matchKeys),
-        false
-      )
-      log.debug("LOGDEBUG RESOLVED TI: ${matchKeyTitleInstance}")
-      log.debug("LOGDEBUG ORIGINAL TI: ${ti}")
-      if (matchKeyTitleInstance) {
-        if (matchKeyTitleInstance.id == ti.id) {
-          log.info ("ErmResource (${id}) already matched to correct TI according to match keys.")
-        } else {
-          // FIXME 1800 fill this in
-          // At this point we have a PCI resource which needs to be linked to a different TI
-        }
-      } else {
-        log.error("An error occurred resolving TI from matchKey information: ${matchKeys}.")
       }
     }
   }

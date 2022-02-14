@@ -151,10 +151,10 @@ class MatchKeyService implements DataBinder{
         // Mismatched value, update
         resourceMatchKey.value = mk.value
       }
+    }
 
-      if (saveOnExit) {
-        resource.save(failOnError: true) // This save will cascade to all matchKeys
-      }
+    if (saveOnExit) {
+      resource.save(failOnError: true) // This save will cascade to all matchKeys
     }
   }
 

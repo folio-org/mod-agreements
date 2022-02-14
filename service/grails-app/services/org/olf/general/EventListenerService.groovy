@@ -4,9 +4,11 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
 import org.olf.kb.ErmResource
+import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.CoverageStatement
 
 import org.olf.EntitlementService
+import org.olf.KbManagementService
 
 import grails.gorm.transactions.Transactional
 
@@ -26,11 +28,18 @@ import org.grails.datastore.mapping.engine.event.PostUpdateEvent
 public class EventListenerService implements ApplicationListener {
 
   EntitlementService entitlementService
+  KbManagementService kbManagementService
 
   void afterUpdate(PostUpdateEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
       entitlementService.handleErmResourceChange(res)
+    }
+
+    if (event.entityObject instanceof IdentifierOccurrence) {
+      IdentifierOccurrence io = (IdentifierOccurrence) event.entityObject
+      // Identifier has changed, add the TI to the queue.
+      kbManagementService.addTiToQueue(io.title)
     }
   }
 

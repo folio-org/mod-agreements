@@ -27,6 +27,7 @@ class AdminController implements DataBinder{
   def entitlementLogService
   def fileUploadService
   def matchKeyService
+  def kbManagementService
 
   public AdminController() {
   }
@@ -148,6 +149,15 @@ class AdminController implements DataBinder{
 
       nmkaj.save(failOnError: true)
     }
+
+    result.status = 'OK'
+    render result as JSON
+  }
+
+  public triggerRematch() {
+    def result = [:]
+    log.debug("AdminController::triggerRematch");
+    kbManagementService.triggerRematch()
 
     result.status = 'OK'
     render result as JSON
