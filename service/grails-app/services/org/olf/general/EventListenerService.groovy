@@ -39,7 +39,7 @@ public class EventListenerService implements ApplicationListener {
     if (event.entityObject instanceof IdentifierOccurrence) {
       IdentifierOccurrence io = (IdentifierOccurrence) event.entityObject
       // Identifier has changed, add the TI to the queue.
-      kbManagementService.addTiToQueue(io.title)
+      kbManagementService.addTiToQueue(io.title?.id)
     }
   }
 
