@@ -50,7 +50,7 @@ public class ErmHousekeepingService {
           log.debug("Check app settings for file storage are in place");
 
           // Bootstrap refdata - controlled vocabulary of storage engines
-          RefdataValue.lookupOrCreate('FileStorageEngines', 'DB');
+          RefdataValue.lookupOrCreate('FileStorageEngines', 'LOB');
           RefdataValue.lookupOrCreate('FileStorageEngines', 'S3');
 
           def default_aws_region = grailsApplication.config.kiwt?.filestore?.aws_region
