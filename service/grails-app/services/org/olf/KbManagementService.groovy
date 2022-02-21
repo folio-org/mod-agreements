@@ -118,7 +118,7 @@ class KbManagementService {
   @CompileStatic(SKIP)
   public void runRematchProcess() {
     // Firstly we need to save the current state of the queue and clear existing queue so more TIs can be added during run
-    Set<TitleInstance> processTis = changedTiQueue.collect()
+    Set<String> processTis = changedTiQueue.collect()
     clearTiQueue()
 
     log.info("Running rematch process on ${processTis.size()} TitleInstances")
