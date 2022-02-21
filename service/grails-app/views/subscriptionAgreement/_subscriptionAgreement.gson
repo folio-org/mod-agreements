@@ -44,7 +44,7 @@ if ( controllerName != 'usageDataProvider' ) {
   should_expand << 'usageDataProviders'
 }
 
-if ( controllerName == 'subscriptionAgreement' ) {
+if ( ( controllerName == 'subscriptionAgreement' ) && ( ['save', 'show', 'edit', 'update'].contains(actionName) ) ) {
   should_expand << 'items'
 }
 
