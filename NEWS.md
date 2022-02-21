@@ -1,3 +1,6 @@
+## 5.0.7 2022-02-21
+* ERM-2000 Performance Issue: Slowness in loading agreements list - Kiwi
+
 ## 5.0.6 2021-11-12
 * ERM-1917 Duplicate title instance created on package import in Kiwi bugfest (incoming issn now maps to eissn in system)
 
