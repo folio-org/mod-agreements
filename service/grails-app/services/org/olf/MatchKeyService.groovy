@@ -1,33 +1,16 @@
 package org.olf
 
-import java.util.concurrent.TimeUnit
-
 import org.olf.dataimport.internal.PackageContentImpl
-import org.olf.dataimport.internal.PackageSchema
-import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
-import org.olf.dataimport.erm.Identifier
-
-import org.olf.IdentifierService
-
-import org.olf.kb.RemoteKB
 import org.olf.kb.ErmResource
-import org.olf.kb.TitleInstance
-import org.olf.kb.PackageContentItem
-import org.olf.kb.MatchKey
 import org.olf.kb.IdentifierOccurrence
-
-
-import org.slf4j.MDC
-
-import grails.util.GrailsNameUtils
-import grails.web.databinding.DataBinder
-import org.springframework.validation.BindingResult
-import groovy.util.logging.Slf4j
-
 import org.olf.kb.MatchKey
+import org.olf.kb.PackageContentItem
+import org.olf.kb.TitleInstance
+import org.springframework.validation.BindingResult
 
-import grails.plugin.json.builder.JsonOutput
+import grails.web.databinding.DataBinder
+import groovy.util.logging.Slf4j
 
 @Slf4j
 class MatchKeyService implements DataBinder{

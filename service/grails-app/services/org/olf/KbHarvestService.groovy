@@ -3,6 +3,7 @@ package org.olf
 import static groovy.transform.TypeCheckingMode.SKIP
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 import org.olf.general.jobs.PackageIngestJob
 import org.olf.general.jobs.TitleIngestJob
@@ -15,9 +16,6 @@ import com.k_int.okapi.OkapiTenantResolver
 import grails.events.annotation.Subscriber
 import grails.gorm.multitenancy.Tenants
 import groovy.transform.CompileStatic
-
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import groovy.util.logging.Slf4j
 
 /**

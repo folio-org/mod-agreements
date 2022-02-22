@@ -1,16 +1,15 @@
 package org.olf
 
-import grails.gorm.transactions.Transactional
+import com.k_int.okapi.OkapiTenantResolver
+import com.k_int.web.toolkit.custprops.CustomPropertyDefinition
+import com.k_int.web.toolkit.refdata.RefdataCategory
+import com.k_int.web.toolkit.refdata.RefdataValue;
+import com.k_int.web.toolkit.settings.AppSetting
 
 import grails.events.annotation.Subscriber
 import grails.gorm.multitenancy.Tenants
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
-import com.k_int.okapi.OkapiTenantResolver
-import com.k_int.web.toolkit.settings.AppSetting
-import com.k_int.web.toolkit.refdata.RefdataValue;
-import com.k_int.web.toolkit.custprops.CustomPropertyDefinition
-import com.k_int.web.toolkit.refdata.RefdataCategory
 
 
 /**
