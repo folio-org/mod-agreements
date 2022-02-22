@@ -8,6 +8,8 @@ import grails.converters.JSON
 
 import com.k_int.web.toolkit.refdata.RefdataValue
 
+import org.olf.general.jobs.ResourceRematchJob
+
 import org.olf.kb.RemoteKB
 import org.springframework.validation.BindingResult
 import org.olf.dataimport.internal.InternalPackageImpl
@@ -158,6 +160,20 @@ class AdminController implements DataBinder{
     def result = [:]
     log.debug("AdminController::triggerRematch");
     kbManagementService.triggerRematch()
+
+    result.status = 'OK'
+    render result as JSON
+  }
+
+  // Ensures resource rematch runs for all TIs in system
+  public triggerFullRematch() {
+    def result = [:]
+    log.debug("AdminController::triggerFullRematch");
+
+    String jobTitle = "Full Resource Rematch Job ${Instant.now()}"
+    ResourceRematchJob rematchJob = new ResourceRematchJob(name: jobTitle, since: Instant.EPOCH)
+    rematchJob.setStatusFromString('Queued')
+    rematchJob.save(failOnError: true, flush: true)
 
     result.status = 'OK'
     render result as JSON

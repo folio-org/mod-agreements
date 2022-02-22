@@ -2,9 +2,10 @@ package org.olf.general.jobs
 
 import grails.gorm.MultiTenant
 import grails.gorm.multitenancy.Tenants
+import java.time.Instant
 
 class ResourceRematchJob extends PersistentJob implements MultiTenant<ResourceRematchJob>{
-  Date since
+  Instant since
 
   static mapping = {
     since column: 'since'
