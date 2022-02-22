@@ -43,16 +43,48 @@ class KbManagementService {
   MatchKeyService matchKeyService
   TitleInstanceResolverService titleInstanceResolverService
 
-  // Queue for changed IdentifierOccurrences. These will be set from the EventListenerService when something "relevant" has changed
-  private Set<String> changedTiQueue = [];
+  @CompileStatic(SKIP)
+  // COUNT query to check for TIs which have changed, or have changed IdentifierOccurrences OR MatchKeys
+  static final DetachedCriteria<String> CHANGED_TITLES( final Date since ) { 
+    new DetachedCriteria(TitleInstance, 'changed_tis').build {
+      or {
+        // TI was updated directly
+        isNotNull('lastUpdated')
+        gt ('lastUpdated', since)
 
-  public void addTiToQueue(String tiId) {
-    changedTiQueue.add(tiId)
+        // IdentifierOccurrence on TI was updated
+        'in' 'id', new DetachedCriteria(TitleInstance, 'tis_with_changed_match_keys').build {
+          identifiers {
+            isNotNull('lastUpdated')
+            gt ('lastUpdated', since)
+          }
+          projections {
+            distinct 'tis_with_changed_match_keys.id'
+          }
+        }
+
+        // MatchKey on PCI was updated
+        'in' 'id', new DetachedCriteria(TitleInstance, 'tis_with_changed_pcis').build {
+          platformInstances {
+            packageOccurences {
+              matchKeys {
+                isNotNull('lastUpdated')
+                gt ('lastUpdated', since)
+              }
+            }
+          }
+
+          projections {
+            distinct 'tis_with_changed_pcis.id'
+          }
+        }
+      }
+
+      projections {
+        distinct 'changed_tis.id'
+      }
+    }
   }
-
-  public void clearTiQueue() {
-    changedTiQueue = []
-  };
 
   @CompileStatic(SKIP)
   private void triggerRematch() {
@@ -63,40 +95,36 @@ class KbManagementService {
     ])
 
     if (!rematchJob) {
-      if (changedTiQueue.size() > 0) {
+      // Lookup previous ResourceRematchJob
+      ResourceRematchJob lastRematchJob = ResourceRematchJob.find("from ResourceRematchJob order by dateCreated desc")
+      Date since = lastRematchJob ? Date.from(lastRematchJob?.started) : new Date(0);
+
+
+      log.debug("LOGDEBUG ATTEMPTING QUERY")
+      DetachedCriteria<String> changedTitles = CHANGED_TITLES(since);
+      log.debug("LOGDEBUG CHANGED TITLES SINCE (${since})? ${changedTitles.list()}")
+      log.debug("LOGDEBUG # CHANGED TITLES SINCE (list.size) (${since})? ${changedTitles.list().size()}")
+
+      def countTheThing = changedTitles.list {
+        projections {
+          rowCount()
+        }
+      }
+      log.debug("LOGDEBUG # OF CHANGED TITLES SINCE (${since})? ${countTheThing}")
+
+     /*  if (changedTitles.count() > 0) {
         String jobTitle = "Resource Rematch Job ${Instant.now()}"
-        rematchJob = new ResourceRematchJob(name: jobTitle)
+        rematchJob = new ResourceRematchJob(name: jobTitle, since: since)
         rematchJob.setStatusFromString('Queued')
         rematchJob.save(failOnError: true, flush: true)
       } else {
         log.debug('No TitleInstances changed since last run, resource rematch job not scheduled')
-      }
+      } */
     } else {
       log.debug('Resource rematch already running or scheduled. Ignore.')
     }
   }
 
-
-  // Currently not in use. Eventually may be used for a "rematch check for all TIs in system"
-  @CompileStatic(SKIP)
-  List<String> batchFetchTIs(int tiBatchSize, int tiBatchCount, Date last_refreshed) {
-    List<String> tis = TitleInstance.createCriteria().list([max: tiBatchSize, offset: tiBatchSize * tiBatchCount]) {
-      order 'id'
-      createAlias('identifiers', 'titleIdentifiers', JoinType.LEFT_OUTER_JOIN) 
-
-      or {
-        // TI was updated directly since last run
-        gt('lastUpdated', last_refreshed)
-        gt('titleIdentifiers.lastUpdated', last_refreshed)
-      }
-
-      projections {
-        distinct 'id'
-      }
-    }
-
-    tis
-  }
 
   @CompileStatic(SKIP)
   List<String> batchFetchPcisForTi(int pciBatchSize, int pciBatchCount, String tiId) {
@@ -116,31 +144,33 @@ class KbManagementService {
 
   // "Rematch" process for ErmResources using matchKeys (Only available for PCI at the moment)
   @CompileStatic(SKIP)
-  public void runRematchProcess() {
-    // Firstly we need to save the current state of the queue and clear existing queue so more TIs can be added during run
-    Set<TitleInstance> processTis = changedTiQueue.collect()
-    clearTiQueue()
-
-    log.info("Running rematch process on ${processTis.size()} TitleInstances")
-
+  public void runRematchProcess(Date since) {
     TitleInstance.withNewTransaction {
-      processTis.each {tiId ->
-        log.info("TI ${tiId} changed since last rematch run.")
-        // For each TI look up all PCIs for that TI
-        final int pciBatchSize = 100
-        int pciBatchCount = 0
-        List<String> pciIds = batchFetchPcisForTi(pciBatchSize, pciBatchCount, tiId)
+      final Iterator<String> tis = simpleLookupService.lookupAsBatchedStream(TitleInstance, null, 100) {
+        'in' 'id', CHANGED_TITLES(since)
+      }
 
-        while (pciIds && pciIds.size()) {
-          pciBatchCount++
+      if (tis.hasNext()) {
+        while (tis.hasNext()) {
+          final String tiId = tis.next()
+          log.info("TI ${tiId} changed since last rematch run.")
+          // For each TI look up all PCIs for that TI
 
-          try {
-            rematchResources(pciIds)
-          } catch (Exception e) {
-            log.error("Error running rematchResources for TI (${tiId}): ${e}")
+          final int pciBatchSize = 100
+          int pciBatchCount = 0
+          List<String> pciIds = batchFetchPcisForTi(pciBatchSize, pciBatchCount, tiId)
+
+          while (pciIds && pciIds.size()) {
+            pciBatchCount++
+
+            try {
+              rematchResources(pciIds)
+            } catch (Exception e) {
+              log.error("Error running rematchResources for TI (${tiId}): ${e}")
+            }
+
+            pciIds = batchFetchPcisForTi(pciBatchSize, pciBatchCount, tiId)
           }
-
-          pciIds = batchFetchPcisForTi(pciBatchSize, pciBatchCount, tiId)
         }
       }
     }

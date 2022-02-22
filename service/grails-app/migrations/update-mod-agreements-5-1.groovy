@@ -102,4 +102,17 @@ databaseChangeLog = {
       column(name: "io_last_updated", type: "TIMESTAMP")
     }
   }
+
+  changeSet(author: "efreestone (manual)", id: "20220221-1621-001") {
+    addColumn (tableName: "match_key" ) {
+      column(name: "mk_date_created", type: "TIMESTAMP")
+      column(name: "mk_last_updated", type: "TIMESTAMP")
+    }
+  }
+
+  changeSet(author: "efreestone (manual)", id: "20220221-1728-001") {
+    addColumn (tableName: "resource_rematch_job" ) {
+      column(name: "since", type: "TIMESTAMP")
+    }
+  }
 }

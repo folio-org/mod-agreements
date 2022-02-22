@@ -13,12 +13,17 @@ public class MatchKey implements MultiTenant<MatchKey> {
   String value
   ErmResource resource
 
+  Date dateCreated
+  Date lastUpdated
+
   static mapping = {
-           id column: 'mk_id', generator: 'uuid2', length:36
-      version column: 'mk_version'
-          key column: 'mk_key'
-        value column: 'mk_value'
-     resource column: 'mk_resource_fk'
+             id column: 'mk_id', generator: 'uuid2', length:36
+        version column: 'mk_version'
+            key column: 'mk_key'
+          value column: 'mk_value'
+       resource column: 'mk_resource_fk'
+    dateCreated column: 'mk_date_created'
+    lastUpdated column: 'mk_last_updated'
   }
 
   static constraints = {

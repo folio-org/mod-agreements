@@ -37,21 +37,6 @@ public class EventListenerService implements ApplicationListener {
       ErmResource res = (ErmResource) event.entityObject
       entitlementService.handleErmResourceChange(res)
     }
-
-    if (event.entityObject instanceof IdentifierOccurrence) {
-      IdentifierOccurrence io = (IdentifierOccurrence) event.entityObject
-      // Identifier has changed, add the TI to the queue.
-      ermResourceService.addTiToQueue(io.title)
-    }
-
-    /* Match keys are technically not updated currently.
-     * We treat key/value as a static pair and insert delete accordingly.
-     * This line is simply for futureproofing/consistency
-     */
-    if (event.entityObject instanceof MatchKey) {
-      MatchKey mk = (MatchKey) event.entityObject
-      ermResourceService.addTiToQueue(mk.resource)
-    }
   }
 
   void afterInsert(PostInsertEvent event) {
@@ -59,22 +44,12 @@ public class EventListenerService implements ApplicationListener {
       ErmResource res = (ErmResource) event.entityObject
       entitlementService.handleErmResourceChange(res)
     }
-
-    if (event.entityObject instanceof MatchKey) {
-      MatchKey mk = (MatchKey) event.entityObject
-      ermResourceService.addTiToQueue(mk.resource)
-    }
   }
 
   void afterDelete(PostDeleteEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
       entitlementService.handleErmResourceChange(res)
-    }
-
-    if (event.entityObject instanceof MatchKey) {
-      MatchKey mk = (MatchKey) event.entityObject
-      ermResourceService.addTiToQueue(mk.resource)
     }
   }
 

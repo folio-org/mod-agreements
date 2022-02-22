@@ -73,19 +73,5 @@ public class ErmResourceService {
   ContentItemSchema resourceToSchema(ErmResource resource) {
 
   }
-
-  void addTiToQueue(ErmResource res) {
-    if (res instanceof TitleInstance) {
-      kbManagementService.addTiToQueue(res?.id)
-    }
-
-    if (res instanceof PlatformTitleInstance) {
-      kbManagementService.addTiToQueue(res?.titleInstance?.id)
-    }
-
-    if (res instanceof PackageContentItem) {
-      kbManagementService.addTiToQueue(res?.pti?.titleInstance?.id)
-    }
-  }
 }
 
