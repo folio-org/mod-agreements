@@ -55,12 +55,6 @@ class KbManagementService {
     new DetachedCriteria(TitleInstance, 'changed_tis').build {
       
       or {
-        // TI was updated directly
-        and {
-          isNotNull('lastUpdated')
-          gt ('lastUpdated', sinceDate)
-        }
-
         // IdentifierOccurrence on TI was updated
         'in' 'id', new DetachedCriteria(TitleInstance, 'tis_with_changed_match_keys').build {
           identifiers {
@@ -111,11 +105,9 @@ class KbManagementService {
         maxResults 1
       }
 
-      log.debug("LOGDEBUG SINCE INST: ${sinceInst}")
-      
       final Instant since = sinceInst ?: Instant.EPOCH
       final int count = CHANGED_TITLES(since).count()
-      
+
      if (count > 0) {
         String jobTitle = "Resource Rematch Job ${Instant.now()}"
         rematchJob = new ResourceRematchJob(name: jobTitle, since: since)
