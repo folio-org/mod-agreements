@@ -114,6 +114,12 @@ public class ErmHousekeepingService {
               "primary": true
             ]
           ].each { Map definition ->
+            
+            if (!CustomPropertyDefinition.findByName(definition['name'])) {
+              log.info ("Skipping adding CustomPropertyDefinition named ${definition['name']} as it already exists.")
+              return
+            }
+            
             final String type = definition.remove('type')
             CustomPropertyDefinition cpd = CustomPropertyDefinition.forType(type, definition)
             cpd.save(failOnError:true)
