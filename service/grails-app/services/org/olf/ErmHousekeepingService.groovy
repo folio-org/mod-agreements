@@ -115,7 +115,7 @@ public class ErmHousekeepingService {
             ]
           ].each { Map definition ->
             
-            if (!CustomPropertyDefinition.findByName(definition['name'])) {
+            if (CustomPropertyDefinition.findByName(definition['name'])) {
               log.info ("Skipping adding CustomPropertyDefinition named ${definition['name']} as it already exists.")
               return
             }
