@@ -87,11 +87,14 @@ class BaseTIRS {
    */ 
   protected void checkForEnrichment(TitleInstance title, ContentItemSchema citation, boolean trustedSourceTI) {
     log.debug("Checking for enrichment of Title Instance: ${title} :: trusted: ${trustedSourceTI}")
+    def changes = 0;
+    
     if (trustedSourceTI == true) {
       log.debug("Trusted source for TI enrichment--enriching")
 
       if (title.name != citation.title) {
         title.name = citation.title
+        changes++
       }
 
       /*
@@ -106,12 +109,14 @@ class BaseTIRS {
        
         title.publicationTypeFromString = citation.instancePublicationMedia
         title.markDirty()
+        changes++
       }
 
       if (validateCitationType(citation?.instanceMedia)) {
         if ((title.type == null) || (title.type.value != citation.instanceMedia)) {
           title.typeFromString = citation.instanceMedia
           title.markDirty()
+          changes++
         }
       } else {
         log.error("Type (${citation.instanceMedia}) does not match 'serial' or 'monograph' for title \"${citation.title}\", skipping field enrichment.")
@@ -119,30 +124,35 @@ class BaseTIRS {
 
       if (title.dateMonographPublished != citation.dateMonographPublished) {
         title.dateMonographPublished = citation.dateMonographPublished
+        changes++
       }
 
       if (title.firstAuthor != citation.firstAuthor) {
         title.firstAuthor = citation.firstAuthor
+        changes++
       }
       
       if (title.firstEditor != citation.firstEditor) {
         title.firstEditor = citation.firstEditor
+        changes++
       }
 
       if (title.monographEdition != citation.monographEdition) {
         title.monographEdition = citation.monographEdition
+        changes++
       }
 
       if (title.monographVolume != citation.monographVolume) {
         title.monographVolume = citation.monographVolume
+        changes++
       }
-      
-      if(! title.save(flush: true) ) {
+
+      // Ensure we only save title on enrich if changes have been made
+      if (changes > 0 && !title.save(flush: true)) {
         title.errors.fieldErrors.each {
           log.error("Error saving title. Field ${it.field} rejected value: \"${it.rejectedValue}\".")
         }
       }
-
     } else {
       log.debug("Not a trusted source for TI enrichment--skipping")
     }

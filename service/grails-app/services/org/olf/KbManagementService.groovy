@@ -48,19 +48,24 @@ class KbManagementService {
 
   @CompileStatic(SKIP)
   // COUNT query to check for TIs which have changed, or have changed IdentifierOccurrences OR MatchKeys
-  static final DetachedCriteria<TitleInstance> CHANGED_TITLES( final Instant since ) { 
+  static final DetachedCriteria<TitleInstance> CHANGED_TITLES( final Instant since ) {
+
+    // Ensure we run the actual query on a DATE not an Instant, since the lastUpdated fields are Dates
+    Date sinceDate = Date.from(since)
     new DetachedCriteria(TitleInstance, 'changed_tis').build {
       
       or {
         // TI was updated directly
-        isNotNull('lastUpdated')
-        gt ('lastUpdated', since)
+        and {
+          isNotNull('lastUpdated')
+          gt ('lastUpdated', sinceDate)
+        }
 
         // IdentifierOccurrence on TI was updated
         'in' 'id', new DetachedCriteria(TitleInstance, 'tis_with_changed_match_keys').build {
           identifiers {
             isNotNull('lastUpdated')
-            gt ('lastUpdated', since)
+            gt ('lastUpdated', sinceDate)
           }
           projections {
             property 'tis_with_changed_match_keys.id'
@@ -73,7 +78,7 @@ class KbManagementService {
             packageOccurences {
               matchKeys {
                 isNotNull('lastUpdated')
-                gt ('lastUpdated', since)
+                gt ('lastUpdated', sinceDate)
               }
             }
           }
@@ -96,14 +101,17 @@ class KbManagementService {
 
     if (!rematchJob) {
       // Last job run
-      final Instant sinceInst = ResourceRematchJob.get {
-        // Only finished jobs
+      final Instant sinceInst = ResourceRematchJob.createCriteria().get {
+        // Only successful finished jobs
         order 'ended', 'desc'
-        projection {
-          property 'started'
+
+        projections {
+          property 'ended'
         }
         maxResults 1
-      }      
+      }
+
+      log.debug("LOGDEBUG SINCE INST: ${sinceInst}")
       
       final Instant since = sinceInst ?: Instant.EPOCH
       final int count = CHANGED_TITLES(since).count()
@@ -127,21 +135,18 @@ class KbManagementService {
     TitleInstance.withNewTransaction {
       
       // Seems to need the lists?
-      final Iterator<List<String>> tis = simpleLookupService.lookupAsBatchedStream(TitleInstance, null, 100, null, null, null) {
+      final Iterator<String> tis = simpleLookupService.lookupAsBatchedStream(TitleInstance, null, 100, null, null, null) {
         // Just get the IDs
         'in' 'id', CHANGED_TITLES(since).distinct('id')
 
         projections {
           property 'id'
-          property 'name'
         }
       }
 
       if (tis.hasNext()) {
         while (tis.hasNext()) {
-          final List<String> ti = tis.next()
-          final String tiId = ti[0]
-          log.info("${ti[1]} changed since last rematch run.")
+          final String tiId = tis.next()
           // For each TI look up all PCIs for that TI
 
           // Seems to need the lists?
@@ -189,7 +194,7 @@ class KbManagementService {
 
       if (matchKeyTitleInstance) {
         if (matchKeyTitleInstance.id == ti.id) {
-          log.info ("ErmResource (${res}) already matched to correct TI according to match keys.")
+          log.info ("${res} already matched to correct TI according to match keys.")
         } else {
           // At this point we have a PCI resource which needs to be linked to a different TI
           PlatformTitleInstance targetPti = PlatformTitleInstance.findByPlatformAndTitleInstance(platform, matchKeyTitleInstance)          
@@ -204,12 +209,13 @@ class KbManagementService {
               url: res.pti.url // Fill new PTI url with existing PTI url from resource
             )
           }
+
+          // Only save resource when a change has occurred--otherwise next rematch run will grab this resource again
+          res.save(failOnError: true)
         }
       } else {
         log.error("An error occurred resolving TI from matchKey information: ${matchKeys}.")
       }
-
-      res.save(failOnError: true)
     } else {
       throw new RuntimeException("Currently unable to rematch resource of type: ${res.getClass()}")
     }
