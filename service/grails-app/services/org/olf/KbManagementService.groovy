@@ -45,8 +45,9 @@ class KbManagementService {
 
   @CompileStatic(SKIP)
   // COUNT query to check for TIs which have changed, or have changed IdentifierOccurrences OR MatchKeys
-  static final DetachedCriteria<String> CHANGED_TITLES( final Date since ) { 
+  static final DetachedCriteria<TitleInstance> CHANGED_TITLES( final Date since ) { 
     new DetachedCriteria(TitleInstance, 'changed_tis').build {
+      
       or {
         // TI was updated directly
         isNotNull('lastUpdated')
@@ -59,7 +60,7 @@ class KbManagementService {
             gt ('lastUpdated', since)
           }
           projections {
-            distinct 'tis_with_changed_match_keys.id'
+            property 'tis_with_changed_match_keys.id'
           }
         }
 
@@ -75,13 +76,9 @@ class KbManagementService {
           }
 
           projections {
-            distinct 'tis_with_changed_pcis.id'
+            property 'tis_with_changed_pcis.id'
           }
         }
-      }
-
-      projections {
-        distinct 'changed_tis.id'
       }
     }
   }
@@ -95,22 +92,32 @@ class KbManagementService {
     ])
 
     if (!rematchJob) {
-      // Lookup previous ResourceRematchJob
-      ResourceRematchJob lastRematchJob = ResourceRematchJob.find("from ResourceRematchJob order by dateCreated desc")
-      Date since = lastRematchJob ? Date.from(lastRematchJob?.started) : new Date(0);
-
-
-      log.debug("LOGDEBUG ATTEMPTING QUERY")
-      DetachedCriteria<String> changedTitles = CHANGED_TITLES(since);
-      log.debug("LOGDEBUG CHANGED TITLES SINCE (${since})? ${changedTitles.list()}")
-      log.debug("LOGDEBUG # CHANGED TITLES SINCE (list.size) (${since})? ${changedTitles.list().size()}")
-
-      def countTheThing = changedTitles.list {
+      // Last job run
+      final Instant sinceInst = ResourceRematchJob.get {
+        // Only finished jobs
+        order 'ended', 'desc'
+        projection {
+          property 'ended'
+        }
+        maxResults 1
+      }      
+      
+      final Date since = sinceInst ? Date.from(sinceInst) : new Date(0)
+      log.debug "Found last run date of ${since}"
+      
+      
+      final int count = CHANGED_TITLES(since).count()
+      log.debug "\t |- ${count} titles changed since then"
+      
+      // Just get the IDs
+      final List<String> changedIds = CHANGED_TITLES(since).list { 
         projections {
-          rowCount()
+          distinct('id')
         }
       }
-      log.debug("LOGDEBUG # OF CHANGED TITLES SINCE (${since})? ${countTheThing}")
+      
+      log.debug "\t |- ${changedIds.size()} reported by list.size()"
+
 
      /*  if (changedTitles.count() > 0) {
         String jobTitle = "Resource Rematch Job ${Instant.now()}"
