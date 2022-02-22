@@ -99,6 +99,11 @@ class KbManagementService {
         // Only successful finished jobs
         order 'ended', 'desc'
 
+        // This means that if some resources fail to be rematched in one job, they can be retried in the next
+        result {
+          eq ('value', 'success')
+        }
+
         projections {
           property 'ended'
         }
