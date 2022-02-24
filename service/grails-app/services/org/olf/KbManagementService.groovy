@@ -93,8 +93,7 @@ class KbManagementService {
      * For lotus release this will simply be disabled, returning immediately.
      * SEE ALSO ResourceRematchJob getWork closure
      */
-    return
-
+    /* 
     // Look for jobs already queued or in progress
     ResourceRematchJob rematchJob = ResourceRematchJob.findByStatusInList([
       ResourceRematchJob.lookupStatus('Queued'),
@@ -135,7 +134,7 @@ class KbManagementService {
       }
     } else {
       log.debug('Resource rematch already running or scheduled. Ignore.')
-    }
+    } */
   }
 
   // "Rematch" process for ErmResources using matchKeys (Only available for PCI at the moment)
