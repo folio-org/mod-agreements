@@ -98,7 +98,8 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
 
     // If we didn't have a class one identifier AND we weren't able to match anything via
     // a sibling match, try to do a fuzzy match as a last resort
-    if ( ( num_matches == 0 ) && ( num_class_one_identifiers == 0 ) ) {
+    // DO NOT ATTEMPT if there is no title on the citation
+    if ( ( num_matches == 0 ) && ( num_class_one_identifiers == 0 ) && citation.title ) {
       log.debug("No matches on identifier - try a fuzzy text match on title(${citation.title})");
       // No matches - try a simple title match
       candidate_list = titleMatch(citation.title,MATCH_THRESHOLD);
