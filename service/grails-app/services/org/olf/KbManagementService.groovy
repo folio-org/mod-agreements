@@ -87,6 +87,14 @@ class KbManagementService {
 
   @CompileStatic(SKIP)
   private void triggerRematch() {
+    /*
+     * IMPORTANT this automatic rematch process is extremely non-performant,
+     * and also it will run on ALL tis after first creation, which is not ideal.
+     * For lotus release this will simply be disabled, returning immediately.
+     * SEE ALSO ResourceRematchJob getWork closure
+     */
+    return
+
     // Look for jobs already queued or in progress
     ResourceRematchJob rematchJob = ResourceRematchJob.findByStatusInList([
       ResourceRematchJob.lookupStatus('Queued'),
@@ -133,8 +141,7 @@ class KbManagementService {
   // "Rematch" process for ErmResources using matchKeys (Only available for PCI at the moment)
   @CompileStatic(SKIP)
   public void runRematchProcess(Instant since) {
-    TitleInstance.withNewTransaction {
-      
+
       // Seems to need the lists?
       final Iterator<String> tis = simpleLookupService.lookupAsBatchedStream(TitleInstance, null, 100, null, null, null) {
         // Just get the IDs
@@ -144,37 +151,33 @@ class KbManagementService {
           property 'id'
         }
       }
+      while (tis.hasNext()) {
+        final String tiId = tis.next()
+        // For each TI look up all PCIs for that TI
 
-      if (tis.hasNext()) {
-        while (tis.hasNext()) {
-          final String tiId = tis.next()
-          // For each TI look up all PCIs for that TI
-
-          // Seems to need the lists?
-          final Iterator<String> pciIds = simpleLookupService.lookupAsBatchedStream(PackageContentItem, null, 100, null, null, null) {
-            // Just get the IDs
-            pti {
-              eq ('titleInstance.id', tiId)
-            }
-
-            projections {
-              distinct 'id'
-            }
+        // Seems to need the lists?
+        final Iterator<String> pciIds = simpleLookupService.lookupAsBatchedStream(PackageContentItem, null, 100, null, null, null) {
+          // Just get the IDs
+          pti {
+            eq ('titleInstance.id', tiId)
           }
 
-          if (pciIds.hasNext()) {
-            while (pciIds.hasNext()) {
-              final String pciId = pciIds.next()
-              try {
-                rematchResource(pciId)
-              } catch (Exception e) {
-                log.error("Error running rematchResources for TI (${tiId})", e)
-              }
+          projections {
+            distinct 'id'
+          }
+        }
+
+        PackageContentItem.withNewTransaction {
+          while (pciIds.hasNext()) {
+            final String pciId = pciIds.next()
+            try {
+              rematchResource(pciId)
+            } catch (Exception e) {
+              log.error("Error running rematchResources for TI (${tiId})", e)
             }
           }
         }
       }
-    }
   }
 
   @CompileStatic(SKIP)
@@ -233,9 +236,30 @@ class KbManagementService {
   }
 
   @CompileStatic(SKIP)
-  public void rematchResources(List<String> resourceIds) {
-    resourceIds.each {id ->
-      rematchResource(id)
+  public void rematchResourcesForTIs(List<String> tiIds) {
+    tiIds.each {tiId ->
+      // Seems to need the lists?
+      final Iterator<String> pciIds = simpleLookupService.lookupAsBatchedStream(PackageContentItem, null, 100, null, null, null) {
+        // Just get the IDs
+        pti {
+          eq ('titleInstance.id', tiId)
+        }
+
+        projections {
+          distinct 'id'
+        }
+      }
+
+      PackageContentItem.withNewTransaction {
+        while (pciIds.hasNext()) {
+          final String pciId = pciIds.next()
+          try {
+            rematchResource(pciId)
+          } catch (Exception e) {
+            log.error("Error running rematchResources for TI (${tiId})", e)
+          }
+        }
+      }
     }
   }
 }
