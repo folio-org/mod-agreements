@@ -79,7 +79,7 @@ class TitleIngestService implements DataBinder {
       log.error("Error resolving title (${pc.title}), skipping ${e.message}")
     }
 
-    log.debug("Proceeed.... resolve completed ${title}");
+    // log.debug("Proceeed.... resolve completed ${title}");
 
     if (title != null) {
       /* ERM-1801
@@ -100,7 +100,7 @@ class TitleIngestService implements DataBinder {
       log.error(message)
     }
 
-    log.debug("TitleIngestService::UpsertTitle completed - return ${result}")
+    // log.debug("TitleIngestService::UpsertTitle completed - return ${result}")
 
     result
   }
