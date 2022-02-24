@@ -75,7 +75,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
    *   }
    */
   public TitleInstance resolve(ContentItemSchema citation, boolean trustedSourceTI) {
-    log.debug("TitleInstanceResolverService::resolve(${citation})");
+    // log.debug("TitleInstanceResolverService::resolve(${citation})");
     TitleInstance result = null;
 
     List<TitleInstance> candidate_list = classOneMatch(citation.instanceIdentifiers);
@@ -108,7 +108,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     if ( candidate_list != null ) {
       switch ( num_matches ) {
         case(0):
-          log.debug("No title match, create new title")
+          log.debug("No title match, create new title ${citation}")
           result = createNewTitleInstance(citation)
           if (result != null) {
             // We assume that the incoming citation already has split ids and siblingIds
