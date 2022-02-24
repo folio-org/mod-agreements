@@ -194,6 +194,13 @@ class AgreementLifecycleSpec extends BaseSpec {
       resp.size() == 1
       log.debug("Looked up agreement ${resp[0]}");
       resp[0].id == agreementId
+
+    when:"We do a get for that agreement"
+      def result_of_direct_get = doGet("/erm/sas/${agreementId}");
+
+    then:"Dump the result of the get"
+      log.debug("Result of GET: ${result_of_direct_get}");
+
       
     when:"We ask the titles controller to list the titles we can access"
       respMap = doGet("/erm/titles/entitled", [ stats: true ])

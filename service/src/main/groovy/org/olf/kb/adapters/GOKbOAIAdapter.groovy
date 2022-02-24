@@ -48,7 +48,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         'metadataPrefix': 'gokb'
     ]
 
-    String cursor = null
+   String cursor = null
     def found_records = true
 
     if ( current_cursor != null ) {
@@ -103,7 +103,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         }
       }
   
-      log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor ${cursor}")
+      log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken}\"")
     }
   }
   // TODO Potentially can combine freshenTitleData and freshenPackageData with a new variable "dataType" or something like that.
@@ -340,7 +340,12 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
       package_record.TIPPs?.TIPP.each { tipp_entry ->
         def tipp_status = tipp_entry?.status?.text()
-        if ( tipp_status != 'Deleted' ) {
+
+        log.info("Tipp.title is of size ${tipp_entry?.title?.name?.size()} and tipp_entry?.title?.name is ${tipp_entry?.title?.name}");
+
+        // Skip delete tipps, and skip tipps where no title has been properly idenitified yet for the KBart line
+        if ( ( tipp_status != 'Deleted' ) && ( tipp_entry?.title?.name?.size() > 0 ) ) {
+
           def tipp_id = tipp_entry?.@id?.toString()
           def tipp_medium = tipp_entry?.medium?.text()
 
@@ -397,6 +402,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           // log.debug("consider tipp ${tipp_title}")
 
           result.packageContents.add(packageContent)
+        }
+        else {
+          log.warn("Skipping tipp without verified title");
         }
       }
     }
@@ -506,6 +514,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     if (binding?.hasErrors()) {
       binding.allErrors.each { log.debug "\t${it}" }
     }
+
+    // log.info("gokbToERMTitle returning ${title}");
     
     title
   }

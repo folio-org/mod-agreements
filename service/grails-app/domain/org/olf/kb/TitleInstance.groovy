@@ -134,4 +134,8 @@ public class TitleInstance extends ErmResource implements MultiTenant<TitleInsta
   public String toString() {
     "${name} (${type?.value}/${subType?.value})"
   }
+
+  public beforeValidate() {
+    super.beforeValidate();
+  }
 }

@@ -76,6 +76,9 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
   
   private validating = false  
   def beforeValidate() {
+
+    trunc("name", name)
+
     if (!validating) {
       validating = true
       // Attempt to avoid session locking
@@ -91,5 +94,13 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
   String toString() {
     name
   }
+
+
+  private void trunc(String fieldName, String field, int truncateLength = 255) {
+    if ( field?.length() > truncateLength ) {
+      this[fieldName] = "${field.take(truncateLength - 3)}...".toString()
+    }
+  }
+
    
 }

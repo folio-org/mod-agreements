@@ -62,6 +62,9 @@ class TitleIngestService implements DataBinder {
       log.warn("Could not deduce trustedSourceTI setting for title, defaulting to false")
       trustedSourceTI = false
     }
+    else {
+      log.debug("Not trusted source ti");
+    }
 
     result.updateTime = System.currentTimeMillis()
 
@@ -75,6 +78,8 @@ class TitleIngestService implements DataBinder {
     } catch (Exception e){
       log.error("Error resolving title (${pc.title}), skipping ${e.message}")
     }
+
+    log.debug("Proceeed.... resolve completed ${title}");
 
     if (title != null) {
       /* ERM-1801
@@ -94,6 +99,8 @@ class TitleIngestService implements DataBinder {
       String message = "Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
       log.error(message)
     }
+
+    log.debug("TitleIngestService::UpsertTitle completed - return ${result}")
 
     result
   }

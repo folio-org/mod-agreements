@@ -175,7 +175,7 @@ public class CoverageService {
           }
         }
 
-        log.debug("New coverage saved")
+        // log.debug("New coverage saved")
         changed = true
       } catch (ValidationException e) {
         log.error("Coverage changes to Resource ${resource.id} not saved")
@@ -201,9 +201,7 @@ public class CoverageService {
    */
   public static void calculateCoverage( final PlatformTitleInstance pti ) {
 
-    log.debug 'Calculate coverage for PlatformTitleInstance {}', pti.id
-
-//    PlatformTitleInstance.withTransaction {
+    // log.debug 'Calculate coverage for PlatformTitleInstance {}', pti.id
 
       // Use a sub query to select all the coverage statements linked to PCIs,
       // linked to this pti
@@ -226,7 +224,6 @@ public class CoverageService {
       allCoverage = collateCoverageStatements(allCoverage)
 
       setCoverageFromSchema(pti, allCoverage)
-//    }
   }
 
   /**
@@ -236,7 +233,6 @@ public class CoverageService {
    * @param ti The TitleInstance
    */
   public static void calculateCoverage( final TitleInstance ti ) {
-    log.debug 'Calculate coverage for TitleInstance {}', ti.id
     // Use a sub query to select all the coverage statements linked to PTIs,
     // linked to this TI
 //    TitleInstance.withTransaction {

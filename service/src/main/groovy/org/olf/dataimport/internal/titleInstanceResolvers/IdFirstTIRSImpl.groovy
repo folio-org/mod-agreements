@@ -75,7 +75,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
    *   }
    */
   public TitleInstance resolve(ContentItemSchema citation, boolean trustedSourceTI) {
-    // log.debug("TitleInstanceResolverService::resolve(${citation})");
+    log.debug("TitleInstanceResolverService::resolve(${citation})");
     TitleInstance result = null;
 
     List<TitleInstance> candidate_list = classOneMatch(citation.instanceIdentifiers);
