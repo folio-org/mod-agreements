@@ -273,6 +273,10 @@ class MatchKeyService implements DataBinder{
         ])
       }
 
+      if (mk.key == 'title_string') {
+        schemaShape.title = mk.value
+      }
+
       if (mk.key == 'date_electronic_published') {
         schemaShape.dateMonographPublished = mk.value
       }

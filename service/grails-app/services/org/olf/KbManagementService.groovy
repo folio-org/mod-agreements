@@ -111,9 +111,13 @@ class KbManagementService {
       }
 
       final Instant since = sinceInst ?: Instant.EPOCH
-      final int count = CHANGED_TITLES(since).count()
 
-     if (count > 0) {
+      final boolean changedTis = TitleInstance.createCriteria().list {
+        'in' 'id', CHANGED_TITLES(since).distinct('id')
+        maxResults 1
+      }?.size() > 0;
+
+     if (changedTis) {
         String jobTitle = "Resource Rematch Job ${Instant.now()}"
         rematchJob = new ResourceRematchJob(name: jobTitle, since: since)
         rematchJob.setStatusFromString('Queued')
@@ -164,7 +168,7 @@ class KbManagementService {
               try {
                 rematchResource(pciId)
               } catch (Exception e) {
-                log.error("Error running rematchResources for TI (${tiId}): ${e}")
+                log.error("Error running rematchResources for TI (${tiId})", e)
               }
             }
           }
@@ -179,42 +183,52 @@ class KbManagementService {
     TitleInstance ti; // To compare existing TI to one which we match later
     Collection<MatchKey> matchKeys = res.matchKeys;
 
-    if (res instanceof PackageContentItem) {
-      ti = res.pti.titleInstance
-      Platform platform = res.pti.platform
+    // If no match keys, this process will break
+    if (matchKeys.size() != 0) {
+      if (res instanceof PackageContentItem) {
+        ti = res.pti.titleInstance
+        Platform platform = res.pti.platform
 
-      // This is within a try/catch above
-      TitleInstance matchKeyTitleInstance = titleInstanceResolverService.resolve(
-        matchKeyService.matchKeysToSchema(matchKeys),
-        false
-      )
-
-      if (matchKeyTitleInstance) {
-        if (matchKeyTitleInstance.id == ti.id) {
-          log.info ("${res} already matched to correct TI according to match keys.")
-        } else {
-          // At this point we have a PCI resource which needs to be linked to a different TI
-          PlatformTitleInstance targetPti = PlatformTitleInstance.findByPlatformAndTitleInstance(platform, matchKeyTitleInstance)          
-          if (targetPti) {
-            log.info("Moving ErmResource (${res}) to existing PTI (${targetPti})")
-            res.pti = targetPti; // Move PCI to new target PTI
+        TitleInstance matchKeyTitleInstance
+        // Direct try/catch for broken TIs
+        try {
+          matchKeyTitleInstance = titleInstanceResolverService.resolve(
+            matchKeyService.matchKeysToSchema(matchKeys),
+            false
+          )
+        } catch (Exception e) {
+          log.error("An error occurred resolving TI from matchKey information: ${matchKeys}.", e)
+        }
+        
+        if (matchKeyTitleInstance) {
+          if (matchKeyTitleInstance.id == ti.id) {
+            log.info ("${res} already matched to correct TI according to match keys.")
           } else {
-            log.info("No PTI exists for platform (${platform}) and TitleInstance (${matchKeyTitleInstance}). ErmResource (${res}) will be moved to a new PTI.")
-            res.pti = new PlatformTitleInstance(
-              titleInstance: matchKeyTitleInstance,
-              platform: platform,
-              url: res.pti.url // Fill new PTI url with existing PTI url from resource
-            )
-          }
+            // At this point we have a PCI resource which needs to be linked to a different TI
+            PlatformTitleInstance targetPti = PlatformTitleInstance.findByPlatformAndTitleInstance(platform, matchKeyTitleInstance)          
+            if (targetPti) {
+              log.info("Moving ErmResource (${res}) to existing PTI (${targetPti})")
+              res.pti = targetPti; // Move PCI to new target PTI
+            } else {
+              log.info("No PTI exists for platform (${platform}) and TitleInstance (${matchKeyTitleInstance}). ErmResource (${res}) will be moved to a new PTI.")
+              res.pti = new PlatformTitleInstance(
+                titleInstance: matchKeyTitleInstance,
+                platform: platform,
+                url: res.pti.url // Fill new PTI url with existing PTI url from resource
+              )
+            }
 
-          // Only save resource when a change has occurred--otherwise next rematch run will grab this resource again
-          res.save(failOnError: true)
+            // Only save resource when a change has occurred--otherwise next rematch run will grab this resource again
+            res.save(failOnError: true)
+          }
+        } else {
+          log.error("An error occurred resolving TI from matchKey information: ${matchKeys}.")
         }
       } else {
-        log.error("An error occurred resolving TI from matchKey information: ${matchKeys}.")
+        throw new RuntimeException("Currently unable to rematch resource of type: ${res.getClass()}")
       }
     } else {
-      throw new RuntimeException("Currently unable to rematch resource of type: ${res.getClass()}")
+      log.error("No match keys found for resource ${res}.")
     }
   }
 
