@@ -341,7 +341,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       package_record.TIPPs?.TIPP.each { tipp_entry ->
         def tipp_status = tipp_entry?.status?.text()
 
-        log.info("Tipp.title is of size ${tipp_entry?.title?.name?.size()} and tipp_entry?.title?.name is ${tipp_entry?.title?.name}");
+        // log.info("Tipp.title is of size ${tipp_entry?.title?.name?.size()} and tipp_entry?.title?.name is ${tipp_entry?.title?.name}");
 
         // Skip delete tipps, and skip tipps where no title has been properly idenitified yet for the KBart line
         if ( ( tipp_status != 'Deleted' ) && ( tipp_entry?.title?.name?.size() > 0 ) ) {
