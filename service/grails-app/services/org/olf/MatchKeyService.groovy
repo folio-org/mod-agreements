@@ -273,6 +273,10 @@ class MatchKeyService implements DataBinder{
         ])
       }
 
+      if (mk.key == 'title_string') {
+        schemaShape.title = mk.value
+      }
+
       if (mk.key == 'date_electronic_published') {
         schemaShape.dateMonographPublished = mk.value
       }
@@ -282,23 +286,19 @@ class MatchKeyService implements DataBinder{
       }
 
       if (mk.key == 'author') {
-        schemaShape.firstAuthor = mk.value // FIXME 
-      }
-
-      if (mk.key == 'author') {
         schemaShape.firstAuthor = mk.value
       }
 
       if (mk.key == 'editor') {
-        schemaShape.firstAuthor = mk.value
+        schemaShape.firstEditor = mk.value
       }
 
       if (mk.key == 'monograph_volume') {
-        schemaShape.firstAuthor = mk.value
+        schemaShape.monographVolume = mk.value
       }
 
       if (mk.key == 'edition') {
-        schemaShape.firstAuthor = mk.value
+        schemaShape.monographEdition = mk.value
       }
     }
 

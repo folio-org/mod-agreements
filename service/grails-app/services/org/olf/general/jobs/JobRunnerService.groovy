@@ -208,7 +208,7 @@ class JobRunnerService implements EventPublisher {
               failJob(jid)
               log.error (e.message)
               log.error ("Job execution failed", e)
-              notify ('jobs:log_info', JobContext.current.get().tenantId, JobContext.current.get().jobId,  "Job execution failed")
+              notify ('jobs:log_info', JobContext.current.get().tenantId, JobContext.current.get().jobId,  "Job execution failed: ${e.message}")
             } finally {
               JobContext.current.remove()
               org.slf4j.MDC.clear()
