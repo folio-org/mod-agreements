@@ -169,7 +169,7 @@
           "filterPath":"orgs.org.orgsUuid",
           "valueType": "UUID",
           "resource": "organization",
-          "comparators": ["==", "!="]
+          "comparators": ["=="]
         },
         {
           "name":"hasOrgs",
