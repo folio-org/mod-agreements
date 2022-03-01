@@ -10,6 +10,8 @@ import grails.gorm.multitenancy.CurrentTenant
 import groovy.util.logging.Slf4j
 import org.olf.rs.workflow.*;
 
+@Slf4j
+@CurrentTenant
 class SettingController extends OkapiTenantAwareController<AppSetting> {
   
   static responseFormats = ['json', 'xml']
