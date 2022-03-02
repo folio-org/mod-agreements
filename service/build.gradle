@@ -142,14 +142,6 @@ dependencies {
 
 
   /*** Application changes and requirements ***/
-
-//  compile ("org.grails.plugins:cache") {
-//    // The gpars transient depends on an older version of groovy-all.
-//    exclude group: "org.codehaus.groovy", module: "groovy-all"
-//  }
-
-
-//  compile 'org.grails.plugins:grails-java8:1.2.3'               // No longer needed in grails 4.
   compile "org.springframework.boot:spring-boot-starter-undertow" // Replaces spring-boot-starter-tomcat
   compile "org.hibernate:hibernate-core:5.4.19.Final"             // Update to latest 5.4
   compile "org.hibernate:hibernate-java8:5.4.19.Final"
@@ -161,14 +153,11 @@ dependencies {
   }
   compile 'org.liquibase:liquibase-core:3.9.0'
   // compile 'org.liquibase:liquibase-core:3.10.1'                // Liquibase changed searchpath handling. Downgrading for now. 
-//  compile 'org.liquibase:liquibase-core:3.5.5'
 
   compile 'com.opencsv:opencsv:4.6'
   compile 'commons-io:commons-io:2.6'
 
-  // compile 'org.codehaus.groovy.modules.http-builder:http-builder:0.7.1'     // TODO: Migrate away from this resource.
-  // compile 'com.k_int.grails:web-toolkit-ce:5.3.0'
-  compile 'com.k_int.grails:web-toolkit-ce:6.1.0-rc.4'
+  compile 'com.k_int.grails:web-toolkit-ce:6.1.0-rc.5'
   compile 'com.k_int.okapi:grails-okapi:4.1.2'
 
   compile 'uk.co.cacoethes:groovy-handlebars-engine:0.2'
