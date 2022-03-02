@@ -124,6 +124,7 @@ class AdminController implements DataBinder{
   /**
    * Trigger migration of uploaded LOB objects from PostgresDB to configured S3/MinIO
    */
+  @Transactional
   public triggerDocMigration() {
     def result = [:]
     log.debug("AdminController::triggerDocMigration");
