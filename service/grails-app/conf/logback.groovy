@@ -32,6 +32,7 @@ root(WARN, ['STDOUT'])
 logger ('org.hibernate.orm.deprecation', ERROR)
 logger ('com.k_int.okapi.OkapiSchemaHandler', INFO)
 logger ('org.olf.general.DocumentAttachment', DEBUG);
+logger ('com.k_int.web.toolkit.files', DEBUG);
 
 // Just increase verbosity for dev/test.
 
