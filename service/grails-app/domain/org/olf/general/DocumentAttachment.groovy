@@ -21,7 +21,7 @@ class DocumentAttachment extends SingleFileAttachment implements MultiTenant<Doc
 
   static cloneStaticValues = [
     fileUpload: { 
-      println("DocumentAttachment.fileUpload == ${owner?.fileUpload}");
+      log.warn("DocumentAttachment.fileUpload == ${owner?.fileUpload}");
       owner?.fileUpload?.clone() 
     }
   ]
