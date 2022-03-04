@@ -4,6 +4,7 @@ import com.k_int.web.toolkit.domain.traits.Clonable
 import com.k_int.web.toolkit.files.SingleFileAttachment
 import com.k_int.web.toolkit.refdata.Defaults
 import com.k_int.web.toolkit.refdata.RefdataValue
+import com.k_int.web.toolkit.files.FileUpload
 
 import grails.gorm.MultiTenant
 
@@ -22,7 +23,11 @@ class DocumentAttachment extends SingleFileAttachment implements MultiTenant<Doc
   static cloneStaticValues = [
     fileUpload: { 
       log.warn("DocumentAttachment.fileUpload == ${owner?.fileUpload} / class:${owner.fileUpload?.class?.name}");
-      owner?.fileUpload?.clone() 
+      log.warn("  fileObject:${owner.fileUpload?.fileObject?.class?.name}");
+
+      DocumentAttachment o = owner
+      FileUpload fu = o?.fileUpload
+      fu?.clone() 
     }
   ]
 
