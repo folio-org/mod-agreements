@@ -31,6 +31,7 @@ appender('STDOUT', ConsoleAppender) {
 root(WARN, ['STDOUT'])
 logger ('org.hibernate.orm.deprecation', ERROR)
 logger ('com.k_int.okapi.OkapiSchemaHandler', INFO)
+logger ('org.olf.general.DocumentAttachment', DEBUG);
 
 // Just increase verbosity for dev/test.
 
