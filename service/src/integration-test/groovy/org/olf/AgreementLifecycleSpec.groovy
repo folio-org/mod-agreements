@@ -434,6 +434,7 @@ class AgreementLifecycleSpec extends BaseSpec {
 
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
         FileUpload fu = null;
+        String fu_id = null;
 
         FileUpload.withTransaction { status ->
           // MultipartFile mf = new MockMultipartFile("foo2-lob.txt", "foo2-lob.txt", "text/plain", "Hello World2 - LOB version".getBytes())
@@ -448,12 +449,16 @@ class AgreementLifecycleSpec extends BaseSpec {
           fu.save(flush:true, failOnError:true);
 
           log.debug("Saved S3 test file as ${fu.fileName}");
-          if ( fu != null )
+          if ( fu != null ) {
+            fu_id = fu.id;
             ok = true;
+          }
         }
 
         FileUpload.withTransaction { status ->
-          FileUpload fu2 = fu.clone();
+          // Load the file upload to try and force a proxy
+          FileUpload fu_loaded = FileUpload.get(fu_id)
+          FileUpload fu2 = fu_loaded.clone();
           log.debug("File upload cloned");
         }
       }
