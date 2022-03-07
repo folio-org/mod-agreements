@@ -26,7 +26,7 @@ import spock.lang.Unroll
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile
 import com.k_int.web.toolkit.files.FileUpload;
-
+import com.k_int.web.toolkit.files.S3FileObject;
 
 import groovy.util.logging.Slf4j
 
@@ -396,6 +396,72 @@ class AgreementLifecycleSpec extends BaseSpec {
     then: 'File uploaded'
       ok==true
   }
+
+  void "test file clone"() {
+
+    boolean ok = false;
+    when: 'We upload a file and then clone it'
+      final String tenantid = currentTenant.toLowerCase()
+      log.debug("Create new package with tenant ${tenantid}");
+
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+        FileUpload fu = null;
+
+        FileUpload.withTransaction { status ->
+          MultipartFile mf = new MockMultipartFile("foo2-lob.txt", "foo2-lob.txt", "text/plain", "Hello World2 - LOB version".getBytes())
+          fu = fileUploadService.save(mf);
+          log.debug("Saved LOB test file as ${fu.fileName}");
+          if ( fu != null )
+            ok = true;
+        }
+
+        FileUpload.withTransaction { status ->
+          FileUpload fu2 = fu.clone();
+          log.debug("File upload cloned");
+        }
+      }
+
+    then: 'File uploaded'
+      ok==true
+  }
+
+  void "test S3 clone"() {
+
+    boolean ok = false;
+    when: 'We upload a file and then clone it'
+      final String tenantid = currentTenant.toLowerCase()
+      log.debug("Create new package with tenant ${tenantid}");
+
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+        FileUpload fu = null;
+
+        FileUpload.withTransaction { status ->
+          // MultipartFile mf = new MockMultipartFile("foo2-lob.txt", "foo2-lob.txt", "text/plain", "Hello World2 - LOB version".getBytes())
+          // fu = fileUploadService.save(mf);
+          // Manually create the S3 upload so we don't need to configure mino storage and adjust the settings to S3
+          fu = new FileUpload()
+          fu.fileContentType = "text/plain"
+          fu.fileName = "foo3-lob.txt"
+          fu.fileSize = 100
+          fu.fileObject = new S3FileObject()
+          fu.fileObject.s3ref="12334567"
+          fu.save(flush:true, failOnError:true);
+
+          log.debug("Saved S3 test file as ${fu.fileName}");
+          if ( fu != null )
+            ok = true;
+        }
+
+        FileUpload.withTransaction { status ->
+          FileUpload fu2 = fu.clone();
+          log.debug("File upload cloned");
+        }
+      }
+
+    then: 'File uploaded'
+      ok==true
+  }
+
 
 }
 
