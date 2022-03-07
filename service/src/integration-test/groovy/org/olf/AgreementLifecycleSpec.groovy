@@ -455,10 +455,12 @@ class AgreementLifecycleSpec extends BaseSpec {
           }
         }
 
-        // Try to throw away any in-memory objects floating around
-        FileUpload.withSession { session ->
-          session.flush()
-          session.clear()
+        FileUpload.withTransaction { status ->
+          // Try to throw away any in-memory objects floating around
+          FileUpload.withSession { session ->
+            session.flush()
+            session.clear()
+          }
         }
 
         FileUpload.withTransaction { status ->
