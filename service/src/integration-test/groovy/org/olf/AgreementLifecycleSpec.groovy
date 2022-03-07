@@ -433,10 +433,10 @@ class AgreementLifecycleSpec extends BaseSpec {
       log.debug("Create new package with tenant ${tenantid}");
 
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
-        FileUpload fu = null;
         String fu_id = null;
 
         FileUpload.withTransaction { status ->
+          FileUpload fu = null;
           // MultipartFile mf = new MockMultipartFile("foo2-lob.txt", "foo2-lob.txt", "text/plain", "Hello World2 - LOB version".getBytes())
           // fu = fileUploadService.save(mf);
           // Manually create the S3 upload so we don't need to configure mino storage and adjust the settings to S3
@@ -455,11 +455,25 @@ class AgreementLifecycleSpec extends BaseSpec {
           }
         }
 
+        // Try to throw away any in-memory objects floating around
+        FileUpload.withSession { session ->
+          session.flush()
+          session.clear()
+        }
+
         FileUpload.withTransaction { status ->
           // Load the file upload to try and force a proxy
-          FileUpload fu_loaded = FileUpload.get(fu_id)
-          FileUpload fu2 = fu_loaded.clone();
-          log.debug("File upload cloned");
+
+          // Do something dumb to try and force a proxy instead of a real object
+          FileUpload fu_loaded = FileUpload.executeQuery('select fu from FileUpload as fu').find { it.id == fu_id }
+          if ( fu_loaded != null ) {
+            log.debug("Got instance of ${fu_loaded?.class?.name}");
+            FileUpload fu2 = fu_loaded.clone();
+            log.debug("File upload cloned");
+          }
+          else {
+            log.warn("Unable to find file upload");
+          }
         }
       }
 
