@@ -4,8 +4,8 @@ import com.k_int.web.toolkit.domain.traits.Clonable
 import com.k_int.web.toolkit.files.SingleFileAttachment
 import com.k_int.web.toolkit.refdata.Defaults
 import com.k_int.web.toolkit.refdata.RefdataValue
-
 import grails.gorm.MultiTenant
+import com.k_int.web.toolkit.files.FileUpload;
 
 class DocumentAttachment extends SingleFileAttachment implements MultiTenant<DocumentAttachment>, Clonable<DocumentAttachment> {
 
@@ -17,7 +17,20 @@ class DocumentAttachment extends SingleFileAttachment implements MultiTenant<Doc
   Date dateCreated
   Date lastUpdated
 
-  static copyByCloning = ['fileUpload']
+  // static copyByCloning = ['fileUpload']
+  static cloneStaticValues = [
+    fileUpload: {
+      final def toComponent = delegate
+      final def fromComponent = owner
+
+      FileUpload fu = fromComponent.fileUpload?.clone()
+      if (fu) {
+        fu.owner = toComponent
+      }
+      return fu
+    }
+  ]
+
 
   @Defaults(['License', 'Misc', 'Consortium negotiation document'])
   RefdataValue atType
