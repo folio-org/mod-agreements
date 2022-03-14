@@ -1,3 +1,6 @@
+## 5.1.1 2022-03-14
+  * ERM-2042 Duplicating agreement/license inc. documents moves files from original to new agreement/license
+
 ## 5.1.0 2022-03-03
   * ERM-2036 Remove 'is not' option from Organization filter in Agreements simple search
   * ERM-2001 Duplication of 'suppressFromDiscovery' key in items json
