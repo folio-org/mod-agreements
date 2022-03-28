@@ -1,0 +1,7 @@
+import groovy.transform.*
+import org.olf.kb.AlternateResourceName
+
+@Field AlternateResourceName alternateResourceNames
+json g.render(alternateResourceNames) {
+
+}
