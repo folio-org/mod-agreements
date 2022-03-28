@@ -12,6 +12,7 @@ import org.olf.kb.Platform
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.RemoteKB
 import org.olf.kb.TitleInstance
+import org.olf.kb.MatchKey
 import org.slf4j.MDC
 
 import grails.util.GrailsNameUtils
@@ -32,6 +33,7 @@ class PackageIngestService implements DataBinder {
 
   TitleIngestService titleIngestService
   CoverageService coverageService
+  MatchKeyService matchKeyService
 
   // dependentModuleProxyService is a service which hides the fact that we might be dependent upon other
   // services for our reference data. In this class - vendors are erm Org entries, but in folio these are
@@ -148,6 +150,10 @@ class PackageIngestService implements DataBinder {
 
             // titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
             if ( titleIngestResult.titleInstanceId != null ) {
+
+              // ERM-1799 TI has been created, harvest matchKey information at this point to apply to any PTI/PCIs
+              List<Map> matchKeys = matchKeyService.collectMatchKeyInformation(pc)
+
               TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
               // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
 
@@ -173,12 +179,21 @@ class PackageIngestService implements DataBinder {
 
                 // See if we already have a title platform record for the presence of this title on this platform
                 PlatformTitleInstance pti = PlatformTitleInstance.findByTitleInstanceAndPlatform(title, platform)
-
-                if ( pti == null )
+                if ( pti == null ) {
                   pti = new PlatformTitleInstance(titleInstance:title,
                     platform:platform,
-                    url:pc.url).save(flush:true, failOnError:true)
-
+                    url:pc.url,
+                  ).save(failOnError: true)
+                  
+                  // ERM-1799 Ensure initial matchKeyCreation
+                  matchKeyService.updateMatchKeys(pti, matchKeys)
+                } else if (trustedSourceTI) {
+                  /*
+                   * We may need to update the match key information
+                   * from the incoming package for existing PTIs
+                   */
+                  matchKeyService.updateMatchKeys(pti, matchKeys)
+                }
 
                 // Lookup or create a package content item record for this title on this platform in this package
                 // We only check for currently live pci records, as titles can come and go from the package.
@@ -195,13 +210,24 @@ class PackageIngestService implements DataBinder {
                   pci = new PackageContentItem(
                     pti:pti,
                     pkg:Pkg.get(result.packageId),
-                    addedTimestamp:result.updateTime)
+                    addedTimestamp:result.updateTime,
+                  )
+
+                  // ERM-1799, match keys need adding to PCI 
+                  matchKeyService.updateMatchKeys(pci, matchKeys, false)
                   isNew = true
                 }
                 else {
                   // Note that we have seen the package content item now - so we don't delete it at the end.
                   log.debug("Record ${result.titleCount} - Update package content item (${pci.id})")
                   isUpdate = true
+                  if (trustedSourceTI) {
+                    /*
+                    * We may need to update the match key information
+                    * from the incoming package for existing PCIs
+                    */
+                    matchKeyService.updateMatchKeys(pci, matchKeys, false)
+                  }
                 }
 
                 String embStr = pc.embargo?.trim()

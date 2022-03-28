@@ -98,7 +98,8 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
 
     // If we didn't have a class one identifier AND we weren't able to match anything via
     // a sibling match, try to do a fuzzy match as a last resort
-    if ( ( num_matches == 0 ) && ( num_class_one_identifiers == 0 ) ) {
+    // DO NOT ATTEMPT if there is no title on the citation
+    if ( ( num_matches == 0 ) && ( num_class_one_identifiers == 0 ) && citation.title ) {
       log.debug("No matches on identifier - try a fuzzy text match on title(${citation.title})");
       // No matches - try a simple title match
       candidate_list = titleMatch(citation.title,MATCH_THRESHOLD);
@@ -108,7 +109,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     if ( candidate_list != null ) {
       switch ( num_matches ) {
         case(0):
-          log.debug("No title match, create new title")
+          log.debug("No title match, create new title ${citation}")
           result = createNewTitleInstance(citation)
           if (result != null) {
             // We assume that the incoming citation already has split ids and siblingIds
@@ -121,8 +122,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
           checkForEnrichment(result, citation, trustedSourceTI)
           break;
         default:
-          log.warn("title matched ${num_matches} records with a threshold >= ${MATCH_THRESHOLD} . Unable to continue. Matching IDs: ${candidate_list.collect { it.id }}. class one identifier count: ${num_class_one_identifiers}");
-          // throw new RuntimeException("Title match returned too many items (${num_matches})");
+          throw new RuntimeException("title matched ${num_matches} records with a threshold >= ${MATCH_THRESHOLD} . Unable to continue. Matching IDs: ${candidate_list.collect { it.id }}. class one identifier count: ${num_class_one_identifiers}");
           break;
       }
     }
@@ -344,9 +344,10 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
                 result << io.title
               }
             }
-            else {
-              throw new RuntimeException("Match on non-approved");
-            }
+            // ERM-1986 Don't throw on non approved occurrence existing, just skip
+            //else {
+            //  throw new RuntimeException("Match on non-approved");
+            //}
           }
         }
       }

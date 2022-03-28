@@ -170,6 +170,7 @@ class UrlMappings {
         "/" (controller: 'customPropertyDefinition', action: 'index') {
           perPage = { params.perPage ?: 100 }
         }
+        "/contexts" (controller: 'customPropertyDefinition', action: "fetchContexts", method: 'GET')
       }
     }
     
@@ -183,6 +184,8 @@ class UrlMappings {
     "/erm/validate/$domain/$prop?" (controller: 'validate', method: 'POST')
 
     "/erm/entitlementLogEntry" ( resources: 'EntitlementLogEntry')
+
+    "/erm/settings/appSettings" (resources: 'setting');
 
     "/dashboard/definitions" (controller: 'dashboardDefinitions', action: 'getDefinitions' ,method: 'GET')
   }

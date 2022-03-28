@@ -41,6 +41,5 @@ if (entitlement.type == 'external') {
     'activeTo' entitlement.activeTo
     'contentUpdated' entitlement.getContentUpdated()
     'haveAccess' entitlement.getHaveAccess()
-    'suppressFromDiscovery' entitlement.suppressFromDiscovery
   }
 }

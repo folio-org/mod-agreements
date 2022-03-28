@@ -4,6 +4,8 @@ import java.util.concurrent.TimeUnit
 
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
+import org.olf.dataimport.erm.Identifier
+
 import org.olf.kb.RemoteKB
 import org.olf.kb.TitleInstance
 import org.slf4j.MDC
@@ -13,6 +15,7 @@ import grails.web.databinding.DataBinder
 import groovy.util.logging.Slf4j
 
 import org.olf.dataimport.internal.TitleInstanceResolverService
+import org.olf.kb.MatchKey
 
 /**
  * This service works at the module level, it's often called without a tenant context.
@@ -59,6 +62,9 @@ class TitleIngestService implements DataBinder {
       log.warn("Could not deduce trustedSourceTI setting for title, defaulting to false")
       trustedSourceTI = false
     }
+    else {
+      log.debug("Not trusted source ti");
+    }
 
     result.updateTime = System.currentTimeMillis()
 
@@ -73,6 +79,8 @@ class TitleIngestService implements DataBinder {
       log.error("Error resolving title (${pc.title}), skipping ${e.message}")
     }
 
+    // log.debug("Proceeed.... resolve completed ${title}");
+
     if (title != null) {
       /* ERM-1801
         * For now this secondary enrichment step is here rather than the PackageIngestService,
@@ -82,6 +90,8 @@ class TitleIngestService implements DataBinder {
       String sourceIdentifier = pc?.sourceIdentifier
       titleEnricherService.secondaryEnrichment(kb, sourceIdentifier, title.id);
 
+      // ERM-1799 Do we need to go and find all existing match_key information for this TI and update it here too?
+
       // Append titleInstanceId to resultList, so we can use it elsewhere to look up titles ingested with this method
       result.titleInstanceId = title.id
       result.finishTime = System.currentTimeMillis()
@@ -89,6 +99,8 @@ class TitleIngestService implements DataBinder {
       String message = "Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
       log.error(message)
     }
+
+    // log.debug("TitleIngestService::UpsertTitle completed - return ${result}")
 
     result
   }

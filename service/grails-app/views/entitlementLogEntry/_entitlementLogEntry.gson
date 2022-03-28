@@ -69,8 +69,6 @@ try {
 catch(Exception e) {
 }
 
-System.out.println("Got controlling license details ${license_details}");
-
 if ( res instanceof PackageContentItem ) {
 
   PackageContentItem pci = res as PackageContentItem

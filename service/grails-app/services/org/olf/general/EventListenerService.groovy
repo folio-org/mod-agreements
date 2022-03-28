@@ -4,9 +4,13 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
 import org.olf.kb.ErmResource
+import org.olf.kb.IdentifierOccurrence
+import org.olf.kb.MatchKey
+import org.olf.kb.TitleInstance
 import org.olf.kb.CoverageStatement
 
 import org.olf.EntitlementService
+import org.olf.ErmResourceService
 
 import grails.gorm.transactions.Transactional
 
@@ -26,6 +30,7 @@ import org.grails.datastore.mapping.engine.event.PostUpdateEvent
 public class EventListenerService implements ApplicationListener {
 
   EntitlementService entitlementService
+  ErmResourceService ermResourceService
 
   void afterUpdate(PostUpdateEvent event) {
     if (event.entityObject instanceof ErmResource) {

@@ -48,7 +48,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         'metadataPrefix': 'gokb'
     ]
 
-    String cursor = null
+   String cursor = null
     def found_records = true
 
     if ( current_cursor != null ) {
@@ -61,13 +61,13 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     GPathResult xml
     while ( found_records ) {
 
-      log.debug("** GET ${packagesUrl} ${query_params}")
+      log.info("OAI/HTTP GET url=${packagesUrl} params=${query_params}")
 
       // Built in parser for XML returns GPathResult
       xml = (GPathResult) getSync(packagesUrl, query_params) {
 
         response.failure { FromServer fromServer ->
-          log.debug "Request failed with status ${fromServer.statusCode}"
+          log.error "HTTP/OAI Request failed with status ${fromServer.statusCode}"
           found_records = false
         }
       }
@@ -103,7 +103,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         }
       }
   
-      log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor ${cursor}")
+      log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken}\"")
     }
   }
   // TODO Potentially can combine freshenTitleData and freshenPackageData with a new variable "dataType" or something like that.
@@ -141,7 +141,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       xml = (GPathResult) getSync(titlesUrl, query_params) {
 
         response.failure { FromServer fromServer ->
-          log.debug "Request failed with status ${fromServer.statusCode}"
+          log.error "Request failed with status ${fromServer.statusCode}"
           found_records = false
         }
       }
@@ -215,6 +215,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       def editStatus = record?.metadata?.gokb?.package?.editStatus?.text()
       def listStatus = record?.metadata?.gokb?.package?.listStatus?.text()
       def packageStatus = record?.metadata?.gokb?.package?.status?.text()
+      def package_shortcode = record?.metadata?.gokb?.package?.shortcode?.text()
 
       log.debug("Processing OAI record :: ${result.count} ${record_identifier} ${package_name}")
 
@@ -222,7 +223,11 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         // ToDo: Decide what to do about deleted records
       }
       else {
-        if (editStatus.toLowerCase() == 'rejected') {
+        if (!package_name) {
+          log.info("Ignoring Package '${record_identifier}' because package_name is missing")
+        } else if (!package_shortcode) {
+          log.info("Ignoring Package '${record_identifier}' because package_shortcode is missing")
+        } else if (editStatus.toLowerCase() == 'rejected') {
           log.info("Ignoring Package '${package_name}' because editStatus=='${editStatus}'")
         } else if (listStatus.toLowerCase() != 'checked') {
           log.info("Ignoring Package '${package_name}' because listStatus=='${listStatus}' (required: 'checked')")
@@ -335,7 +340,12 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
       package_record.TIPPs?.TIPP.each { tipp_entry ->
         def tipp_status = tipp_entry?.status?.text()
-        if ( tipp_status != 'Deleted' ) {
+
+        // log.info("Tipp.title is of size ${tipp_entry?.title?.name?.size()} and tipp_entry?.title?.name is ${tipp_entry?.title?.name}");
+
+        // Skip delete tipps, and skip tipps where no title has been properly idenitified yet for the KBart line
+        if ( ( tipp_status != 'Deleted' ) && ( tipp_entry?.title?.name?.size() > 0 ) ) {
+
           def tipp_id = tipp_entry?.@id?.toString()
           def tipp_medium = tipp_entry?.medium?.text()
 
@@ -392,6 +402,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           // log.debug("consider tipp ${tipp_title}")
 
           result.packageContents.add(packageContent)
+        }
+        else {
+          log.warn("Skipping tipp without verified title");
         }
       }
     }
@@ -501,6 +514,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     if (binding?.hasErrors()) {
       binding.allErrors.each { log.debug "\t${it}" }
     }
+
+    // log.info("gokbToERMTitle returning ${title}");
     
     title
   }
@@ -520,12 +535,19 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     List sibling_identifiers = []
 
     // If we're processing an electronic record then issn is a sibling identifier
+    // Ensure issn, pissn, pisbn end up in siblingInstanceIdentifiers
     title.identifiers.identifier.each { ti_id ->
-      if ( ti_id.@namespace == 'issn' ) {
-        sibling_identifiers.add(["namespace": "issn", "value": ti_id.@value?.toString() ])
-      }
-      else {
-        instance_identifiers.add(["namespace": ti_id.@namespace?.toString(), "value": ti_id.@value?.toString() ])
+      switch(ti_id.@namespace) {
+        case 'issn':
+        case 'pissn':
+          sibling_identifiers.add(["namespace": "issn", "value": ti_id.@value?.toString() ])
+          break;
+        case 'pisbn':
+          sibling_identifiers.add(["namespace": "isbn", "value": ti_id.@value?.toString() ])
+          break;
+        default:
+          instance_identifiers.add(["namespace": ti_id.@namespace?.toString(), "value": ti_id.@value?.toString() ])
+          break;
       }
     }
 

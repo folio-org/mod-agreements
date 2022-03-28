@@ -1,0 +1,8 @@
+import org.olf.general.jobs.IdentifierReassignmentJob
+
+import groovy.transform.Field
+
+@Field
+IdentifierReassignmentJob identifierReassignmentJob
+
+json tmpl."/persistentJob/persistentJob" (persistentJob: identifierReassignmentJob)

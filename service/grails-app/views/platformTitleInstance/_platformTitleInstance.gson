@@ -4,7 +4,9 @@ import groovy.transform.*
 
 @Field PlatformTitleInstance platformTitleInstance
 
-json g.render(platformTitleInstance, [expand: ['titleInstance', 'platform', 'coverage', 'tags', 'templatedUrls']]) {
+def should_expand = ['titleInstance', 'platform', 'coverage', 'tags', 'templatedUrls', 'matchKeys']
+
+json g.render(platformTitleInstance, [expand: should_expand]) {
   'class' PlatformTitleInstance.name
   longName platformTitleInstance.longName
 }

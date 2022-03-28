@@ -17,7 +17,10 @@ import org.olf.ComparisonService
 import org.olf.CoverageService
 import org.olf.DocumentAttachmentService
 import org.olf.ImportService
+import org.olf.IdentifierService
+import org.olf.MatchKeyService
 import org.olf.KbHarvestService
+import org.olf.KbManagementService
 
 import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.okapi.OkapiTenantResolver
@@ -28,6 +31,8 @@ import grails.events.annotation.Subscriber
 import grails.gorm.multitenancy.Tenants
 import groovy.util.logging.Slf4j
 
+import com.k_int.web.toolkit.files.FileUploadService
+
 @Slf4j
 class JobRunnerService implements EventPublisher {
   
@@ -35,11 +40,19 @@ class JobRunnerService implements EventPublisher {
   // of the job itself.
   OkapiTenantAdminService okapiTenantAdminService
   KbHarvestService kbHarvestService
+  KbManagementService kbManagementService
   CoverageService coverageService
   DocumentAttachmentService documentAttachmentService
   ImportService importService
   ComparisonService comparisonService
+  IdentifierService identifierService
+  MatchKeyService matchKeyService
   SessionFactory sessionFactory
+
+  // Access to the inputStream of FileObjects is now via this service instead of directly
+  // to the LOB attached to the FileObject. Inject this here so it is available to the work
+  // closure in ./grails-app/domain/org/olf/general/jobs/KbartImportJob.groovy and ./grails-app/domain/org/olf/general/jobs/PackageImportJob.groovy
+  FileUploadService fileUploadService
   
   final int CONCURRENT_JOBS_GLOBAL = 2 // We need to be careful to not completely tie up all our resource
   final int CONCURRENT_JOBS_TENANT = 1
@@ -195,7 +208,7 @@ class JobRunnerService implements EventPublisher {
               failJob(jid)
               log.error (e.message)
               log.error ("Job execution failed", e)
-              notify ('jobs:log_info', JobContext.current.get().tenantId, JobContext.current.get().jobId,  "Job execution failed")
+              notify ('jobs:log_info', JobContext.current.get().tenantId, JobContext.current.get().jobId,  "Job execution failed: ${e.message}")
             } finally {
               JobContext.current.remove()
               org.slf4j.MDC.clear()
@@ -289,5 +302,9 @@ class JobRunnerService implements EventPublisher {
   public void failJob(final String jid = null) {
     PersistentJob pj = PersistentJob.get(jid ?: JobContext.current.get().jobId)
     pj.fail()
+  }
+
+  public void shutdown() {
+    log.info("JobRunnerService::shutdown()");
   }
 }

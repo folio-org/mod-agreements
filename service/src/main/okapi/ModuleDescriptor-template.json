@@ -379,6 +379,11 @@
           "permissionsRequired": [ "erm.custprops.item.delete" ]
         },
         {
+          "methods": ["GET"],
+          "pathPattern": "/erm/custprops/contexts",
+          "permissionsRequired": [ "erm.custprops.collection.get" ]
+        },
+        {
           "methods": ["POST"],
           "pathPattern": "/erm/packages/import",
           "permissionsRequired": [ "erm.packages.collection.import" ]
@@ -441,6 +446,26 @@
           "methods": ["GET"],
           "pathPattern": "/erm/admin/*",
           "permissionsRequired": ["erm.admin.action"]
+        },
+        {
+          "methods": [ "GET" ],
+          "pathPattern": "/erm/settings*",
+          "permissionsRequired": [ "erm.settings.get" ]
+        },
+        {
+          "methods": [ "POST" ],
+          "pathPattern": "/erm/settings*",
+          "permissionsRequired": [ "erm.settings.post" ]
+        },
+        {
+          "methods": [ "PUT" ],
+          "pathPattern": "/erm/settings*",
+          "permissionsRequired": [ "erm.settings.put" ]
+        },
+        {
+          "methods": [ "DELETE" ],
+          "pathPattern": "/erm/settings*",
+          "permissionsRequired": [ "erm.settings.delete" ]
         }
       ]
     },
@@ -503,6 +528,13 @@
           "pathPattern": "/erm/sts/template",
           "unit": "minute",
           "delay": "2"
+        },
+        {
+          "permissionsRequired" : [],
+          "methods": [ "GET" ],
+          "pathPattern": "/erm/admin/triggerRematch",
+          "unit": "minute",
+          "delay": "5"
         }
       ]
     }
@@ -1135,6 +1167,67 @@
       "permissionName": "erm.admin.action",
       "displayName": "Admin endpoint perform action",
       "description": "Performs action from admin endpoint"
+    },
+    {
+      "permissionName": "erm.settings.get",
+      "displayName": "settings get",
+      "description": "get settings",
+      "visible": false
+    }, 
+    {
+      "permissionName": "erm.settings.collection.get",
+      "displayName": "settings collection get",
+      "description": "get collection of settings",
+      "visible": false
+    },
+    {
+      "permissionName": "erm.settings.post",
+      "displayName": "settings post",
+      "description": "post settings",
+      "visible": false
+    }, 
+    {
+      "permissionName": "erm.settings.put",
+      "displayName": "settings put",
+      "description": "put settings",
+      "visible": false
+    }, 
+    {
+      "permissionName": "erm.settings.delete",
+      "displayName": "settings delete",
+      "description": "delete settings",
+      "visible": false
+    },
+    {
+      "permissionName": "erm.settings.read",
+      "displayName": "settings read",
+      "description": "read settings",
+      "visible": false,
+      "subPermissions": [
+        "erm.settings.get",
+        "erm.settings.collection.get"
+      ]
+    },
+    {
+      "permissionName": "erm.settings.write",
+      "displayName": "settings write",
+      "description": "write settings",
+      "visible": false,
+      "subPermissions": [
+        "erm.settings.read",
+        "erm.settings.post",
+        "erm.settings.put"
+      ]
+    },
+    {
+      "permissionName": "erm.settings.manage",
+      "displayName": "settings manage",
+      "description": "manage settings",
+      "visible": false,
+      "subPermissions": [
+        "erm.settings.write",
+        "erm.settings.delete"
+      ]
     }
   ],
   "launchDescriptor": {

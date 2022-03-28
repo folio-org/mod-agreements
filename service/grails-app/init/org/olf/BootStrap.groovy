@@ -3,6 +3,9 @@ package org.olf
 import com.k_int.okapi.OkapiTenantAdminService
 import org.olf.general.jobs.JobRunnerService
 
+import com.k_int.web.toolkit.files.S3FileObject;
+import com.k_int.web.toolkit.files.LOBFileObject;
+
 class BootStrap {
 
   def grailsApplication
@@ -10,6 +13,14 @@ class BootStrap {
   JobRunnerService jobRunnerService
 
   def init = { servletContext ->
+
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
+      public void run() {
+        log.info("mod-agreements shutdown hook - process terminating");
+      }
+    });
+
     log.info("${grailsApplication.getMetadata().getApplicationName()}  (${grailsApplication.config?.info?.app?.version}) initialising");
     log.info("          build number -> ${grailsApplication.metadata['build.number']}");
     log.info("        build revision -> ${grailsApplication.metadata['build.git.revision']}");
@@ -18,8 +29,13 @@ class BootStrap {
     log.info("            build time -> ${grailsApplication.metadata['build.time']}");
     log.info("            build host -> ${grailsApplication.metadata['build.host']}");
     log.info("         Base JDBC URL -> ${grailsApplication.config.dataSource.url} / ${grailsApplication.config.dataSource.username}");
+    log.info("    default_aws_region -> ${grailsApplication.config.kiwt?.filestore?.aws_region}");
+    log.info("       default_aws_url -> ${grailsApplication.config.kiwt?.filestore?.aws_url}");
+    log.info("    default_aws_bucket -> ${grailsApplication.config.kiwt?.filestore?.aws_bucket}");
+
     jobRunnerService.populateJobQueue()
   }
+
   def destroy = {
   }
 }

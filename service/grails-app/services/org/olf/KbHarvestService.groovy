@@ -3,6 +3,7 @@ package org.olf
 import static groovy.transform.TypeCheckingMode.SKIP
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 import org.olf.general.jobs.PackageIngestJob
 import org.olf.general.jobs.TitleIngestJob
@@ -15,9 +16,6 @@ import com.k_int.okapi.OkapiTenantResolver
 import grails.events.annotation.Subscriber
 import grails.gorm.multitenancy.Tenants
 import groovy.transform.CompileStatic
-
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import groovy.util.logging.Slf4j
 
 /**
@@ -100,6 +98,7 @@ where rkb.type is not null
     }
   }
 
+  // Any changes that happen to this logic will likely need reflecting in the KbManagementService::triggerRematch
   @Scheduled(fixedDelay = 3600000L, initialDelay = 60000L) // Run task every hour, wait 1 minute.
   void triggerSync() {
     log.debug "Running scheduled KB sync for all tenants :{}", Instant.now()

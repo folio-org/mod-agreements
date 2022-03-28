@@ -1,5 +1,7 @@
 package org.olf
 
+import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
+
 import org.olf.kb.ErmResource
 import org.olf.kb.TitleInstance
 import org.olf.kb.PlatformTitleInstance
@@ -11,6 +13,8 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @CompileStatic
 public class ErmResourceService {
+  KbManagementService kbManagementService
+
   private final static String PCI_HQL = """
     SELECT id FROM PackageContentItem AS pci
     WHERE pci.pti.id = :resId
@@ -61,6 +65,13 @@ public class ErmResourceService {
     }
 
     resourceList
+  }
+
+
+  // FIXME do we actually want this?
+  // This method should take in an ErmResource and return a ContentItemSchema, which can then be used to create matchKeys
+  ContentItemSchema resourceToSchema(ErmResource resource) {
+
   }
 }
 

@@ -46,7 +46,9 @@ class KbartImportJob extends PersistentJob implements MultiTenant<KbartImportJob
         }
 
         if (job.fileUpload && packageInfoValid) {
-          BOMInputStream bis = new BOMInputStream(job.fileUpload.fileObject.fileContents.binaryStream);
+
+          // BOMInputStream bis = new BOMInputStream(job.fileUpload.fileObject.fileContents.binaryStream);
+          BOMInputStream bis = new BOMInputStream(fileUploadService.getInputStreamFor(job.fileUpload.fileObject));
           Reader fr = new InputStreamReader(bis);
           CSVParser parser = new CSVParserBuilder().withSeparator('\t' as char)
             .withQuoteChar(ICSVParser.DEFAULT_QUOTE_CHARACTER)

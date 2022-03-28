@@ -3,6 +3,10 @@ package org.olf.dataimport.internal.titleInstanceResolvers
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
+
+import org.springframework.beans.factory.annotation.Autowired
+import org.olf.IdentifierService
+
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierNamespace
 import org.olf.kb.IdentifierOccurrence
@@ -24,28 +28,15 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Transactional
 class BaseTIRS {
+    @Autowired
+    IdentifierService identifierService
     protected static final def APPROVED = 'approved'
     protected static final def ERROR = 'error'
 
   // ERM-1649. This function acts as a way to manually map incoming namespaces onto known namespaces where we believe the extra information is unhelpful.
   // This is also the place to do any normalisation (lowercasing etc).
   protected String namespaceMapping(String namespace) {
-
-    String lowerCaseNamespace = namespace.toLowerCase()
-    String result = lowerCaseNamespace
-    switch (lowerCaseNamespace) {
-      case 'eissn':
-      case 'pissn':
-      case 'eisbn':
-      case 'pisbn':
-        // This will remove the first character from the namespace
-        result = lowerCaseNamespace.substring(1)
-        break;
-      default:
-        break;
-    }
-
-    result
+    identifierService.namespaceMapping(namespace)
   }
 
     protected static def class_one_namespaces = [
@@ -96,11 +87,14 @@ class BaseTIRS {
    */ 
   protected void checkForEnrichment(TitleInstance title, ContentItemSchema citation, boolean trustedSourceTI) {
     log.debug("Checking for enrichment of Title Instance: ${title} :: trusted: ${trustedSourceTI}")
+    def changes = 0;
+    
     if (trustedSourceTI == true) {
       log.debug("Trusted source for TI enrichment--enriching")
 
       if (title.name != citation.title) {
         title.name = citation.title
+        changes++
       }
 
       /*
@@ -115,12 +109,14 @@ class BaseTIRS {
        
         title.publicationTypeFromString = citation.instancePublicationMedia
         title.markDirty()
+        changes++
       }
 
       if (validateCitationType(citation?.instanceMedia)) {
         if ((title.type == null) || (title.type.value != citation.instanceMedia)) {
           title.typeFromString = citation.instanceMedia
           title.markDirty()
+          changes++
         }
       } else {
         log.error("Type (${citation.instanceMedia}) does not match 'serial' or 'monograph' for title \"${citation.title}\", skipping field enrichment.")
@@ -128,30 +124,35 @@ class BaseTIRS {
 
       if (title.dateMonographPublished != citation.dateMonographPublished) {
         title.dateMonographPublished = citation.dateMonographPublished
+        changes++
       }
 
       if (title.firstAuthor != citation.firstAuthor) {
         title.firstAuthor = citation.firstAuthor
+        changes++
       }
       
       if (title.firstEditor != citation.firstEditor) {
         title.firstEditor = citation.firstEditor
+        changes++
       }
 
       if (title.monographEdition != citation.monographEdition) {
         title.monographEdition = citation.monographEdition
+        changes++
       }
 
       if (title.monographVolume != citation.monographVolume) {
         title.monographVolume = citation.monographVolume
+        changes++
       }
-      
-      if(! title.save(flush: true) ) {
+
+      // Ensure we only save title on enrich if changes have been made
+      if (changes > 0 && !title.save(flush: true)) {
         title.errors.fieldErrors.each {
           log.error("Error saving title. Field ${it.field} rejected value: \"${it.rejectedValue}\".")
         }
       }
-
     } else {
       log.debug("Not a trusted source for TI enrichment--skipping")
     }

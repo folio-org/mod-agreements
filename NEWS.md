@@ -1,8 +1,31 @@
-## 5.1.0 (In progress)
- * ERM-1914 Exception thrown on rendering the agreement / entitlement gson templates
- * ERM-1903 On editing an agreement with an agreement line for a PCI, "custom coverage" incorrectly populated
- * ERM-1892 Error on attempting to view comparison job report
- * ERM-1891 Agreement Lines do not display in Agreement edit screen
+## 5.2.0 In progress
+
+## 5.1.0 2022-03-03
+  * ERM-2036 Remove 'is not' option from Organization filter in Agreements simple search
+  * ERM-2001 Duplication of 'suppressFromDiscovery' key in items json
+  * ERM-2000 Performance Issue: Slowness in loading agreements list - Kiwi
+  * ERM-1988 Backend & API support for movement of identifiers from one title instance to another
+  * ERM-1938 Abstract and subclass existing toolkit FileObject (for Agreements)
+  * ERM-1932 Remove coverage statement errors from KB Sync Error logs
+  * ERM-1931 Sort agreement lines by name then reference then UUID in the UI
+  * ERM-1926 Error in entitlementLog on deleting agreement line
+  * ERM-1917 Duplicate title instance created on package import in Kiwi bugfest
+  * ERM-1914 Exception thrown on rendering the agreement / entitlement gson templates
+  * ERM-1912 In the case of a package harvested from GOKb/external source lacking key information about the package, log the issue and fail gracefully
+  * ERM-1903 On editing an agreement with an agreement line for a PCI, "custom coverage" incorrectly populated
+  * ERM-1902 Framework for UPDATE entitlement log entry events
+  * ERM-1900 Change to suppressFromDiscovery should lead to updated entry in EntitlementLog
+  * ERM-1892 Error on attempting to view comparison job report
+  * ERM-1891 Agreement Lines do not display in Agreement edit screen
+  * ERM-1890 On ingesting TIPPs from GOKb only attempt to create a coverage statement in Local KB if there is a coverage statement in GOKb
+  * ERM-1884 Populate "suppress" field in EntitlementLog
+  * ERM-1883 Change to coverage should lead to updated entry in EntitlementLog
+  * ERM-1882 Use Custom Coverage (if exists) in EntitlementLog
+  * ERM-1813 Include sibling title instance details in agreement and agreement line export
+    * ERM-1879 Introduce Grails integration test for Export
+  * ERM-1800 Create "re-match" process for existing PTI/PCIs
+  * ERM-1799 Store "match key" information on PTI and PCI
+  * ERM-1744 Add Organisations to Agreements simple search widget definition
 
 ## 5.0.0 2021-10-04
  * ERM-1848 Support duplicating supplementary docs and supplementary properties separately on duplicating an agreement

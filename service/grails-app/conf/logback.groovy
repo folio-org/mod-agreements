@@ -31,6 +31,8 @@ appender('STDOUT', ConsoleAppender) {
 root(WARN, ['STDOUT'])
 logger ('org.hibernate.orm.deprecation', ERROR)
 logger ('com.k_int.okapi.OkapiSchemaHandler', INFO)
+logger ('org.olf.general.DocumentAttachment', DEBUG);
+logger ('com.k_int.web.toolkit.files', DEBUG);
 
 // Just increase verbosity for dev/test.
 
@@ -65,6 +67,9 @@ if (devEnv || Environment.currentEnvironment == Environment.TEST) {
     // logger 'org.hibernate.type.descriptor.sql.BasicBinder', TRACE
   }
 }
+else {
+  logger 'org.olf', INFO
+}
 
 def targetDir = BuildSettings.TARGET_DIR
 if (devEnv && targetDir != null) {
@@ -86,7 +91,10 @@ logger ('org.olf.PackageIngestService', DEBUG, ['JOB'])
 logger ('org.olf.TitleIngestService', DEBUG, ['JOB'])
 logger ('org.olf.TitleInstanceResolverService', DEBUG, ['JOB'])
 logger ('org.olf.TitleEnricherService', DEBUG, ['JOB'])
+logger ('org.olf.IdentifierService', DEBUG, ['JOB'])
+logger ('org.olf.MatchKeyService', DEBUG, ['JOB'])
 logger ('org.olf.kb.adapters.GOKbOAIAdapter', DEBUG, ['JOB'])
 logger ('org.olf.CoverageService', DEBUG, ['JOB'])
 logger ('org.olf.ImportService', DEBUG, ['JOB'])
 logger ('org.olf.DocumentAttachmentService', DEBUG, ['JOB'])
+logger ('org.olf.KbManagementService', DEBUG, ['JOB'])
