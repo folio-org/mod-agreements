@@ -1,5 +1,5 @@
 import groovy.transform.*
 import org.olf.kb.PackageDescriptionUrl
 
-@Field PackageDescriptionUrl packageDescriptionUrls
-json g.render(packageDescriptionUrls) 
+@Field PackageDescriptionUrl packageDescriptionUrl
+json g.render(packageDescriptionUrl) 
