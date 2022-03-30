@@ -2,6 +2,4 @@ import groovy.transform.*
 import org.olf.kb.ContentType
 
 @Field ContentType contentTypes
-json g.render(contentTypes) {
-
-}
+json g.render(contentTypes) 
