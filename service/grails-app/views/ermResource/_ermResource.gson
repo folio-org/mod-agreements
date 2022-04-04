@@ -21,7 +21,7 @@ json {
   'name' ermResource.getName()
   'suppressFromDiscovery' ermResource.suppressFromDiscovery
   'tags' g.render(ermResource.tags)
-//  'alternateResourceNames' g.render(ermResource.alternateResourceNames, [expand: ['alternateResourceNames']])
+  'alternateResourceNames' g.render(ermResource.alternateResourceNames)
   
   RefdataValue rdv = ermResource.getType() 
   
@@ -36,10 +36,6 @@ json {
   if (ermResource.subType) {
     'subType' g.render (ermResource.subType)
   }
-//  
-//  if (ermResource.alternateResourceNames) {
-//    'alternateResourceNames' g.render(ermResource.alternateResourceNames, [expand: ['alternateResourceNames']])
-//  }
   
   if (customCoverageList) {
     
