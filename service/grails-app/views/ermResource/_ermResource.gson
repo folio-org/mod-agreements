@@ -21,7 +21,6 @@ json {
   'name' ermResource.getName()
   'suppressFromDiscovery' ermResource.suppressFromDiscovery
   'tags' g.render(ermResource.tags)
-  'alternateResourceNames' g.render(ermResource.alternateResourceNames)
   
   RefdataValue rdv = ermResource.getType() 
   
