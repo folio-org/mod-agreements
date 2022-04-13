@@ -2,4 +2,4 @@ import groovy.transform.*
 import org.olf.kb.AlternateResourceName
 
 @Field AlternateResourceName alternateResourceName
-json g.render(alternateResourceName) 
+json g.render(alternateResourceName, [excludes: ['owner']]) 
