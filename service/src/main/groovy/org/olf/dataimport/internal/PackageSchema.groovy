@@ -29,6 +29,8 @@ interface PackageSchema extends Validateable {
     "endDate": "2020-12-31T00:00:00Z",
     "packageSlug": "kint_test_001",
     "trustedSourceTI": true,
+    "sourceDataCreated": "2020-12-31T00:00:00Z",
+    "sourceDataUpdated": "2020-12-31T00:00:00Z",
     "_intenalId": 276432871386
     */
     
@@ -41,6 +43,10 @@ interface PackageSchema extends Validateable {
     String getStatus()
     String get_intenalId()
     Boolean getTrustedSourceTI()
+    Date getSourceDataCreated()
+    Date getSourceDataUpdated()
+    RefdataValue getAvailabilityScope()  // TODO: JSON exampe
+    RefdataValue getLifecycleStatus()  // TODO: JSON exampe
   }
   
   @CompileStatic

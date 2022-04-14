@@ -16,6 +16,10 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   String name
   PackageProvider packageProvider
   Boolean trustedSourceTI
+  String sourceDataCreated  // Todo: constraints
+  String sourceDataUpdated  // Todo: constraints
+  RefdataValue availabilityScope  // Todo: constraints
+  RefdataValue lifecycleStatus  // Todo: constraints
   Set<ContentItem> contentItems = []
   
   // Defaults for internal scheam so we can make them optional in the constraints.
@@ -71,6 +75,26 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
     @Override
   public Boolean getTrustedSourceTI() {
     trustedSourceTI
+  }
+  
+  @Override
+  public Date getSourceDataCreated() {
+    sourceDataCreated
+  } 
+  
+  @Override
+  public Date getSourceUpdated() {
+    sourceDataUpdated
+  }  
+  
+  @Override
+  public Date getAvailabilityScope() {
+    availabilityScope
+  }  
+  
+  @Override
+  public Date getLifecycleStatus() {
+    lifecycleStatus
   }
   
   
