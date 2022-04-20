@@ -373,7 +373,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
         def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
       
         def io_record = new IdentifierOccurrence(
-          title: result,
+          resource: result,
           identifier: id_lookup)
         
         io_record.setStatusFromString(APPROVED)

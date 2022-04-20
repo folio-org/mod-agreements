@@ -71,7 +71,7 @@ public class IdentifierService {
               // Next we create a new IdentifierOccurrence on the targetTI
               IdentifierOccurrence newIdentifierOccurrence = new IdentifierOccurrence(
                 identifier: identifierOccurrence.identifier,
-                title: targetTI,
+                resource: targetTI,
                 status: IdentifierOccurrence.lookupOrCreateStatus('approved')
               ).save(failOnError: true)
 
