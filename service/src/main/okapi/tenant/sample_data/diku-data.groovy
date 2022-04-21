@@ -12,7 +12,7 @@ RemoteKB.findByName('GOKb_TEST') ?: (new RemoteKB(
     activationEnabled:false
 ).save(failOnError:true))
 
-RemoteKB.findByName('GOKb_Title') ?: (new RemoteKB(
+/* RemoteKB.findByName('GOKb_Title') ?: (new RemoteKB(
   name:'GOKb_Title',
   type:'org.olf.kb.adapters.GOKbOAIAdapter',
   uri:'https://gokbt.gbv.de/gokb/oai',
@@ -21,4 +21,4 @@ RemoteKB.findByName('GOKb_Title') ?: (new RemoteKB(
   active:Boolean.TRUE,
   supportsHarvesting:true,
   activationEnabled:false
-).save(failOnError:true))
+).save(failOnError:true)) */

@@ -15,7 +15,7 @@ public class IdentifierService {
   private static final String IDENTIFIER_OCCURRENCE_MATCH_HQL = '''
     SELECT io from IdentifierOccurrence as io
     WHERE 
-      io.title.id = :initialTitleInstanceId AND
+      io.resource.id = :initialTitleInstanceId AND
       io.identifier.ns.value = :identifierNamespace AND
       io.identifier.value = :identifierValue AND
       io.status.value = :status
