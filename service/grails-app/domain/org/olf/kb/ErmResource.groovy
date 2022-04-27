@@ -38,6 +38,7 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
     templatedUrls: TemplatedUrl,
     matchKeys: MatchKey,
     alternateResourceNames: AlternateResourceName,
+    identifiers: IdentifierOccurrence,
   ]
 
   static mappedBy = [
@@ -45,7 +46,8 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
     entitlements: 'resource',
     templatedUrls: 'resource',
     matchKeys: 'resource',
-    alternateResourceNames:  'owner'
+    alternateResourceNames:  'owner',
+    identifiers: 'resource',
   ]
 
   static mapping = {
@@ -100,6 +102,11 @@ alternateResourceNames cascade: 'all-delete-orphan'
     name
   }
 
+  static transients = ['approvedIdentifierOccurrences']
+
+  public Set<IdentifierOccurrence> getApprovedIdentifierOccurrences() {
+    identifiers.findAll { it.status.value == 'approved' }
+  }
 
   private void trunc(String fieldName, String field, int truncateLength = 255) {
     if ( field?.length() > truncateLength ) {
