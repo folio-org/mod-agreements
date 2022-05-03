@@ -2,4 +2,4 @@ import groovy.transform.*
 import org.olf.kb.ContentType
 
 @Field ContentType contentType
-json g.render(contentType, [excludes: ['owner']]) 
+json g.render(contentType, [expand: ['contentType'], excludes: ['owner']]) 

@@ -57,7 +57,7 @@ databaseChangeLog = {
         constraints(nullable: "false")
       }
 
-      column(name: "ct_content_type", type: "VARCHAR(255)") {
+      column(name: "ct_content_type_fk", type: "VARCHAR(36)") {
         constraints(nullable: "false")
       }
       addForeignKeyConstraint(baseColumnNames: "ct_owner_fk", baseTableName: "content_type", constraintName: "ct_to_pkg_fk", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "pkg_id", referencedTableName: "package")
