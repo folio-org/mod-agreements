@@ -27,7 +27,9 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
   Date dateCreated
   Date lastUpdated
 
-  boolean suppressFromDiscovery = false 
+  boolean suppressFromDiscovery = false
+  
+  Set<AlternateResourceName> alternateResourceNames 
   
   static hasMany = [
     coverage: CoverageStatement,
@@ -35,6 +37,7 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
     tags: Tag,
     templatedUrls: TemplatedUrl,
     matchKeys: MatchKey,
+    alternateResourceNames: AlternateResourceName,
     identifiers: IdentifierOccurrence,
   ]
 
@@ -43,6 +46,7 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
     entitlements: 'resource',
     templatedUrls: 'resource',
     matchKeys: 'resource',
+    alternateResourceNames:  'owner',
     identifiers: 'resource',
   ]
 
@@ -61,6 +65,7 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
          templatedUrls cascade: 'all-delete-orphan'
              matchKeys cascade: 'all-delete-orphan'
                   tags cascade: 'save-update'
+alternateResourceNames cascade: 'all-delete-orphan'
   }
 
   static constraints = {

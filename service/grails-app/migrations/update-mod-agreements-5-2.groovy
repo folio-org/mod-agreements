@@ -27,7 +27,67 @@ databaseChangeLog = {
       column(name: "pd_retired")
     }
   }
+  
+  changeSet(author: "pboehm (manual)", id: "20220321-1545-002") {
+    createTable(tableName: "alternate_resource_name") {
+      column(name: "arn_id", type: "VARCHAR(36)") {
+        constraints(nullable: "false")
+      }
 
+      column(name: "arn_version", type: "BIGINT") 
+
+      column(name: "arn_owner_fk", type: "VARCHAR(36)") {
+        constraints(nullable: "false")
+      }
+
+      column(name: "arn_name", type: "VARCHAR(255)") {
+        constraints(nullable: "false")
+      }
+      addForeignKeyConstraint(baseColumnNames: "arn_owner_fk", baseTableName: "alternate_resource_name", constraintName: "arn_to_pkg_fk", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "pkg_id", referencedTableName: "package")
+    }
+    
+    createTable(tableName: "content_type") {
+      column(name: "ct_id", type: "VARCHAR(36)") {
+        constraints(nullable: "false")
+      }
+
+      column(name: "ct_version", type: "BIGINT") 
+
+      column(name: "ct_owner_fk", type: "VARCHAR(36)") {
+        constraints(nullable: "false")
+      }
+
+      column(name: "ct_content_type_fk", type: "VARCHAR(36)") {
+        constraints(nullable: "false")
+      }
+      addForeignKeyConstraint(baseColumnNames: "ct_owner_fk", baseTableName: "content_type", constraintName: "ct_to_pkg_fk", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "pkg_id", referencedTableName: "package")
+    }
+    
+    createTable(tableName: "package_description_url") {
+      column(name: "pdu_id", type: "VARCHAR(36)") {
+        constraints(nullable: "false")
+      }
+
+      column(name: "pdu_version", type: "BIGINT") 
+
+      column(name: "pdu_owner_fk", type: "VARCHAR(36)") {
+        constraints(nullable: "false")
+      }
+
+      column(name: "pdu_url", type: "VARCHAR(255)") {
+        constraints(nullable: "false")
+      }
+      addForeignKeyConstraint(baseColumnNames: "pdu_owner_fk", baseTableName: "package_description_url", constraintName: "ct_to_pkg_fk", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "pkg_id", referencedTableName: "package")
+    }
+    
+    
+    addColumn(tableName: "package") {
+      column(name: "pkg_source_data_created", type: "TIMESTAMP")
+      column(name: "pkg_source_data_updated", type: "TIMESTAMP")
+      column(name: "pkg_lifecycle_status_fk", type: "VARCHAR(36)")
+      column(name: "pkg_availability_scope_fk", type: "VARCHAR(36)")
+    }
+  }
 
   // Create io_res_fk field on identifierOccurrence
   changeSet(author: "efreestone (manual)", id: "20220420-1631-001") {

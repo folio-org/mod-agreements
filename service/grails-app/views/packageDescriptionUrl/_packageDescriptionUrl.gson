@@ -1,0 +1,5 @@
+import groovy.transform.*
+import org.olf.kb.PackageDescriptionUrl
+
+@Field PackageDescriptionUrl packageDescriptionUrl
+json g.render(packageDescriptionUrl, [excludes: ['owner']]) 
