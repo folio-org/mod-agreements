@@ -8,8 +8,6 @@ import grails.compiler.GrailsCompileStatic
 import grails.validation.Validateable
 import groovy.transform.ToString
 
-import com.k_int.web.toolkit.refdata.RefdataValue
-
 @ToString(includePackage=false)
 @GrailsCompileStatic
 class HeaderImpl implements PackageHeaderSchema, Validateable {
