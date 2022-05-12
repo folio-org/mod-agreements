@@ -44,10 +44,10 @@ interface PackageSchema extends Validateable {
     String getStatus()
     String get_intenalId()
     Boolean getTrustedSourceTI()
-    Date getSourceDataCreated()
-    Date getSourceDataUpdated()
-    RefdataValue getAvailabilityScope()  // TODO: JSON exampe
-    RefdataValue getLifecycleStatus()  // TODO: JSON exampe
+    LocalDate getSourceDataCreated()
+    LocalDate getSourceDataUpdated()
+    String getAvailabilityScope()
+    String getLifecycleStatus()  
   }
   
   @CompileStatic

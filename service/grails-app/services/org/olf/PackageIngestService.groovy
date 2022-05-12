@@ -121,6 +121,10 @@ class PackageIngestService implements DataBinder {
                 name: package_data.header.packageName,
                source: package_data.header.packageSource,
             reference: package_data.header.packageSlug,
+          sourceDataCreated: package_data.header.sourceDataCreated,
+          sourceDataUpdated: package_data.header.sourceDataUpdated,
+          availabilityScope: package_data.header.availabilityScope,
+          lifecycleStatus: package_data.header.status,
              remoteKb: kb,
                vendor: vendor).save(flush:true, failOnError:true)
                MDC.put('packageSource', pkg.source.toString())

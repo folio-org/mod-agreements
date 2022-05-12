@@ -9,6 +9,8 @@ import com.k_int.web.toolkit.refdata.RefdataValue
 
 import grails.gorm.MultiTenant
 
+import java.time.LocalDate
+
 /**
  * mod-erm representation of a package
  */
@@ -18,8 +20,8 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   RemoteKB remoteKb
   Platform nominalPlatform
   Org vendor
-  Date sourceDataCreated
-  Date sourceDataUpdated
+  LocalDate sourceDataCreated
+  LocalDate sourceDataUpdated
   @Defaults(['Current', 'Retired', 'Expected', 'Deleted'])
   RefdataValue lifecycleStatus
   @Defaults(['Global', 'Consortial', 'Regional', 'Local'])

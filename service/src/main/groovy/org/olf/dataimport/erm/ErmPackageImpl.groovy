@@ -18,10 +18,11 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   String name
   PackageProvider packageProvider
   Boolean trustedSourceTI
-  String sourceDataCreated  // Todo: constraints
-  String sourceDataUpdated  // Todo: constraints
-  RefdataValue availabilityScope  // Todo: constraints
-  RefdataValue lifecycleStatus  // Todo: constraints
+  LocalDate sourceDataCreated
+  LocalDate sourceDataUpdated
+  String availabilityScope
+  String lifecycleStatus 
+//  List<AlternateResourceName> alternateResourceNames
   List<Identifier> identifiers
 
   Set<ContentItem> contentItems = []
@@ -82,25 +83,29 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   }
   
   @Override
-  public Date getSourceDataCreated() {
+  public LocalDate getSourceDataCreated() {
     sourceDataCreated
   } 
   
   @Override
-  public Date getSourceUpdated() {
+  public LocalDate getSourceDataUpdated() {
     sourceDataUpdated
   }  
   
   @Override
-  public Date getAvailabilityScope() {
+  public String getAvailabilityScope() {
     availabilityScope
   }  
   
   @Override
-  public Date getLifecycleStatus() {
+  public String getLifecycleStatus() {
     lifecycleStatus
   }
   
+//  @Override
+//  public List<AlternateResourceName> getAlternateResourceNames() {
+//    alternateResourceNames
+//  }
 
   @Override
   public List<Identifier> getIdentifiers() {
