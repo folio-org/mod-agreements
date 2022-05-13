@@ -27,21 +27,27 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
   Date dateCreated
   Date lastUpdated
 
-  boolean suppressFromDiscovery = false 
+  boolean suppressFromDiscovery = false
+  
+  Set<AlternateResourceName> alternateResourceNames 
   
   static hasMany = [
     coverage: CoverageStatement,
     entitlements: Entitlement,
     tags: Tag,
     templatedUrls: TemplatedUrl,
-    matchKeys: MatchKey
+    matchKeys: MatchKey,
+    alternateResourceNames: AlternateResourceName,
+    identifiers: IdentifierOccurrence,
   ]
 
   static mappedBy = [
     coverage: 'resource',
     entitlements: 'resource',
     templatedUrls: 'resource',
-    matchKeys: 'resource'
+    matchKeys: 'resource',
+    alternateResourceNames:  'owner',
+    identifiers: 'resource',
   ]
 
   static mapping = {
@@ -59,6 +65,7 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
          templatedUrls cascade: 'all-delete-orphan'
              matchKeys cascade: 'all-delete-orphan'
                   tags cascade: 'save-update'
+alternateResourceNames cascade: 'all-delete-orphan'
   }
 
   static constraints = {
@@ -95,6 +102,11 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
     name
   }
 
+  static transients = ['approvedIdentifierOccurrences']
+
+  public Set<IdentifierOccurrence> getApprovedIdentifierOccurrences() {
+    identifiers.findAll { it.status.value == 'approved' }
+  }
 
   private void trunc(String fieldName, String field, int truncateLength = 255) {
     if ( field?.length() > truncateLength ) {

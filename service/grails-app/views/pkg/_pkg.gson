@@ -5,7 +5,12 @@ import groovy.transform.*
 @Field
 Pkg pkg
 
-json g.render(pkg, [expand: ['remoteKb','vendor', 'type', 'subType'], excludes: ['contentItems']]) {
+json g.render(pkg, [expand: ['remoteKb','vendor', 'type', 'subType', 'lifecycleStatus', 'availabilityScope', 'packageDescriptionUrls', 'contentTypes', 'alternateResourceNames'], excludes: ['contentItems']]) {
+
   resourceCount pkg.getResourceCount()
   'class' Pkg.name
+
+  identifiers (pkg.approvedIdentifierOccurrences) { IdentifierOccurrence occurrence ->
+    g.inline(occurrence, [excludes: ['resource', 'id'], expand: ['identifier', 'status']])
+  }
 }

@@ -18,6 +18,14 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   RemoteKB remoteKb
   Platform nominalPlatform
   Org vendor
+  Date sourceDataCreated
+  Date sourceDataUpdated
+  @Defaults(['Current', 'Retired', 'Expected', 'Deleted'])
+  RefdataValue lifecycleStatus
+  @Defaults(['Global', 'Consortial', 'Regional', 'Local'])
+  RefdataValue availabilityScope
+  Set<PackageDescriptionUrl> packageDescriptionUrls
+  Set<ContentType> contentTypes
   
   // Declaring this here will provide defaults for the type defined in ErmResource but not create
   // a subclass specific column
@@ -25,21 +33,31 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   RefdataValue type
 
   static hasMany = [
-    contentItems: PackageContentItem
+              contentItems: PackageContentItem,
+    packageDescriptionUrls: PackageDescriptionUrl,
+              contentTypes: ContentType
     // tags: KIWTTag
   ]
 
   static mappedBy = [ 
-    contentItems: 'pkg'
+              contentItems: 'pkg',
+    packageDescriptionUrls: 'owner',
+              contentTypes: 'owner'
   ]
 
   static mapping = {
-                table 'package'
-               source column:'pkg_source'
-            reference column:'pkg_reference'
-             remoteKb column:'pkg_remote_kb'
-      nominalPlatform column:'pkg_nominal_platform_fk'
-               vendor column:'pkg_vendor_fk'
+                        table 'package'
+                       source column:'pkg_source'
+                    reference column:'pkg_reference'
+                     remoteKb column:'pkg_remote_kb'
+              nominalPlatform column:'pkg_nominal_platform_fk'
+                       vendor column:'pkg_vendor_fk'
+            sourceDataCreated column:'pkg_source_data_created'
+            sourceDataUpdated column:'pkg_source_data_updated'
+              lifecycleStatus column:'pkg_lifecycle_status_fk'
+            availabilityScope column:'pkg_availability_scope_fk'
+       packageDescriptionUrls cascade: 'all-delete-orphan'
+                 contentTypes cascade: 'all-delete-orphan'
   }
 
   static constraints = {
@@ -49,6 +67,10 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
            remoteKb(nullable:true, blank:false)
     nominalPlatform(nullable:true, blank:false)
              vendor(nullable:true, blank:false)
+  sourceDataCreated(nullable:true, blank:false)
+  sourceDataUpdated(nullable:true, blank:false)
+    lifecycleStatus(nullable:true, blank:false)
+  availabilityScope(nullable:true, blank:false)
   }
 
 
