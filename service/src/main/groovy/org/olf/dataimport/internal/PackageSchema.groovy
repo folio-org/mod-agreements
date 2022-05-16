@@ -19,7 +19,7 @@ interface PackageSchema extends Validateable {
   public interface PackageHeaderSchema extends Validateable {
     /*
      "availability": {
-      "type": "general"
+      "type": "geferal"
     },
     "packageProvider": {
       "name": "Knowledge Integration Ltd"
@@ -48,6 +48,7 @@ interface PackageSchema extends Validateable {
     LocalDate getSourceDataUpdated()
     String getAvailabilityScope()
     String getLifecycleStatus()  
+    Collection<AlternateResourceNameSchema> getAlternateResourceNames()
   }
   
   @CompileStatic
@@ -134,6 +135,16 @@ interface PackageSchema extends Validateable {
      */
     String getNamespace()
     String getValue()
+  }
+  
+  @CompileStatic
+  public interface AlternateResourceNameSchema extends Validateable {
+    /*
+     {
+       "name": "An alternate Name",
+     }
+     */
+    String getName()
   }
   
   @CompileStatic

@@ -2,6 +2,7 @@ package org.olf.dataimport.internal
 import java.time.LocalDate
 
 import org.olf.dataimport.erm.PackageProvider
+import org.olf.dataimport.erm.AlternateResourceName
 import org.olf.dataimport.internal.PackageSchema.PackageHeaderSchema
 
 import grails.compiler.GrailsCompileStatic
@@ -22,6 +23,7 @@ class HeaderImpl implements PackageHeaderSchema, Validateable {
   LocalDate sourceDataCreated
   LocalDate sourceDataUpdated
   String availabilityScope
+  List<AlternateResourceName> alternateResourceNames
   String lifecycleStatus 
   String _intenalId
   

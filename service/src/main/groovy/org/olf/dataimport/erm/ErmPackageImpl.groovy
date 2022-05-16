@@ -3,6 +3,7 @@ package org.olf.dataimport.erm
 import java.time.LocalDate
 
 import org.olf.dataimport.erm.Identifier
+import org.olf.dataimport.erm.AlternateResourceName
 
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.PackageHeaderSchema
@@ -22,7 +23,7 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   LocalDate sourceDataUpdated
   String availabilityScope
   String lifecycleStatus 
-//  List<AlternateResourceName> alternateResourceNames
+  List<AlternateResourceName> alternateResourceNames
   List<Identifier> identifiers
 
   Set<ContentItem> contentItems = []
@@ -102,10 +103,10 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
     lifecycleStatus
   }
   
-//  @Override
-//  public List<AlternateResourceName> getAlternateResourceNames() {
-//    alternateResourceNames
-//  }
+  @Override
+  public List<AlternateResourceName> getAlternateResourceNames() {
+    alternateResourceNames
+  }
 
   @Override
   public List<Identifier> getIdentifiers() {
