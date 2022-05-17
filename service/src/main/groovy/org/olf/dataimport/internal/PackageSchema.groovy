@@ -19,7 +19,7 @@ interface PackageSchema extends Validateable {
   public interface PackageHeaderSchema extends Validateable {
     /*
      "availability": {
-      "type": "geferal"
+      "type": "general"
     },
     "packageProvider": {
       "name": "Knowledge Integration Ltd"
