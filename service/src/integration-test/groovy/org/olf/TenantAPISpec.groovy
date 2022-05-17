@@ -96,6 +96,7 @@ class TenantAPISpec extends HttpSpec {
       resp == true
   }
   
+  /*
   void "Recreate tenant" () {
     // Max time to wait is 10 seconds
     def conditions = new PollingConditions(timeout: 10)
@@ -116,5 +117,6 @@ class TenantAPISpec extends HttpSpec {
         (list = doGet('/erm/refdata')).size() > 0
       }
   }
+  */
 }
 
