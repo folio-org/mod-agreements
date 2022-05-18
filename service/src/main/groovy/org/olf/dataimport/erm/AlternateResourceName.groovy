@@ -10,8 +10,8 @@ class AlternateResourceName implements AlternateResourceNameSchema, Validateable
   
   String name
   
-  String getName() {
-    name?.trim()
+  String getAlternateResourceNames() {
+    this.name?.trim()
   }
   
   static constraints = {

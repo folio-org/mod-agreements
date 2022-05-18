@@ -144,7 +144,7 @@ interface PackageSchema extends Validateable {
        "name": "An alternate Name",
      }
      */
-    String getName()
+    String getAlternateResourceNames()
   }
   
   @CompileStatic

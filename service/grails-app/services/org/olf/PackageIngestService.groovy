@@ -126,21 +126,19 @@ class PackageIngestService implements DataBinder {
           sourceDataUpdated: package_data.header.sourceDataUpdated,
           availabilityScope: package_data.header.availabilityScope,
           lifecycleStatus: package_data.header.status,
-//          alternateResourceNames: package_data.header.alternateResourceNames,
              remoteKb: kb,
                vendor: vendor).save(flush:true, failOnError:true)
                MDC.put('packageSource', pkg.source.toString())
                MDC.put('packageReference', pkg.reference.toString())
                if (package_data.header.alternateResourceNames.size() > 0) {
-                package_data.header.alternateResourceNames.each {
-                  println( 'alternate resource name: ' + it)
-//                  if (it != null){
-                    def newName = new AlternateResourceName([name: it])
-                    newName.save()
-                    pkg.addToAlternateResourceNames(newName)
-                    pkg.save()
-//                  }
-                }
+                 def alternateNames = [];
+                 
+                 package_data.header.alternateResourceNames.each {
+                   alternateNames << new AlternateResourceName([name: it])                  
+                 }
+                
+                pkg.addToAlternateResourceNames(alternateNames)
+                pkg.save(failOnError: true)
               }
         } else {
           log.info("Not adding package '${package_data.header.packageName}' because status '${package_data.header.status}' doesn't match 'Current' or 'Expected'")
