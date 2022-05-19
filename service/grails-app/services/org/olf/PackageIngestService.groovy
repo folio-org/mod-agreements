@@ -7,7 +7,6 @@ import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.CoverageStatementSchema
 import org.olf.kb.Embargo
 import org.olf.kb.PackageContentItem
-import org.olf.kb.AlternateResourceName
 import org.olf.kb.Pkg
 import org.olf.kb.Platform
 import org.olf.kb.PlatformTitleInstance
