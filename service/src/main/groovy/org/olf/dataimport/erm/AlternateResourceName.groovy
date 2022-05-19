@@ -10,7 +10,7 @@ class AlternateResourceName implements AlternateResourceNameSchema, Validateable
   
   String name
   
-  String getAlternateResourceNames() {
+  String getAlternateResourceName() {
     this.name?.trim()
   }
   

@@ -134,7 +134,7 @@ class PackageIngestService implements DataBinder {
                  def alternateNames = [];
                  
                  package_data.header.alternateResourceNames.each {
-                   alternateNames << new AlternateResourceName([name: it])                  
+                   alternateNames << new AlternateResourceName([name: it.name])                  
                  }
                 
                 pkg.addToAlternateResourceNames(alternateNames)

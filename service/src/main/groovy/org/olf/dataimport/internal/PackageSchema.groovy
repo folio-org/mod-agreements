@@ -32,6 +32,8 @@ interface PackageSchema extends Validateable {
     "trustedSourceTI": true,
     "sourceDataCreated": "2020-12-31T00:00:00Z",
     "sourceDataUpdated": "2020-12-31T00:00:00Z",
+    "availabilityScope": "Global",
+    "lifecycleStatus": "Current",
     "_intenalId": 276432871386
     */
     
@@ -144,7 +146,7 @@ interface PackageSchema extends Validateable {
        "name": "An alternate Name",
      }
      */
-    String getAlternateResourceNames()
+    String getAlternateResourceName()
   }
   
   @CompileStatic
