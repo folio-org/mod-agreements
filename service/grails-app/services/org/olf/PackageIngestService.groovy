@@ -130,16 +130,6 @@ class PackageIngestService implements DataBinder {
                vendor: vendor).save(flush:true, failOnError:true)
                MDC.put('packageSource', pkg.source.toString())
                MDC.put('packageReference', pkg.reference.toString())
-               if (package_data.header.alternateResourceNames.size() > 0) {
-                 def alternateNames = [];
-                 
-                 package_data.header.alternateResourceNames.each {
-                   alternateNames << new AlternateResourceName([name: it.name])                  
-                 }
-                
-                pkg.addToAlternateResourceNames(alternateNames)
-                pkg.save(failOnError: true)
-              }
         } else {
           log.info("Not adding package '${package_data.header.packageName}' because status '${package_data.header.status}' doesn't match 'Current' or 'Expected'")
           skipPackage = true
@@ -152,7 +142,6 @@ class PackageIngestService implements DataBinder {
 
       result.packageId = pkg.id
     }
-    skipPackage = true  //TODO: remove
 
     if (skipPackage) {
       return

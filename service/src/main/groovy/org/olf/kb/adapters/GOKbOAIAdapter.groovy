@@ -322,7 +322,6 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       def source_data_created = package_record.dateCreated?.text()
       def source_data_updated = package_record.lastUpdated?.text()
       def availability_scope = package_record.global?.text()
-      def alternate_resource_names = package_record.variantNames?.findAll{it.variantName?.text() != null && it.variantName?.text()?.trim() != ''}?.collect{ [name: it.variantName?.text()]}
 
       def identifiers = package_record.identifiers?.identifier?.findAll {
         it.@type?.text() == null || it.@type?.text()?.trim() == ''
@@ -349,7 +348,6 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           sourceDataCreated: source_data_created,
           sourceDataUpdated: source_data_updated,
           availabilityScope: availability_scope,
-          alternateResourceNames: alternate_resource_names
         ],
         identifiers: identifiers,
         packageContents: []

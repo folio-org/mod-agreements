@@ -50,7 +50,6 @@ interface PackageSchema extends Validateable {
     LocalDate getSourceDataUpdated()
     String getAvailabilityScope()
     String getLifecycleStatus()  
-    Collection<AlternateResourceNameSchema> getAlternateResourceNames()
   }
   
   @CompileStatic
@@ -137,16 +136,6 @@ interface PackageSchema extends Validateable {
      */
     String getNamespace()
     String getValue()
-  }
-  
-  @CompileStatic
-  public interface AlternateResourceNameSchema extends Validateable {
-    /*
-     {
-       "name": "An alternate Name",
-     }
-     */
-    String getAlternateResourceName()
   }
   
   @CompileStatic
