@@ -16,6 +16,8 @@ import org.olf.dataimport.internal.TitleInstanceResolverService
 import groovy.util.logging.Slf4j
 
 import groovy.json.*
+import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
+
 
 /**
  * This service works at the module level, it's often called without a tenant context.
@@ -118,7 +120,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
           break;
         case(1):
           log.debug("Exact match. Enrich title.")
-          result = candidate_list.get(0)
+          result = GrailsHibernateUtil.unwrapIfProxy(candidate_list.get(0))
           checkForEnrichment(result, citation, trustedSourceTI)
           break;
         default:
@@ -188,7 +190,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
             createNewTitleInstance(sibling_citation, work)
             break
           case 1:
-            TitleInstance ti = candidate_list.get(0)
+            TitleInstance ti = GrailsHibernateUtil.unwrapIfProxy(candidate_list.get(0))
             if ( ti.work == null ) {
               log.debug("Located existing print instance for identifier ${id.value} that was not linked. Linking it to work ${work.id}");
               // Link the located title instance to the work
