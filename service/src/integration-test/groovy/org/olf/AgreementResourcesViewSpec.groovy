@@ -52,6 +52,10 @@ class AgreementResourcesViewSpec extends BaseSpec {
             packageProvider {
               name "DIKU"
             }
+            availabilityScope "Global"
+            lifecycleStatus "Current"
+            sourceDataCreated "2022-01-01"
+            sourceDataUpdated "2022-01-01"
             contentItems ([
               {
                 depth "fulltext"
