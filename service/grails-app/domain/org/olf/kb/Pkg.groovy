@@ -20,8 +20,8 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   RemoteKB remoteKb
   Platform nominalPlatform
   Org vendor
-  LocalDate sourceDataCreated
-  LocalDate sourceDataUpdated
+  Date sourceDataCreated
+  Date sourceDataUpdated
   @Defaults(['Current', 'Retired', 'Expected', 'Deleted'])
   RefdataValue lifecycleStatus
   @Defaults(['Global', 'Consortial', 'Regional', 'Local'])

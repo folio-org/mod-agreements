@@ -18,8 +18,8 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   String name
   PackageProvider packageProvider
   Boolean trustedSourceTI
-  LocalDate sourceDataCreated
-  LocalDate sourceDataUpdated
+  Date sourceDataCreated
+  Date sourceDataUpdated
   String availabilityScope
   String lifecycleStatus 
   List<Identifier> identifiers
@@ -82,12 +82,12 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   }
   
   @Override
-  public LocalDate getSourceDataCreated() {
+  public Date getSourceDataCreated() {
     sourceDataCreated
   } 
   
   @Override
-  public LocalDate getSourceDataUpdated() {
+  public Date getSourceDataUpdated() {
     sourceDataUpdated
   }  
   

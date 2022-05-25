@@ -46,8 +46,8 @@ interface PackageSchema extends Validateable {
     String getStatus()
     String get_intenalId()
     Boolean getTrustedSourceTI()
-    LocalDate getSourceDataCreated()
-    LocalDate getSourceDataUpdated()
+    Date getSourceDataCreated()
+    Date getSourceDataUpdated()
     String getAvailabilityScope()
     String getLifecycleStatus()  
   }
