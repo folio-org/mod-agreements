@@ -9,8 +9,6 @@ import com.k_int.web.toolkit.refdata.RefdataValue
 
 import grails.gorm.MultiTenant
 
-import java.time.LocalDate
-
 /**
  * mod-erm representation of a package
  */
