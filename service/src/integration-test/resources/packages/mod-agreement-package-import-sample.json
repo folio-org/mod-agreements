@@ -13,6 +13,10 @@
       "packageProvider": {
         "name": "Brill"
       },
+      "availabilityScope": "Global",
+      "lifecycleStatus": "Current",
+      "sourceDataCreated": "2022-01-01",
+      "sourceDataUpdated": "2022-01-01",
       "contentItems": [
         {
           "depth": "full text",
