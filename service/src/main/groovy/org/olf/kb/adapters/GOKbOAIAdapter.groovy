@@ -327,13 +327,11 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       }?.collect {
         [contentType: it.text()]
       }
-      println(content_types)
       def alternate_resource_names = package_record.variantNames?.variantName?.findAll {
         it.text() != null && it.text()?.trim() != ''
       }?.collect {
         [name: it.text()]
       }
-      println(alternate_resource_names)
 
       def identifiers = package_record.identifiers?.identifier?.findAll {
         it.@type?.text() == null || it.@type?.text()?.trim() == ''

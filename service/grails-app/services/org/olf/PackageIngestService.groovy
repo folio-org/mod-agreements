@@ -163,7 +163,6 @@ class PackageIngestService implements DataBinder {
 
       result.packageId = pkg.id
     }
-    skipPackage = true  //TODO: remove
 
     if (skipPackage) {
       return
