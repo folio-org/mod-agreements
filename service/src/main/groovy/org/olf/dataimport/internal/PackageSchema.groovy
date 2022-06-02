@@ -33,7 +33,10 @@ interface PackageSchema extends Validateable {
     "sourceDataCreated": "2020-12-31T00:00:00Z",
     "sourceDataUpdated": "2020-12-31T00:00:00Z",
     "availabilityScope": "Global",
-    "lifecycleStatus": "Current",
+    "alternateResourceNames": {
+      "name": "Name 1",
+      "name": "Name 2"
+    },
     "_intenalId": 276432871386
     */
     
@@ -50,6 +53,8 @@ interface PackageSchema extends Validateable {
     Date getSourceDataUpdated()
     String getAvailabilityScope()
     String getLifecycleStatus()  
+    Collection<ContentTypeSchema> getContentTypes()
+    Collection<AlternateResourceNameSchema> getAlternateResourceNames()
   }
   
   @CompileStatic
@@ -136,6 +141,26 @@ interface PackageSchema extends Validateable {
      */
     String getNamespace()
     String getValue()
+  }
+
+  @CompileStatic
+  public interface ContentTypeSchema extends Validateable {
+    /*
+     {
+       "contentType": "Database",
+     }
+     */
+    String getContentType()
+  }
+  
+  @CompileStatic
+  public interface AlternateResourceNameSchema extends Validateable {
+    /*
+     {
+       "name": "An alternate Name",
+     }
+     */
+    String getAlternateResourceName()
   }
   
   @CompileStatic

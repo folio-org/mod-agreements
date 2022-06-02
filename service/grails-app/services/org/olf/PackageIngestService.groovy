@@ -7,6 +7,8 @@ import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.CoverageStatementSchema
 import org.olf.kb.Embargo
 import org.olf.kb.PackageContentItem
+import org.olf.kb.AlternateResourceName
+import org.olf.kb.ContentType
 import org.olf.kb.Pkg
 import org.olf.kb.Platform
 import org.olf.kb.PlatformTitleInstance
@@ -129,6 +131,26 @@ class PackageIngestService implements DataBinder {
                vendor: vendor).save(flush:true, failOnError:true)
                MDC.put('packageSource', pkg.source.toString())
                MDC.put('packageReference', pkg.reference.toString())
+               if (package_data.header.contentTypes.size() > 0) {
+                 def contentTypes = [];
+                 
+                 package_data.header.contentTypes.each {
+                   contentTypes << new ContentType([contentType: it.contentType])                  
+                 }
+                
+                pkg.addToContentTypes(contentTypes)
+                pkg.save(failOnError: true)
+              }
+               if (package_data.header.alternateResourceNames.size() > 0) {
+                 def alternateNames = [];
+                 
+                 package_data.header.alternateResourceNames.each {
+                   alternateNames << new AlternateResourceName([name: it.name])                  
+                 }
+                
+                pkg.addToAlternateResourceNames(alternateNames)
+                pkg.save(failOnError: true)
+              }
         } else {
           log.info("Not adding package '${package_data.header.packageName}' because status '${package_data.header.status}' doesn't match 'Current' or 'Expected'")
           skipPackage = true
@@ -141,6 +163,7 @@ class PackageIngestService implements DataBinder {
 
       result.packageId = pkg.id
     }
+    skipPackage = true  //TODO: remove
 
     if (skipPackage) {
       return
