@@ -24,4 +24,5 @@ databaseChangeLog = {
   include file: 'update-mod-agreements-5-0.groovy'
   include file: 'update-mod-agreements-5-1.groovy'
   include file: 'update-mod-agreements-5-2.groovy'
+  include file: 'wtk/multi-value-custprops.feat.groovy'
 }
