@@ -131,26 +131,23 @@ class PackageIngestService implements DataBinder {
                vendor: vendor).save(flush:true, failOnError:true)
                MDC.put('packageSource', pkg.source.toString())
                MDC.put('packageReference', pkg.reference.toString())
-               if (package_data.header.contentTypes.size() > 0) {
-                 def contentTypes = [];
-                 
-                 package_data.header.contentTypes.each {
-                   contentTypes << new ContentType([contentType: it.contentType])                  
-                 }
-                
-                pkg.addToContentTypes(contentTypes)
-                pkg.save(failOnError: true)
-              }
-               if (package_data.header.alternateResourceNames.size() > 0) {
-                 def alternateNames = [];
-                 
-                 package_data.header.alternateResourceNames.each {
-                   alternateNames << new AlternateResourceName([name: it.name])                  
-                 }
-                
-                pkg.addToAlternateResourceNames(alternateNames)
-                pkg.save(failOnError: true)
-              }
+               
+//               def contentTypes = []
+//               (package_data?.header?.contentTypes ?: []).each { 
+//                 println("PackageIngestService - it.contentType: " + it.contentType)  // TODO: remove
+//                 contentTypes << new ContentType([contentType: lookupOrCreateContentType(it.contentType)])       // lookuporcreate RefData             
+//               }
+//               pkg.addToContentTypes(contentTypes)
+
+               def alternateNames = []
+               (package_data?.header?.alternateResourceNames ?: []).each {
+                 println("PackageIngestService - it.name: " + it.name)  // TODO: remove
+                 alternateNames << new AlternateResourceName([name: it.name])   
+               }
+               if(alternateNames.size() > 0) {  
+                 pkg.addToAlternateResourceNames(alternateNames)
+               }
+               pkg.save(failOnError: true)
         } else {
           log.info("Not adding package '${package_data.header.packageName}' because status '${package_data.header.status}' doesn't match 'Current' or 'Expected'")
           skipPackage = true
