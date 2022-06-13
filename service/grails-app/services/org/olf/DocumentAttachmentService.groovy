@@ -40,7 +40,7 @@ public class DocumentAttachmentService {
         }
       } catch(ParseException pex) {
         // From version couldn't be parsed as semver we should ignore.
-        log.debug "${fromVersion} could not be parsed as semver, not running supplementary document clean."
+        log.debug "Tenant Enabled [${tenantId} v${toVersion}] from v${fromVersion} could not be parsed as semver, not running supplementary document clean."
       }
     }
   }
