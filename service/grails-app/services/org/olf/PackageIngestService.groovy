@@ -132,20 +132,12 @@ class PackageIngestService implements DataBinder {
                MDC.put('packageSource', pkg.source.toString())
                MDC.put('packageReference', pkg.reference.toString())
                
-//               def contentTypes = []
-//               (package_data?.header?.contentTypes ?: []).each { 
-//                 println("PackageIngestService - it.contentType: " + it.contentType)  // TODO: remove
-//                 contentTypes << new ContentType([contentType: lookupOrCreateContentType(it.contentType)])       // lookuporcreate RefData             
-//               }
-//               pkg.addToContentTypes(contentTypes)
-
-               def alternateNames = []
-               (package_data?.header?.alternateResourceNames ?: []).each {
-                 println("PackageIngestService - it.name: " + it.name)  // TODO: remove
-                 alternateNames << new AlternateResourceName([name: it.name])   
+               (package_data?.header?.contentTypes ?: []).each { 
+                 pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
                }
-               if(alternateNames.size() > 0) {  
-                 pkg.addToAlternateResourceNames(alternateNames)
+
+               (package_data?.header?.alternateResourceNames ?: []).each {
+                 pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
                }
                pkg.save(failOnError: true)
         } else {
