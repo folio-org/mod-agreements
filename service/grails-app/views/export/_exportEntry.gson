@@ -72,8 +72,9 @@ json {
     final def pkg = ent.resource
     
     "package" {
-       id pkg.id
-       name pkg.name 
+      id pkg.id
+      name pkg.name
+      identifiers g.render(pkg.identifiers)
     }
   }
   
