@@ -37,6 +37,9 @@ interface PackageSchema extends Validateable {
       "name": "Name 1",
       "name": "Name 2"
     },
+    "contentTypes": {
+      "contentType": "Database"
+    }
     "_intenalId": 276432871386
     */
     
