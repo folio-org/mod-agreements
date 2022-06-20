@@ -15,6 +15,11 @@ identify specific electronic or print resources, and act as a bridge between tho
 
 Developers looking to access the services exposed by mod-agreements can find more information in the following sections
 
+## Module installation and upgrade notes
+
+The module has important dependences on reference data. initial installations and module upgrades should specify loadReference=true. The module
+may not work as expected if this is omitted.
+
 ## Resources exposed by this module
 
 ### /erm/sas resource - SubscriptionAgreements
