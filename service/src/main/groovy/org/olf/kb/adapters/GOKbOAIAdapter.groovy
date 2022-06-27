@@ -341,6 +341,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           value: it.@value?.text()
         ]
       }
+      identifiers.addAll(package_record.collect{ [namespace: 'gokb_id', value: it.@id?.text() ]})
+      identifiers.addAll(package_record.collect{ [namespace: 'gokb_uuid', value: it.@uuid?.text() ]})
+      println(identifiers)
 
       result = [
         header:[
