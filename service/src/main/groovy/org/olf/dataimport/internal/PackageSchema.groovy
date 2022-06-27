@@ -33,6 +33,7 @@ interface PackageSchema extends Validateable {
     "sourceDataCreated": "2020-12-31T00:00:00Z",
     "sourceDataUpdated": "2020-12-31T00:00:00Z",
     "availabilityScope": "Global",
+    "description": "A package"
     "alternateResourceNames": {
       "name": "Name 1",
       "name": "Name 2"
@@ -48,6 +49,7 @@ interface PackageSchema extends Validateable {
     String getPackageName()
     LocalDate getStartDate()
     LocalDate getEndDate()
+    String getDescription()
     String getPackageSlug()
     String getStatus()
     String get_intenalId()

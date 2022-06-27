@@ -23,7 +23,8 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   Date sourceDataCreated
   Date sourceDataUpdated
   String availabilityScope
-  String lifecycleStatus 
+  String lifecycleStatus
+  String description
   List<ContentType> contentTypes
   List<AlternateResourceName> alternateResourceNames
   List<Identifier> identifiers
@@ -46,6 +47,7 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
     _intenalId nullable: true, blank: false
     status nullable: true, blank: false
     trustedSourceTI nullable: true
+    description nullable: true
     
     source    nullable: false, blank: false
     reference nullable: false, blank: false
@@ -107,6 +109,11 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   @Override
   public String getLifecycleStatus() {
     lifecycleStatus
+  }
+
+  @Override
+  public String getDescription() {
+    description
   }
   
   @Override

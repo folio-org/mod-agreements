@@ -21,6 +21,7 @@ class HeaderImpl implements PackageHeaderSchema, Validateable {
   LocalDate startDate
   LocalDate endDate
   String packageSlug
+  String description
   Date sourceDataCreated
   Date sourceDataUpdated
   String availabilityScope

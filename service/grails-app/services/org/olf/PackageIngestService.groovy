@@ -120,15 +120,17 @@ class PackageIngestService implements DataBinder {
         final String statusStr = package_data?.header?.status?.toLowerCase()
         if (statusStr == null || ['current', 'expected'].contains(statusStr)) {
           pkg = new Pkg(
-                name: package_data.header.packageName,
-               source: package_data.header.packageSource,
-            reference: package_data.header.packageSlug,
-          sourceDataCreated: package_data.header.sourceDataCreated,
-          sourceDataUpdated: package_data.header.sourceDataUpdated,
-          availabilityScope: package_data.header.availabilityScope,
-          lifecycleStatus: package_data.header.status,
-             remoteKb: kb,
-               vendor: vendor).save(flush:true, failOnError:true)
+                         name: package_data.header.packageName,
+                       source: package_data.header.packageSource,
+                    reference: package_data.header.packageSlug,
+                  description: package_data.header.description,
+            sourceDataCreated: package_data.header.sourceDataCreated,
+            sourceDataUpdated: package_data.header.sourceDataUpdated,
+            availabilityScope: package_data.header.availabilityScope,
+              lifecycleStatus: package_data.header.status,
+                     remoteKb: kb,
+                       vendor: vendor
+          ).save(flush:true, failOnError:true)
                MDC.put('packageSource', pkg.source.toString())
                MDC.put('packageReference', pkg.reference.toString())
                
