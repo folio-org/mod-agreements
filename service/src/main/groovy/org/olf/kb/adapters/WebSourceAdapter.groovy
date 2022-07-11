@@ -70,6 +70,7 @@ public abstract class WebSourceAdapter {
   protected final def getSync (final String url, @DelegatesTo(HttpConfig.class) final Closure expand = null) {
     getSync( url, null, expand)
   }
+
   protected final def getSync (final String url, final Map params, @DelegatesTo(HttpConfig.class) final Closure expand = null) {
     httpClient.get({
       request.uri = url

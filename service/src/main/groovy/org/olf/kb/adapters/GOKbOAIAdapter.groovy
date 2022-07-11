@@ -64,20 +64,18 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       log.info("OAI/HTTP GET url=${packagesUrl} params=${query_params}")
 
       // Built in parser for XML returns GPathResult
-      xml = (GPathResult) getSync(packagesUrl, query_params) {
-
+      Object sync_result = getSync(packagesUrl, query_params) {
         response.failure { FromServer fromServer ->
           log.error "HTTP/OAI Request failed with status ${fromServer.statusCode}"
           found_records = false
         }
       }
       
-      if (found_records) {
-      
+      if ( (found_records) && ( sync_result instanceof GPathResult ) ) {
+
+        xml = (GPathResult) sync_result;
         log.debug("got page of data from OAI, cursor=${cursor}, ...")
-        
         Map page_result = processPackagePage(cursor, xml, source_name, cache, trustedSourceTI)
-  
         log.debug("processPackagePage returned, processed ${page_result.count} packages, cursor will be ${page_result.new_cursor}")
         
         // Extract some info from the page.
@@ -91,7 +89,6 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           // If we processed records, and we have a resumption token, carry on.
           if ( page_result.resumptionToken ) {
             query_params.resumptionToken = page_result.resumptionToken
-            /** / found_records = false /**/
           }
           else {
             // Reached the end of the data
@@ -101,6 +98,10 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         else {
           found_records = false
         }
+      }
+      else {
+        log.warn("HTTP Get did not return a GPathResult... skipping");
+        found_records = false
       }
   
       log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken}\"")
