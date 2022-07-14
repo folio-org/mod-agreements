@@ -31,6 +31,7 @@ public class RemoteKB implements MultiTenant<RemoteKB> {
 
   public static final Long RECTYPE_PACKAGE = 1L;
   public static final Long RECTYPE_TITLE = 2L;
+  public static final Long RECTYPE_TIPP = 3L;
 
   // Mark KB as protected/readonly, e.g. the LOCAL KB
   boolean readonly = false

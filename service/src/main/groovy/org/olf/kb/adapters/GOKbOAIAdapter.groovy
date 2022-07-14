@@ -32,6 +32,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   
   private static final String PATH_PACKAGES = '/packages'
   private static final String PATH_TITLES = '/titles'
+  private static final String PATH_TIPPS = '/tipps'
   
   public void freshenPackageData(final String source_name,
                                  final String base_url,
@@ -106,6 +107,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken}\"")
     }
   }
+
   // TODO Potentially can combine freshenTitleData and freshenPackageData with a new variable "dataType" or something like that.
   public void freshenTitleData(String source_name,
                                  String base_url,

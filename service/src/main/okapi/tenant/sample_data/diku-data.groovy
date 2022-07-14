@@ -33,3 +33,16 @@ RemoteKB.findByName('GOKb_TEST') ?: (new RemoteKB(
   supportsHarvesting:true,
   activationEnabled:false
 ).save(failOnError:true)) */
+
+/*
+RemoteKB.findByName('GOKb_Tipp live') ?: (new RemoteKB(
+  name:'GOKb_Tipp live',
+  type:'org.olf.kb.adapters.GOKbOAIAdapter',
+  uri:'https://gokbt.gbv.de/gokb/oai',
+  fullPrefix:'gokb',
+  rectype: RemoteKB.RECTYPE_TIPP,
+  active:Boolean.TRUE,
+  supportsHarvesting:true,
+  activationEnabled:false
+).save(failOnError:true))
+*/
