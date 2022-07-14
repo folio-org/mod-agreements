@@ -105,7 +105,12 @@ alternateResourceNames cascade: 'all-delete-orphan'
   static transients = ['approvedIdentifierOccurrences']
 
   public Set<IdentifierOccurrence> getApprovedIdentifierOccurrences() {
-    identifiers.findAll { it.status.value == 'approved' }
+    identifiers
+      .findAll { it.status.value == 'approved' }
+      .sort { a,b ->
+        a.identifier.ns.value <=> b.identifier.ns.value ?:
+        a.identifier.value <=> b.identifier.value
+      }
   }
 
   private void trunc(String fieldName, String field, int truncateLength = 255) {
