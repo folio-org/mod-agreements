@@ -33,91 +33,14 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   private static final String PATH_PACKAGES = '/packages'
   private static final String PATH_TITLES = '/titles'
   private static final String PATH_TIPPS = '/tipps'
-  
-  public void freshenPackageData(final String source_name,
-                                 final String base_url,
+
+  public void genericFreshenData(final String source_name,
+                                 final String completed_url,
                                  final String current_cursor,
                                  final KBCache cache,
-                                 final boolean trustedSourceTI = false) {
-
-    final String packagesUrl = "${stripTrailingSlash(base_url)}${PATH_PACKAGES}"
-                                 
-    log.debug("GOKbOAIAdapter::freshenPackageData - fetching from URI: ${packagesUrl}")
-
-    def query_params = [
-        'verb': 'ListRecords',
-        'metadataPrefix': 'gokb'
-    ]
-
-   String cursor = null
-    def found_records = true
-
-    if ( current_cursor != null ) {
-      cursor = current_cursor
-      query_params.from=cursor
-    }
-    else {
-      cursor = ''
-    }
-    GPathResult xml
-    while ( found_records ) {
-
-      log.info("OAI/HTTP GET url=${packagesUrl} params=${query_params}")
-
-      // Built in parser for XML returns GPathResult
-      xml = (GPathResult) getSync(packagesUrl, query_params) {
-
-        response.failure { FromServer fromServer ->
-          log.error "HTTP/OAI Request failed with status ${fromServer.statusCode}"
-          found_records = false
-        }
-      }
-      
-      if (found_records) {
-      
-        log.debug("got page of data from OAI, cursor=${cursor}, ...")
-        
-        Map page_result = processPackagePage(cursor, xml, source_name, cache, trustedSourceTI)
-  
-        log.debug("processPackagePage returned, processed ${page_result.count} packages, cursor will be ${page_result.new_cursor}")
-        
-        // Extract some info from the page.
-        final String new_cursor = page_result.new_cursor as String
-        final int result_count = (page_result.count ?: 0) as int
-        
-        // Store the cursor so we know where we are up to.
-        cache.updateCursor(source_name, new_cursor)
-  
-        if ( result_count > 0 ) {
-          // If we processed records, and we have a resumption token, carry on.
-          if ( page_result.resumptionToken ) {
-            query_params.resumptionToken = page_result.resumptionToken
-            /** / found_records = false /**/
-          }
-          else {
-            // Reached the end of the data
-            found_records = false
-          }
-        }
-        else {
-          found_records = false
-        }
-      }
-  
-      log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken}\"")
-    }
-  }
-
-  // TODO Potentially can combine freshenTitleData and freshenPackageData with a new variable "dataType" or something like that.
-  public void freshenTitleData(String source_name,
-                                 String base_url,
-                                 String current_cursor,
-                                 KBCache cache,
-                                 boolean trustedSourceTI = false) {
-    
-    final String titlesUrl = "${stripTrailingSlash(base_url)}${PATH_TITLES}"
-                                 
-    log.debug("GOKbOAIAdapter::freshenTitleData - fetching from URI: ${titlesUrl}")
+                                 final boolean trustedSourceTI,
+                                 Closure pageProcessor) {
+    log.debug("GOKbOAIAdapter::genericFreshenData - fetching from URI: ${completed_url}")
 
     def query_params = [
         'verb': 'ListRecords',
@@ -137,13 +60,13 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     GPathResult xml
     while ( found_records ) {
 
-      log.debug("** GET ${titlesUrl} ${query_params}")
+      log.info("OAI/HTTP GET url=${completed_url} params=${query_params}")
 
       // Built in parser for XML returns GPathResult
-      xml = (GPathResult) getSync(titlesUrl, query_params) {
+      xml = (GPathResult) getSync(completed_url, query_params) {
 
         response.failure { FromServer fromServer ->
-          log.error "Request failed with status ${fromServer.statusCode}"
+          log.error "HTTP/OAI Request failed with status ${fromServer.statusCode}"
           found_records = false
         }
       }
@@ -152,9 +75,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       
         log.debug("got page of data from OAI, cursor=${cursor}, ...")
         
-        Map page_result = processTitlePage(cursor, xml, source_name, cache, trustedSourceTI)
+        Map page_result = pageProcessor(cursor, xml, source_name, cache, trustedSourceTI)
   
-        log.debug("processTitlePage returned, processed ${page_result.count} titles, cursor will be ${page_result.new_cursor}")
+        log.debug("genericFreshenData returned, processed ${page_result.count} packages, cursor will be ${page_result.new_cursor}")
         
         // Extract some info from the page.
         final String new_cursor = page_result.new_cursor as String
@@ -179,7 +102,30 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         }
       }
   
-      log.debug("GOKbOAIAdapter::freshenTitleData - exiting URI: ${base_url} with cursor ${cursor}")
+      log.debug("GOKbOAIAdapter::genericFreshenData - exiting URI: ${completed_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken}\"")
+    }
+  }
+  
+  public void freshenPackageData(final String source_name,
+                                 final String base_url,
+                                 final String current_cursor,
+                                 final KBCache cache,
+                                 final boolean trustedSourceTI = false) {
+
+    final String packagesUrl = "${stripTrailingSlash(base_url)}${PATH_PACKAGES}"
+    genericFreshenData(source_name,packagesUrl,current_cursor,cache,trustedSourceTI) { cursor, xml, source_name, cache, trustedSourceTI ->
+      return processPackagePage(cursor, xml, source_name, cache, trustedSourceTI)
+    }
+  }
+
+  public void freshenTitleData(String source_name,
+                                 String base_url,
+                                 String current_cursor,
+                                 KBCache cache,
+                                 boolean trustedSourceTI = false) {
+    final String titlesUrl = "${stripTrailingSlash(base_url)}${PATH_TITLES}"
+    genericFreshenData(source_name,titlesUrl,current_cursor,cache,trustedSourceTI) { cursor, xml, source_name, cache, trustedSourceTI ->
+      return processTitlePage(cursor, xml, source_name, cache, trustedSourceTI)
     }
   }
 
