@@ -129,6 +129,19 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     }
   }
 
+  public void freshenTippData(String source_name,
+                              String base_url,
+                              String current_cursor,
+                              KBCache cache,
+                              boolean trustedSourceTI = false) {
+    final String titlesUrl = "${stripTrailingSlash(base_url)}${PATH_TITLES}"
+    genericFreshenData(source_name,titlesUrl,current_cursor,cache,trustedSourceTI) { cursor, xml, source_name, cache, trustedSourceTI ->
+      return processTippPage(cursor, xml, source_name, cache, trustedSourceTI)
+    }
+  }
+
+
+
   public void freshenHoldingsData(String cursor,
                                   String source_name,
                                   KBCache cache) {
@@ -196,6 +209,25 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         result.new_cursor = new_string_datestamp
         log.debug("result.new_cursor=${result.new_cursor}")
       }
+    }
+
+    result.resumptionToken = oai_page.ListRecords?.resumptionToken?.text()
+    return result
+  }
+
+  
+  @CompileStatic(SKIP)
+  private Map processTippPage(String cursor, GPathResult oai_page, String source_name, KBCache cache, boolean trustedSourceTI) {
+    final SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    // Force the formatter to use UCT because we want "Z" as the timezone
+    sdf.setTimeZone(TimeZone.getTimeZone("UTC"))
+    def result = [:]
+    // If there is no cursor, initialise it to an empty string.
+    result.new_cursor = (cursor && cursor.trim()) != '' ? cursor : ''
+    result.count = 0
+    log.debug("GOKbOAIAdapter::processTippPage(${cursor},...")
+
+    oai_page.ListRecords.record.each { record ->
     }
 
     result.resumptionToken = oai_page.ListRecords?.resumptionToken?.text()
