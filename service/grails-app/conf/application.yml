@@ -90,7 +90,7 @@ dataSource:
 
   properties:
     initialSize: 5
-    maxActive: ${db.maxpoolsize:5}
+    maxActive: ${db.maxpoolsize:10}
     minIdle: 5
     maxIdle: 10
     maxWait: 10000
@@ -248,9 +248,9 @@ environments:
       filestore:
         aws_region: "${aws.region:us-east-1}"
         aws_url: "${aws.url}"
-        aws_secret: "${aws.secret.access.key}"
-        aws_bucket: "${aws.bucket}"
-        aws_access_key_id: "${aws.access.key.id}"
+        aws_secret: "${aws.secret.access.key:none}"
+        aws_bucket: "${aws.bucket:none}"
+        aws_access_key_id: "${aws.access.key.id:none}"
   development:
     logging:
       level:
