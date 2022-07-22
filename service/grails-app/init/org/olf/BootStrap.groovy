@@ -39,6 +39,11 @@ class BootStrap {
       log.info("    ENV: ${name}=\"${value}\"");
     }
 
+    Map<String, String> env = System.getenv();
+    env.each { name,value ->
+      log.info("    ENV: ${name}=\"${value}\"");
+    }
+
     jobRunnerService.populateJobQueue()
   }
 

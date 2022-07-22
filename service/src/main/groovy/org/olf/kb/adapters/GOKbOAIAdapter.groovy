@@ -300,6 +300,15 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     return result
   }
 
+  @CompileStatic(SKIP)
+  private String obtainNamespace(GPathResult record) {
+    if (record.@namespaceName?.text() != null && record.@namespaceName?.text()?.trim() != '') {
+      return record.@namespaceName?.text()?.toLowerCase()?.replaceAll(/\s+/, "_")
+    } else if (record.@namespace?.text() != null && record.@namespace?.text()?.trim() != '') {
+      return record.@namespace?.text()?.toLowerCase()?.replaceAll(/\s+/, "_")
+    }
+  }
+  
   /**
    * convert the gokb package metadataPrefix into our canonical ERM json structure as seen at
    *   https://github.com/folio-org/mod-erm/blob/master/service/src/integration-test/resources/packages/apa_1062.json
@@ -334,30 +343,44 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       }
 
       def identifiers = package_record.identifiers?.identifier?.findAll {
-        it.@type?.text() == null || it.@type?.text()?.trim() == ''
+        (it.@type?.text() == null || it.@type?.text()?.trim() == '') && obtainNamespace(it) != null
       }?.collect {
         [
-          namespace: it.@namespaceName?.text()?.toLowerCase()?.replaceAll(/\s+/, "_"),
+          namespace: obtainNamespace(it),
           value: it.@value?.text()
         ]
       }
-      
-      identifiers.addAll(
-        package_record.find{
-          it.@id?.text() != null || it.@id?.text()?.trim() != ''
-        }?.collect { 
-          [ namespace: 'gokb_id', value: it.@id?.text() ] 
-        }
-      )
-      
-      identifiers.addAll(
-        package_record.find{
-          it.@uuid?.text() != null || it.@uuid?.text()?.trim() != ''
-        }?.collect{ 
-          [ namespace: 'gokb_uuid', value: it.@uuid?.text() ] 
-        }
-      )
 
+      def ttl_prv_identifiers = package_record.identifiers?.identifier?.findAll {
+        it.@type?.text()?.trim()?.toLowerCase() == 'ttl_prv' && obtainNamespace(it) != null
+      }?.collect {
+        [
+          namespace: "gokb_ttl_prv_${obtainNamespace(it)}",
+          value: it.@value?.text()
+        ]
+      }
+      if (ttl_prv_identifiers.size()) {
+        identifiers.addAll(ttl_prv_identifiers)
+      }
+
+      def gokbId_identifier = package_record.find{
+        it.@id?.text() != null && it.@id?.text()?.trim() != ''
+      }
+      if (gokbId_identifier) {
+        identifiers.add(
+          [ namespace: 'gokb_id', value: gokbId_identifier.@id?.text() ] 
+        )
+      }
+
+      def gokb_uuid_identifier = package_record.find{
+        it.@uuid?.text() != null && it.@uuid?.text()?.trim() != ''
+      }
+      if (gokbId_identifier) {
+        identifiers.add(
+          [ namespace: 'gokb_uuid', value: gokb_uuid_identifier.@uuid?.text() ] 
+        )
+      }
+      
       result = [
         header:[
           status: package_status,
