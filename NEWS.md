@@ -1,3 +1,5 @@
+## 5.3.0 In progress
+
 ## 5.2.0 2022-06-29
   * ERM-2219 Description property missing from package schema
   * ERM-2218 Removing values from multi-valued custom property in UI does not update the values
