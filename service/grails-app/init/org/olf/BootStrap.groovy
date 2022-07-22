@@ -21,6 +21,8 @@ class BootStrap {
       }
     });
 
+
+    log.info("mod-agreements startup report");
     log.info("${grailsApplication.getMetadata().getApplicationName()}  (${grailsApplication.config?.info?.app?.version}) initialising");
     log.info("          build number -> ${grailsApplication.metadata['build.number']}");
     log.info("        build revision -> ${grailsApplication.metadata['build.git.revision']}");
@@ -32,6 +34,11 @@ class BootStrap {
     log.info("    default_aws_region -> ${grailsApplication.config.kiwt?.filestore?.aws_region}");
     log.info("       default_aws_url -> ${grailsApplication.config.kiwt?.filestore?.aws_url}");
     log.info("    default_aws_bucket -> ${grailsApplication.config.kiwt?.filestore?.aws_bucket}");
+
+    Map<String, String> env = System.getenv();
+    env.each { name,value ->
+      log.info("    ENV: ${name}=\"${value}\"");
+    }
 
     jobRunnerService.populateJobQueue()
   }
