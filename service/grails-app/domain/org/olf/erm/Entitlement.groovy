@@ -251,7 +251,7 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
         
         custCoverage.each { Map <String, String> coverageEntry ->
           if (coverageEntry.beginCoverage) {
-            outerEntitlement.coverage << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
+            outerEntitlement.metaClass.coverage << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
             outerEntitlement.metaClass.external_customCoverage = true
           }
         }
@@ -260,7 +260,7 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
         log.debug "Adding managed title coverages."
         it.data?.attributes?.managedCoverages?.each { Map <String, String> coverageEntry ->
           if (coverageEntry.beginCoverage) {
-            outerEntitlement.coverage << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
+            outerEntitlement.metaClass.coverage << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
           }
         }
       }

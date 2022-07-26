@@ -20,8 +20,7 @@ class BootStrap {
         log.info("mod-agreements shutdown hook - process terminating");
       }
     });
-
-
+    
     log.info("mod-agreements startup report");
     log.info("${grailsApplication.getMetadata().getApplicationName()}  (${grailsApplication.config?.info?.app?.version}) initialising");
     log.info("          build number -> ${grailsApplication.metadata['build.number']}");

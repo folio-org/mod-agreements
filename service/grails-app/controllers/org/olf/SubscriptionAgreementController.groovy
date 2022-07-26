@@ -34,8 +34,18 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
   SubscriptionAgreementController() {
     super(SubscriptionAgreement)
   }
+
+  @Transactional(readOnly=true)
+  def index(Integer max) {
+    super.index(max)
+  }
+
+  @Transactional(readOnly=true)
+  def show() {
+    super.show()
+  }
   
-  
+  @Transactional(readOnly=true)
   def publicLookup () {
     final List<String> referenceIds = params.list('referenceId')
     final List<String> resourceIds = params.list('resourceId')
@@ -216,6 +226,7 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
     })
   } 
   
+  @Transactional(readOnly=true)
   def resources () {
     
     final String subscriptionAgreementId = params.get("subscriptionAgreementId")
@@ -284,6 +295,7 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
     }
   }
   
+  @Transactional(readOnly=true)
   def currentResources () {
     
     final String subscriptionAgreementId = params.get("subscriptionAgreementId")
@@ -383,6 +395,7 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
     }
   }
   
+  @Transactional(readOnly=true)
   def droppedResources () {
     
     final String subscriptionAgreementId = params.get("subscriptionAgreementId")
@@ -450,6 +463,7 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
     }
   }
   
+  @Transactional(readOnly=true)
   def futureResources () {
     
     final String subscriptionAgreementId = params.get("subscriptionAgreementId")
@@ -575,6 +589,7 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
     respond ([statusCode: 404])
   }
   
+  @Transactional(readOnly=true)
   def export () {
     final String subscriptionAgreementId = params.get("subscriptionAgreementId")
     if (subscriptionAgreementId) {
