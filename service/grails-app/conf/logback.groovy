@@ -50,6 +50,7 @@ if (devEnv || Environment.currentEnvironment == Environment.TEST) {
   logger 'grails.app.domains', DEBUG
   logger 'grails.app.jobs', DEBUG
   logger 'grails.app.services', DEBUG
+  logger 'com.zaxxer.hikari.HikariConfig', DEBUG
   logger 'com.zaxxer.hikari.pool.HikariPool', WARN
   
   logger 'com.k_int', DEBUG
