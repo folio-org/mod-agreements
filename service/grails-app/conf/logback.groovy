@@ -52,6 +52,8 @@ if (devEnv || Environment.currentEnvironment == Environment.TEST) {
   logger 'grails.app.services', DEBUG
   logger 'com.zaxxer.hikari.HikariConfig', DEBUG
   logger 'com.zaxxer.hikari.pool.HikariPool', WARN
+  
+  logger 'services.k_int', TRACE
   logger 'com.k_int', DEBUG
   logger 'com.k_int.web.toolkit', DEBUG
   logger 'org.olf', DEBUG

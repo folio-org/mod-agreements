@@ -1,7 +1,7 @@
-/* configurations.all {
+configurations.all {
   // Check for updates every build
   resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-} */
+}
 
 buildscript {
   repositories {
@@ -45,7 +45,7 @@ apply plugin: 'com.github.erdi.webdriver-binaries'
 apply plugin: 'com.bmuschko.docker-remote-api'
 
 repositories {
-  // mavenLocal()
+  mavenLocal()
   // jcenter()
   mavenCentral()
   maven { url 'https://repo.grails.org/grails/core' }
@@ -65,22 +65,39 @@ sourceSets {
 }
 
 eclipse {
+  autoBuildTasks ([':processResources'])
+  synchronizationTasks ([':processResources'])
+  
   classpath {
     defaultOutputDir = new File(project.buildDir.canonicalPath, 'main')
     file {
+      
       whenMerged { classpath ->
-
+        
+        Set<String> resources = sourceSets.main?.resources?.srcDirs?.collect { it.canonicalPath }
+        
         entries.collect().each {
-
+          
           if (it.path =='grails-app/conf' && it.output?.toLowerCase().endsWith('test')) {
             classpath.entries.remove( it )
             println "Removed ${it}"
+            return
           }
 
           if (it.hasProperty('output') && it.output.startsWith('bin/')) {
             it.output = 'build/' + it.output.substring(4)
           }
+          
+          // Eclude the output of the resources added to the source sets for grails.
+          // Instead we add the results of the 'processResources' tasks to the classpath later.
+          if (it.hasProperty('dir') && resources.find { res -> it.dir?.canonicalPath?.startsWith(res) } ) {
+            it.exported = false
+            it.excludes << '**/*'
+          }
         }
+        def lib = new org.gradle.plugins.ide.eclipse.model.Library(fileReference(file("${tasks.processResources.destinationDir}")))
+        println "Adding: ${lib}"
+        entries << lib
       }
     }
   }
@@ -159,7 +176,7 @@ dependencies {
   compile 'commons-io:commons-io:2.6'
 
   compile 'com.k_int.grails:web-toolkit-ce:6.3.0-rc.4'
-  compile 'com.k_int.okapi:grails-okapi:4.1.2'
+  compile 'com.k_int.okapi:grails-okapi:5.0.0-SNAPSHOT'
 
   compile 'uk.co.cacoethes:groovy-handlebars-engine:0.2'
   compile 'com.github.jknack:handlebars-helpers:2.0.0'
