@@ -66,9 +66,10 @@ class AgreementLifecycleSpec extends BaseSpec {
       result > 0
 
     where:
-      test_package_file | _
-      'src/integration-test/resources/packages/apa_1062.json' | _
-      'src/integration-test/resources/packages/bentham_science_bentham_science_eduserv_complete_collection_2015_2017_1386.json' | _
+      test_package_file << [
+        'src/integration-test/resources/packages/apa_1062.json',
+        'src/integration-test/resources/packages/bentham_science_bentham_science_eduserv_complete_collection_2015_2017_1386.json'
+      ]
 
   }
   

@@ -1,28 +1,24 @@
 package org.olf.general.jobs
 
+import java.time.Instant
+
+import org.apache.commons.fileupload.FileItem
+import org.apache.commons.fileupload.disk.DiskFileItemFactory
 import org.springframework.http.HttpStatus
-import org.springframework.transaction.TransactionDefinition
+import org.springframework.web.multipart.MultipartFile
+import org.springframework.web.multipart.commons.CommonsMultipartFile
 
 import com.k_int.okapi.OkapiTenantAwareController
 import com.k_int.web.toolkit.files.FileUpload
 import com.k_int.web.toolkit.files.FileUploadService
-import com.k_int.web.toolkit.SimpleLookupService
 import com.k_int.web.toolkit.refdata.RefdataValue
 import com.k_int.web.toolkit.utils.GormUtils
+
 import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import grails.util.GrailsNameUtils
-import groovy.util.logging.Slf4j
-
 import groovy.json.JsonOutput
-import com.k_int.web.toolkit.files.FileUpload
-import com.k_int.web.toolkit.files.FileUploadService
-import org.apache.commons.fileupload.FileItem
-import org.apache.commons.fileupload.disk.DiskFileItemFactory
-import org.springframework.web.multipart.MultipartFile
-import org.springframework.web.multipart.commons.CommonsMultipartFile
-
-import java.time.Instant
+import groovy.util.logging.Slf4j
 
 
 @Slf4j
