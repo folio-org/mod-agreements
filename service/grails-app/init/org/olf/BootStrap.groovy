@@ -10,7 +10,7 @@ class BootStrap {
 
   def grailsApplication
   OkapiTenantAdminService okapiTenantAdminService
-  JobRunnerService jobRunnerService
+//  JobRunnerService jobRunnerService
 
   def init = { servletContext ->
 
@@ -39,7 +39,7 @@ class BootStrap {
       log.info("    ENV: ${name}=\"${value}\"");
     }
 
-    jobRunnerService.populateJobQueue()
+//    jobRunnerService.populateJobQueue()
   }
 
   def destroy = {
