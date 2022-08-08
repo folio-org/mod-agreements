@@ -37,7 +37,8 @@ class Org implements MultiTenant<Org> {
   String name
   
   @OkapiLookup(
-    value = '/organizations/organizations/${obj.orgsUuid}'
+    // value = '${ (obj.orgsUuid != null ) ? \'/organizations/organizations/\'+obj.orgsUuid : \'\''
+    value = '/organizations/organizations/${obj.orgsUuid?:""}'
   )
   String orgsUuid
 

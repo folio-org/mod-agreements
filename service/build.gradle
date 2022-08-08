@@ -111,7 +111,7 @@ dependencies {
   compile "org.grails:grails-web-boot"
   compile "org.grails:grails-logging"
   compile "org.grails.plugins:async"
-  compile "org.grails.plugins:views-json"
+  compile "org.grails.plugins:views-json:2.0.3"
   compile "org.grails.plugins:views-json-templates"
   compile "org.grails.plugins:events"
   compile "org.grails.plugins:hibernate5"

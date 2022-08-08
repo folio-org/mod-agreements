@@ -55,6 +55,7 @@ if (devEnv || Environment.currentEnvironment == Environment.TEST) {
   logger 'com.k_int', DEBUG
   logger 'com.k_int.web.toolkit', DEBUG
   logger 'org.olf', DEBUG
+  logger 'liquibase', WARN
   
   
   if (Environment.currentEnvironment == Environment.TEST) {
@@ -68,6 +69,7 @@ if (devEnv || Environment.currentEnvironment == Environment.TEST) {
   }
 }
 else {
+  logger 'com.zaxxer.hikari.HikariConfig', DEBUG
   logger 'org.olf', INFO
 }
 

@@ -31,13 +31,20 @@ abstract class BaseSpec extends HttpSpec {
     allHeaders?.get(OkapiHeaders.TENANT)
   }
   
+  // Call do delete - it doesn't matter if it doesn't work because the tenant doesn't exist
   void 'Pre purge tenant' () {
     boolean resp = false
     when: 'Purge the tenant'
       try {
         resp = doDelete('/_/tenant', null)
         resp = true
-      } catch (HttpException ex) { resp = true }
+      } 
+      catch (HttpException ex) { 
+        resp = true 
+      }
+      catch (Throwable t) { 
+        resp = true 
+      }
       
     then: 'Response obtained'
       resp == true

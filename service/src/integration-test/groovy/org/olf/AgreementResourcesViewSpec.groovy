@@ -35,6 +35,8 @@ class AgreementResourcesViewSpec extends BaseSpec {
   }
   
   def 'Ingest a test package' () {
+
+    log.info("Ingest test package");
       
     when: 'Testing package added'
       doPost('/erm/packages/import') {
@@ -181,7 +183,9 @@ class AgreementResourcesViewSpec extends BaseSpec {
           }
         ])
       }
+
     and: 'Find the package by name'
+      log.info("get /erm/packages");
       List resp = doGet("/erm/packages", [filters: ['name==access_start_access_end_tests Package']])
       pkg_id = resp[0].id
       
