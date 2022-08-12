@@ -26,3 +26,17 @@ RemoteKB.findByName('GOKb') ?: (new RemoteKB(
     activationEnabled:false
 ).save(failOnError:true))
 
+
+// TIPP Interface https://gokb.org/gokb/api/scroll?component_type=TitleInstancePackagePlatform&changedSince=2022-06-25+00:00:00
+
+RemoteKB.findByName('GOKbTIPP') ?: (new RemoteKB(
+    name:'GOKbTIPP',
+    type:'org.olf.kb.adapters.GOKbTIPPAdapter',
+    uri:'https://gokb.org/gokb/api/scroll',
+    fullPrefix:'TitleInstancePackagePlatform',
+    rectype: RemoteKB.RECTYPE_TIPP,
+    active:Boolean.FALSE,
+    supportsHarvesting:true,
+    activationEnabled:false
+).save(failOnError:true))
+
