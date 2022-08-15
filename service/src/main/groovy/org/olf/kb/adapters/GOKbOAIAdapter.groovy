@@ -23,6 +23,8 @@ import groovyx.net.http.*
  * An adapter to go between the GOKb OAI service, for example the one at
  *   https://gokbt.gbv.de/gokb/oai/index/packages?verb=ListRecords&metadataPrefix=gokb
  * and our internal KBCache implementation.
+ *
+ * TIPP feed: https://gokbt.gbv.de/gokb/api/scroll?component_type=TitleInstancePackagePlatform&changedSince=2022-06-25+00:00:00
  */
 
 @Slf4j
