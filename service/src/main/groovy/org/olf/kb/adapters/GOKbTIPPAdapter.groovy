@@ -67,9 +67,23 @@ public class GOKbTippAdapter extends WebSourceAdapter implements KBCacheUpdater,
     throw new RuntimeException("Not yet implemented")
   }
 
+
+  public Map importPackage(Map params,
+                            KBCache cache) {
+    throw new RuntimeException("Not yet implemented")
+    return null
+  }
+
+  public boolean activate(Map params, KBCache cache) {
+    throw new RuntimeException("Not supported by this KB provider")
+    return false
+  }
+
   // Move date parsing here - we might want to do something more sophistocated with different fallback formats
   // here in the future.
   Date parseDate(String s) {
     ISO_DATE.parse(s)
   }
+
+
 }

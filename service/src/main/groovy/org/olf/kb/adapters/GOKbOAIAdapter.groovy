@@ -115,7 +115,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
                                  final boolean trustedSourceTI = false) {
 
     final String packagesUrl = "${stripTrailingSlash(base_url)}${PATH_PACKAGES}"
-    genericFreshenData(source_name,packagesUrl,current_cursor,cache,trustedSourceTI) { p_cursor, p_xml, p_source_name, p_cache, p_trustedSourceTI ->
+    genericFreshenData(source_name,packagesUrl,current_cursor,cache,trustedSourceTI) { String p_cursor, GPathResult p_xml, String p_source_name, KBCache p_cache, boolean p_trustedSourceTI ->
       return processPackagePage(p_cursor, p_xml, p_source_name, p_cache, p_trustedSourceTI)
     }
   }
@@ -126,7 +126,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
                                  KBCache cache,
                                  boolean trustedSourceTI = false) {
     final String titlesUrl = "${stripTrailingSlash(base_url)}${PATH_TITLES}"
-    genericFreshenData(source_name,titlesUrl,current_cursor,cache,trustedSourceTI) { p_cursor, p_xml, p_source_name, p_cache, p_trustedSourceTI ->
+    genericFreshenData(source_name,titlesUrl,current_cursor,cache,trustedSourceTI) { String p_cursor, GPathResult p_xml, String p_source_name, KBCache p_cache, boolean p_trustedSourceTI ->
       return processTitlePage(p_cursor, p_xml, p_source_name, p_cache, p_trustedSourceTI)
     }
   }
@@ -137,7 +137,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
                               KBCache cache,
                               boolean trustedSourceTI = false) {
     final String titlesUrl = "${stripTrailingSlash(base_url)}${PATH_TITLES}"
-    genericFreshenData(source_name,titlesUrl,current_cursor,cache,trustedSourceTI) { p_cursor, p_xml, p_source_name, p_cache, p_trustedSourceTI ->
+    genericFreshenData(source_name,titlesUrl,current_cursor,cache,trustedSourceTI) { String p_cursor, GPathResult p_xml, String p_source_name, KBCache p_cache, boolean p_trustedSourceTI ->
       return processTippPage(p_cursor, p_xml, p_source_name, p_cache, p_trustedSourceTI)
     }
   }
