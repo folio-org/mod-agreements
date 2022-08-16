@@ -41,7 +41,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
                                  final String current_cursor,
                                  final KBCache cache,
                                  final boolean trustedSourceTI,
-                                 Closure pageProcessor) {
+                                 Closure<Map> pageProcessor) {
     log.debug("GOKbOAIAdapter::genericFreshenData - fetching from URI: ${completed_url}")
 
     def query_params = [
