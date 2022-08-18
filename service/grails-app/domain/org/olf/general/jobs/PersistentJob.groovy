@@ -96,33 +96,11 @@ abstract class PersistentJob extends SingleFileAttachment implements EventBusAwa
     LogEntry.findAllByOrigin(this.id, [sort: 'dateCreated', order: "asc"])
   }
   
-  void begin () {
-    this.started = Instant.now()
-    this.statusFromString = 'In progress'
-    this.save(failOnError: true, flush:true)
-  }
-  
-  void end () {
-    this.ended = Instant.now()
-    this.statusFromString = 'Ended'
-    if (!result) {
-      // If errors then set to partial.
-      if (getErrorLog()) {
-        this.resultFromString = 'Partial success'
-      } else {
-        this.resultFromString = 'Success'
-      }
-    }
-    this.save( failOnError: true, flush:true )
-  }
-  
-  void fail() {
-    this.resultFromString = 'Failure'
-    end()
-  }
-  
   void interrupted() {
-    this.resultFromString = 'Interrupted'
+    final String resultCat = this.getResultCategory()
+    
+    // If errors then set to partial.
+    this.result = RefdataValue.lookupOrCreate(resultCat, 'Interrupted')
     end()
   }
   
