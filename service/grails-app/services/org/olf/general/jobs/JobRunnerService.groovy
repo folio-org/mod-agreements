@@ -326,9 +326,27 @@ class JobRunnerService implements EventPublisher {
   }
   
   @Transactional(propagation=REQUIRES_NEW)
+  public void interruptJob(final String tenantId, final String jid) {
+    
+    Tenants.withId(tenantId) {
+    
+      PersistentJob pj = PersistentJob.get(jid ?: JobContext.current.get().jobId)
+      final String resultCat = pj.getResultCategory()
+      
+      // If errors then set to partial.
+      pj.result = RefdataValue.lookupOrCreate(resultCat, 'Interrupted')
+      final String statusCat = pj.getStatusCategory()
+      
+      pj.ended = Instant.now()
+      pj.status = RefdataValue.lookupOrCreate(statusCat, 'Ended')
+      pj.save( failOnError: true, flush:true )
+    }
+  }
+  
+  @Transactional(propagation=REQUIRES_NEW)
   public void allocateJob( final String tenantId, final String jid) {
     
-    Tenants.withId(tenantId) { 
+    Tenants.withId(tenantId) {
       PersistentJob pj = PersistentJob.get( jid )
       final String _myId = appFederationService.getInstanceId()
       pj.runnerId = _myId
@@ -342,23 +360,61 @@ class JobRunnerService implements EventPublisher {
     log.info("JobRunnerService::shutdown()");
   }
   
-  @Subscriber('federation:cleanup:instance')
-  void cleanupAfterDeadRunner(final String instanceId) {
+  @Transactional
+  protected Collection<String> getViableRunners() {
+    appFederationService.allHealthyInstanceIds()
+  }
+
+  protected void cleanupAfterDeadRunners() {
+    Collection<String> viableRunnerIds = getViableRunners()
+    
     // Find all jobs in all registered tenants where the runner was the
     // instance being cleaned up and the status was in progress or queued
     // set progress to interrupted and reschedule job
     log.debug("JobRunnerService::cleanupAfterDeadRunner")
+    
+    okapiTenantAdminService.allConfiguredTenantSchemaNames().each { final String tenant_schema_id ->
+      Tenants.withId(tenant_schema_id) {
+        // Find all none edned jobs with the dead runner assigned
+        final RefdataValue ended = PersistentJob.lookupStatus('Ended')
+
+        // Find every job that was allocated to the runner.
+        for (PersistentJob job : PersistentJob.findAllByStatusNotAndRunnerIdNotInList( ended, viableRunnerIds, [ sort: 'dateCreated' ])) {
+          log.debug "Found job ${job.id} that was allocated to a runner that has died"
+          if (job.status.value == 'queued') {
+          
+            log.debug "Job ${job.id} was only queued, clear the allocation"
+            
+            // If this job was queued, then we can just clear the runner ID
+            job.runnerId = null
+            job.save(flush:true, failOnError: true)
+            
+          } else {
+            // This job was interrupted.
+            log.debug "Setting job status to interrupted for ${job.id}"
+            interruptJob( tenant_schema_id, job.id )
+          }
+        }
+        
+      }
+    }
   }
+  
+  
   
   @Subscriber('federation:tick:leader')
   void leaderTick(final String instanceId) {
     log.debug("JobRunnerService::leaderTick")
+    
+    cleanupAfterDeadRunners()
+    
     findAndRunNextJob()
   }
   
   @Subscriber('federation:tick:drone')
   void droneTick(final String instanceId) {
     log.debug("JobRunnerService::droneTick")
+    findAndRunNextJob()
   }
   
   FolioLockService folioLockService
@@ -383,7 +439,7 @@ class JobRunnerService implements EventPublisher {
           
         okapiTenantAdminService.allConfiguredTenantSchemaNames().each { final String tenant_schema_id ->
           
-          log.debug 'Finding next job'
+          log.debug "Finding next jobs for tenant ${tenant_schema_id}"
           Tenants.withId(tenant_schema_id) {
             // Find a queued job with no runner assigned.
             final RefdataValue queued = PersistentJob.lookupStatus('Queued')
@@ -427,7 +483,7 @@ class JobRunnerService implements EventPublisher {
               
               final RefdataValue queued = PersistentJob.lookupStatus('Queued')
               if (job.status.id != queued.id || job.runnerId != null) {
-                log.debug "Job ${jobId} is no longer free for allocation. Likely allocated/run by another instance"
+                log.debug "Job ${jobId} is either in no longer queued or already allocated to a different runner"
                 
                 // Remove from the queue.
                 potentialJobs.remove( key )

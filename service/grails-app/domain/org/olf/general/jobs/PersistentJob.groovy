@@ -96,14 +96,6 @@ abstract class PersistentJob extends SingleFileAttachment implements EventBusAwa
     LogEntry.findAllByOrigin(this.id, [sort: 'dateCreated', order: "asc"])
   }
   
-  void interrupted() {
-    final String resultCat = this.getResultCategory()
-    
-    // If errors then set to partial.
-    this.result = RefdataValue.lookupOrCreate(resultCat, 'Interrupted')
-    end()
-  }
-  
   abstract Runnable getWork()
   
   String toString() {
