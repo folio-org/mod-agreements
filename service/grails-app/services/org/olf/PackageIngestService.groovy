@@ -147,6 +147,24 @@ class PackageIngestService implements DataBinder {
           skipPackage = true
           return
         }
+      } else {
+        pkg.sourceDataUpdated = package_data.header.sourceDataUpdated
+        pkg.lifecycleStatusFromString = package_data.header.lifecycleStatus
+        pkg.availabilityScopeFromString = package_data.header.availabilityScope
+        pkg.vendor = vendor
+        
+        pkg.contentTypes.clear()
+        (package_data?.header?.contentTypes ?: []).each { 
+          println(it.contentType)
+          pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
+        }
+          
+        pkg.alternateResourceNames.clear()
+        (package_data?.header?.alternateResourceNames ?: []).each {
+          pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
+        }
+        
+        pkg.save(flush:true, failOnError:true)
       }
 
       // Update identifiers from citation
