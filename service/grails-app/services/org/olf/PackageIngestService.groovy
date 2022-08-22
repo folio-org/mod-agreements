@@ -127,7 +127,7 @@ class PackageIngestService implements DataBinder {
             sourceDataCreated: package_data.header.sourceDataCreated,
             sourceDataUpdated: package_data.header.sourceDataUpdated,
             availabilityScope: package_data.header.availabilityScope,
-              lifecycleStatus: package_data.header.status,
+              lifecycleStatus: package_data.header.lifecycleStatus,
                      remoteKb: kb,
                        vendor: vendor
           ).save(flush:true, failOnError:true)

@@ -384,7 +384,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       
       result = [
         header:[
-          status: package_status,
+          lifecycleStatus: package_status,
           availability:[
             type: 'general'
           ],
