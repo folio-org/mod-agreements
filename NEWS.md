@@ -1,4 +1,5 @@
 ## 5.3.0 In progress
+  * ERM-2305 Entitlement options not displaying
   * Extended logging
   * Added readonly transaction scopes for read only operations in subscription agreements and entitlements
 
