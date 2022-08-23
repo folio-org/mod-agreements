@@ -483,15 +483,17 @@ class JobRunnerService implements EventPublisher {
               
               final RefdataValue queued = PersistentJob.lookupStatus('Queued')
               if (job.status.id != queued.id || job.runnerId != null) {
-                log.debug "Job ${jobId} is either in no longer queued or already allocated to a different runner"
+                log.debug "Job ${jobId} is either no longer queued or already allocated to a different runner"
                 
                 // Remove from the queue.
                 potentialJobs.remove( key )
-                
               } else {
                 
                 allocateJob(tenantId, job.id)
-                added = executeJob(tenantId, job.id, key)
+                if ( executeJob(tenantId, job.id, key) ) {
+                  added = true
+                  potentialJobs.remove( key )
+                }
               }
             }
           }
