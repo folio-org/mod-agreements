@@ -491,7 +491,7 @@ class JobRunnerService implements EventPublisher {
               } else {
                 
                 allocateJob(tenantId, job.id)
-                executeJob(tenantId, job.id, key)
+                added = executeJob(tenantId, job.id, key)
               }
             }
           }
