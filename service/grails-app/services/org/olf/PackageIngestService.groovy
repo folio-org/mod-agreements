@@ -9,6 +9,7 @@ import org.olf.kb.Embargo
 import org.olf.kb.PackageContentItem
 import org.olf.kb.AlternateResourceName
 import org.olf.kb.ContentType
+import org.olf.kb.AvailabilityConstraint
 import org.olf.kb.Pkg
 import org.olf.kb.Platform
 import org.olf.kb.PlatformTitleInstance
@@ -141,6 +142,11 @@ class PackageIngestService implements DataBinder {
                (package_data?.header?.alternateResourceNames ?: []).each {
                  pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
                }
+
+               (package_data?.header?.availabilityConstraints ?: []).each { 
+                 pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(it.body)]))
+               }
+
                pkg.save(failOnError: true)
         } else {
           log.info("Not adding package '${package_data.header.packageName}' because status '${package_data.header.status}' doesn't match 'Current' or 'Expected'")
