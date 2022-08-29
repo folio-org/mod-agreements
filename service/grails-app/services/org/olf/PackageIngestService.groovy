@@ -186,7 +186,6 @@ class PackageIngestService implements DataBinder {
             pkg.removeFromAlternateResourceNames(arn_tbd)
           }  
         }
-        pkg.save(flush:true, failOnError:true)
         
         (package_data?.header?.alternateResourceNames ?: []).each { 
           if (!pkg.alternateResourceNames.contains(it.name)) {
