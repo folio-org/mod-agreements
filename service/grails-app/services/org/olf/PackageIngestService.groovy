@@ -153,15 +153,39 @@ class PackageIngestService implements DataBinder {
         pkg.availabilityScopeFromString = package_data.header.availabilityScope
         pkg.vendor = vendor
         
-        pkg.contentTypes.clear()
+        def contentTypes = package_data?.header?.contentTypes ?: []
+        pkg.contentTypes.each{
+          println(contentTypes)  // TODO: remove -- expect: list
+          println(it.contentType)  // TODO: remove -- expect: rdv object
+          println(it.contentType.label)  // TODO: remove -- expect: string
+          if (!contentTypes.contains(it.contentType.label)) {
+            println('executing removeFromContentTypes...')  // TODO: remove
+            pkg.removeFromContentTypes(it.contentType)
+          }  
+        }
+
         (package_data?.header?.contentTypes ?: []).each { 
-          println(it.contentType)
-          pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
+          if (!pkg.contentTypes.contains(it.contentType)) {
+            pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
+          }
         }
           
-        pkg.alternateResourceNames.clear()
-        (package_data?.header?.alternateResourceNames ?: []).each {
-          pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
+        def arn = package_data?.header?.alternateResourceNames ?: []
+        println(arn)  // TODO: remove -- expect: list
+        pkg.alternateResourceNames.each{
+          println(it.name)  // TODO: remove -- expect: string
+          if (!arn.contains(it.name)) {
+            def arn_tbd = AlternateResourceName.findByName(it.name)
+            println(arn_tbd)  // TODO: remove -- expect: AlternateResourceName object
+            pkg.removeFromAlternateResourceNames(arn_tbd)
+          }  
+        }
+        pkg.save(flush:true, failOnError:true)
+        
+        (package_data?.header?.alternateResourceNames ?: []).each { 
+          if (!pkg.alternateResourceNames.contains(it.name)) {
+            pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
+          }
         }
         
         pkg.save(flush:true, failOnError:true)
