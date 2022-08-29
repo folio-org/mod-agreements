@@ -5,6 +5,7 @@ import java.time.LocalDate
 import org.olf.dataimport.erm.Identifier
 import org.olf.dataimport.erm.AlternateResourceName
 import org.olf.dataimport.erm.ContentType
+import org.olf.dataimport.erm.AvailabilityConstraint
 
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.PackageHeaderSchema
@@ -27,6 +28,7 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   String description
   List<ContentType> contentTypes
   List<AlternateResourceName> alternateResourceNames
+  List<AvailabilityConstraint> availabilityConstraints
   List<Identifier> identifiers
 
   Set<ContentItem> contentItems = []
@@ -124,6 +126,11 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   @Override
   public List<AlternateResourceName> getAlternateResourceNames() {
     alternateResourceNames
+  }
+
+  @Override
+  public List<AvailabilityConstraint> getAvailabilityConstraints() {
+    availabilityConstraints
   }
 
   @Override

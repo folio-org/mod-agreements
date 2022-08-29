@@ -26,6 +26,8 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   RefdataValue availabilityScope
   Set<PackageDescriptionUrl> packageDescriptionUrls
   Set<ContentType> contentTypes
+  Set<AvailabilityConstraint> availabilityConstraints
+
   
   // Declaring this here will provide defaults for the type defined in ErmResource but not create
   // a subclass specific column
@@ -35,7 +37,8 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   static hasMany = [
               contentItems: PackageContentItem,
     packageDescriptionUrls: PackageDescriptionUrl,
-              contentTypes: ContentType
+              contentTypes: ContentType,
+    availabilityConstraints: AvailabilityConstraint
     // tags: KIWTTag
   ]
 
@@ -58,6 +61,7 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
             availabilityScope column:'pkg_availability_scope_fk'
        packageDescriptionUrls cascade: 'all-delete-orphan'
                  contentTypes cascade: 'all-delete-orphan'
+      availabilityConstraints cascade: 'all-delete-orphan'
   }
 
   static constraints = {

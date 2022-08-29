@@ -33,15 +33,21 @@ interface PackageSchema extends Validateable {
     "sourceDataCreated": "2020-12-31T00:00:00Z",
     "sourceDataUpdated": "2020-12-31T00:00:00Z",
     "availabilityScope": "Global",
-    "description": "A package"
-    "alternateResourceNames": {
-      "name": "Name 1",
-      "name": "Name 2"
-    },
-    "contentTypes": {
-      "contentType": "Database"
-    }
+    "description": "A package",
+    "alternateResourceNames": [
+      { "name": "Name 1" },
+      { "name": "Name 2" }
+    ],
+    "contentTypes": [
+      { "contentType": "Database" }
+    ],
+    "availabilityConstraints": [
+      { "body": "Body 1" },
+      { "body": "Body 2" },
+      { "body": "Body 3" }
+    ]
     "_intenalId": 276432871386
+    ""
     */
     
     PackageProviderSchema getPackageProvider()
@@ -60,6 +66,7 @@ interface PackageSchema extends Validateable {
     String getLifecycleStatus()  
     Collection<ContentTypeSchema> getContentTypes()
     Collection<AlternateResourceNameSchema> getAlternateResourceNames()
+    Collection<AvailabilityConstraintSchema> getAvailabilityConstraints()
   }
   
   @CompileStatic
@@ -148,6 +155,12 @@ interface PackageSchema extends Validateable {
     String getValue()
   }
 
+  /*
+   * These three (ContentType/AlternateResourceName/AvailabilityConstraint)
+   * could be just a list of strings, but should we want to store more data against
+   * them in future this gives us the flexibility to do so
+   */
+  
   @CompileStatic
   public interface ContentTypeSchema extends Validateable {
     /*
@@ -166,6 +179,16 @@ interface PackageSchema extends Validateable {
      }
      */
     String getAlternateResourceName()
+  }
+
+  @CompileStatic
+  public interface AvailabilityConstraintSchema extends Validateable {
+    /*
+     {
+       "body": "Body 1",
+     }
+     */
+    String getBody()
   }
   
   @CompileStatic

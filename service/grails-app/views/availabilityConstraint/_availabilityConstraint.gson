@@ -1,0 +1,5 @@
+import groovy.transform.*
+import org.olf.kb.AvailabilityConstraint
+
+@Field AvailabilityConstraint availabilityConstraint
+json g.render(availabilityConstraint, [expand: ['body'], excludes: ['owner']]) 

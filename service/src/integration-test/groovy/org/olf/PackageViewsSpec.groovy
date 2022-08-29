@@ -35,6 +35,14 @@ class PackageViewsSpec extends BaseSpec {
             lifecycleStatus "Current"
             sourceDataCreated "2022-01-01"
             sourceDataUpdated "2022-01-01"
+            availabilityConstraints ([
+              {
+                body "Body 1"
+              },
+              {
+                body "Body 2"
+              }
+            ])
             contentItems ([
               {
                 depth "fulltext"
@@ -202,5 +210,26 @@ class PackageViewsSpec extends BaseSpec {
       'dropped'       | ['Afghanistan', 'Archives of Natural History']
       'current'       | ['Archaeological and Environmental Forensic Science']
       'future'        | ['Bethlehem University Journal']
+  }
+
+  @Unroll
+  def 'Test package view' () {
+    
+    final List<String> endpoints = ['current', 'future', 'dropped']
+    
+    when: 'Enpoints checked'
+      def epResult;
+      // Checking all endpoints and check we only see the title in the expected list
+      for ( final String endpoint : endpoints ) {
+        epResult = doGet("/erm/packages/${pkg_id}")
+      }
+    
+    then: 'Expectations are met'
+      // Name is correct
+      assert epResult.name == "access_start_access_end_tests Package"
+
+      // Availability constraints are present
+      assert epResult.availabilityConstraints?.collect { it.body.label }?.contains('Body 1')
+      assert epResult.availabilityConstraints?.collect { it.body.label }?.contains('Body 2')
   }
 }
