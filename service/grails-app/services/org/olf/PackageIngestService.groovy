@@ -161,32 +161,38 @@ class PackageIngestService implements DataBinder {
         
         def contentTypes = package_data?.header?.contentTypes ?: []
         pkg.contentTypes.each{
-          println(contentTypes)  // TODO: remove -- expect: list
-          println(it.contentType)  // TODO: remove -- expect: rdv object
-          println(it.contentType.label)  // TODO: remove -- expect: string
+//          println("package_data?.header?.contentTypes: " + contentTypes)  // TODO: remove -- expect: list
+//          println("pkg.contentTypes.each: it - " + it)  // TODO: remove -- expect: contentType object
+//          println("pkg.contentTypes.each: it.contentType - " + it.contentType)  // TODO: remove -- expect: rdv object
+//          println("pkg.contentTypes.each: it.contentType.label - " + it.contentType.label)  // TODO: remove -- expect: string
           if (!contentTypes.contains(it.contentType.label)) {
-            println('executing removeFromContentTypes...')  // TODO: remove
-            pkg.removeFromContentTypes(it.contentType)
+//            println('executing removeFromContentTypes...')  // TODO: remove
+            pkg.removeFromContentTypes(it)
           }  
         }
+        pkg.save(failOnError:true)
 
         (package_data?.header?.contentTypes ?: []).each { 
+//        println("Header.each: " + it.contentType)  // TODO: remove
           if (!pkg.contentTypes.contains(it.contentType)) {
+//            println('executing addToContentTypes...')  // TODO: remove
             pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
           }
         }
-          
+        pkg.save(failOnError:true)
+
         def arn = package_data?.header?.alternateResourceNames ?: []
-        println(arn)  // TODO: remove -- expect: list
+//        println(arn)  // TODO: remove -- expect: list
         pkg.alternateResourceNames.each{
-          println(it.name)  // TODO: remove -- expect: string
+//          println(it.name)  // TODO: remove -- expect: string
           if (!arn.contains(it.name)) {
             def arn_tbd = AlternateResourceName.findByName(it.name)
-            println(arn_tbd)  // TODO: remove -- expect: AlternateResourceName object
+//            println(arn_tbd)  // TODO: remove -- expect: AlternateResourceName object
             pkg.removeFromAlternateResourceNames(arn_tbd)
           }  
         }
-        
+        pkg.save(failOnError:true)
+
         (package_data?.header?.alternateResourceNames ?: []).each { 
           if (!pkg.alternateResourceNames.contains(it.name)) {
             pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
