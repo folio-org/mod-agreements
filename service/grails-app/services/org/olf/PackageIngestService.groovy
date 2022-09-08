@@ -50,6 +50,36 @@ class PackageIngestService implements DataBinder {
   }
 
   private static final def countChanges = ['accessStart', 'accessEnd']
+  
+      
+    def updateContentTypes (int pkgid, PackageSchema package_data) {
+      pkg = Pkg.get(pkgid)
+      def contentTypes = package_data?.header?.contentTypes ?: []
+      pkg.contentTypes.each{
+        println("package_data?.header?.contentTypes: " + contentTypes)  // TODO: remove -- expect: list
+        println("pkg.contentTypes.each: it - " + it)  // TODO: remove -- expect: contentType object
+        println("pkg.contentTypes.each: it.contentType - " + it.contentType)  // TODO: remove -- expect: rdv object
+        println("pkg.contentTypes.each: it.contentType.label - " + it.contentType.label)  // TODO: remove -- expect: string
+        println("if (!"+contentTypes+"contains("+it.contentType.label+")){")
+        println("contentTypes[0].getClass() = "+contentTypes[0].getClass())
+        println("it.contentType.label.getClass() = "+it.contentType.label.getClass()) 
+        if (!contentTypes.contains(it.contentType.label)) {
+          println('executing removeFromContentTypes...')  // TODO: remove
+          pkg.removeFromContentTypes(it)
+        }  
+      }
+      pkg.save(failOnError:true)
+      pkg = Pkg.get(pkg.id)
+
+      (package_data?.header?.contentTypes ?: []).each { 
+//        println("Header.each: " + it.contentType)  // TODO: remove
+        if (!pkg.contentTypes.contains(it.contentType)) {
+//            println('executing addToContentTypes...')  // TODO: remove
+          pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
+        }
+      }
+      pkg.save(failOnError:true)
+    }
 
   /**
    * Load the paackage data (Given in the agreed canonical json package format) into the KB.
@@ -158,28 +188,12 @@ class PackageIngestService implements DataBinder {
         pkg.lifecycleStatusFromString = package_data.header.lifecycleStatus
         pkg.availabilityScopeFromString = package_data.header.availabilityScope
         pkg.vendor = vendor
+        pkg.save(failOnError:true)
+        pkg = Pkg.get(pkg.id)
         
-        def contentTypes = package_data?.header?.contentTypes ?: []
-        pkg.contentTypes.each{
-//          println("package_data?.header?.contentTypes: " + contentTypes)  // TODO: remove -- expect: list
-//          println("pkg.contentTypes.each: it - " + it)  // TODO: remove -- expect: contentType object
-//          println("pkg.contentTypes.each: it.contentType - " + it.contentType)  // TODO: remove -- expect: rdv object
-//          println("pkg.contentTypes.each: it.contentType.label - " + it.contentType.label)  // TODO: remove -- expect: string
-          if (!contentTypes.contains(it.contentType.label)) {
-//            println('executing removeFromContentTypes...')  // TODO: remove
-            pkg.removeFromContentTypes(it)
-          }  
-        }
-        pkg.save(failOnError:true)
 
-        (package_data?.header?.contentTypes ?: []).each { 
-//        println("Header.each: " + it.contentType)  // TODO: remove
-          if (!pkg.contentTypes.contains(it.contentType)) {
-//            println('executing addToContentTypes...')  // TODO: remove
-            pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
-          }
-        }
-        pkg.save(failOnError:true)
+        updateContentTypes(pkg.id, package_data)  // Todo: Method call not working yet
+        
 
         def arn = package_data?.header?.alternateResourceNames ?: []
 //        println(arn)  // TODO: remove -- expect: list
@@ -192,6 +206,7 @@ class PackageIngestService implements DataBinder {
           }  
         }
         pkg.save(failOnError:true)
+        pkg = Pkg.get(pkg.id)
 
         (package_data?.header?.alternateResourceNames ?: []).each { 
           if (!pkg.alternateResourceNames.contains(it.name)) {
