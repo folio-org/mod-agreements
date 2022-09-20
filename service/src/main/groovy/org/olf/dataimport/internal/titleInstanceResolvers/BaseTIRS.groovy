@@ -1,25 +1,13 @@
 package org.olf.dataimport.internal.titleInstanceResolvers
 
-import org.olf.dataimport.internal.PackageContentImpl
-import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
-import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
-
-import org.springframework.beans.factory.annotation.Autowired
 import org.olf.IdentifierService
-
+import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierNamespace
-import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.TitleInstance
 import org.olf.kb.Work
 
 import grails.gorm.transactions.Transactional
-import grails.web.databinding.DataBinder
-
-import org.olf.dataimport.internal.TitleInstanceResolverService
-
-import groovy.json.*
-
 import groovy.util.logging.Slf4j
 
 /**

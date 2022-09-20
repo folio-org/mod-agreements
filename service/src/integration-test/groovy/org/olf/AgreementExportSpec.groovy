@@ -1,18 +1,15 @@
 package org.olf
 
-import groovy.json.JsonSlurper
-import jdk.nashorn.internal.runtime.SharedPropertyMap
-
 import java.time.LocalDate
 
-//import org.olf.kb.PackageContentItem
 import org.olf.kb.Pkg
-//import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.TitleInstance
 
-import grails.gorm.multitenancy.Tenants
 import com.k_int.okapi.OkapiTenantResolver
+
+import grails.gorm.multitenancy.Tenants
 import grails.testing.mixin.integration.Integration
+import groovy.json.JsonSlurper
 import spock.lang.*
 
 @Stepwise

@@ -2,7 +2,6 @@ package org.olf.general.jobs
 import java.time.Instant
 
 import com.k_int.web.toolkit.async.WithPromises
-
 import com.k_int.web.toolkit.files.SingleFileAttachment
 import com.k_int.web.toolkit.refdata.CategoryId
 import com.k_int.web.toolkit.refdata.Defaults
@@ -23,6 +22,8 @@ abstract class PersistentJob extends SingleFileAttachment implements EventBusAwa
     
   String name
   
+  String runnerId
+  
   @CategoryId(value='PersistentJob.Status', defaultInternal=true) // Workaround for a bug in toolkit creating a category for each extension even when not specified.
   @Defaults(['Queued', 'In progress', 'Ended'])
   RefdataValue status
@@ -38,36 +39,38 @@ abstract class PersistentJob extends SingleFileAttachment implements EventBusAwa
   static mapping = {
 //    tablePerHierarchy false
                       version false
-                 name column:'job_name'
-               status column:'job_status_fk'
-          dateCreated column:'job_date_created'
-              started column:'job_started'
-                ended column:'job_ended'
-               result column:'job_result_fk'
+                     name column:'job_name'
+                   status column:'job_status_fk'
+              dateCreated column:'job_date_created'
+                  started column:'job_started'
+                    ended column:'job_ended'
+                   result column:'job_result_fk'
+                 runnerId column:'job_runner_id', length:36
   }
 
   static constraints = {
-            name (nullable:false, blank:false)
-          status (nullable:false, bindable: false)
-     dateCreated (nullable:true)
-         started (nullable:true)
-           ended (nullable:true)
-          result (nullable:true)
+                    name (nullable:false, blank:false)
+                  status (nullable:false, bindable: false)
+             dateCreated (nullable:true)
+                 started (nullable:true)
+                   ended (nullable:true)
+                  result (nullable:true)
+                runnerId (nullable:true, bindable: false, blank: false)
   }
   
-  def afterInsert () {
-    // Ugly work around events being raised on multi-tenant GORM entities not finding subscribers
-    // from the root context.
-    final String jobId = this.id
-    final String tenantId = Tenants.currentId()
-    Promise background = WithPromises.task {
-      JobRunnerService jrs = Holders.applicationContext.getBean('jobRunnerService')
-      jrs.handleNewJob(jobId, tenantId)
-    }
-    background.onError { Throwable e ->
-      log.error "Couldn't add job", e
-    }
-  }
+//  def afterInsert () {
+//    // Ugly work around events being raised on multi-tenant GORM entities not finding subscribers
+//    // from the root context.
+//    final String jobId = this.id
+//    final String tenantId = Tenants.currentId()
+////    Promise background = WithPromises.task {
+//      JobRunnerService jrs = Holders.applicationContext.getBean('jobRunnerService')
+//      jrs.handleNewJob(jobId, tenantId)
+//    }
+//    background.onError { Throwable e ->
+//      log.error "Couldn't add job", e
+//    }
+//  }
   
   long getErrorLogCount() {
     LogEntry.countByOriginAndType (this.id, LogEntry.TYPE_ERROR)
@@ -91,36 +94,6 @@ abstract class PersistentJob extends SingleFileAttachment implements EventBusAwa
   
   List<LogEntry> getFullLog() {
     LogEntry.findAllByOrigin(this.id, [sort: 'dateCreated', order: "asc"])
-  }
-  
-  void begin () {
-    this.started = Instant.now()
-    this.statusFromString = 'In progress'
-    this.save(failOnError: true, flush:true)
-  }
-  
-  void end () {
-    this.ended = Instant.now()
-    this.statusFromString = 'Ended'
-    if (!result) {
-      // If errors then set to partial.
-      if (getErrorLog()) {
-        this.resultFromString = 'Partial success'
-      } else {
-        this.resultFromString = 'Success'
-      }
-    }
-    this.save( failOnError: true, flush:true )
-  }
-  
-  void fail() {
-    this.resultFromString = 'Failure'
-    end()
-  }
-  
-  void interrupted() {
-    this.resultFromString = 'Interrupted'
-    end()
   }
   
   abstract Runnable getWork()

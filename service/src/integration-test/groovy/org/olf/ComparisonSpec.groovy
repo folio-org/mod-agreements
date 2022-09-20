@@ -244,7 +244,7 @@ class ComparisonSpec extends BaseSpec {
       def comparisonJobId = httpResult.id
 
     and: 'Job is polled'
-      def conditions = new PollingConditions(timeout: 10)
+      def conditions = new PollingConditions(timeout: 300)
       conditions.eventually {
         httpResult = doGet("/erm/jobs/${comparisonJobId}")
         assert httpResult?.status?.value == 'ended'

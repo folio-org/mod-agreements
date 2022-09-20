@@ -103,8 +103,7 @@ where rkb.type is not null
   void triggerSync() {
     log.debug "Running scheduled KB sync for all tenants :{}", Instant.now()
 
-    // ToDo: Don't think this will work for newly added tenants - need to investigate.
-    okapiTenantAdminService.getAllTenantSchemaIds().each { tenant_schema_id ->
+    okapiTenantAdminService.allConfiguredTenantSchemaNames().each { tenant_schema_id ->
       log.debug "Perform trigger sync for tenant schema ${tenant_schema_id}"
       try {
         triggerUpdateForTenant(tenant_schema_id as String)

@@ -1,18 +1,11 @@
 package org.olf
 
-import org.olf.dataimport.erm.Identifier
-
-import org.olf.kb.TitleInstance
-import org.olf.kb.Pkg
-
-import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.IdentifierNamespace
-import org.olf.kb.Identifier
+import org.olf.kb.IdentifierOccurrence
+import org.olf.kb.Pkg
+import org.olf.kb.TitleInstance
 
-import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-
-import grails.gorm.transactions.Transactional
 
 @Slf4j
 // Cannot @CompileStatic while using DomainClass.lookupOrCreate${upperName} static method for RefdataValues
