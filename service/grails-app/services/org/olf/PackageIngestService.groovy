@@ -51,35 +51,61 @@ class PackageIngestService implements DataBinder {
 
   private static final def countChanges = ['accessStart', 'accessEnd']
   
-      
-    def updateContentTypes (int pkgid, PackageSchema package_data) {
-      pkg = Pkg.get(pkgid)
-      def contentTypes = package_data?.header?.contentTypes ?: []
-      pkg.contentTypes.each{
-        println("package_data?.header?.contentTypes: " + contentTypes)  // TODO: remove -- expect: list
-        println("pkg.contentTypes.each: it - " + it)  // TODO: remove -- expect: contentType object
-        println("pkg.contentTypes.each: it.contentType - " + it.contentType)  // TODO: remove -- expect: rdv object
-        println("pkg.contentTypes.each: it.contentType.label - " + it.contentType.label)  // TODO: remove -- expect: string
-        println("if (!"+contentTypes+"contains("+it.contentType.label+")){")
-        println("contentTypes[0].getClass() = "+contentTypes[0].getClass())
-        println("it.contentType.label.getClass() = "+it.contentType.label.getClass()) 
-        if (!contentTypes.contains(it.contentType.label)) {
-          println('executing removeFromContentTypes...')  // TODO: remove
-          pkg.removeFromContentTypes(it)
-        }  
-      }
-      pkg.save(failOnError:true)
-      pkg = Pkg.get(pkg.id)
+  def updateContentTypes (String pkgId, PackageSchema package_data) {
+    Pkg pkg = Pkg.get(pkgId);
+    def contentTypes = package_data?.header?.contentTypes ?: []
+    // To avoid changing the object we're iterating over,
+    // we first iterate over the object to grab the items to remove,
+    // then iterate over _that_ list to remove them
+    def contentTypesToRemove = [];
 
-      (package_data?.header?.contentTypes ?: []).each { 
-//        println("Header.each: " + it.contentType)  // TODO: remove
-        if (!pkg.contentTypes.contains(it.contentType)) {
-//            println('executing addToContentTypes...')  // TODO: remove
-          pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
-        }
+    pkg.contentTypes.each {
+      if (!contentTypes.contains(it.contentType.label)) {
+        contentTypesToRemove << it
       }
-      pkg.save(failOnError:true)
     }
+
+    contentTypesToRemove.each {
+      pkg.removeFromContentTypes(it)
+    }
+
+    contentTypes.each {def ct ->
+      if(!pkg.contentTypes?.collect {def pct -> pct.contentType.label }.contains(ct.contentType)) {
+        pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(ct.contentType)]))
+      }
+    }
+
+    pkg.save(failOnError: true)
+  }
+
+  def updateAlternateNames (String pkgId, PackageSchema package_data) {
+    Pkg pkg = Pkg.get(pkgId);
+
+    def resourceNames = package_data?.header?.alternateResourceNames ?: []
+    // To avoid changing the object we're iterating over,
+    // we first iterate over the object to grab the items to remove,
+    // then iterate over _that_ list to remove them
+    def alternateNamesToRemove = [];
+
+    pkg.alternateResourceNames.each {
+      if (!resourceNames.contains(it.name)) {
+        def arn_tbd = AlternateResourceName.findByName(it.name)
+        alternateNamesToRemove << arn_tbd
+      }
+    }
+
+    alternateNamesToRemove.each {
+      pkg.removeFromAlternateResourceNames(it)
+    }
+
+    resourceNames.each {def arn ->
+      if(!pkg.alternateResourceNames?.collect {def parn -> parn.name }.contains(arn.name)) {
+        pkg.addToAlternateResourceNames(new AlternateResourceName([name: arn.name]))
+      }
+    }
+
+    pkg.save(failOnError: true)
+  }
 
   /**
    * Load the paackage data (Given in the agreed canonical json package format) into the KB.
@@ -162,22 +188,22 @@ class PackageIngestService implements DataBinder {
                      remoteKb: kb,
                        vendor: vendor
           ).save(flush:true, failOnError:true)
-               MDC.put('packageSource', pkg.source.toString())
-               MDC.put('packageReference', pkg.reference.toString())
+          MDC.put('packageSource', pkg.source.toString())
+          MDC.put('packageReference', pkg.reference.toString())
                
-               (package_data?.header?.contentTypes ?: []).each { 
-                 pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
-               }
+          (package_data?.header?.contentTypes ?: []).each { 
+            pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
+          }
 
-               (package_data?.header?.alternateResourceNames ?: []).each {
-                 pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
-               }
+          (package_data?.header?.alternateResourceNames ?: []).each {
+            pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
+          }
 
-               (package_data?.header?.availabilityConstraints ?: []).each { 
-                 pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(it.body)]))
-               }
+          (package_data?.header?.availabilityConstraints ?: []).each { 
+            pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(it.body)]))
+          }
 
-               pkg.save(failOnError: true)
+          pkg.save(failOnError: true)
         } else {
           log.info("Not adding package '${package_data.header.packageName}' because status '${package_data.header.status}' doesn't match 'Current' or 'Expected'")
           skipPackage = true
@@ -189,32 +215,12 @@ class PackageIngestService implements DataBinder {
         pkg.availabilityScopeFromString = package_data.header.availabilityScope
         pkg.vendor = vendor
         pkg.save(failOnError:true)
-        pkg = Pkg.get(pkg.id)
-        
 
-        updateContentTypes(pkg.id, package_data)  // Todo: Method call not working yet
-        
+        // Call separate methods for updating collections for code cleanliness
+        // These methods are responsible for their own saves
+        updateContentTypes(pkg.id, package_data)
+        updateAlternateNames(pkg.id, package_data)
 
-        def arn = package_data?.header?.alternateResourceNames ?: []
-//        println(arn)  // TODO: remove -- expect: list
-        pkg.alternateResourceNames.each{
-//          println(it.name)  // TODO: remove -- expect: string
-          if (!arn.contains(it.name)) {
-            def arn_tbd = AlternateResourceName.findByName(it.name)
-//            println(arn_tbd)  // TODO: remove -- expect: AlternateResourceName object
-            pkg.removeFromAlternateResourceNames(arn_tbd)
-          }  
-        }
-        pkg.save(failOnError:true)
-        pkg = Pkg.get(pkg.id)
-
-        (package_data?.header?.alternateResourceNames ?: []).each { 
-          if (!pkg.alternateResourceNames.contains(it.name)) {
-            pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
-          }
-        }
-        
-        pkg.save(flush:true, failOnError:true)
       }
 
       // Update identifiers from citation
