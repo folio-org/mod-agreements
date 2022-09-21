@@ -9,7 +9,9 @@ RemoteKB.findByName('GOKb_TEST') ?: (new RemoteKB(
     rectype: RemoteKB.RECTYPE_PACKAGE,
     active:Boolean.TRUE,
     supportsHarvesting:true,
-    activationEnabled:false
+    activationEnabled:false,
+    // Uncomment to use cursor
+    //cursor: '2022-09-21T00:00:00Z'
 ).save(failOnError:true))
 
 /* RemoteKB.findByName('GOKb') ?: (new RemoteKB(

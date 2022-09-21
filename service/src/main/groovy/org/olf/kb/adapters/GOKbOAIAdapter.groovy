@@ -381,7 +381,37 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           [ namespace: 'gokb_uuid', value: gokb_uuid_identifier.@uuid?.text() ] 
         )
       }
-      
+
+      def availability_constraints = []
+      def global_note = package_record.globalNote.text()?.trim();
+
+      // Build up availabilityConstraints
+      // Ignore if availability scope is not local, regional or consortium
+      if (
+        (
+          availability_scope?.trim()?.toLowerCase() == 'regional' ||
+          availability_scope?.trim()?.toLowerCase() == 'consortium'
+        ) && global_note
+      ) {
+
+        availability_constraints.add(
+          [
+            body: global_note
+          ]
+        )
+      } else if (availability_scope?.trim()?.toLowerCase() == 'local') {
+        def curatory_groups = package_record.curatoryGroups?.group?.name?.collect {
+
+          return [
+            body: it?.text()?.trim(),
+          ]
+        }
+
+        if ((curatory_groups ?: []).size() > 0) {
+          availability_constraints.addAll(curatory_groups)
+        }
+      }
+
       result = [
         header:[
           lifecycleStatus: package_status,
@@ -397,6 +427,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           packageSlug: package_shortcode,
           sourceDataCreated: source_data_created,
           sourceDataUpdated: source_data_updated,
+          availabilityConstraints: availability_constraints,
           availabilityScope: availability_scope,
           contentTypes: content_types,
           alternateResourceNames: alternate_resource_names
