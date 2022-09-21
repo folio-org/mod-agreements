@@ -107,6 +107,33 @@ class PackageIngestService implements DataBinder {
     pkg.save(failOnError: true)
   }
 
+    def updateAvailabilityConstraints (String pkgId, PackageSchema package_data) {
+    Pkg pkg = Pkg.get(pkgId);
+    def availabilityConstraints = package_data?.header?.availabilityConstraints ?: []
+    // To avoid changing the object we're iterating over,
+    // we first iterate over the object to grab the items to remove,
+    // then iterate over _that_ list to remove them
+    def availabilityConstraintsToRemove = [];
+
+    pkg.availabilityConstraints.each {
+      if (!availabilityConstraints.contains(it.contentType.label)) {
+        availabilityConstraintsToRemove << it
+      }
+    }
+
+    availabilityConstraintsToRemove.each {
+      pkg.removeFromAvailabilityConstraints(it)
+    }
+
+    availabilityConstraints.each {def ac ->
+      if(!pkg.availabilityConstraints?.collect {def pac -> pac.body.label }.contains(ac.body)) {
+        pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(ac.body)]))
+      }
+    }
+
+    pkg.save(failOnError: true)
+  }
+
   /**
    * Load the paackage data (Given in the agreed canonical json package format) into the KB.
    * This function must be passed VALID package data. At this point, all package contents are
@@ -220,7 +247,7 @@ class PackageIngestService implements DataBinder {
         // These methods are responsible for their own saves
         updateContentTypes(pkg.id, package_data)
         updateAlternateNames(pkg.id, package_data)
-
+        updateAvailabilityConstraints(pkg.id, package_data)
       }
 
       // Update identifiers from citation
