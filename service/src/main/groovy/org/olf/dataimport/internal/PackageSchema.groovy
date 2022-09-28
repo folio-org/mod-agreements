@@ -45,7 +45,11 @@ interface PackageSchema extends Validateable {
       { "body": "Body 1" },
       { "body": "Body 2" },
       { "body": "Body 3" }
-    ]
+    ],
+    "packageDescriptionUrls": [
+      { "url": "url 1" },
+      { "url": "url 2" }
+    ],
     "_intenalId": 276432871386
     ""
     */
@@ -67,6 +71,7 @@ interface PackageSchema extends Validateable {
     Collection<ContentTypeSchema> getContentTypes()
     Collection<AlternateResourceNameSchema> getAlternateResourceNames()
     Collection<AvailabilityConstraintSchema> getAvailabilityConstraints()
+    Collection<PackageDescriptionUrlSchema> getPackageDescriptionUrls()
   }
   
   @CompileStatic
@@ -189,6 +194,16 @@ interface PackageSchema extends Validateable {
      }
      */
     String getBody()
+  }
+
+  @CompileStatic
+  public interface PackageDescriptionUrlSchema extends Validateable {
+    /*
+     {
+       "url": "https://a.package.description.url",
+     }
+     */
+    String getUrl()
   }
   
   @CompileStatic

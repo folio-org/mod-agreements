@@ -320,6 +320,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   private InternalPackageImpl gokbToERM(GPathResult xml_gokb_record, boolean trustedSourceTI) {
 
     def package_record = xml_gokb_record?.metadata?.gokb?.package
+    def header = xml_gokb_record?.header
 
     def result = null
 
@@ -412,6 +413,18 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         }
       }
 
+      /* Build package description URLS */
+      def package_description_urls = []
+      def header_uri = package_record.header?.uri?.text()?.trim()
+      def metadata_url = header?.uri?.text()?.trim()
+
+      if (header_uri) {
+        package_description_urls.add([ url: header_uri])
+      }
+      if (metadata_url) {
+        package_description_urls.add([ url: metadata_url])
+      }
+
       result = [
         header:[
           lifecycleStatus: package_status,
@@ -430,7 +443,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           availabilityConstraints: availability_constraints,
           availabilityScope: availability_scope,
           contentTypes: content_types,
-          alternateResourceNames: alternate_resource_names
+          alternateResourceNames: alternate_resource_names,
+          packageDescriptionUrls: package_description_urls
         ],
         identifiers: identifiers,
         packageContents: []
