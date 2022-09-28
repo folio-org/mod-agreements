@@ -22,7 +22,7 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   Date sourceDataUpdated
   @Defaults(['Current', 'Retired', 'Expected', 'Deleted'])
   RefdataValue lifecycleStatus
-  @Defaults(['Global', 'Consortial', 'Regional', 'Local'])
+  @Defaults(['Global'])
   RefdataValue availabilityScope
   Set<PackageDescriptionUrl> packageDescriptionUrls
   Set<ContentType> contentTypes
