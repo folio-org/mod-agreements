@@ -258,6 +258,10 @@ class PackageIngestService implements DataBinder {
             pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(it.body)]))
           }
 
+          (package_data?.header?.packageDescriptionUrls ?: []).each { 
+            pkg.addToPackageDescriptionUrls(new PackageDescriptionUrl([url: it.url]))
+          }
+
           pkg.save(failOnError: true)
         } else {
           log.info("Not adding package '${package_data.header.packageName}' because status '${package_data.header.status}' doesn't match 'Current' or 'Expected'")
