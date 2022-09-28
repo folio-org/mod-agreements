@@ -416,8 +416,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
       /* Build package description URLS */
       def package_description_urls = []
-      def header_uri = package_record.header?.uri?.text()?.trim()
-      def metadata_url = header?.uri?.text()?.trim()
+      def header_uri = header?.uri?.text()?.trim()
+      def metadata_url = package_record?.descriptionURL?.text()?.trim()
 
       if (header_uri) {
         package_description_urls.add([ url: header_uri])
