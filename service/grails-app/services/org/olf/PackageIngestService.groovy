@@ -10,6 +10,7 @@ import org.olf.kb.PackageContentItem
 import org.olf.kb.AlternateResourceName
 import org.olf.kb.ContentType
 import org.olf.kb.AvailabilityConstraint
+import org.olf.kb.PackageDescriptionUrl
 import org.olf.kb.Pkg
 import org.olf.kb.Platform
 import org.olf.kb.PlatformTitleInstance
@@ -107,7 +108,7 @@ class PackageIngestService implements DataBinder {
     pkg.save(failOnError: true)
   }
 
-    def updateAvailabilityConstraints (String pkgId, PackageSchema package_data) {
+  def updateAvailabilityConstraints (String pkgId, PackageSchema package_data) {
     Pkg pkg = Pkg.get(pkgId);
     def availabilityConstraints = package_data?.header?.availabilityConstraints ?: []
     // To avoid changing the object we're iterating over,
@@ -116,7 +117,7 @@ class PackageIngestService implements DataBinder {
     def availabilityConstraintsToRemove = [];
 
     pkg.availabilityConstraints.each {
-      if (!availabilityConstraints.contains(it.contentType.label)) {
+      if (!availabilityConstraints.contains(it.body.label)) {
         availabilityConstraintsToRemove << it
       }
     }
@@ -128,6 +129,33 @@ class PackageIngestService implements DataBinder {
     availabilityConstraints.each {def ac ->
       if(!pkg.availabilityConstraints?.collect {def pac -> pac.body.label }.contains(ac.body)) {
         pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(ac.body)]))
+      }
+    }
+
+    pkg.save(failOnError: true)
+  }
+
+  def updatePackageDescriptionUrls (String pkgId, PackageSchema package_data) {
+    Pkg pkg = Pkg.get(pkgId);
+    def urls = package_data?.header?.packageDescriptionUrls ?: []
+    // To avoid changing the object we're iterating over,
+    // we first iterate over the object to grab the items to remove,
+    // then iterate over _that_ list to remove them
+    def urlsToRemove = [];
+
+    pkg.packageDescriptionUrls.each {
+      if (!urls.contains(it.url.label)) {
+        urlsToRemove << it
+      }
+    }
+
+    urlsToRemove.each {
+      pkg.removeFromPackageDescriptionUrls(it)
+    }
+
+    urls.each {def url ->
+      if(!pkg.packageDescriptionUrls?.collect {def pdu -> pdu.url.label }.contains(url.url)) {
+        pkg.addToPackageDescriptionUrls(new PackageDescriptionUrl([url: url.url]))
       }
     }
 
@@ -230,6 +258,10 @@ class PackageIngestService implements DataBinder {
             pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(it.body)]))
           }
 
+          (package_data?.header?.packageDescriptionUrls ?: []).each { 
+            pkg.addToPackageDescriptionUrls(new PackageDescriptionUrl([url: it.url]))
+          }
+
           pkg.save(failOnError: true)
         } else {
           log.info("Not adding package '${package_data.header.packageName}' because status '${package_data.header.status}' doesn't match 'Current' or 'Expected'")
@@ -241,6 +273,7 @@ class PackageIngestService implements DataBinder {
         pkg.lifecycleStatusFromString = package_data.header.lifecycleStatus
         pkg.availabilityScopeFromString = package_data.header.availabilityScope
         pkg.vendor = vendor
+        pkg.description = package_data.header.description
         pkg.save(failOnError:true)
 
         // Call separate methods for updating collections for code cleanliness
@@ -248,6 +281,7 @@ class PackageIngestService implements DataBinder {
         updateContentTypes(pkg.id, package_data)
         updateAlternateNames(pkg.id, package_data)
         updateAvailabilityConstraints(pkg.id, package_data)
+        updatePackageDescriptionUrls(pkg.id, package_data)
       }
 
       // Update identifiers from citation

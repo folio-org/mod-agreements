@@ -6,6 +6,7 @@ import org.olf.dataimport.erm.Identifier
 import org.olf.dataimport.erm.AlternateResourceName
 import org.olf.dataimport.erm.ContentType
 import org.olf.dataimport.erm.AvailabilityConstraint
+import org.olf.dataimport.erm.PackageDescriptionUrl
 
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.PackageHeaderSchema
@@ -29,6 +30,7 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   List<ContentType> contentTypes
   List<AlternateResourceName> alternateResourceNames
   List<AvailabilityConstraint> availabilityConstraints
+  List<PackageDescriptionUrl> packageDescriptionUrls
   List<Identifier> identifiers
 
   Set<ContentItem> contentItems = []
@@ -132,6 +134,12 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   public List<AvailabilityConstraint> getAvailabilityConstraints() {
     availabilityConstraints
   }
+
+  @Override
+  public List<PackageDescriptionUrl> getPackageDescriptionUrls() {
+    packageDescriptionUrls
+  }
+
 
   @Override
   public List<Identifier> getIdentifiers() {

@@ -320,6 +320,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   private InternalPackageImpl gokbToERM(GPathResult xml_gokb_record, boolean trustedSourceTI) {
 
     def package_record = xml_gokb_record?.metadata?.gokb?.package
+    def header = xml_gokb_record?.header
 
     def result = null
 
@@ -329,6 +330,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       def package_shortcode = package_record.shortcode?.text()
       def nominal_provider = package_record.nominalProvider?.name?.text()
       def package_status = package_record.status?.text()
+      def package_description = package_record?.description?.text()
       def source_data_created = package_record.dateCreated?.text()
       def source_data_updated = package_record.lastUpdated?.text()
       def availability_scope = package_record.global?.text()
@@ -412,6 +414,18 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         }
       }
 
+      /* Build package description URLS */
+      def package_description_urls = []
+      def header_uri = header?.uri?.text()?.trim()
+      def metadata_url = package_record?.descriptionURL?.text()?.trim()
+
+      if (header_uri) {
+        package_description_urls.add([ url: header_uri])
+      }
+      if (metadata_url) {
+        package_description_urls.add([ url: metadata_url])
+      }
+
       result = [
         header:[
           lifecycleStatus: package_status,
@@ -430,7 +444,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           availabilityConstraints: availability_constraints,
           availabilityScope: availability_scope,
           contentTypes: content_types,
-          alternateResourceNames: alternate_resource_names
+          alternateResourceNames: alternate_resource_names,
+          packageDescriptionUrls: package_description_urls,
+          description: package_description
         ],
         identifiers: identifiers,
         packageContents: []

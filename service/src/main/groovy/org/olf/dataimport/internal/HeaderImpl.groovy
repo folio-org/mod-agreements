@@ -5,6 +5,8 @@ import org.olf.dataimport.erm.PackageProvider
 import org.olf.dataimport.erm.ContentType
 import org.olf.dataimport.erm.AlternateResourceName
 import org.olf.dataimport.erm.AvailabilityConstraint
+import org.olf.dataimport.erm.PackageDescriptionUrl
+
 import org.olf.dataimport.internal.PackageSchema.PackageHeaderSchema
 
 import grails.compiler.GrailsCompileStatic
@@ -29,6 +31,7 @@ class HeaderImpl implements PackageHeaderSchema, Validateable {
   List<ContentType> contentTypes
   List<AlternateResourceName> alternateResourceNames
   List<AvailabilityConstraint> availabilityConstraints
+  List<PackageDescriptionUrl> packageDescriptionUrls
   String lifecycleStatus 
   String _intenalId
   
