@@ -30,6 +30,7 @@ class AdminController implements DataBinder{
   def fileUploadService
   def matchKeyService
   def kbManagementService
+  def kbHarvestService
 
   public AdminController() {
   }
@@ -70,6 +71,13 @@ class AdminController implements DataBinder{
    */
   public triggerCacheUpdate() {
     knowledgeBaseCacheService.triggerCacheUpdate()
+  }
+
+  public triggerSync() {
+    kbHarvestService.triggerSync()
+    def result= [:]
+    result.status = 'OK'
+    render result as JSON
   }
 
   public pullPackage() {

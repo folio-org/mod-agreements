@@ -172,7 +172,6 @@ class PackageIngestService implements DataBinder {
    * @return id of package upserted
    */
   public Map upsertPackage(PackageSchema package_data, String remotekbname, boolean readOnly=false) {
-    
     def result = [
       startTime: System.currentTimeMillis(),
       titleCount: 0,
@@ -185,6 +184,7 @@ class PackageIngestService implements DataBinder {
 
     Pkg pkg = null
     Boolean trustedSourceTI = package_data.header?.trustedSourceTI
+    println("LOGDEBUG TRUSTEDSOURCETI FROM PACKAGE: ${trustedSourceTI}")
     def skipPackage = false
 
     // ERM caches many remote KB sources in it's local package inventory
@@ -203,6 +203,7 @@ class PackageIngestService implements DataBinder {
       if (trustedSourceTI == null) {
         // If we're not explicitly handed trusted information, default to whatever the remote KB setting is
         trustedSourceTI = kb.trustedSourceTI
+
         if (trustedSourceTI == null) {
           // If it somehow remains unset, default to false, but with warning
           log.warn("Could not find trustedSourceTI setting for KB, defaulting to false")
@@ -345,6 +346,12 @@ class PackageIngestService implements DataBinder {
                   // ERM-1799 Ensure initial matchKeyCreation
                   matchKeyService.updateMatchKeys(pti, matchKeys)
                 } else if (trustedSourceTI) {
+                  // Update any PTI fields directly
+                  if (pti.url != pc.url) {
+                    pti.url = pc.url
+                  }
+                  pti.save(failOnError: true)
+
                   /*
                    * We may need to update the match key information
                    * from the incoming package for existing PTIs
