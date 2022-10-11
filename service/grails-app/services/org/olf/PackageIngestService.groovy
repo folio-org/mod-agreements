@@ -154,7 +154,7 @@ class PackageIngestService implements DataBinder {
     }
 
     urls.each {def url ->
-      if(!pkg.packageDescriptionUrls?.collect {def pdu -> pdu.url.label }.contains(url.url)) {
+      if(!pkg.packageDescriptionUrls?.collect {def pdu -> pdu.url }.contains(url.url)) {
         pkg.addToPackageDescriptionUrls(new PackageDescriptionUrl([url: url.url]))
       }
     }
