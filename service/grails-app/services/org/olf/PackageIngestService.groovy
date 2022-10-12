@@ -184,7 +184,6 @@ class PackageIngestService implements DataBinder {
 
     Pkg pkg = null
     Boolean trustedSourceTI = package_data.header?.trustedSourceTI
-    println("LOGDEBUG TRUSTEDSOURCETI FROM PACKAGE: ${trustedSourceTI}")
     def skipPackage = false
 
     // ERM caches many remote KB sources in it's local package inventory
