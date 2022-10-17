@@ -274,6 +274,7 @@ class PackageIngestService implements DataBinder {
         pkg.availabilityScopeFromString = package_data.header.availabilityScope
         pkg.vendor = vendor
         pkg.description = package_data.header.description
+        pkg.name = package_data.header.packageName
         pkg.save(failOnError:true)
 
         // Call separate methods for updating collections for code cleanliness
