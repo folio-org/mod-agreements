@@ -11,7 +11,9 @@
     "startDate": "2014-01-01T00:00:00Z",
     "endDate": "2100-01-01T00:00:00Z",
     "packageSlug": "american_psychological_association_american_psychological_association_master",
-    "_intenalId": 1062
+    "_intenalId": 1062,
+    "availabilityScope": "Global",
+    "lifecycleStatus": "Current"
   },
   "packageContents": [
     {
