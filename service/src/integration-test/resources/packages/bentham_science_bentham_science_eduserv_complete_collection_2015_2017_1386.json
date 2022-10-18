@@ -11,7 +11,9 @@
     "startDate": "2015-01-01T00:00:00Z",
     "endDate": "2017-12-31T00:00:00Z",
     "packageSlug": "bentham_science_bentham_science_eduserv_complete_collection_2015_2017",
-    "_intenalId": 1386
+    "_intenalId": 1386,
+    "availabilityScope": "Global",
+    "lifecycleStatus": "Current"
   },
   "packageContents": [
     {
