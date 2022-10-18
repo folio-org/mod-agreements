@@ -119,7 +119,7 @@ public class IdentifierService {
       // Firstly add any new identifiers from the identifiers list
       identifiers.each {ident ->
 
-        // if ( ( ident.namespace != null ) && ( ident.value != null ) ) {
+        if ( ( ident.namespace != null ) && ( ident.value != null ) ) {
           IdentifierOccurrence existingIo = IdentifierOccurrence.executeQuery("""
             SELECT io FROM IdentifierOccurrence as io
             WHERE io.resource.id = :pkgId AND
@@ -144,10 +144,10 @@ public class IdentifierService {
             // This Identifier Occurrence exists as ERROR, reset to APPROVED
             existingIo.status = IdentifierOccurrence.lookupOrCreateStatus('approved')
           }
-        // }
-        // else {
-        //   log.warn("Identifier with null namespace or value - skipping - package ID is ${pkg.id}");
-        // }
+        }
+        else {
+          log.warn("Identifier with null namespace or value - skipping - package ID is ${pkg.id}");
+        }
       }
 
       // Next we "delete" (set as error) any identifiers on the package not present in the identifiers list.
