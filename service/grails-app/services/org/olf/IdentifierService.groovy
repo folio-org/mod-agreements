@@ -121,41 +121,43 @@ public class IdentifierService {
       def identifiers_to_keep = [];
 
       identifiers.each {ident ->
-        IdentifierOccurrence existingIo = IdentifierOccurrence.executeQuery("""
-          SELECT io FROM IdentifierOccurrence as io
-          WHERE io.resource.id = :pkgId AND
-            io.identifier.ns.value = :ns AND
-            io.identifier.value = :value
-        """.toString(), [pkgId: pkg.id, ns: ident.namespace, value: ident.value])[0]
 
-        if (!existingIo || existingIo.id == null) {
-          IdentifierNamespace ns = IdentifierNamespace.findByValue(ident.namespace) ?: new IdentifierNamespace([value: ident.namespace]).save(flush: true, failOnError: true)
-          org.olf.kb.Identifier identifier = org.olf.kb.Identifier.findByNsAndValue(ns, ident.value) ?: new org.olf.kb.Identifier([
-            ns: ns,
-            value: ident.value
-          ]).save(flush: true, failOnError: true)
+        if ( ( ident.namespace != null ) && ( ident.value != null ) ) {
+          IdentifierOccurrence existingIo = IdentifierOccurrence.executeQuery("""
+            SELECT io FROM IdentifierOccurrence as io
+            WHERE io.resource.id = :pkgId AND
+              io.identifier.ns.value = :ns AND
+              io.identifier.value = :value
+          """.toString(), [pkgId: pkg.id, ns: ident.namespace, value: ident.value])[0]
+  
+          if (!existingIo || existingIo.id == null) {
+            IdentifierNamespace ns = IdentifierNamespace.findByValue(ident.namespace) ?: new IdentifierNamespace([value: ident.namespace]).save(flush: true, failOnError: true)
+            org.olf.kb.Identifier identifier = org.olf.kb.Identifier.findByNsAndValue(ns, ident.value) ?: new org.olf.kb.Identifier([
+              ns: ns,
+              value: ident.value
+            ]).save(flush: true, failOnError: true)
+  
+            IdentifierOccurrence newIo = new IdentifierOccurrence([
+              identifier: identifier,
+              status: IdentifierOccurrence.lookupOrCreateStatus('approved')
+            ])
 
-          IdentifierOccurrence newIo = new IdentifierOccurrence([
-            identifier: identifier,
-            status: IdentifierOccurrence.lookupOrCreateStatus('approved')
-          ])
+            pkg.addToIdentifiers(newIo)
+            // Need to save the package in order to get the id of the just created IdentifierOccurrence
+            pkg.save(flush:true, failOnError: true)
 
-          pkg.addToIdentifiers(newIo)
-          // Need to save the package in order to get the id of the just created IdentifierOccurrence
-          pkg.save(flush:true, failOnError: true)
-
-          identifiers_to_keep << newIo.id
-        } else if (existingIo) {
-          identifiers_to_keep << existingIo.id
-          if (existingIo.status.value == 'error') {
-            // This Identifier Occurrence exists as ERROR, reset to APPROVED
-           existingIo.status = IdentifierOccurrence.lookupOrCreateStatus('approved')
+            identifiers_to_keep << newIo.id
+          } else if (existingIo) {
+            identifiers_to_keep << existingIo.id
+            if (existingIo.status.value == 'error') {
+              // This Identifier Occurrence exists as ERROR, reset to APPROVED
+              existingIo.status = IdentifierOccurrence.lookupOrCreateStatus('approved')
+            }
           }
+        } else {
+          log.warn("Identifier with null namespace or value - skipping - package ID is ${pkg.id}");
         }
       }
-
-      // Ensure we have up to date package information
-      pkg.refresh()
 
       // Next we "delete" (set as error) any identifiers on the package not present in the identifiers list.
       List<IdentifierOccurrence> identsToRemove = IdentifierOccurrence.executeQuery("""

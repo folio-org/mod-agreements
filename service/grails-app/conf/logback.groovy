@@ -37,7 +37,7 @@ logger ('com.k_int.web.toolkit.files', DEBUG);
 // Just increase verbosity for dev/test.
 
 
-boolean devEnv = Environment.isDevelopmentMode() || Environment.currentEnvironment.name == 'vagrant-db'
+boolean devEnv = Environment.isDevelopmentMode() || Environment.currentEnvironment.name == 'vagrant-db' || Environment.currentEnvironment.name == 'rancher-desktop-db'
 
 if (devEnv || Environment.currentEnvironment == Environment.TEST) {
   

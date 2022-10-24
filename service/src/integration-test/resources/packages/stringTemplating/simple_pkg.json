@@ -11,7 +11,9 @@
     "startDate": "2015-01-01T00:00:00Z",
     "endDate": "2030-10-10T00:00:00Z",
     "packageSlug": "kint_test_002",
-    "_intenalId": 193753621336
+    "_intenalId": 193753621336,
+    "availabilityScope": "Global",
+    "lifecycleStatus": "Current"
   },
   "packageContents": [{
     "title": "Arithmetic of Finite Fields",
