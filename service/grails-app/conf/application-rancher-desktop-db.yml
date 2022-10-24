@@ -1,6 +1,6 @@
 ##
-# This config file connects to the postgres install mapped by the vagrant file in the project root.
-# Use the flag '-Dgrails.env=vagrant-db' when running
+# This config file connects to the postgres install from a rancher desktop instance.
+# Use the flag '-Dgrails.env=rancher-desktop-db' when running
 ##
 
 dataSource:
