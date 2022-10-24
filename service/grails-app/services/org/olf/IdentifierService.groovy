@@ -116,7 +116,10 @@ public class IdentifierService {
   public void updatePackageIdentifiers(Pkg pkg, List<org.olf.dataimport.erm.Identifier> identifiers) {
     // Assume any package identifier information is the truth, and upsert/delete as necessary
     IdentifierOccurrence.withTransaction {
-      // Firstly add any new identifiers from the identifiers list
+      // Firstly add any new identifiers from the identifiers list,
+      // and keep a track of the relevant ids in the database of all the identifiers passed in by the process
+      def identifiers_to_keep = [];
+
       identifiers.each {ident ->
         IdentifierOccurrence existingIo = IdentifierOccurrence.executeQuery("""
           SELECT io FROM IdentifierOccurrence as io
@@ -138,23 +141,31 @@ public class IdentifierService {
           ])
 
           pkg.addToIdentifiers(newIo)
-        } else if (existingIo && existingIo.status.value == 'error') {
-          // This Identifier Occurrence exists as ERROR, reset to APPROVED
-          existingIo.status = IdentifierOccurrence.lookupOrCreateStatus('approved')
+          // Need to save the package in order to get the id of the just created IdentifierOccurrence
+          pkg.save(flush:true, failOnError: true)
+
+          identifiers_to_keep << newIo.id
+        } else if (existingIo) {
+          identifiers_to_keep << existingIo.id
+          if (existingIo.status.value == 'error') {
+            // This Identifier Occurrence exists as ERROR, reset to APPROVED
+           existingIo.status = IdentifierOccurrence.lookupOrCreateStatus('approved')
+          }
         }
       }
+
+      // Ensure we have up to date package information
+      pkg.refresh()
 
       // Next we "delete" (set as error) any identifiers on the package not present in the identifiers list.
       List<IdentifierOccurrence> identsToRemove = IdentifierOccurrence.executeQuery("""
         SELECT io FROM IdentifierOccurrence AS io
         WHERE resource.id = :pkgId AND
-          io.identifier.ns.value NOT IN :nsList AND
-          io.identifier.value NOT IN :valueList AND
+          io.id NOT IN :keepList AND
           io.status.value = :approved
       """.toString(), [
         pkgId: pkg.id,
-        nsList: identifiers.collect{ it.namespace },
-        valueList: identifiers.collect{ it.value },
+        keepList: identifiers_to_keep,
         approved: 'approved'
       ]);
 
