@@ -1,3 +1,5 @@
+## 5.5.0 In progress
+
 ## 5.4.0 2022-10-26
   * ERM-2388 Package identifiers not 'removed' from package on ingest of updated package
   * ERM-2385 On updating package description URLs KB sync job crashes
