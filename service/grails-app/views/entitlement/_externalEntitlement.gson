@@ -8,10 +8,12 @@ import com.k_int.okapi.remote_resources.OkapiLookup
 import groovy.transform.*
 import groovyx.net.http.HttpException
 
+// When fetching multiple entitlements through "index" action, do not make external fetches
+
 @Field Entitlement entitlement
 final String objectProperty = 'reference_object'
 def remoteObjValue
-if(entitlement.respondsTo(objectProperty)){
+if(actionName != 'index' && entitlement.respondsTo(objectProperty)){
   try {
     remoteObjValue = entitlement.invokeMethod(objectProperty, null)
     if (remoteObjValue instanceof Future) {
