@@ -42,7 +42,6 @@ import services.k_int.core.FolioLockService
 import com.k_int.web.toolkit.files.FileUploadService
 
 @Slf4j
-//@CompileStatic
 class JobRunnerService implements EventPublisher {
   
   // Any auto injected beans here can be accessed within the `work` runnable
@@ -462,41 +461,57 @@ class JobRunnerService implements EventPublisher {
         final Instant key = jobStamps.get(i)
         final String[] jobAndTenant = potentialJobs.get( key )
         final String tenantId = jobAndTenant[1]
-        if (busyTenants.contains(tenantId)) {
-          log.debug "Already determined tenant ${tenantId} was busy. Try next job entry"
-        } else {
         
-          Tenants.withId(tenantId) {
-            // Find a queued job with no runner assigned.
-            final RefdataValue inProgress = PersistentJob.lookupStatus('In progress')
-            
-            final boolean tenantRunningJob = PersistentJob.findByStatus(inProgress)
-            
-            if (tenantRunningJob) {
-              log.debug "Tenant ${tenantId} has at least one job in progess. Next job"
-              busyTenants << tenantId
+        try {
+          if (busyTenants.contains(tenantId)) {
+            log.debug "Already determined tenant ${tenantId} was busy. Try next job entry"
+          } else {
+          
+            Tenants.withId(tenantId) {
+              // Find a queued job with no runner assigned.
+              final RefdataValue inProgress = PersistentJob.lookupStatus('In progress')
               
-            } else {
-              // Tenant can have Job run
-              final String jobId = jobAndTenant[0]
-              PersistentJob job = PersistentJob.read(jobId)
+              final boolean tenantRunningJob = PersistentJob.findByStatus(inProgress)
               
-              final RefdataValue queued = PersistentJob.lookupStatus('Queued')
-              if (job.status.id != queued.id || job.runnerId != null) {
-                log.debug "Job ${jobId} is either no longer queued or already allocated to a different runner"
+              if (tenantRunningJob) {
+                log.debug "Tenant ${tenantId} has at least one job in progess. Next job"
+                busyTenants << tenantId
                 
-                // Remove from the queue.
-                potentialJobs.remove( key )
               } else {
+                // Tenant can have Job run
+                final String jobId = jobAndTenant[0]
+                PersistentJob job = PersistentJob.read(jobId)
                 
-                allocateJob(tenantId, job.id)
-                if ( executeJob(tenantId, job.id, key) ) {
-                  added = true
+                // Safeguard against jobs that were removed for whatever reason.
+                if (job == null) { 
+                  log.debug "Job ${jobId} has been deleted. Simply remove from queue"
+                  
+                  // Remove from the queue.
                   potentialJobs.remove( key )
+                }
+  			  
+  			  final RefdataValue queued = PersistentJob.lookupStatus('Queued')
+                if (job.status.id != queued.id || job.runnerId != null) {
+                  log.debug "Job ${jobId} is either no longer queued or already allocated to a different runner"
+                  
+                  // Remove from the queue.
+                  potentialJobs.remove( key )
+                } else {
+                  
+                  allocateJob(tenantId, job.id)
+                  if ( executeJob(tenantId, job.id, key) ) {
+                    added = true
+                    potentialJobs.remove( key )
+                  }
                 }
               }
             }
           }
+        } catch ( Exception ex ) {
+          // Make sure we remove the queue item on error. If this was an intermittent 
+          // failure it will be re-added to a queue in a subsequent execution
+          potentialJobs.remove( key )
+          log.error("Exception when attempting to run job ID: '${jobAndTenant[0]}' for tenant: '${jobAndTenant[1]}'. Removing from queue for now", ex)
         }
       }
     }
