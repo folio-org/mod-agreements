@@ -20,6 +20,9 @@
   * ERM-946 Title identifiers have no fixed order
   * Added readonly transaction scopes for read only operations in subscription agreements and entitlements
 
+## 5.3.1 2022-11-08
+  * ERM-2431 Job runner gets stuck in loop with NullPointerException
+
 ## 5.3.0 2022-09-27
   * ERM-2345 Add federation logic
 
