@@ -8,12 +8,21 @@ import com.k_int.okapi.remote_resources.OkapiLookup
 import groovy.transform.*
 import groovyx.net.http.HttpException
 
-// When fetching multiple entitlements through "index" action, do not make external fetches
+/*
+ * The original plan was when fetching multiple entitlements through "index" action,
+ * to not make external fetches. We currently use the entitlements `index` action
+ * however in multiple places, not just to render the main list, but also to render 
+ * all the entitlements on an agreement, etc etc. In some of those places we currently
+ * still wish to make the external fetch. This may change down the line, but for Nolana
+ * the decision is to set up a special query param "fetchExternalResources". Default behaviour is
+ * "true", so to quash the external fetch send "&fetchExternalResources=false".
+ */
 
 @Field Entitlement entitlement
 final String objectProperty = 'reference_object'
 def remoteObjValue
-if(actionName != 'index' && entitlement.respondsTo(objectProperty)){
+
+if(params.fetchExternalResources != 'false' && entitlement.respondsTo(objectProperty)){
   try {
     remoteObjValue = entitlement.invokeMethod(objectProperty, null)
     if (remoteObjValue instanceof Future) {
