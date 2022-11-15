@@ -3,6 +3,7 @@ package org.olf
 import grails.converters.JSON
 import org.hibernate.Hibernate
 import org.hibernate.sql.JoinType
+
 import org.olf.erm.Entitlement
 import org.olf.kb.ErmResource
 import org.olf.kb.PackageContentItem
@@ -13,6 +14,7 @@ import org.olf.kb.TitleInstance
 import com.k_int.okapi.OkapiTenantAwareController
 import grails.gorm.DetachedCriteria
 import org.hibernate.criterion.CriteriaSpecification
+import org.hibernate.criterion.Projections
 import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
@@ -28,6 +30,26 @@ class ResourceController extends OkapiTenantAwareController<ErmResource>  {
     super(ErmResource, true)
   }
 
+  DetachedCriteria pciSubQuery = PackageContentItem.where({
+    eqProperty("pti.id", "platformTitleInstance.id")
+    setAlias "packageContentItem"
+
+    projections {
+      property "id"
+    }
+  })
+
+  DetachedCriteria ptiSubQuery = PlatformTitleInstance.where({
+    eqProperty("titleInstance.id", "this.id") //here "this" refers to the root alias of criteria
+    setAlias "platformTitleInstance"
+
+    exists(pciSubQuery)
+
+    projections {
+      property "id"
+    }
+  })
+
   // LEFT JOIN query
   def electronic () {
     respond doTheLookup ({
@@ -36,11 +58,10 @@ class ResourceController extends OkapiTenantAwareController<ErmResource>  {
         eq 'class', Pkg
         
         and {
-          createAlias('platformInstances', 'presentPtis', CriteriaSpecification.LEFT_JOIN)
           eq 'class', TitleInstance
           eq 'subType', TitleInstance.lookupOrCreateSubType('electronic')
-          
-          isNotEmpty('presentPtis.packageOccurences')
+
+          exists(ptiSubQuery)
         }
       }
     })
