@@ -21,9 +21,11 @@ import groovy.util.logging.Slf4j
 import java.time.Duration
 import java.time.Instant
 
+import static org.olf.general.Constants.Queries.*
+
 @Slf4j
 @CurrentTenant
-class ResourceController extends OkapiTenantAwareController<ErmResource>  {
+class ResourceController extends OkapiTenantAwareController<ErmResource> {
 
   ResourceController() {
     // True means read only. This should block post and puts to this.
@@ -31,22 +33,22 @@ class ResourceController extends OkapiTenantAwareController<ErmResource>  {
   }
 
   DetachedCriteria pciSubQuery = PackageContentItem.where({
-    eqProperty("pti.id", "platformTitleInstance.id")
-    setAlias "packageContentItem"
+    eqProperty('pti.id', 'platformTitleInstance.id')
+    setAlias 'packageContentItem'
 
     projections {
-      property "id"
+      property 'id'
     }
   })
 
   DetachedCriteria ptiSubQuery = PlatformTitleInstance.where({
-    eqProperty("titleInstance.id", "this.id") //here "this" refers to the root alias of criteria
-    setAlias "platformTitleInstance"
+    eqProperty('titleInstance.id', "${DEFAULT_ROOT_ALIAS}.id") //here "this" refers to the root alias of criteria
+    setAlias 'platformTitleInstance'
 
     exists(pciSubQuery)
 
     projections {
-      property "id"
+      property 'id'
     }
   })
 
