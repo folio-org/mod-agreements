@@ -137,7 +137,7 @@ public class StringTemplatingService {
   @CompileStatic(SKIP)
   void refreshUrls(String tenantId) {
     log.debug "stringTemplatingService::refreshUrls called with tenantId (${tenantId})"
-    folioLockService.federatedLockAndDoWithTimeoutOrSkip("agreements:stringTemplate:refreshUrls=${tenantId}", 0) {
+    folioLockService.federatedLockAndDoWithTimeoutOrSkip("agreements-${tenantId}:stringTemplate:refreshUrls", 0) {
 
       /* Theoretically updates could happen after the process begins but before the url_refresh_cursor gets updated
       * So save the time before starting process as the new cursor pt
