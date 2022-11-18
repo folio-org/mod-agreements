@@ -13,9 +13,14 @@ import groovy.transform.CompileStatic
 
 import com.k_int.web.toolkit.settings.AppSetting
 
+import services.k_int.core.FolioLockService
+
 @CompileStatic
 @Transactional
 public class StringTemplatingService {
+
+  FolioLockService folioLockService
+
   /*
    * This method will take in an id of the form f311d130-8024-47c4-8a86-58f817dbefde
    * It will return a Map of StringTemplates grouped by context, that are relevant for this id
@@ -132,142 +137,130 @@ public class StringTemplatingService {
   @CompileStatic(SKIP)
   void refreshUrls(String tenantId) {
     log.debug "stringTemplatingService::refreshUrls called with tenantId (${tenantId})"
+    folioLockService.federatedLockAndDoWithTimeoutOrSkip("agreements:stringTemplate:refreshUrls=${tenantId}", 0) {
 
-    // If running then just ignore
-    synchronized ( this ) {
-      if (refreshRunning == true) {
-        return
-      } else {
-        refreshRunning = true
-      }
-    }
+      /* Theoretically updates could happen after the process begins but before the url_refresh_cursor gets updated
+      * So save the time before starting process as the new cursor pt
+      * IMPORTANT--This only works because LastUpdated on the pti ISN'T triggered for a collection update,
+      * ie TemplatedUrls.
+      */
 
-    /* Theoretically updates could happen after the process begins but before the url_refresh_cursor gets updated
-     * So save the time before starting process as the new cursor pt
-     * IMPORTANT--This only works because LastUpdated on the pti ISN'T triggered for a collection update,
-     * ie TemplatedUrls.
-     */
+      /* TODO In future we may wish to change this, in order to keep track of those PTIs who were updated
+      * between the last refresh date but not after after the platform updates started.
+      * Some work would need to be done to make lastUpdated change, and to figure out what to do for manual
+      * changes in the interval.
+      */
+      
+      String new_cursor_value = System.currentTimeMillis()
+      // Also create container for the current cursor value
+      Date last_refreshed
+      AppSetting url_refresh_cursor
+      AppSetting previous_sts_count
+      Long previousStsCount
 
-     /* TODO In future we may wish to change this, in order to keep track of those PTIs who were updated
-     * between the last refresh date but not after after the platform updates started.
-     * Some work would need to be done to make lastUpdated change, and to figure out what to do for manual
-     * changes in the interval.
-     */
-     
-    String new_cursor_value = System.currentTimeMillis()
-    // Also create container for the current cursor value
-    Date last_refreshed
-    AppSetting url_refresh_cursor
-    AppSetting previous_sts_count
-    Long previousStsCount
+      Tenants.withId(tenantId) {
+        // Start by grabbing the count of StringTemplates currently in the system
+        Long currentStsCount = StringTemplate.executeQuery("select count(*) from StringTemplate")[0]
 
-    Tenants.withId(tenantId) {
-      // Start by grabbing the count of StringTemplates currently in the system
-      Long currentStsCount = StringTemplate.executeQuery("select count(*) from StringTemplate")[0]
+        // One transaction for fetching the initial values/creating AppSettings
+        AppSetting.withNewTransaction {
+          // Need to flush this initially so it exists for first instance
+          // Set initial cursor to 0 so everything currently in system gets updated
+          url_refresh_cursor = AppSetting.findByKey('url_refresh_cursor') ?: new AppSetting(
+            section:'registry',
+            settingType:'Date',
+            key: 'url_refresh_cursor',
+            value: 0
+          ).save(flush: true, failOnError: true)
 
-      // One transaction for fetching the initial values/creating AppSettings
-      AppSetting.withNewTransaction {
-        // Need to flush this initially so it exists for first instance
-        // Set initial cursor to 0 so everything currently in system gets updated
-        url_refresh_cursor = AppSetting.findByKey('url_refresh_cursor') ?: new AppSetting(
-          section:'registry',
-          settingType:'Date',
-          key: 'url_refresh_cursor',
-          value: 0
-        ).save(flush: true, failOnError: true)
+          previous_sts_count = AppSetting.findByKey('sts_count') ?: new AppSetting(
+            section:'registry',
+            settingType:'Number',
+            key: 'sts_count',
+            value: 0
+          ).save(flush: true, failOnError: true)
 
-        previous_sts_count = AppSetting.findByKey('sts_count') ?: new AppSetting(
-          section:'registry',
-          settingType:'Number',
-          key: 'sts_count',
-          value: 0
-        ).save(flush: true, failOnError: true)
-
-        // Parse setting Strings to Date/Long
-        last_refreshed = new Date(Long.parseLong(url_refresh_cursor.value))
-        previousStsCount = Long.parseLong(previous_sts_count.value)
-      }
-
-      // Fetch stringTemplates that have changed since the last refresh
-      List<String> sts = StringTemplate.createCriteria().list() {
-        order 'id'
-        gt('lastUpdated', last_refreshed)
-        projections {
-          property('id')
+          // Parse setting Strings to Date/Long
+          last_refreshed = new Date(Long.parseLong(url_refresh_cursor.value))
+          previousStsCount = Long.parseLong(previous_sts_count.value)
         }
-      }
 
-      /*
-       * If sts.size is not zero, or the counts differ,
-       * then string templates have been created, deleted or updated
-       * so run refresh for all.
-       */
-      if (
-        currentStsCount != previousStsCount ||
-        sts.size() > 0
-      ) {
-        // StringTemplates have changed, ignore more granular changes and just refresh everything
-        generateTemplatedUrlsForErmResources(tenantId)
-      } else {
-        // FIRST - refresh all updated PTIs
-        PlatformTitleInstance.withNewTransaction{
-          final int ptiBatchSize = 100
-          int ptiBatchCount = 0
-          List<List<String>> ptis = batchFetchPtis(ptiBatchSize, ptiBatchCount, null, last_refreshed)
-          while (ptis && ptis.size() > 0) {
-            ptiBatchCount ++
-            ptis.each { pti ->
-              // Here we send it to the generic case not the specific one to get the queueing behaviour
-              generateTemplatedUrlsForErmResources(
-                tenantId,
-                [
-                  context: 'pti',
-                  id: pti[0],
-                  platformId: pti[2]
-                ]
-              )
-            }
-            // Next page
-            ptis = batchFetchPtis(ptiBatchSize, ptiBatchCount, null, last_refreshed)
+        // Fetch stringTemplates that have changed since the last refresh
+        List<String> sts = StringTemplate.createCriteria().list() {
+          order 'id'
+          gt('lastUpdated', last_refreshed)
+          projections {
+            property('id')
           }
         }
 
-        // Next - refresh all updated Platforms
-        Platform.withNewTransaction{
-          final int platformBatchSize = 100
-          int platformBatchCount = 0
-          List<List<String>> platforms = batchFetchPlatforms(platformBatchSize, platformBatchCount, last_refreshed)
-          while (platforms && platforms.size() > 0) {
-            platformBatchCount ++
-            platforms.each { platform ->
-              // Here we send it to the generic case not the specific one to get the queueing behaviour
-              generateTemplatedUrlsForErmResources(
-                tenantId,
-                [
-                  context: 'platform',
-                  id: platform[0]
-                ]
-              )
+        /*
+        * If sts.size is not zero, or the counts differ,
+        * then string templates have been created, deleted or updated
+        * so run refresh for all.
+        */
+        if (
+          currentStsCount != previousStsCount ||
+          sts.size() > 0
+        ) {
+          // StringTemplates have changed, ignore more granular changes and just refresh everything
+          generateTemplatedUrlsForErmResources(tenantId)
+        } else {
+          // FIRST - refresh all updated PTIs
+          PlatformTitleInstance.withNewTransaction{
+            final int ptiBatchSize = 100
+            int ptiBatchCount = 0
+            List<List<String>> ptis = batchFetchPtis(ptiBatchSize, ptiBatchCount, null, last_refreshed)
+            while (ptis && ptis.size() > 0) {
+              ptiBatchCount ++
+              ptis.each { pti ->
+                // Here we send it to the generic case not the specific one to get the queueing behaviour
+                generateTemplatedUrlsForErmResources(
+                  tenantId,
+                  [
+                    context: 'pti',
+                    id: pti[0],
+                    platformId: pti[2]
+                  ]
+                )
+              }
               // Next page
-              platforms = batchFetchPlatforms(platformBatchSize, platformBatchCount, last_refreshed)
+              ptis = batchFetchPtis(ptiBatchSize, ptiBatchCount, null, last_refreshed)
+            }
+          }
+
+          // Next - refresh all updated Platforms
+          Platform.withNewTransaction{
+            final int platformBatchSize = 100
+            int platformBatchCount = 0
+            List<List<String>> platforms = batchFetchPlatforms(platformBatchSize, platformBatchCount, last_refreshed)
+            while (platforms && platforms.size() > 0) {
+              platformBatchCount ++
+              platforms.each { platform ->
+                // Here we send it to the generic case not the specific one to get the queueing behaviour
+                generateTemplatedUrlsForErmResources(
+                  tenantId,
+                  [
+                    context: 'platform',
+                    id: platform[0]
+                  ]
+                )
+                // Next page
+                platforms = batchFetchPlatforms(platformBatchSize, platformBatchCount, last_refreshed)
+              }
             }
           }
         }
+
+        //One transaction for updating value with new refresh time and new count (count taken from beginning of refresh task)
+        AppSetting.withNewTransaction {
+          url_refresh_cursor.value = new_cursor_value
+          url_refresh_cursor.save(failOnError: true)
+
+          previous_sts_count.value = currentStsCount
+          previous_sts_count.save(failOnError: true)
+        }
       }
-
-      //One transaction for updating value with new refresh time and new count (count taken from beginning of refresh task)
-      AppSetting.withNewTransaction {
-        url_refresh_cursor.value = new_cursor_value
-        url_refresh_cursor.save(failOnError: true)
-
-        previous_sts_count.value = currentStsCount
-        previous_sts_count.save(failOnError: true)
-      }
-    }
-
-    synchronized ( this ) {
-      // Refresh finished, turn 'refreshRunning' boolean off
-      refreshRunning = false
     }
   }
 
