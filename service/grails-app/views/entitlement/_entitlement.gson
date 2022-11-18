@@ -12,7 +12,20 @@ if (entitlement.type == 'external') {
   json tmpl."externalEntitlement"(entitlement)
 } else {
   final def should_expand = ['poLines', 'resource', 'tags' ]
-  final def should_exclude = ['coverage']
+  
+  // Anything handled specifically below should always be excluded from the the general render
+  final def should_exclude = [
+    'coverage',
+    'customCoverage',
+    'explanation',
+    'startDate',
+    'endDate',
+    'activeFrom',
+    'activeTo',
+    'contentUpdated',
+    'haveAccess'
+  ]
+  
   if ( controllerName != 'subscriptionAgreement' ) {
     should_expand << 'owner'
     should_render_default_coverage = true

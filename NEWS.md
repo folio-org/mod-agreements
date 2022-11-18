@@ -1,3 +1,8 @@
+## 5.4.2 2022-11-18
+  * ERM-2443 Title Instance appearing twice in /erm/resource/electronic search
+  * ERM-2423 Performance issues on displaying external agreement lines
+  * ERM-2422 JSON errors on agreement lines in Nolana bugfest
+
 ## 5.4.0 2022-10-26
   * ERM-2388 Package identifiers not 'removed' from package on ingest of updated package
   * ERM-2385 On updating package description URLs KB sync job crashes
