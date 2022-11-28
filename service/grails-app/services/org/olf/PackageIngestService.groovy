@@ -270,8 +270,15 @@ class PackageIngestService implements DataBinder {
         }
       } else {
         pkg.sourceDataUpdated = package_data.header.sourceDataUpdated
-        pkg.lifecycleStatusFromString = package_data.header.lifecycleStatus
-        pkg.availabilityScopeFromString = package_data.header.availabilityScope
+
+        if (package_data.header.lifecycleStatus) {
+          pkg.lifecycleStatusFromString = package_data.header.lifecycleStatus
+        }
+
+        if (package_data.header.availabilityScope) {
+          pkg.availabilityScopeFromString = package_data.header.availabilityScope
+        }
+
         pkg.vendor = vendor
         pkg.description = package_data.header.description
         pkg.name = package_data.header.packageName
