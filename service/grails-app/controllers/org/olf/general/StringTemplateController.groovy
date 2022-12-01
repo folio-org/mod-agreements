@@ -9,6 +9,7 @@ import grails.converters.JSON
 import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.multitenancy.Tenants
 import groovy.util.logging.Slf4j
+import org.grails.datastore.gorm.events.DomainEventListener
 
 
 @Slf4j
@@ -16,7 +17,7 @@ import groovy.util.logging.Slf4j
 class StringTemplateController extends OkapiTenantAwareController<StringTemplate> {
   StringTemplatingService stringTemplatingService
 
-  StringTemplateController()  {
+  StringTemplateController() {
     super(StringTemplate)
   }
 
@@ -34,7 +35,17 @@ class StringTemplateController extends OkapiTenantAwareController<StringTemplate
   }
 
   def getStringTemplatesForId(String id) {
-    def result = stringTemplatingService.findStringTemplatesForId(id)
+    
+    DomainEventListener f;
+    
+    // Renaming the keys here to keep the external contract the same.
+    final def result = stringTemplatingService.findStringTemplatesForId(id).with {
+      put("urlProxiers",  remove(StringTemplatingService.CONTEXT_PROXY))
+      put("urlCustomisers",  remove(StringTemplatingService.CONTEXT_CUSTOMIZER))
+      
+      it
+    }
+    
     render result as JSON
   }
 }

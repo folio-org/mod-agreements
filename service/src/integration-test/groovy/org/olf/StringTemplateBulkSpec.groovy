@@ -1,6 +1,7 @@
 package org.olf
 
 import org.olf.general.StringTemplate
+import org.olf.general.StringTemplatingService
 import org.olf.kb.Platform
 import org.olf.kb.PlatformTitleInstance
 
@@ -21,8 +22,8 @@ import groovy.util.logging.Slf4j
 class StringTemplateBulkSpec extends BaseSpec {
   // This is a bulk test, to test that the templating works in much larger volumes.
 
-  def importService
-  def stringTemplatingService
+  ImportService importService
+  StringTemplatingService stringTemplatingService
 
   static String[] elsevierTitles = ['ACC Current Journal Review', 'Information Security Technical Report']
   static String[] jstorITitles = ['American Journal of Mathematics', 'The Economic Bulletin']

@@ -1,19 +1,24 @@
 package org.olf.general
 
-import uk.co.cacoethes.handlebars.HandlebarsTemplateEngine
-import com.github.jknack.handlebars.Handlebars
-
-import com.github.jknack.handlebars.helper.StringHelpers
 import com.github.jknack.handlebars.EscapingStrategy
-import org.olf.general.StringTemplateHelpers
-
-import grails.gorm.MultiTenant
-
+import com.github.jknack.handlebars.Handlebars
+import com.github.jknack.handlebars.helper.StringHelpers
+import com.k_int.web.toolkit.databinding.BindImmutably
 import com.k_int.web.toolkit.refdata.Defaults
 import com.k_int.web.toolkit.refdata.RefdataValue
-import com.k_int.web.toolkit.databinding.BindImmutably
+
+import grails.gorm.MultiTenant
+import groovy.text.Template
+import uk.co.cacoethes.handlebars.HandlebarsTemplateEngine
 
 class StringTemplate implements MultiTenant<StringTemplate> {
+  private static final HandlebarsTemplateEngine hte = new HandlebarsTemplateEngine(handlebars: new Handlebars().with(new EscapingStrategy() {
+    public String escape(final CharSequence value) {
+      return value.toString() // No escaping. Return as is.
+    }
+  })
+  .registerHelpers(StringHelpers)
+  .registerHelpers(StringTemplateHelpers))
 
   String id
   String name
@@ -24,6 +29,17 @@ class StringTemplate implements MultiTenant<StringTemplate> {
 
   @Defaults(['urlProxier', 'urlCustomiser'])
   RefdataValue context
+  
+  static transients = ['template']
+  
+  private Template template
+  private Template getTemplate() {
+    if (template == null) {
+      template = hte.createTemplate(rule)
+    }
+    
+    template
+  }
 
   /*
    * The useage of this list will depend somewhat on context,
@@ -46,39 +62,23 @@ class StringTemplate implements MultiTenant<StringTemplate> {
   }
 
   static constraints = {
-    rule(validator: {rule, obj ->
+    rule (validator: { String rule, StringTemplate obj ->
       return obj.checkValidTemplate()
     })
   }
 
-  String customiseString(Map binding) {
-
-    // Set up handlebars configuration
-
-    EscapingStrategy noEscaping = new EscapingStrategy() {
-      public String escape(final CharSequence value) {
-        return value.toString()
-      }
-    };
-
-    def handlebars = new Handlebars().with(noEscaping)
+  public String customiseString(Map<String, ?> binding) {
     
-    handlebars.registerHelpers(StringHelpers)
-    handlebars.registerHelpers(StringTemplateHelpers)
-    def engine = new HandlebarsTemplateEngine()
-    engine.handlebars = handlebars
-
-
-    String outputString = ''
-    def template = engine.createTemplate(rule).make(binding)
-    StringWriter sw = new StringWriter()
-    template.writeTo(sw)
-    outputString = sw.toString()
+    final String outputString = getTemplate().make(binding).with { 
+      StringWriter sw = new StringWriter()
+      writeTo(sw)
+      sw.toString()
+    }
 
     return outputString
   }
 
-  public ArrayList<String> checkValidTemplate() {
+  public List<String> checkValidTemplate() {
     String output
     try {
       output = this.customiseString([
@@ -91,9 +91,18 @@ class StringTemplate implements MultiTenant<StringTemplate> {
     if (output && output?.length() > 0) {
       return null
     } else {
-      return ["invalidTemplate", "Output is null or empty"]
+      return [
+        "invalidTemplate",
+        "Output is null or empty"
+      ]
     }
   }
-
-
+  
+  @Override
+  public boolean equals(Object obj) {
+    if (id && StringTemplate.class.isAssignableFrom(obj.class)) {
+      return id.equals(obj.id)
+    }
+    return false
+  }
 }
