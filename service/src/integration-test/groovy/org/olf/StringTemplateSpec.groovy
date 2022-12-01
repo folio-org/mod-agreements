@@ -1,5 +1,8 @@
 package org.olf
 
+import static org.junit.Assert.assertFalse
+import static org.junit.Assert.assertTrue
+
 import org.olf.general.StringTemplate
 import org.olf.kb.Platform
 import org.olf.kb.PlatformTitleInstance
@@ -11,7 +14,7 @@ import groovy.json.JsonSlurper
 import grails.gorm.multitenancy.Tenants
 import grails.testing.mixin.integration.Integration
 import spock.lang.*
-
+import spock.util.concurrent.PollingConditions
 import groovy.util.logging.Slf4j
 
 @Slf4j
@@ -20,27 +23,6 @@ import groovy.util.logging.Slf4j
 class StringTemplateSpec extends BaseSpec {
 
   ImportService importService
-
-  // Place to store the id of the PTI we load in the package for use in multiple tests
-  
-  void "Load Packages" (test_package_file) {
-    when: 'File loaded'
-
-      def jsonSlurper = new JsonSlurper()
-      def package_data = jsonSlurper.parse(new File(test_package_file))
-      int result = 0
-      final String tenantid = currentTenant.toLowerCase()
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
-        result = importService.importPackageUsingInternalSchema( package_data )
-      }
-
-    then: 'Package imported'
-      result > 0
-
-    where:
-      test_package_file | _
-      'src/integration-test/resources/packages/stringTemplating/simple_pkg.json' | _
-  }
 
   void "Test creation of StringTemplates" (
     final String the_name,
@@ -65,24 +47,40 @@ class StringTemplateSpec extends BaseSpec {
       'proxy1'   || 'http://sub-hh-{{replace (replace (removeProtocol inputUrl) \"link.\" \"\") \".com\" \".co.uk\"}}/proxy1' || 'urlproxier'
       'proxy2'   || 'proxy-2-stuff-{{platformLocalCode}}'                                                                     || 'urlproxier'
   }
+  
+  // Place to store the id of the PTI we load in the package for use in multiple tests
+  
+  void "Load Packages" (test_package_file) {
+    when: 'File loaded'
+
+      def jsonSlurper = new JsonSlurper()
+      def package_data = jsonSlurper.parse(new File(test_package_file))
+      int result = 0
+      final String tenantid = currentTenant.toLowerCase()
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+        result = importService.importPackageUsingInternalSchema( package_data )
+      }
+
+    then: 'Package imported'
+      result > 0
+
+    where:
+      test_package_file | _
+      'src/integration-test/resources/packages/stringTemplating/simple_pkg.json' | _
+  }
 
 
-  void "Test StringTemplate url manipulation" () {
+  void "Test PTIS created with existing templates" () {
+    
+    // Created PTIs should have templates created at the same time.
 
     when: "Fetch list of PTIs"
       def pti = fetchPTI()
-    then: "PTI exists with non-null url--and templatedUrls are empty"
-      pti != null
-      pti.id != null
-      pti.url != null
-      pti.templatedUrls.size() == 0
-
-    when: "templating task is called"
-      pti = fetchPTIWithRefresh()
       def templatedUrls = pti.templatedUrls
 
     then: "templatedUrls should now have 3 entries, one for each proxy and one defaultUrl"
       templatedUrls.size() == 3
+      
     then: "templatedUrls should have the correctly manipulated urls in them"
       def proxy1TemplatedUrl = templatedUrls.findAll { tu ->
         tu.name == 'proxy1'
@@ -100,130 +98,167 @@ class StringTemplateSpec extends BaseSpec {
       // This is sufficient to check that the manipulation part is working for ALL contexts, since they're the same mechanism
   }
 
-  void "Test TemplatedUrl refreshing" () {
-     when: "templating task is called"
+  void "Test updating PTI has immediate effect" () {
+    
+    String newUrl  = 'http://link.springer.com/new/url'
+    given: "Fetched PTI"
 
-      def pti = fetchPTIWithRefresh()
-      def templatedUrls = pti.templatedUrls
-    then: "PTI should have 3 templates still, not 6"
-      templatedUrls.size() ==3
-
-    when: 'We edit the rule of proxy1'
-      def sts = doGet("/erm/sts")
-      def proxy1STS = sts.findAll { st ->
+      def pti = fetchPTI()
+      
+    when: 'Url is removed and PTI refetched'
+      
+      doPut("/erm/pti/${pti.id}", [
+        'url': ''
+      ])
+      pti = fetchPTI()
+    
+    then: 'Url and Templated URLs updated (gone)'
+      (pti.url ?: '') == ''
+      pti.templatedUrls.size() == 0
+      
+    when: 'URL is updated and PTI refetched'
+    
+      doPut("/erm/pti/${pti.id}", [
+        'url': newUrl
+      ])
+      pti = fetchPTI()
+      
+    then: 'Url and Templated URLs updated'
+      pti.url == newUrl
+      assertTrue( pti.templatedUrls.every {
+        ( it.name == 'proxy1' && it.url == 'http://sub-hh-springer.co.uk/new/url/proxy1') ||
+        ( it.name == 'proxy2' && it.url == 'proxy-2-stuff-' ) ||
+        ( it.name == 'defaultUrl' && it.url == newUrl)
+      })
+  }
+  
+  void "Test updating Platform updates PTI" () {
+    
+    def conditions = new PollingConditions(timeout: 5)
+    
+    given: "Fetch a PTI and then the Platform"
+      def pti = fetchPTI()
+      
+    when: 'Platform localCode is edited'
+      doPut("/erm/platforms/${pti.platform.id}", [
+        'localCode': 'shiney_local_code'
+      ])
+      
+    then: 'Applicable URL templates eventually updated by background task'
+      conditions.eventually {
+        pti = fetchPTI()
+        assertTrue( pti.templatedUrls.every {
+          ( it.name == 'proxy1' && it.url == 'http://sub-hh-springer.co.uk/new/url/proxy1') ||
+          ( it.name == 'proxy2' && it.url == 'proxy-2-stuff-shiney_local_code' ) ||
+          ( it.name == 'defaultUrl' && it.url == pti.url)
+        })
+      }
+  }
+  
+  void "Test CRUD operations on templates" () {
+    def conditions = new PollingConditions(timeout: 5)
+    def pti
+    def sts = doGet("/erm/sts")
+    
+    when: 'Proxy1 rule is changed'
+      def proxy1 = sts.findAll { st ->
         st.name == 'proxy1'
       }[0]
 
-      proxy1STS = doPut("/erm/sts/${proxy1STS.id}", {
-        'rule' 'http://ethan-{{replace (removeProtocol inputUrl) \".com\" \".co.uk\"}}'
-      })
-
-      pti = fetchPTIWithRefresh()
-      templatedUrls = pti.templatedUrls
-
-    then: 'PTI proxy1 templatedUrl has changed'
-      def proxy1TU = templatedUrls.findAll { tu ->
-        tu.name == 'proxy1'
-      }[0]
-
-      proxy1TU.url == 'http://ethan-link.springer.co.uk/10.1007/978-3-319-55227-9'
+      proxy1 = doPut("/erm/sts/${proxy1.id}", [
+        'rule': 'http://ethan-{{replace (removeProtocol inputUrl) \".com\" \".co.uk\"}}'
+      ])
 
 
-    when: 'we edit proxy 1 to include the PTI platform as a scope.'
-
-      proxy1STS = doPut("/erm/sts/${proxy1STS.id}", {
+    then: 'Applicable URL templates eventually updated by background task'
+    
+      conditions.eventually {
+        pti = fetchPTI()
+        assertTrue( pti.templatedUrls.every {
+          ( it.name == 'proxy1' && it.url == 'http://ethan-link.springer.co.uk/new/url') ||
+          ( it.name == 'proxy2' && it.url == 'proxy-2-stuff-shiney_local_code' ) ||
+          ( it.name == 'defaultUrl' && it.url == pti.url)
+        })
+      }
+      
+    when: 'we edit proxy 1 to include the PTI platform as a scope'
+      
+      proxy1 = doPut("/erm/sts/${proxy1.id}", {
         'idScopes' ([pti.platform.id])
       })
-      pti = fetchPTIWithRefresh()
-      templatedUrls = pti.templatedUrls
-    then: 'templated urls should not include proxy1'
-      templatedUrls.any{ tu ->
-        tu.name == 'proxy1'
-      } == false
-
-    when: 'we create a url customiser NOT linked to the platform'
-      doPost("/erm/sts", {
+      
+    then: 'Excluded URL template eventually removed by background task'
+      conditions.eventually {
+        pti = fetchPTI()
+        assertFalse( pti.templatedUrls.any{ it.name == 'proxy1' } )
+      }
+      
+    when: 'we create a url customiser NOT linked to the platform, and wait for a few seconds'
+      def customiser = doPost("/erm/sts", {
         'name' 'customiser1'
         'rule' "http://customise-me:{{replace inputUrl \"a\" \"b\"}}"
-        'context' 'urlcustomiser' // This can be the value or id but not the label
+        'context' 'urlcustomiser'
       })
-      pti = fetchPTIWithRefresh()
-      templatedUrls = pti.templatedUrls
+
+      int currentUrlSize = pti.templatedUrls?.size() ?: 0
+      Thread.sleep(3000)
+      pti = fetchPTI()
+      
     then: 'templated urls should not change length'
-      // Should only contain proxy2, defaultUrl, size() == 2
-      templatedUrls.size() == 2
-  }
+      
+      pti.templatedUrls?.size() == currentUrlSize
 
-  void "Test customiser-proxy interaction" () {
-    def sts = doGet("/erm/sts")
-    def customiser = sts.findAll { st ->
-      st.name == 'customiser1'
-    }[0]
-    def pti = fetchPTIWithRefresh()
-
-    when: "we add the PTI to the customiser's idScopes"
+    when: "We add the PTIs Platform to the customiser's idScopes"
       customiser = doPut("/erm/sts/${customiser.id}", {
         'idScopes' ([pti.platform.id])
       })
-      pti = fetchPTIWithRefresh()
-      def templatedUrls = pti.templatedUrls
-    then: 'expect to see 4 templatedUrls defaultUrl, proxy 2, customiser1 and proxy2-customiser1'
-      templatedUrls.size() == 4
-      // customiser1 exists
-      templatedUrls.any{ tu ->
-        tu.name == 'customiser1'
-      } == true
-      // customiser1 is proxied by proxy2
-      templatedUrls.any{ tu ->
-        tu.name == 'proxy2-customiser1'
-      } == true
-    
+      
+    then: 'Expect 2 new URLs eventually added by background task'
+      conditions.eventually {
+        pti = fetchPTI()
+        def templatedUrls = pti.templatedUrls
+        
+        templatedUrls.size() == (currentUrlSize + 2)
+        
+        // customiser1 exists
+        templatedUrls.any{ tu ->
+          tu.name == 'customiser1'
+        } == true
+        
+        // customiser1 is proxied by proxy2
+        templatedUrls.any{ tu ->
+          tu.name == 'proxy2-customiser1'
+        } == true
+      }
+      
     when: "we remove the PTI from proxy1's idScopes"
-      def proxy1STS = sts.findAll { st ->
-        st.name == 'proxy1'
-      }[0]
-      proxy1STS = doPut("/erm/sts/${proxy1STS.id}", {
+      proxy1 = doPut("/erm/sts/${proxy1.id}", {
         'idScopes' ([""])
         // TODO right now there's a bug where we can't PUT an empty list to a @BindImmutably field and have it overwrite
         // This serves as a workaround,since empty string won't match any ids
       })
-      pti = fetchPTIWithRefresh()
-      templatedUrls = pti.templatedUrls
 
-    then: 'expect to see 6 templatedUrls defaultUrl, proxy1, proxy 2, customiser1, proxy1-customiser1 and proxy2-customiser1'
-      templatedUrls.size() == 6
-      // customiser1 is proxied by proxy1
-      templatedUrls.any{ tu ->
-        tu.name == 'proxy1-customiser1'
-      } == true
-  }
-
-
-  void "Test smart templatedUrl comparison" () {
-    // Test that we're not deleting those templatedUrls which don't change
-
-    def sts = doGet("/erm/sts")
-    def proxy1STS = sts.findAll { st ->
-      st.name == 'proxy1'
-    }[0]
-    def pti = fetchPTIWithRefresh()
-
-    proxy1STS = doPut("/erm/sts/${proxy1STS.id}", {
-      'idScopes' ([pti.platform.id])
-    })
-    pti = fetchPTIWithRefresh()
-    def templatedUrlIds = pti.templatedUrls.collect { tu -> tu.id }
-
-    when: "we update proxy1"
-      proxy1STS = doPut("/erm/sts/${proxy1STS.id}", {
-        'name' 'proxy-1-test'
-      })
-      pti = fetchPTIWithRefresh()
-      def templatedUrlIds2 = pti.templatedUrls.collect { tu -> tu.id }
-
-    then: "the original templated urls don't get updated"
-      // Make sure they're sorted in the same order
-      templatedUrlIds.sort() == templatedUrlIds2.sort()
+    then: 'Expect another 2 new URLs eventually added by background task'
+      conditions.eventually {
+        pti = fetchPTI()
+        def templatedUrls = pti.templatedUrls
+        
+        templatedUrls.size() == (currentUrlSize + 4)
+        
+        // customiser1 exists
+        templatedUrls.any{ tu ->
+          tu.name == 'customiser1'
+        } == true
+        
+        // customiser1 is proxied by proxy2
+        templatedUrls.any{ tu ->
+          tu.name == 'proxy2-customiser1'
+        } == true
+        
+        templatedUrls.any{ tu ->
+          tu.name == 'proxy1-customiser1'
+        } == true
+      }
   }
 
   def fetchPTIWithRefresh() {

@@ -152,10 +152,10 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
       
       idEq( ptiId )
       
-      delegate.invokeMethod('projections', {
+      delegate.invokeMethod('projections', criteriaClosure({
         property('url')
         property('plat.localCode')
-      })
+      }))
     }
     
     return new StringTemplateBindings(
@@ -265,10 +265,10 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
     (List<T>) GormUtils.gormStaticApi(target).createCriteria().list(params, criteria)
   }
   
-  private <T> List<T> bulidCriteriaAndListDistinct (Class<?> target, @DelegatesTo(HibernateCriteriaBuilder) Closure criteria) {
-    (List<T>) GormUtils.gormStaticApi(target).createCriteria().listDistinct(criteria)
+  protected Closure criteriaClosure(@DelegatesTo(HibernateCriteriaBuilder) Closure projections) {
+    return projections
   }
-  
+    
   protected List<String> getPtiIdsToUpdateForPlatform ( final String platformID, final Date notUpdatedSince, final int maximum) {
     
     bulidCriteriaAndList(PlatformTitleInstance, [max: maximum]) {
@@ -279,9 +279,9 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
       lt 'lastUpdated', notUpdatedSince
       lt 'dateCreated', notUpdatedSince
       
-      delegate.invokeMethod('projections', {
-        id()
-      })
+      delegate.invokeMethod('projections', criteriaClosure({
+        property('id')
+      }))
     }
   }
 
@@ -426,6 +426,9 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
   
   private void updatePlatformFromEvent(final AbstractPersistenceEvent event) {
     
+    // Get the tenant first
+    final String tenantId = ensureTenant()
+    
     // Single platform update after platform has been updated.
     // Only need to act if the properties we care about were changed.
     final Platform platform = event.entityObject as Platform
@@ -436,23 +439,22 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
       return
     }
     
-    // Add a backgroundTask to update the platform
-    final String tenantId = ensureTenant()
-    
     final Date now = new Date()
     
-    executor.execute({ final String theTenant, final String thePlatform ->
+    final StringTemplateBindings explicitBindings = new StringTemplateBindings(platformLocalCode: platform.localCode?:'')
+    
+    executor.execute({ final String theTenant, final String thePlatform, final StringTemplateBindings bindingOverrides ->
       
       Tenants.withId(theTenant) {
         GormUtils.withTransaction {
-          executeTemplatesForSinglePlatform( thePlatform, now )
+          executeTemplatesForSinglePlatform( thePlatform, now, [:], bindingOverrides)
         }
       }
       
-    }.curry(tenantId, platformId))
+    }.curry(tenantId, platformId, explicitBindings))
   }
   
-  protected void executeTemplatesForSinglePlatform (final String id, final Date notSince, final Map<String, StringTemplate> includeExclude = [:]) {
+  protected void executeTemplatesForSinglePlatform (final String id, final Date notSince, final Map<String, StringTemplate> includeExclude = [:], final StringTemplateBindings bindingOverrides = null) {
     // Get a chunk of PTIs and keep repeating until all have been processed
     final Map<String, List<StringTemplate>> templates = findStringTemplatesForId(id)
     
@@ -461,7 +463,11 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
       templates.each { k, v ->
         
         StringTemplate tmpl = includeExclude[k + 'include']
-        if (tmpl && !v.contains(tmpl)) v.add(tmpl)
+        if (tmpl) {
+          // IF there is already a template with the id here... Remove it in favour of this one.
+          v.remove(tmpl)
+          v.add(tmpl)
+        }
           
         tmpl = includeExclude[k + 'exclude']
         if (tmpl) v.remove(tmpl)
@@ -500,7 +506,10 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
               if (!clearOnly) {
                 // Create the root bindings
                 final StringTemplateBindings rootBindings = getRootBindingsForPti(ptiId)
-            
+                bindingOverrides?.each { k, v ->
+                  rootBindings.put(k,v)
+                }
+                
                 // Generate the templates as a set of objects
                 PlatformTitleInstance pti = ptiApi.read(ptiId)
                 final int ptiUrlTotal = getTeplatedUrlsForRootBinding(templates, rootBindings).collect {
@@ -576,7 +585,7 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
     // from the reading session in the background thread. We add the template below,
     // as it doesn't need a database session for the text processing, for explicit inclusion
     // in the decision making process.
-    StringTemplate explicitTemplate = event.eventType == PreInsert ? template : null
+    StringTemplate explicitTemplate = event.eventType != PreDelete ? template : null
     
     // Build the work but stash it for running once we see the "post" events
     addStashForId(template.id,
@@ -650,27 +659,27 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
     final String context,
     final Set<String> overrides = []) {
     
-    List<String> platforms = bulidCriteriaAndListDistinct(Platform) { 
-      or {
+    List<String> platforms = bulidCriteriaAndList(Platform) {
+      or criteriaClosure({
         if (scopes) {
           if (CONTEXT_CUSTOMIZER == context) {
             inList 'id', scopes
             
           } else if (CONTEXT_PROXY == context) {
-            not {
+            not criteriaClosure({
               inList 'id', scopes
-            }
+            })
           }
         }
         if (overrides) {
           // Overrides always inclusive
           inList 'id', overrides
         }
-      }
-      
-      delegate.invokeMethod('projections', {
-        id()
       })
+      
+      delegate.invokeMethod('projections', criteriaClosure({
+        distinct('id')
+      }))
     }
     
     return platforms
