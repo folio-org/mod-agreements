@@ -27,7 +27,7 @@ import org.grails.datastore.mapping.engine.event.PostUpdateEvent
  */
 @Slf4j
 @CompileStatic
-public class EventListenerService implements ApplicationListener {
+public class EventListenerService implements ApplicationListener<ApplicationEvent> {
 
   EntitlementService entitlementService
   ErmResourceService ermResourceService
@@ -53,7 +53,8 @@ public class EventListenerService implements ApplicationListener {
     }
   }
 
-  public void onApplicationEvent(org.springframework.context.ApplicationEvent event){
+  @Override
+  public void onApplicationEvent(ApplicationEvent event){
     if ( event instanceof AbstractPersistenceEvent ) {
       if ( event instanceof PostUpdateEvent ) {
         afterUpdate(event);

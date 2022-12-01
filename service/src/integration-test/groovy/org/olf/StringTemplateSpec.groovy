@@ -19,7 +19,7 @@ import groovy.util.logging.Slf4j
 @Stepwise
 class StringTemplateSpec extends BaseSpec {
 
-  def importService
+  ImportService importService
 
   // Place to store the id of the PTI we load in the package for use in multiple tests
   

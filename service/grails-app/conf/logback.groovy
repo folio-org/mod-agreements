@@ -59,6 +59,10 @@ if (devEnv || Environment.currentEnvironment == Environment.TEST) {
   logger 'org.olf', DEBUG
   
   
+//  logger 'org.hibernate.SQL', DEBUG
+//  logger 'org.hibernate.type.descriptor.sql.BasicBinder', TRACE
+  
+  
   if (Environment.currentEnvironment == Environment.TEST) {
     // Test only.
     // logger 'org.hibernate', DEBUG
