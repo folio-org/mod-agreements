@@ -1,7 +1,7 @@
 ## 5.4.3 2022-12-02
   * ERM-2480 Refactor string template to improve performance
   * ERM-2475 Loading update to existing package fails if lifecycleStatus or availabilityScope are omitted
-  * HibernateException: Duplicate identifier in table for AppSetting
+  * ERM-2469 HibernateException: Duplicate identifier in table for AppSetting
 
 ## 5.4.2 2022-11-18
   * ERM-2443 Title Instance appearing twice in /erm/resource/electronic search
