@@ -202,19 +202,20 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
     
     final String hql = '''
       SELECT st FROM StringTemplate st
+      JOIN st.context AS context
       WHERE (
+        context.value = :cust_context AND
         EXISTS (
-          SELECT incSt.id  FROM StringTemplate incSt
-          JOIN incSt.context AS context
+          SELECT incSt.id FROM StringTemplate incSt
           JOIN incSt.idScopes AS includes
-          WHERE incSt.id = st.id AND context.value = :cust_context AND includes = :theId
+          WHERE incSt.id = st.id AND includes = :theId
         )
       ) OR (
+        context.value = :proxy_context AND
         NOT EXISTS (
           SELECT exclSt.id FROM StringTemplate exclSt
-          JOIN exclSt.context AS context
           JOIN exclSt.idScopes AS excludes
-          WHERE exclSt.id = st.id AND context.value = :proxy_context AND excludes = :theId
+          WHERE exclSt.id = st.id AND excludes = :theId
         )
       )
       '''
@@ -569,7 +570,7 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
     final String currentTenant = ensureTenant()
     
     // Overrides include any Platforms for update explicitly.
-    final Set<String> theScopes = template.idScopes
+    final Set<String> theScopes = (event.eventType != PreDelete ? template.idScopes : Collections.emptySet()) as Set<String>
     
     // Context
     final String theContext = template.context.value

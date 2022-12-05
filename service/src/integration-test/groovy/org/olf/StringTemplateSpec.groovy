@@ -204,16 +204,24 @@ class StringTemplateSpec extends BaseSpec {
       Thread.sleep(3000)
       pti = fetchPTI()
       
-    then: 'templated urls should not change length'
+      def applicableTemplates = doGet("/erm/sts/template/${pti.platform.id}")
+      
+    then: 'templated urls should not change length and template should not appear as applicable'
       
       pti.templatedUrls?.size() == currentUrlSize
+      applicableTemplates.urlCustomisers.size() == 0
+      
 
-    when: "We add the PTIs Platform to the customiser's idScopes"
+    when: "We add the PTIs Platform to the customiser's idScopes and recheck applicable templates"
       customiser = doPut("/erm/sts/${customiser.id}", {
         'idScopes' ([pti.platform.id])
       })
+      applicableTemplates = doGet("/erm/sts/template/${pti.platform.id}")
       
-    then: 'Expect 2 new URLs eventually added by background task'
+    then: 'Expect template now applicable and 2 new URLs eventually added by background task'
+    
+    
+      applicableTemplates.urlCustomisers.size() == 1
       conditions.eventually {
         pti = fetchPTI()
         def templatedUrls = pti.templatedUrls
@@ -259,15 +267,27 @@ class StringTemplateSpec extends BaseSpec {
           tu.name == 'proxy1-customiser1'
         } == true
       }
-  }
-
-  def fetchPTIWithRefresh() {
-    doGet("/erm/sts/template")
-    // Wait for 5 seconds for this to be done
-    //TODO this is not great -- need a way to programatically tell if templating is finished?
-    Thread.sleep(5000);
-
-    return fetchPTI()
+      
+    when: "We delete the customizer template"
+      
+      customiser = doDelete("/erm/sts/${customiser.id}")
+      applicableTemplates = doGet("/erm/sts/template/${pti.platform.id}")
+      currentUrlSize = pti.templatedUrls?.size() ?: 0
+      
+    then: 'Expect template to not be applicable and the URLs to eventually decrease by 3 in background task'
+    
+      applicableTemplates.urlCustomisers.size() == 0
+      conditions.eventually {
+        pti = fetchPTI()
+        def templatedUrls = pti.templatedUrls
+        
+        templatedUrls.size() == (currentUrlSize - 3)
+        
+        // customiser1 to not exists in list
+        templatedUrls.any{ tu ->
+          tu.name == 'customiser1'
+        } == false
+      }
   }
 
   def fetchPTI() {
