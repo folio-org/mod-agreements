@@ -23,13 +23,13 @@ class StringTemplateController extends OkapiTenantAwareController<StringTemplate
 
   def refreshTemplatedUrls() {
     def result = [:]
-    String tenantId = Tenants.currentId()
-    Promise p = WithPromises.task {
-      stringTemplatingService.refreshUrls(tenantId)
-    }
-    p.onError{ Throwable e ->
-      log.error "Couldn't refresh templated urls", e
-    }
+//    String tenantId = Tenants.currentId()
+//    Promise p = WithPromises.task {
+//      stringTemplatingService.refreshUrls(tenantId)
+//    }
+//    p.onError{ Throwable e ->
+//      log.error "Couldn't refresh templated urls", e
+//    }
     
     render result as JSON
   }
@@ -40,8 +40,8 @@ class StringTemplateController extends OkapiTenantAwareController<StringTemplate
     
     // Renaming the keys here to keep the external contract the same.
     final def result = stringTemplatingService.findStringTemplatesForId(id).with {
-      put("urlProxiers",  remove(StringTemplatingService.CONTEXT_PROXY))
-      put("urlCustomisers",  remove(StringTemplatingService.CONTEXT_CUSTOMIZER))
+      put("urlProxiers",  remove(StringTemplatingService.CONTEXT_PROXY).collect { it.attach(); it } )
+      put("urlCustomisers",  remove(StringTemplatingService.CONTEXT_CUSTOMIZER).collect{ it.attach(); it })
       
       it
     }
