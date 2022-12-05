@@ -1,3 +1,6 @@
+## 5.4.4 2022-12-05
+  * ERM-2508 Cannot delete string templates
+  * ERM-2509 URL customisers applied for all platforms
 ## 5.4.3 2022-12-02
   * ERM-2480 Refactor string template to improve performance
   * ERM-2475 Loading update to existing package fails if lifecycleStatus or availabilityScope are omitted
