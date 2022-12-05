@@ -26,7 +26,7 @@ class TenantAPISpec extends HttpSpec {
     httpClientConfig = {
       client.clientCustomizer { HttpURLConnection conn ->
         conn.connectTimeout = 2000
-        conn.readTimeout = 10000 // Need this for activating tenants
+        conn.readTimeout = 20000 // Need this for activating tenants
       }
     }
   }
