@@ -296,25 +296,31 @@
           "pathPattern": "/erm/resource/{id}/entitlementOptions",
           "permissionsRequired": [ "erm.resources.item.entitlementOptions.get" ]
         },
-
         {
           "methods": ["GET"],
           "pathPattern": "/erm/titles",
           "permissionsRequired": [ "erm.titles.collection.get" ]
-        },{
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/erm/titles/electronic",
+          "permissionsRequired": [ "erm.titles.collection.get" ]
+        },
+        {
           "methods": ["GET"],
           "pathPattern": "/erm/titles/entitled",
           "permissionsRequired": [ "erm.titles.collection.get" ]
-        },{
+        },
+        {
           "methods": ["GET"],
           "pathPattern": "/erm/titles/{id}",
           "permissionsRequired": [ "erm.titles.item.get" ]
-        },{
+        },
+        {
           "methods": ["PUT"],
           "pathPattern": "/erm/titles/{id}",
           "permissionsRequired": [ "erm.titles.item.put" ]
         },
-
         {
           "methods": ["GET"],
           "pathPattern": "/erm/pci",
@@ -328,7 +334,6 @@
           "pathPattern": "/erm/pci/{id}",
           "permissionsRequired": [ "erm.pci.item.put" ]
         },
-        
         {
           "methods": ["GET"],
           "pathPattern": "/erm/platforms",

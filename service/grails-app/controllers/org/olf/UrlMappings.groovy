@@ -80,6 +80,7 @@ class UrlMappings {
     '/erm/titles'(resources: 'title', excludes: ['patch', 'save', 'create', 'edit', 'delete']) {
       collection {
         "/entitled" (action: 'entitled')
+        "/electronic" (action: 'electronic', method: 'GET')
       }
     }
     
