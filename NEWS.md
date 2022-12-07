@@ -1,3 +1,8 @@
+## 5.3.2 2022-12-07
+  * ERM-2509 URL customisers applied for all platforms
+  * ERM-2508 Cannot delete string templates
+  * ERM-2480 Refactor string template to improve performance
+  * ERM-2469 HibernateException: Duplicate identifier in table for AppSetting
 ## 5.3.1 2022-11-08
   * ERM-2431 Job runner gets stuck in loop with NullPointerException
 

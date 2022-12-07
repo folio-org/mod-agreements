@@ -2,8 +2,8 @@ package org.olf.kb
 
 import org.olf.CoverageService
 import org.olf.erm.Entitlement
-import org.olf.general.TemplatedUrl
 import org.olf.general.StringUtils
+import org.olf.general.TemplatedUrl
 
 import com.k_int.web.toolkit.refdata.RefdataValue
 import com.k_int.web.toolkit.tags.Tag
@@ -29,7 +29,10 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
 
   boolean suppressFromDiscovery = false
   
-  Set<AlternateResourceName> alternateResourceNames 
+  Set<AlternateResourceName> alternateResourceNames
+  
+  Set<TemplatedUrl> templatedUrls = []
+  
   
   static hasMany = [
     coverage: CoverageStatement,
@@ -79,11 +82,11 @@ alternateResourceNames cascade: 'all-delete-orphan'
             lastUpdated (nullable:true, blank:false)
   suppressFromDiscovery (nullable:false, blank:false)
                coverage (validator: CoverageStatement.STATEMENT_COLLECTION_VALIDATOR, sort:'startDate')
+          templatedUrls (bindable: false)
   }
   
   private validating = false  
   def beforeValidate() {
-
     trunc("name", name)
 
     if (!validating) {

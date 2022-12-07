@@ -2,8 +2,10 @@ package org.olf.general
 
 import org.olf.kb.ErmResource
 
+import grails.compiler.GrailsCompileStatic
 import grails.gorm.MultiTenant
 
+@GrailsCompileStatic
 class TemplatedUrl implements MultiTenant<TemplatedUrl> {
   String id
   String name
