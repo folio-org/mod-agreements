@@ -281,7 +281,7 @@ public class CoverageService {
     (date > cs.endDate ? 1 : -1)
   }
 
-  private static List<CoverageStatementSchema> collateCoverageStatements( final Iterable<CoverageStatementSchema> coverage_statements ) {
+  public static List<CoverageStatementSchema> collateCoverageStatements( final Iterable<CoverageStatementSchema> coverage_statements ) {
 
     // Define our list
     List<CoverageStatementSchema> results = []
