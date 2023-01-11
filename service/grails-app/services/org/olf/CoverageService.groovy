@@ -320,7 +320,8 @@ public class CoverageService {
             // and if it does then we should remove this statement. If not, we need to adjust this statement.
             final CoverageStatementSchema next = iterator.next()
 
-            // Move back, immediately.
+            // Move back, immediately. This takes TWO previous calls, thanks to the implementation of the iterator
+            iterator.previous()
             iterator.previous()
 
             // There is overlap
@@ -348,11 +349,13 @@ public class CoverageService {
 
           // Ends before current statement. Add.
           // Add before this current one. For that we first need to move backwards.
+
+          // I am not quite sure why this next/previous works as intended without the "doubling up" we've measured before
           iterator.previous()
+
           iterator.add(statement)
           iterator.next() // Sets the pointer internally back to the correct position.
           absorbed = true
-
         } else if (comparison == 0) {
           // Within current. Just increase startdate
           current.startDate = statement.startDate
@@ -364,7 +367,8 @@ public class CoverageService {
             // and if it does then we should remove this statement. If not, we need to adjust this statement.
             final CoverageStatementSchema next = iterator.next()
 
-            // Move back, immediately.
+            // Move back, immediately. This takes TWO previous calls, thanks to the implementation of the iterator
+            iterator.previous()
             iterator.previous()
 
             // There is overlap
