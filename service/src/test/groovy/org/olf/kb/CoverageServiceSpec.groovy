@@ -42,6 +42,9 @@ class CoverageServiceSpec extends Specification implements DataTest, JsonViewTes
       [new CoverageStatement([startDate: LocalDate.parse('2020-12-23'), endDate: LocalDate.parse('2020-12-23')]), new CoverageStatement([startDate: LocalDate.parse('2019-01-01'), endDate: LocalDate.parse('2022-01-01')])]       | [new CoverageStatement([startDate: LocalDate.parse('2019-01-01'), endDate: LocalDate.parse('2022-01-01')])]
       // Two coverage statements, one completely absorbed by the other with an open end date
       [new CoverageStatement([startDate: LocalDate.parse('2020-12-23'), endDate: LocalDate.parse('2020-12-23')]), new CoverageStatement([startDate: LocalDate.parse('2019-01-01')])]       | [new CoverageStatement([startDate: LocalDate.parse('2019-01-01')])]
-
+      // Two overlapping coverage statements
+      [new CoverageStatement([startDate: LocalDate.parse('2020-01-01'), endDate: LocalDate.parse('2021-01-01')]), new CoverageStatement([startDate: LocalDate.parse('2020-05-01'), endDate: LocalDate.parse('2022-01-01')])]       | [new CoverageStatement([startDate: LocalDate.parse('2020-01-01'), endDate: LocalDate.parse('2022-01-01')])]
+      // Three coverage statements, two disparate and one overlapping
+      [new CoverageStatement([startDate: LocalDate.parse('2020-12-23'), endDate: LocalDate.parse('2020-12-23')]), new CoverageStatement([startDate: LocalDate.parse('2021-01-12')]), new CoverageStatement([startDate: LocalDate.parse('2019-01-01')])]       | [new CoverageStatement([startDate: LocalDate.parse('2019-01-01')])]
   }
 }
