@@ -5,16 +5,10 @@ import org.olf.dataimport.internal.PackageSchema.CoverageStatementSchema
 import org.olf.dataimport.erm.CoverageStatement
 import java.time.LocalDate
 
-import grails.databinding.SimpleMapDataBindingSource
-import grails.persistence.Entity
-import grails.plugin.json.view.test.JsonViewTest
-import grails.testing.gorm.DataTest
-import grails.web.databinding.DataBindingUtils
-import grails.web.databinding.GrailsWebDataBinder
 import spock.lang.Specification
 import spock.lang.Unroll
 
-class CoverageServiceSpec extends Specification implements DataTest, JsonViewTest {
+class CoverageServiceSpec extends Specification {
   @Unroll
   void 'Test collateCoverageStatements' (final List<CoverageStatementSchema> coverages, final List<CoverageStatementSchema> expectedCoverages) {
     CoverageService coverageService = new CoverageService();
