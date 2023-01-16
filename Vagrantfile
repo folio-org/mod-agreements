@@ -14,7 +14,7 @@ Vagrant.configure(2) do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "folio/testing-backend"
+  config.vm.box = "folio/snapshot"
   
   # We don't specify this any more to make sure that developers can pull the latest version. be aware that
   # this exposes you to bugs that may be published and gives you a slightly less stable base to build on
@@ -56,6 +56,8 @@ Vagrant.configure(2) do |config|
   # vbox instance can use it.
   config.vm.network "forwarded_port", guest: 5432, host: 54321
   config.vm.network "forwarded_port", guest: 9130, host: 9130
+  # Don't forward the local stripes
+  config.vm.network "forwarded_port", guest: 3000, host: 3000, disabled: true
 
 
   # Create a forwarded port mapping which allows access to a specific port
