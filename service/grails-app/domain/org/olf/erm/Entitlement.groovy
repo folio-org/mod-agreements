@@ -237,10 +237,11 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
       outerEntitlement.metaClass.external_customCoverage = false
       
       def custCoverage = it.data?.attributes?.getAt("customCoverage${isPackage ? '' : 's'}")
-      
       log.debug "Custom Coverage: ${custCoverage}"
+
+      // Set coverage as empty array initially
+      def coverageToApply = []
       if (custCoverage) {
-        
         log.debug "Found custom coverage."
         // Simply ensure a collection.
         if (!(custCoverage instanceof Collection)) {
@@ -248,21 +249,27 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
           custCoverage = [custCoverage]
           log.debug "...${custCoverage}"
         }
-        
+
         custCoverage.each { Map <String, String> coverageEntry ->
           if (coverageEntry.beginCoverage) {
-            outerEntitlement.metaClass.coverage << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
-            outerEntitlement.metaClass.external_customCoverage = true
+            coverageToApply << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
+            outerEntitlement.external_customCoverage = true
           }
         }
+
+        // Apply all coverages to metaClass at the end
+        outerEntitlement.metaClass.coverage = coverageToApply
         
       } else if (!isPackage) {
         log.debug "Adding managed title coverages."
         it.data?.attributes?.managedCoverages?.each { Map <String, String> coverageEntry ->
           if (coverageEntry.beginCoverage) {
-            outerEntitlement.metaClass.coverage << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
+            coverageToApply << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
           }
         }
+
+        // Apply all coverages to metaClass at the end
+        outerEntitlement.metaClass.coverage = coverageToApply
       }
       
       map
