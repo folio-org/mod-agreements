@@ -143,7 +143,8 @@ where rkb.type is not null
 
         // If we managed to grab a remote kb and update it to in-process, we had better process it
         if ( continue_processing ) {
-          log.debug("Run sync on ${remotekb_id}")
+          long gokb_sync_start_time = System.currentTimeMillis();
+          log.debug("Run sync on ${remotekb_id} at ${gokb_sync_start_time}")
           try {
             // Even though we just need a read-only connection, we still need to wrap this block
             // with withNewTransaction because of https://hibernate.atlassian.net/browse/HHH-7421
@@ -153,10 +154,12 @@ where rkb.type is not null
             log.warn("problem processing remote KB link",e)
           }
           finally {
+
+            log.info("knowledgeBaseCacheService.runSync completed - ${System.currentTimeMillis()-gokb_sync_start_time}ms elapsed. Release sync status");
+
             // Finally, set the state to idle
             RemoteKB.withNewSession {
               RemoteKB rkb = RemoteKB.lock(remotekb_id)
-
               rkb.syncStatus = 'idle'
               rkb.lastCheck = System.currentTimeMillis()
               rkb.save(flush:true, failOnError:true)
@@ -170,6 +173,9 @@ where rkb.type is not null
       catch ( Exception e ) {
         log.error("Unexpected problem in RemoteKB Update",e);
       }
+      finally {
+        log.debug("KB Harvest job closure exiting");
+      }
     }
   } 
   
@@ -177,6 +183,7 @@ where rkb.type is not null
   // ERM-1801 We split the cache updating into package vs title, so that we can set up title ingest and package ingest jobs separately
   @CompileStatic(SKIP)
   public void triggerPackageCacheUpdate() {
+
     log.debug("KBHarvestService::triggerPackageCacheUpdate()")
     Closure remoteKBProcessing = getClosure()
     // List all pending jobs that are eligible for processing - That is everything enabled and not currently in-process and has not been processed in the last hour
