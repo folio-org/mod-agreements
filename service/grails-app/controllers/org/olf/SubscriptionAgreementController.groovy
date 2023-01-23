@@ -49,7 +49,8 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
   def publicLookup () {
     final List<String> referenceIds = params.list('referenceId')
     final List<String> resourceIds = params.list('resourceId')
-    final List<String> disjunctiveReferences = [] + referenceIds.collect { String id ->
+    List<String> disjunctiveReferences = []
+    disjunctiveReferences = disjunctiveReferences + referenceIds.collect { String id ->
       String[] parts = id.split(/\-/)
       if (parts.length == 3) {
         // assuming progressive ID and we should search for multiples
@@ -57,7 +58,7 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
       }
       id
     }
-    
+
     final LocalDate today = LocalDate.now()
     
     respond (doTheLookup {
@@ -94,7 +95,7 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
             'in' 'direct_ent.reference', disjunctiveReferences
           }
           
-          if (resourceIds) {          
+          if (resourceIds) {
             or {
               
                // Direct PTIs
