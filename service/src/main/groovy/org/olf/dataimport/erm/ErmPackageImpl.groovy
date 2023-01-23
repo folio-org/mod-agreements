@@ -4,6 +4,7 @@ import java.time.LocalDate
 
 import org.olf.dataimport.erm.Identifier
 import org.olf.dataimport.erm.AlternateResourceName
+import org.olf.dataimport.erm.AlternateSlug
 import org.olf.dataimport.erm.ContentType
 import org.olf.dataimport.erm.AvailabilityConstraint
 import org.olf.dataimport.erm.PackageDescriptionUrl
@@ -16,7 +17,7 @@ import grails.validation.Validateable
 
 @GrailsCompileStatic
 class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable {
-  
+
   String source
   String reference
   String name
@@ -29,22 +30,23 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   String description
   List<ContentType> contentTypes
   List<AlternateResourceName> alternateResourceNames
+  List<AlternateSlug> alternateSlugs
   List<AvailabilityConstraint> availabilityConstraints
   List<PackageDescriptionUrl> packageDescriptionUrls
   List<Identifier> identifiers
 
   Set<ContentItem> contentItems = []
-  
+
   // Defaults for internal scheam so we can make them optional in the constraints.
   final LocalDate startDate = null
   final LocalDate endDate = null
   final String _intenalId = null
   final String status = null
-  
+
   static hasMany = [
     contentItems: ContentItem
   ]
-  
+
   static constraints = {
     startDate nullable: true
     endDate nullable: true
@@ -52,7 +54,7 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
     status nullable: true, blank: false
     trustedSourceTI nullable: true
     description nullable: true
-    
+
     source    nullable: false, blank: false
     reference nullable: false, blank: false
     name      nullable: false, blank: false
@@ -69,22 +71,22 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
     // This object also implements the header.
     this
   }
-  
+
   @Override
   public String getPackageSource() {
     source
   }
-  
+
   @Override
   public String getPackageName() {
     name
-  }  
-  
+  }
+
   @Override
   public String getPackageSlug() {
     reference
   }
-  
+
   @Override
   public Collection<ContentItem> getPackageContents() {
     contentItems
@@ -94,22 +96,22 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   public Boolean getTrustedSourceTI() {
     trustedSourceTI
   }
-  
+
   @Override
   public Date getSourceDataCreated() {
     sourceDataCreated
-  } 
-  
+  }
+
   @Override
   public Date getSourceDataUpdated() {
     sourceDataUpdated
-  }  
-  
+  }
+
   @Override
   public String getAvailabilityScope() {
     availabilityScope
-  }  
-  
+  }
+
   @Override
   public String getLifecycleStatus() {
     lifecycleStatus
@@ -119,15 +121,20 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   public String getDescription() {
     description
   }
-  
+
   @Override
   public List<ContentType> getContentTypes() {
     contentTypes
-  }  
-  
+  }
+
   @Override
   public List<AlternateResourceName> getAlternateResourceNames() {
     alternateResourceNames
+  }
+
+  @Override
+  public List<AlternateSlug> getAlternateSlugs() {
+    alternateSlugs
   }
 
   @Override
@@ -145,7 +152,7 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   public List<Identifier> getIdentifiers() {
     identifiers
   }
-  
+
   String toString() {
     "${name} from ${packageProvider}"
   }

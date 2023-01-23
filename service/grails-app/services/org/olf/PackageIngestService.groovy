@@ -51,7 +51,7 @@ class PackageIngestService implements DataBinder {
   }
 
   private static final def countChanges = ['accessStart', 'accessEnd']
-  
+
   def updateContentTypes (String pkgId, PackageSchema package_data) {
     Pkg pkg = Pkg.get(pkgId);
     def contentTypes = package_data?.header?.contentTypes ?: []
@@ -190,7 +190,7 @@ class PackageIngestService implements DataBinder {
     // Look up which remote kb via the name
     RemoteKB kb = RemoteKB.findByName(remotekbname)
     Pkg.withNewTransaction { status ->
-      
+
       if (!kb) {
        kb = new RemoteKB( name:remotekbname,
                           rectype: RemoteKB.RECTYPE_PACKAGE,
@@ -216,6 +216,17 @@ class PackageIngestService implements DataBinder {
 
       // header.packageSlug contains the package maintainers authoritative identifier for this package.
       pkg = Pkg.findBySourceAndReference(package_data.header.packageSource, package_data.header.packageSlug)
+      if (pkg == null) {
+        // at this point we check alternate slugs
+        def alternateSlugs = package_data.header.alternateSlugs;
+        for ( alternateSlug in alternateSlugs ) {
+          pkg = Pkg.findBySourceAndReference(package_data.header.packageSource, alternateSlug);
+          if ( pkg != null ) {
+            pkg.reference = package_data.header.packageSlug;
+            break;
+          }
+        }
+      }
 
       def vendor = null
       if ( ( package_data.header?.packageProvider?.name != null ) && ( package_data.header?.packageProvider?.name.trim().length() > 0 ) ) {
@@ -245,8 +256,8 @@ class PackageIngestService implements DataBinder {
           ).save(flush:true, failOnError:true)
           MDC.put('packageSource', pkg.source.toString())
           MDC.put('packageReference', pkg.reference.toString())
-               
-          (package_data?.header?.contentTypes ?: []).each { 
+
+          (package_data?.header?.contentTypes ?: []).each {
             pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
           }
 
@@ -254,11 +265,11 @@ class PackageIngestService implements DataBinder {
             pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
           }
 
-          (package_data?.header?.availabilityConstraints ?: []).each { 
+          (package_data?.header?.availabilityConstraints ?: []).each {
             pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(it.body)]))
           }
 
-          (package_data?.header?.packageDescriptionUrls ?: []).each { 
+          (package_data?.header?.packageDescriptionUrls ?: []).each {
             pkg.addToPackageDescriptionUrls(new PackageDescriptionUrl([url: it.url]))
           }
 
@@ -324,7 +335,7 @@ class PackageIngestService implements DataBinder {
 
               // lets try and work out the platform for the item
               def platform_url_to_use = pc.platformUrl
-              
+
               MDC.put('title', pc.title.toString())
 
               if ( ( pc.platformUrl == null ) && ( pc.url != null ) ) {
@@ -349,7 +360,7 @@ class PackageIngestService implements DataBinder {
                     platform:platform,
                     url:pc.url,
                   ).save(failOnError: true)
-                  
+
                   // ERM-1799 Ensure initial matchKeyCreation
                   matchKeyService.updateMatchKeys(pti, matchKeys)
                 } else if (trustedSourceTI) {
@@ -384,7 +395,7 @@ class PackageIngestService implements DataBinder {
                     addedTimestamp:result.updateTime,
                   )
 
-                  // ERM-1799, match keys need adding to PCI 
+                  // ERM-1799, match keys need adding to PCI
                   matchKeyService.updateMatchKeys(pci, matchKeys, false)
                   isNew = true
                 }
@@ -420,7 +431,7 @@ class PackageIngestService implements DataBinder {
                   accessEnd = pc.accessEnd
                   addedTimestamp = result.updateTime
                   lastSeenTimestamp = result.updateTime
-                  
+
                   if (emb) {
                     if (embargo) {
                       // Edit
@@ -554,7 +565,7 @@ class PackageIngestService implements DataBinder {
     }
 
 //    MDC.clear()
-    
+
     return result
   }
 }

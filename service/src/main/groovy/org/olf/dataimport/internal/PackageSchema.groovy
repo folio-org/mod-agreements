@@ -8,13 +8,13 @@ import groovy.transform.CompileStatic
 
 @CompileStatic
 interface PackageSchema extends Validateable {
-  
+
   PackageHeaderSchema getHeader()
   Collection<ContentItemSchema> getPackageContents()
   Collection<IdentifierSchema> getIdentifiers()
   Errors getErrors()
   boolean validate()
-  
+
   @CompileStatic
   public interface PackageHeaderSchema extends Validateable {
     /*
@@ -38,6 +38,10 @@ interface PackageSchema extends Validateable {
       { "name": "Name 1" },
       { "name": "Name 2" }
     ],
+    "alternateSlugs": [
+      { "slug": "Slug 1" },
+      { "slug": "Slug 2" }
+    ],
     "contentTypes": [
       { "contentType": "Database" }
     ],
@@ -53,7 +57,7 @@ interface PackageSchema extends Validateable {
     "_intenalId": 276432871386
     ""
     */
-    
+
     PackageProviderSchema getPackageProvider()
     String getPackageSource()
     String getPackageName()
@@ -67,19 +71,20 @@ interface PackageSchema extends Validateable {
     Date getSourceDataCreated()
     Date getSourceDataUpdated()
     String getAvailabilityScope()
-    String getLifecycleStatus()  
+    String getLifecycleStatus()
     Collection<ContentTypeSchema> getContentTypes()
     Collection<AlternateResourceNameSchema> getAlternateResourceNames()
+    Collection<AlternateSlugSchema> getAlternateSlugs()
     Collection<AvailabilityConstraintSchema> getAvailabilityConstraints()
     Collection<PackageDescriptionUrlSchema> getPackageDescriptionUrls()
   }
-  
+
   @CompileStatic
   public interface PackageProviderSchema extends Validateable {
     String getName()
     String getReference()
   }
-  
+
   @CompileStatic
   public interface ContentItemSchema extends Validateable {
     /*
@@ -121,7 +126,7 @@ interface PackageSchema extends Validateable {
       "_platformId": 627
     }
     */
-    
+
     String getTitle()
     String getInstanceMedium()
     String getInstanceMedia()
@@ -147,7 +152,7 @@ interface PackageSchema extends Validateable {
     LocalDate getAccessStart()
     LocalDate getAccessEnd()
   }
-  
+
   @CompileStatic
   public interface IdentifierSchema extends Validateable {
     /*
@@ -165,7 +170,7 @@ interface PackageSchema extends Validateable {
    * could be just a list of strings, but should we want to store more data against
    * them in future this gives us the flexibility to do so
    */
-  
+
   @CompileStatic
   public interface ContentTypeSchema extends Validateable {
     /*
@@ -175,7 +180,7 @@ interface PackageSchema extends Validateable {
      */
     String getContentType()
   }
-  
+
   @CompileStatic
   public interface AlternateResourceNameSchema extends Validateable {
     /*
@@ -184,6 +189,16 @@ interface PackageSchema extends Validateable {
      }
      */
     String getAlternateResourceName()
+  }
+
+  @CompileStatic
+  public interface AlternateSlugSchema extends Validateable {
+    /*
+     {
+       "slug": "An alternate slug",
+     }
+     */
+    String getAlternateSlug()
   }
 
   @CompileStatic
@@ -205,7 +220,7 @@ interface PackageSchema extends Validateable {
      */
     String getUrl()
   }
-  
+
   @CompileStatic
   public interface CoverageStatementSchema extends Validateable {
     /*
@@ -221,7 +236,7 @@ interface PackageSchema extends Validateable {
     LocalDate getStartDate()
     String getStartVolume()
     String getStartIssue()
-    
+
     LocalDate getEndDate()
     String getEndVolume()
     String getEndIssue()

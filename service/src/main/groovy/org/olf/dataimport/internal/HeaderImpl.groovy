@@ -4,6 +4,7 @@ import java.time.LocalDate
 import org.olf.dataimport.erm.PackageProvider
 import org.olf.dataimport.erm.ContentType
 import org.olf.dataimport.erm.AlternateResourceName
+import org.olf.dataimport.erm.AlternateSlug
 import org.olf.dataimport.erm.AvailabilityConstraint
 import org.olf.dataimport.erm.PackageDescriptionUrl
 
@@ -30,11 +31,12 @@ class HeaderImpl implements PackageHeaderSchema, Validateable {
   String availabilityScope
   List<ContentType> contentTypes
   List<AlternateResourceName> alternateResourceNames
+  List<AlternateSlug> alternateSlugs
   List<AvailabilityConstraint> availabilityConstraints
   List<PackageDescriptionUrl> packageDescriptionUrls
-  String lifecycleStatus 
+  String lifecycleStatus
   String _intenalId
-  
+
   static constraints = {
     packageSource   nullable: false, blank: false
     packageSlug     nullable: false, blank: false
