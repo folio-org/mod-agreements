@@ -59,9 +59,12 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       cursor = ''
     }
     GPathResult xml
+
+    long package_sync_start_time = System.currentTimeMillis();
+
     while ( found_records ) {
 
-      log.info("OAI/HTTP GET url=${packagesUrl} params=${query_params}")
+      log.info("OAI/HTTP GET url=${packagesUrl} params=${query_params} elapsed=${System.currentTimeMillis()-package_sync_start_time}")
 
       // Built in parser for XML returns GPathResult
       Object sync_result = getSync(packagesUrl, query_params) {
@@ -106,7 +109,10 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   
       log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken}\"")
     }
+
+    log.info("OKbOAIAdapter::freshenPackageData completed url=${packagesUrl} params=${query_params} elapsed=${System.currentTimeMillis()-package_sync_start_time}")
   }
+
   // TODO Potentially can combine freshenTitleData and freshenPackageData with a new variable "dataType" or something like that.
   public void freshenTitleData(String source_name,
                                  String base_url,
