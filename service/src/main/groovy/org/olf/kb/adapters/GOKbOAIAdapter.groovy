@@ -395,11 +395,10 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       def primary_slug = package_record.find{
         it.@uuid?.text() != null && it.@uuid?.text()?.trim() != ''
       }?.@uuid?.text();
-      if (gokbId_identifier) {
-        identifiers.add(
-          [ namespace: 'gokb_uuid', value: primary_slug ]
-        );
-      }
+      // we don't have to check here if primary_slug (gokb uuid) is present, because if not we're ignoring the package, see above
+      identifiers.add(
+        [ namespace: 'gokb_uuid', value: primary_slug ]
+      );
 
       def availability_constraints = []
       def global_note = package_record.globalNote.text()?.trim();
