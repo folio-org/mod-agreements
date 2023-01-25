@@ -218,11 +218,13 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       result.count++
       def record_identifier = record?.header?.identifier?.text()
       def package_name = record?.metadata?.gokb?.package?.name?.text()
+      def primary_slug = record?.metadata?.gokb?.package?.find{
+        it.@uuid?.text() != null && it.@uuid?.text()?.trim() != ''
+      }?.@uuid?.text()
       def datestamp = record?.header?.datestamp?.text()
       def editStatus = record?.metadata?.gokb?.package?.editStatus?.text()
       def listStatus = record?.metadata?.gokb?.package?.listStatus?.text()
       def packageStatus = record?.metadata?.gokb?.package?.status?.text()
-      def package_shortcode = record?.metadata?.gokb?.package?.shortcode?.text()
 
       log.debug("Processing OAI record :: ${result.count} ${record_identifier} ${package_name}")
 
@@ -232,8 +234,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       else {
         if (!package_name) {
           log.info("Ignoring Package '${record_identifier}' because package_name is missing")
-        } else if (!package_shortcode) {
-          log.info("Ignoring Package '${record_identifier}' because package_shortcode is missing")
+        } else if (!primary_slug) {
+          log.info("Ignoring Package '${record_identifier}' because primary_slug is missing")
         } else if (editStatus.toLowerCase() == 'rejected') {
           log.info("Ignoring Package '${package_name}' because editStatus=='${editStatus}'")
         } else if (listStatus.toLowerCase() != 'checked') {
@@ -352,12 +354,13 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       }
 
       def alternate_slugs = [];
-      alternate_slugs.add(
-        [
-          slug: package_shortcode
-        ]
-      )
-      // log.info("alternate_slugs: ${alternate_slugs}");
+      if (package_shortcode != null && package_shortcode?.trim() != '') {
+        alternate_slugs.add(
+          [
+            slug: package_shortcode
+          ]
+        )
+      }
 
       def identifiers = package_record.identifiers?.identifier?.findAll {
         (it.@type?.text() == null || it.@type?.text()?.trim() == '') && obtainNamespace(it) != null
@@ -389,15 +392,12 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         )
       }
 
-      def primary_slug;
-      def gokb_uuid_identifier = package_record.find{
+      def primary_slug = package_record.find{
         it.@uuid?.text() != null && it.@uuid?.text()?.trim() != ''
-      }
-      primary_slug = gokb_uuid_identifier.@uuid?.text();
-      // log.info("primary_slug: ${primary_slug}");
+      }?.@uuid?.text();
       if (gokbId_identifier) {
         identifiers.add(
-          [ namespace: 'gokb_uuid', value: gokb_uuid_identifier.@uuid?.text() ]
+          [ namespace: 'gokb_uuid', value: primary_slug ]
         );
       }
 
