@@ -1,5 +1,7 @@
 ## 5.5.0 In progress
-
+  * ERM-2612 Add support for content type property on Agreements
+  * ERM-2611 Implement change to Package key used for GOKb packages
+  * ERM-2610 Implement 'alternative slugs' for package in package schema
 ## 5.4.0 2022-10-26
   * ERM-2388 Package identifiers not 'removed' from package on ingest of updated package
   * ERM-2385 On updating package description URLs KB sync job crashes
