@@ -235,7 +235,4 @@ where rkb.type is not null
 
     log.debug("KbHarvestService::triggerCacheUpdate() completed")
   }
-
-
-
 }
