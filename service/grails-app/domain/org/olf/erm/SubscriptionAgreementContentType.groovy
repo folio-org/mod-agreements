@@ -4,7 +4,7 @@ import grails.gorm.MultiTenant
 import com.k_int.web.toolkit.refdata.Defaults
 import com.k_int.web.toolkit.refdata.RefdataValue
 
-public class SubscriptionAgreementContentType implements MultiTenant<ContentType> {
+public class SubscriptionAgreementContentType implements MultiTenant<SubscriptionAgreementContentType> {
 
 	String id
   RefdataValue subscriptionAgreementContentType
