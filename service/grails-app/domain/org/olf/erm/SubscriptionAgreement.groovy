@@ -166,8 +166,8 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
       usageDataProviders cascade: 'all-delete-orphan'
      inwardRelationships cascade: 'all-delete-orphan', lazy: false
     outwardRelationships cascade: 'all-delete-orphan', lazy: false
-        customProperties cascade: 'all-delete-orphan',
-subscriptionAgreementContentTypes cascade: 'all-delete-orphan'
+        customProperties cascade: 'all-delete-orphan'
+    subscriptionAgreementContentTypes cascade: 'all-delete-orphan'
   }
 
   static constraints = {
