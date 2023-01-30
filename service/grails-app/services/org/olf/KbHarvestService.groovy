@@ -154,7 +154,6 @@ where rkb.type is not null
             log.warn("problem processing remote KB link",e)
           }
           finally {
-
             log.info("KbHarvestService.closure completed - ${System.currentTimeMillis()-gokb_sync_start_time}ms elapsed. Release sync status");
 
             // Finally, set the state to idle
@@ -174,7 +173,7 @@ where rkb.type is not null
         log.error("Unexpected problem in RemoteKB Update",e);
       }
       finally {
-        log.debug("KB Harvest job closure exiting");
+        log.info("KB Harvest job closure exiting");
       }
     }
   } 
