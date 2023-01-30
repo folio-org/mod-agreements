@@ -85,7 +85,7 @@ where rkb.type is not null
         titleJob.setStatusFromString('Queued')
         titleJob.save(failOnError: true, flush: true)
       } else {
-        log.debug('Title harvester already running or scheduled. Ignore.')
+        log.info('Title harvester already running or scheduled. Ignore.')
       }
 
       if (!packageJob) {
@@ -93,7 +93,7 @@ where rkb.type is not null
         packageJob.setStatusFromString('Queued')
         packageJob.save(failOnError: true, flush: true)
       } else {
-        log.debug('Package harvester already running or scheduled. Ignore.')
+        log.info('Package harvester already running or scheduled. Ignore.')
       }
     }
   }
@@ -155,7 +155,7 @@ where rkb.type is not null
           }
           finally {
 
-            log.info("knowledgeBaseCacheService.runSync completed - ${System.currentTimeMillis()-gokb_sync_start_time}ms elapsed. Release sync status");
+            log.info("KbHarvestService.closure completed - ${System.currentTimeMillis()-gokb_sync_start_time}ms elapsed. Release sync status");
 
             // Finally, set the state to idle
             RemoteKB.withNewSession {
@@ -184,7 +184,7 @@ where rkb.type is not null
   @CompileStatic(SKIP)
   public void triggerPackageCacheUpdate() {
 
-    log.debug("KBHarvestService::triggerPackageCacheUpdate()")
+    log.info("KBHarvestService::triggerPackageCacheUpdate()")
     Closure remoteKBProcessing = getClosure()
     // List all pending jobs that are eligible for processing - That is everything enabled and not currently in-process and has not been processed in the last hour
 
@@ -194,7 +194,7 @@ where rkb.type is not null
                                             'current_time':System.currentTimeMillis(),
                                             'local':'LOCAL'],[lock:false]).each(remoteKBProcessing)
 
-    log.debug("KbHarvestService::triggerPackageCacheUpdate() completed")
+    log.info("KbHarvestService::triggerPackageCacheUpdate() completed")
   }
 
   @CompileStatic(SKIP)
