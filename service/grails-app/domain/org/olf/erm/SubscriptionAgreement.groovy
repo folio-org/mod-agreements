@@ -88,7 +88,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
 
   Set<Entitlement> items
   Set<AlternateName> alternateNames
-  Set<SubscriptionAgreementContentType> subscriptionAgreementContentTypes
+  Set<SubscriptionAgreementContentType> agreementContentTypes
 
   private Period currentPeriod
 
@@ -111,7 +111,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
                 periods: Period,
     inwardRelationships: AgreementRelationship,
    outwardRelationships: AgreementRelationship,
-   subscriptionAgreementContentTypes: SubscriptionAgreementContentType,
+   agreementContentTypes: SubscriptionAgreementContentType,
   ]
 
   static mappedBy = [
@@ -125,7 +125,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     periods: 'owner',
     inwardRelationships: 'inward',
     outwardRelationships: 'outward',
-   subscriptionAgreementContentTypes: 'owner',
+   agreementContentTypes: 'owner',
   ]
 
   static mapping = {
@@ -167,7 +167,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
      inwardRelationships cascade: 'all-delete-orphan', lazy: false
     outwardRelationships cascade: 'all-delete-orphan', lazy: false
         customProperties cascade: 'all-delete-orphan'
-    subscriptionAgreementContentTypes cascade: 'all-delete-orphan'
+    agreementContentTypes cascade: 'all-delete-orphan'
   }
 
   static constraints = {

@@ -35,7 +35,7 @@ final def should_expand = [
   'outwardRelationships',
   'inwardRelationships',
   'customProperties',
-  'subscriptionAgreementContentTypes'
+  'agreementContentTypes'
 ]
 if (controllerName != 'remoteLicenseLink' ) {
   should_expand << 'linkedLicenses'

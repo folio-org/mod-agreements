@@ -10,8 +10,8 @@ public class SubscriptionAgreementContentType implements MultiTenant<Subscriptio
 	String id
 
   @CategoryId(value='AgreementContentType', defaultInternal=false)
-  @Defaults(['testvalue'])
-  RefdataValue subscriptionAgreementContentType
+  @Defaults(['Books', 'Journals', 'Database', 'Audio', 'Video'])
+  RefdataValue contentType
 
 	static belongsTo = [ owner: SubscriptionAgreement ]
 
@@ -19,13 +19,13 @@ public class SubscriptionAgreementContentType implements MultiTenant<Subscriptio
       // table 'subscription_agreement_content_type'
                               id column: 'sact_id', generator: 'uuid2', length:36
                          version column: 'sact_version'
-subscriptionAgreementContentType column: 'sact_subscription_agreement_content_type_fk'
+                     contentType column: 'sact_content_type_fk'
                            owner column: 'sact_owner_fk'
 	}
 
 	static constraints = {
 		 owner(nullable:false, blank:false);
-	   subscriptionAgreementContentType(nullable:false, blank:false);
+	   contentType(nullable:false, blank:false);
 	}
 
 }
