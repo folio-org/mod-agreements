@@ -315,11 +315,12 @@ class PackageIngestService implements DataBinder {
 
     } else {
       package_data.packageContents.eachWithIndex { ContentItemSchema pc, int index ->
+        // ENSURE MDC title is set as early as possible
+        MDC.put('title', pc.title.toString())
 
         // log.debug("Try to resolve ${pc}")
 
         try {
-
           PackageContentItem.withNewTransaction { status ->
             // Delegate out to TitleIngestService so that any shared steps can move there.
             Map titleIngestResult = titleIngestService.upsertTitle(pc, kb, trustedSourceTI)
@@ -335,8 +336,6 @@ class PackageIngestService implements DataBinder {
 
               // lets try and work out the platform for the item
               def platform_url_to_use = pc.platformUrl
-
-              MDC.put('title', pc.title.toString())
 
               if ( ( pc.platformUrl == null ) && ( pc.url != null ) ) {
                 // No platform URL, but a URL for the title. Parse the URL and generate a platform URL
