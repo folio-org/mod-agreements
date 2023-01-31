@@ -3,10 +3,14 @@ package org.olf.erm;
 import grails.gorm.MultiTenant
 import com.k_int.web.toolkit.refdata.Defaults
 import com.k_int.web.toolkit.refdata.RefdataValue
+import com.k_int.web.toolkit.refdata.CategoryId
 
 public class SubscriptionAgreementContentType implements MultiTenant<SubscriptionAgreementContentType> {
 
 	String id
+
+  @CategoryId(value='AgreementContentType', defaultInternal=false)
+  @Defaults(['testvalue'])
   RefdataValue subscriptionAgreementContentType
 
 	static belongsTo = [ owner: SubscriptionAgreement ]

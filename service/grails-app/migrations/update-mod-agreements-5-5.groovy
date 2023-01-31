@@ -1,5 +1,5 @@
 databaseChangeLog = {
-  changeSet(author: "claudia (manual)", id: "20230130-1530-001") {
+  changeSet(author: "claudia (manual)", id: "20230131-1040-001") {
 
     createTable(tableName: "subscription_agreement_content_type") {
       column(name: "sact_id", type: "VARCHAR(36)") {
