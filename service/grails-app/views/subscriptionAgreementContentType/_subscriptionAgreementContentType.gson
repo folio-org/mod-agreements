@@ -1,0 +1,5 @@
+import groovy.transform.*
+import org.olf.erm.SubscriptionAgreementContentType
+
+@Field SubscriptionAgreementContentType contentType
+json g.render(contentType, [expand: ['contentType'], excludes: ['owner']])

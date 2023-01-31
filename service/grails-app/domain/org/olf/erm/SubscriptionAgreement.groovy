@@ -29,13 +29,13 @@ import javax.persistence.Transient
  */
 @Slf4j
 public class SubscriptionAgreement extends ErmTitleList implements CustomProperties,MultiTenant<SubscriptionAgreement>, Clonable<SubscriptionAgreement> {
-   
+
   static cloneStaticValues = [
     periods: { [new Period('owner': delegate, 'startDate': LocalDate.now())] },
     name: { "Copy of: ${owner.name}" /* Owner is the current object. */ }
-  ]  
+  ]
   static copyByCloning = ['customProperties', 'supplementaryDocs', 'docs', 'externalLicenseDocs']
-  
+
   String description
   String id
   String name
@@ -83,18 +83,19 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
   Boolean enabled
 
   Org vendor
-  
+
   Set<Period> periods = []
 
   Set<Entitlement> items
   Set<AlternateName> alternateNames
-  
+  Set<SubscriptionAgreementContentType> agreementContentTypes
+
   private Period currentPeriod
-  
+
   LocalDate startDate
   LocalDate endDate
   LocalDate cancellationDeadline
-  
+
   static hasMany = [
          alternateNames: AlternateName,
                   items: Entitlement,
@@ -110,6 +111,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
                 periods: Period,
     inwardRelationships: AgreementRelationship,
    outwardRelationships: AgreementRelationship,
+   agreementContentTypes: SubscriptionAgreementContentType,
   ]
 
   static mappedBy = [
@@ -122,7 +124,8 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     usageDataProviders: 'owner',
     periods: 'owner',
     inwardRelationships: 'inward',
-    outwardRelationships: 'outward'
+    outwardRelationships: 'outward',
+   agreementContentTypes: 'owner',
   ]
 
   static mapping = {
@@ -164,6 +167,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
      inwardRelationships cascade: 'all-delete-orphan', lazy: false
     outwardRelationships cascade: 'all-delete-orphan', lazy: false
         customProperties cascade: 'all-delete-orphan'
+    agreementContentTypes cascade: 'all-delete-orphan'
   }
 
   static constraints = {
@@ -189,9 +193,9 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
        attachedLicenceId(nullable:true, blank:false)
              licenseNote(nullable:true, blank:false)
                  periods(nullable:false, minSize: 1, validator:Period.PERIOD_COLLECTION_VALIDATOR, sort:'startDate')
-              
+
           linkedLicenses(validator: { Collection<RemoteLicenseLink> license_links ->
-            
+
             int controlling_count = ((license_links?.findAll({ RemoteLicenseLink license -> license.status?.value == 'controlling' })?.size()) ?: 0)
             ( controlling_count > 1 ? [ 'only.one.controlling.license' ] : true )
           })
@@ -209,9 +213,9 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     checkAgreementStatus()
     calculateDates()
   }
-  
+
   public void checkAgreementStatus () {
-    
+
     // Null out the reasonForClosure if agreement status is not closed
     if (agreementStatus?.value != 'closed') {
       reasonForClosure = null
@@ -223,9 +227,9 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     endDate = PeriodService.calculateEndDate(periods)
     cancellationDeadline = PeriodService.calculateCancellationDeadline(periods)
   }
-  
+
   /**
-   * Need to resolve the conflict manually and add the call to the clonable method here. 
+   * Need to resolve the conflict manually and add the call to the clonable method here.
    */
   @Override
   public SubscriptionAgreement clone () {
@@ -237,18 +241,18 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     // Use the request if possible
     RequestAttributes attributes = RequestContextHolder.getRequestAttributes()
     if(attributes && attributes instanceof GrailsWebRequest) {
-      
+
       GrailsWebRequest gwr = attributes as GrailsWebRequest
-      
+
       log.debug "Is within a request context"
       TimeZone tz = RequestContextUtils.getTimeZone(gwr.currentRequest) ?: TimeZone.getDefault()
-      
+
       log.debug "Using TZ ${tz}"
       ZonedDateTime zdt = ZonedDateTime.ofInstant(Instant.now(), tz.toZoneId())
-      
+
       log.debug "Now in ${tz} is ${zdt}"
       ld = zdt.toLocalDate()
-      
+
       log.debug "LocalDate of ${ld} extracted for query"
     } else {
       log.debug "Is not within a request context, using default TZ (${TimeZone.getDefault()})"
@@ -281,7 +285,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     ppId = Period.executeQuery("""
       SELECT p.id FROM Period p
       WHERE p.startDate = (
-        SELECT MAX(p1.startDate) FROM Period p1 
+        SELECT MAX(p1.startDate) FROM Period p1
         WHERE p1.endDate < :ld
         AND p1.owner.id = :id
       )
@@ -300,7 +304,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     npId = Period.executeQuery("""
       SELECT p.id FROM Period p
       WHERE p.startDate = (
-        SELECT MIN(p1.startDate) FROM Period p1 
+        SELECT MIN(p1.startDate) FROM Period p1
         WHERE p1.startDate > :ld
         AND p1.owner.id = :id
       )
