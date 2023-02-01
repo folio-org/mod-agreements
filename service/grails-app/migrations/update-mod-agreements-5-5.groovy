@@ -18,4 +18,22 @@ databaseChangeLog = {
       addForeignKeyConstraint(baseColumnNames: "sact_owner_fk", baseTableName: "subscription_agreement_content_type", constraintName: "sact_to_sa_fk", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "sa_id", referencedTableName: "subscription_agreement")
     }
   }
+
+  // Update refdataCategory descriptions for contentTypes (agreement and package)
+  // Pkg: ContentType.ContentType -> Pkg.ContentType
+  changeSet(author: "claudia (manual)", id:"20230201-1503-001") {
+    grailsChange {
+      change {
+          sql.execute("UPDATE ${database.defaultSchemaName}.refdata_category SET rdc_description='Pkg.ContentType' WHERE rdc_description='ContentType.ContentType'".toString())
+      }
+    }
+  }
+  // Agreement: AgreementContentType -> SubscriptionAgreement.ContentType
+  changeSet(author: "claudia (manual)", id:"20230201-1509-001") {
+    grailsChange {
+      change {
+          sql.execute("UPDATE ${database.defaultSchemaName}.refdata_category SET rdc_description='SubscriptionAgreement.ContentType' WHERE rdc_description='AgreementContentType'".toString())
+      }
+    }
+  }
 }

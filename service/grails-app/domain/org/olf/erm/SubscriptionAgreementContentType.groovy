@@ -9,7 +9,7 @@ public class SubscriptionAgreementContentType implements MultiTenant<Subscriptio
 
 	String id
 
-  @CategoryId(value='AgreementContentType', defaultInternal=false)
+  @CategoryId(value='SubscriptionAgreement.ContentType', defaultInternal=false)
   @Defaults(['Books', 'Journals', 'Database', 'Audio', 'Video'])
   RefdataValue contentType
 
