@@ -172,6 +172,8 @@ class PackageIngestService implements DataBinder {
    * @return id of package upserted
    */
   public Map upsertPackage(PackageSchema package_data, String remotekbname, boolean readOnly=false) {
+    // Remove MDC title at top of upsert package
+    MDC.remove('title')
     def result = [
       startTime: System.currentTimeMillis(),
       titleCount: 0,
@@ -536,6 +538,7 @@ class PackageIngestService implements DataBinder {
       }
 
       MDC.remove('recordNumber')
+      MDC.remove('title')
       // Need to pause long enough so that the timestamps are different
       TimeUnit.MILLISECONDS.sleep(1)
       if (result.titleCount > 0) {
