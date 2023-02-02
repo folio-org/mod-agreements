@@ -36,4 +36,12 @@ databaseChangeLog = {
       }
     }
   }
+
+  changeSet(author: "efreestone (manual)", id: "20230202-1013-001") {
+    addForeignKeyConstraint(baseColumnNames: "sact_content_type_fk", baseTableName: "subscription_agreement_content_type", constraintName: "sact_content_type_fk_rdvFK", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "rdv_id", referencedTableName: "refdata_value")
+  }
+
+  changeSet(author: "efreestone (manual)", id: "20230202-1013-002") {
+    addForeignKeyConstraint(baseColumnNames: "ct_content_type_fk", baseTableName: "content_type", constraintName: "content_type_fk_rdvFK", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "rdv_id", referencedTableName: "refdata_value")
+  }
 }
