@@ -1,0 +1,277 @@
+{
+  "type": {
+    "name": "SimpleSearch",
+    "version": "1.0"
+  },
+  "version": "1.2",
+  "name":"ERM Agreements",
+  "definition":{
+    "baseUrl":"/erm/sas",
+    "resource": "agreement",
+    "results": {
+      "columns": [
+        {
+          "name":"agreementName",
+          "label": "Agreement name",
+          "accessPath":"name",
+          "valueType": "Link"
+        },
+        {
+          "name":"startDate",
+          "label": "Start date",
+          "accessPath":"startDate",
+          "valueType": "Date"
+        },
+        {
+          "name":"endDate",
+          "label": "End date",
+          "accessPath":"endDate",
+          "valueType": "Date"
+        },
+        {
+          "name":"cancellationDeadline",
+          "label": "Cancellation deadline",
+          "accessPath":"cancellationDeadline",
+          "valueType": "Date"
+        },
+        {
+          "name":"agreementStatus",
+          "label": "Status",
+          "accessPath":"agreementStatus.label",
+          "valueType": "String"
+        },
+        {
+          "name":"renewalPriority",
+          "label": "Renewal priority",
+          "accessPath":"renewalPriority.label",
+          "valueType": "String"
+        },
+        {
+          "name": "internalContacts",
+          "label": "Internal contact(s)"
+        },
+        {
+          "name": "tags",
+          "label": "Tags",
+          "accessPath": "tags",
+          "valueType": "Array",
+          "arrayDisplayPath": "value"
+        },
+        {
+          "name": "isPerpetual",
+          "label": "Is perpetual",
+          "accessPath": "isPerpetual.label",
+          "valueType": "String"
+        },
+        {
+          "name":"orgs",
+          "label": "Organization(s)",
+          "accessPath":"orgs",
+          "valueType": "Array"
+        }
+      ]
+    },
+    "filters": {
+      "columns": [
+        {
+          "name":"agreementName",
+          "label": "Agreement name",
+          "filterPath":"name",
+          "valueType": "String",
+          "comparators": ["==", "!=", "=~", "!~"]
+        },
+        {
+          "name":"description",
+          "label": "Description",
+          "filterPath":"description",
+          "valueType": "String",
+          "comparators": ["==", "!=", "=~", "!~"]
+        },
+        {
+          "name":"agreement",
+          "label": "Agreement",
+          "filterPath":"id",
+          "valueType": "UUID",
+          "resource": "agreement",
+          "comparators": ["==", "!="]
+        },
+        {
+          "name":"agreementStatus",
+          "label": "Agreement status",
+          "filterPath":"agreementStatus.value",
+          "valueType": "Enum",
+          "enumValues": [
+            {"value": "active"},
+            {"value": "closed"},
+            {"value": "draft"},
+            {"value": "in_negotiation"},
+            {"value": "requested"}
+          ],
+          "comparators": ["==", "!="]
+        },
+        {
+          "name":"startDate",
+          "label": "Start date",
+          "filterPath":"startDate",
+          "valueType": "Date",
+          "comparators": ["==", "!=", ">=", "<="]
+        },
+        {
+          "name":"endDate",
+          "label": "End date",
+          "filterPath":"endDate",
+          "valueType": "Date",
+          "comparators": ["==", "!=", ">=", "<=", "isSet", "isNotSet"]
+        },
+        {
+          "name":"cancellationDeadline",
+          "label": "Cancellation deadline",
+          "filterPath":"cancellationDeadline",
+          "valueType": "Date",
+          "comparators": ["==", "!=", ">=", "<=", "isSet", "isNotSet"]
+        },
+        {
+          "name":"renewalPriority",
+          "label": "Renewal priority",
+          "filterPath":"renewalPriority.value",
+          "valueType": "String",
+          "comparators": ["==", "!="]
+        },
+        {
+          "name":"internalContact",
+          "label": "Internal contact",
+          "filterPath":"contacts.user",
+          "valueType": "UUID",
+          "resource": "user",
+          "comparators": ["=="]
+        },
+        {
+          "name":"tags",
+          "label": "Tags",
+          "filterPath":"tags.value",
+          "valueType": "String",
+          "comparators": ["==", "=~"]
+        },
+        {
+          "name":"isPerpetual",
+          "label": "Is perpetual",
+          "filterPath":"isPerpetual.value",
+          "valueType": "Enum",
+          "enumValues": [
+            {"value": "yes", "label": "Yes"},
+            {"value": "no", "label": "No"}
+          ],
+          "comparators": ["==", "!="]
+        },
+        {
+          "name": "hasItems",
+          "label": "Has agreement lines",
+          "filterPath": "items",
+          "valueType": "Array",
+          "comparators": ["isEmpty", "isNotEmpty"]
+        },
+        {
+          "name":"orgs",
+          "label": "Organizations",
+          "filterPath":"orgs.org.orgsUuid",
+          "valueType": "UUID",
+          "resource": "organization",
+          "comparators": ["=="]
+        },
+        {
+          "name":"hasOrgs",
+          "label": "Has organizations",
+          "filterPath":"orgs",
+          "valueType": "Array",
+          "comparators": ["isEmpty", "isNotEmpty"]
+        },
+        {
+          "name":"orgs.role",
+          "label": "Organization role",
+          "filterPath":"orgs.roles.role.label",
+          "valueType": "String",
+          "comparators": ["==", "!="]
+        }
+      ]
+    },
+    "matches": {
+      "columns": [
+        {
+          "name": "agreementName",
+          "label": "Name",
+          "accessPath": "name",
+          "default": true
+        },
+        {
+          "name": "alternativeName",
+          "label": "Alternative name",
+          "accessPath": "alternateNames.name",
+          "default": false
+        },
+        {
+          "name": "description",
+          "label": "Description",
+          "accessPath": "description",
+          "default": false
+        }
+      ],
+      "termConfigurable": true
+    },
+    "sort": {
+      "columns": [
+        {
+          "name":"id",
+          "label": "Id",
+          "sortPath":"id",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name":"agreementName",
+          "label": "Name",
+          "sortPath":"name",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name":"agreementStatus",
+          "label": "Status",
+          "sortPath":"agreementStatus.label",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name":"startDate",
+          "sortPath":"startDate",
+          "label": "Start date",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name":"endDate",
+          "sortPath":"endDate",
+          "label": "End date",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name":"cancellationDeadline",
+          "sortPath":"cancellationDeadline",
+          "label": "Cancellation deadline",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name":"renewalPriority",
+          "label":"Renewal priority",
+          "sortPath":"renewalPriority.value",
+          "sortTypes": ["asc", "desc"]
+        }
+      ]
+    },
+    "configurableProperties": {
+      "urlLink": {
+        "configurable": true,
+        "defValue": "/erm/agreements"
+      },
+      "numberOfRows": {
+        "configurable": true,
+        "defValue": 10
+      }
+    }
+  }
+}
