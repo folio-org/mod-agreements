@@ -1,7 +1,28 @@
-## 5.5.0 In progress
+## 5.5.0 2023-02-20
+  * ERM-2638 No name of linked agreement in license
+  * ERM-2629 Add Description filter to Agreements dashboard widget
   * ERM-2612 Add support for content type property on Agreements
   * ERM-2611 Implement change to Package key used for GOKb packages
   * ERM-2610 Implement 'alternative slugs' for package in package schema
+  * ERM-2569 MG/Nolana | Package/Title managed/custom coverage dates from eHoldings not displaying in Agreement Line accordion
+  * ERM-2514 License terms are not displayed in Publication Finder when a journal title is directly linked to an agreement
+  * ERM-2510 Titles Endpoint does not have functionality of eresources "electronic" endpoint
+  * ERM-2509 URL customisers applied for all platforms
+  * ERM-2508 Cannot delete string templates
+  * ERM-2482 Incorrect overlapping coverage errors created on import to local KB
+  * ERM-2480 Refactor string template to improve performance
+  * ERM-2475 Loading update to existing package fails if lifecycleStatus or availabilityScope are omitted
+  * ERM-2474 Local KB admin: Info log export populates title element in additionalInfo with non-relevant data
+  * ERM-2469 HibernateException: Duplicate identifier in table for AppSetting
+  * ERM-2443 Title Instance appearing twice in /erm/resource/electronic search
+  * ERM-2433 Upgrade hibernate, postgresql, opencsv, minio, okhttp, kotlin
+  * ERM-2431 Job runner gets stuck in loop with NullPointerException
+  * ERM-2423 Performance issues on displaying external agreement lines
+  * ERM-2422 JSON errors on agreement lines in Nolana bugfest
+  * ERM-2389 Importing KBART fails
+  * ERM-2387 Package name field missed in updating package metadata definitions
+  * ERM-2306 Add availabilityConstraints to packages
+  * Added more harvest logging
 ## 5.4.0 2022-10-26
   * ERM-2388 Package identifiers not 'removed' from package on ingest of updated package
   * ERM-2385 On updating package description URLs KB sync job crashes
