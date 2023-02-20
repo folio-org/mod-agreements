@@ -1,3 +1,5 @@
+## 5.6.0 In progress
+
 ## 5.5.0 2023-02-20
   * ERM-2638 No name of linked agreement in license
   * ERM-2629 Add Description filter to Agreements dashboard widget
