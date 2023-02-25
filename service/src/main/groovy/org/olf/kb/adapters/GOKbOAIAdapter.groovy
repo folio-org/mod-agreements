@@ -19,6 +19,8 @@ import groovy.util.logging.Slf4j
 import groovy.util.slurpersupport.GPathResult
 import groovyx.net.http.*
 
+import org.slf4j.MDC
+
 /**
  * An adapter to go between the GOKb OAI service, for example the one at
  *   https://gokbt.gbv.de/gokb/oai/index/packages?verb=ListRecords&metadataPrefix=gokb
@@ -471,6 +473,10 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
       package_record.TIPPs?.TIPP.each { tipp_entry ->
         def tipp_status = tipp_entry?.status?.text()
+        // Ensure logging below has correct title for log export
+        if(tipp_entry?.title?.name?.text()) {
+          MDC.put("title", tipp_entry?.title?.name?.text())
+        }
 
         // log.info("Tipp.title is of size ${tipp_entry?.title?.name?.size()} and tipp_entry?.title?.name is ${tipp_entry?.title?.name}");
 

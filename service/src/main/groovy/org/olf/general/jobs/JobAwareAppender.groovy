@@ -21,7 +21,7 @@ public class JobAwareAppender extends AppenderBase<ILoggingEvent> {
         for(Map.Entry entry : eventObject.getMDCPropertyMap()) {
           mdc["${entry.key}"] = "${entry.value}"
         }
-      }     
+      }
       
       if (jid) {
         switch (eventObject.level) {

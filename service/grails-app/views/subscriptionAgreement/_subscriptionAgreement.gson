@@ -34,7 +34,8 @@ final def should_expand = [
   'periods',
   'outwardRelationships',
   'inwardRelationships',
-  'customProperties'
+  'customProperties',
+  'agreementContentTypes'
 ]
 if (controllerName != 'remoteLicenseLink' ) {
   should_expand << 'linkedLicenses'
@@ -59,7 +60,7 @@ json g.render(subscriptionAgreement, [expand: should_expand, excludes: excludes]
   if (actionName.toLowerCase() == 'export' && subscriptionAgreement.respondsTo('getResourceList')) {
     resources (g.render (template: '/export/results', model: [resources: (subscriptionAgreement.invokeMethod('getResourceList', null) ?: [])]))
   }
-  
+
   alternateNames g.render(altNames)
   version subscriptionAgreement.version
 }
