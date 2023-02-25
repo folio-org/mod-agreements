@@ -43,7 +43,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
     final String packagesUrl = "${stripTrailingSlash(base_url)}${PATH_PACKAGES}"
 
-    log.debug("GOKbOAIAdapter::freshenPackageData - fetching from URI: ${packagesUrl}")
+    log.info("GOKbOAIAdapter::freshenPackageData - fetching URI=${packagesUrl} cursor=${current_cursor} trusted=${trustedSourceTI}")
 
     def query_params = [
         'verb': 'ListRecords',
