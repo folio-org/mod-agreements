@@ -14,9 +14,6 @@ import org.olf.dataimport.internal.InternalPackageImpl
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema
 import org.slf4j.MDC
-import org.springframework.context.MessageSource
-import org.springframework.context.i18n.LocaleContextHolder
-import org.springframework.validation.ObjectError
 
 import com.opencsv.CSVReader
 
@@ -27,10 +24,8 @@ import groovy.util.logging.Slf4j
 @CompileStatic
 @Slf4j
 class ImportService implements DataBinder {
-  
+  DomainService domainService
   PackageIngestService packageIngestService
-  
-  MessageSource messageSource
   
   void importFromFile (final Map envelope) {
     
@@ -96,29 +91,12 @@ class ImportService implements DataBinder {
 
     final PackageSchema pkg = schemaClass.newInstance()
     bindData(pkg, record)
-    // Check for binding errors.
-    if (!pkg.errors.hasErrors()) {
-      // Validate the actual values now. And check for constraint violations
-      pkg.validate()
-      if (!pkg.errors.hasErrors()) {
-        // Ingest the package.
-
-        Map result = packageIngestService.upsertPackage(pkg)
-        String upsertPackagePackageId = result.packageId
-        
-        packageImported = true
-        packageId = upsertPackagePackageId
-      } else {
-        // Log the errors.
-        pkg.errors.allErrors.each { ObjectError error ->
-          log.error "${ messageSource.getMessage(error, LocaleContextHolder.locale) }"
-        }
-      }
-    } else {
-      // Log the errors.
-      pkg.errors.allErrors.each { ObjectError error ->
-        log.error "${ messageSource.getMessage(error, LocaleContextHolder.locale) }"
-      }
+    if (domainService.checkValidBinding(pkg)) {
+      Map result = packageIngestService.upsertPackage(pkg)
+      String upsertPackagePackageId = result.packageId
+      
+      packageImported = true
+      packageId = upsertPackagePackageId
     }
 
     Map results = [packageImported: packageImported, packageId: packageId]
@@ -418,12 +396,8 @@ class ImportService implements DataBinder {
       endVolume: getFieldFromLine(lineAsArray, acceptedFields, 'CoverageStatement.endVolume'),
       endIssue: getFieldFromLine(lineAsArray, acceptedFields, 'CoverageStatement.endIssue')
     )
-    
-    if (!cs.validate()) {
-      cs.errors.allErrors.each { ObjectError error ->
-        log.error "${ messageSource.getMessage(error, LocaleContextHolder.locale) }"
-      }
-      // Return null
+
+    if (!domainService.checkValidBinding(cs)) {
       return null
     }
     
@@ -431,17 +405,11 @@ class ImportService implements DataBinder {
   }
 
   private List identifierValidator(Identifier identifier) {
-    identifier.validate();
-
-    List identifiers
-    if (!identifier.hasErrors()) {
+    List identifiers = []
+    if (domainService.checkValidBinding(identifier)) {
       identifiers = [identifier]
-    } else {
-      identifier.errors.allErrors.each { ObjectError error ->
-        log.error "${ messageSource.getMessage(error, LocaleContextHolder.locale) }"
-      }
-      identifiers = []
     }
+
     return identifiers;
   }
 }
