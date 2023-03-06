@@ -40,8 +40,8 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Transactional(readOnly=true)
 public class CoverageService {
-  private static MessageSource getDomainService() {
-    Holders.grailsApplication.mainContext.getBean('domainService')
+  private static UtilityService getUtilityService() {
+    Holders.grailsApplication.mainContext.getBean('utilityService')
   }
 
   private static MessageSource getMessageSource() {
@@ -146,7 +146,7 @@ public class CoverageService {
         }
 
         for ( CoverageStatementSchema cs : coverage_statements ) {
-          /* Not using domainService.checkValidBinding here
+          /* Not using utilityService.checkValidBinding here
            * because we have custom error logging behaviour
            */
           if (cs.validate()) {
@@ -161,7 +161,7 @@ public class CoverageService {
 
             resource.addToCoverage( new_cs )
 
-            if (!domainService.checkValidBinding(resource)) {
+            if (!utilityService.checkValidBinding(resource)) {
               throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
             }
 

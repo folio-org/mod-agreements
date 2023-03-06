@@ -24,7 +24,7 @@ import groovy.util.logging.Slf4j
 @CompileStatic
 @Slf4j
 class PushKBService implements DataBinder {
-  DomainService domainService
+  UtilityService utilityService
   PackageIngestService packageIngestService
   TitleIngestService titleIngestService
 
@@ -36,7 +36,7 @@ class PushKBService implements DataBinder {
       final PackageSchema pkg = ErmPackageImpl.newInstance();
       bindData(pkg, record)
 
-      if (domainService.checkValidBinding(pkg)) {
+      if (utilityService.checkValidBinding(pkg)) {
         log.debug("LOGGING PACKAGE BOUND: ${pkg}")
       }
     }

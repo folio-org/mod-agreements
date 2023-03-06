@@ -24,7 +24,7 @@ import groovy.util.logging.Slf4j
 @CompileStatic
 @Slf4j
 class ImportService implements DataBinder {
-  DomainService domainService
+  UtilityService utilityService
   PackageIngestService packageIngestService
   
   void importFromFile (final Map envelope) {
@@ -91,7 +91,7 @@ class ImportService implements DataBinder {
 
     final PackageSchema pkg = schemaClass.newInstance()
     bindData(pkg, record)
-    if (domainService.checkValidBinding(pkg)) {
+    if (utilityService.checkValidBinding(pkg)) {
       Map result = packageIngestService.upsertPackage(pkg)
       String upsertPackagePackageId = result.packageId
       
@@ -397,7 +397,7 @@ class ImportService implements DataBinder {
       endIssue: getFieldFromLine(lineAsArray, acceptedFields, 'CoverageStatement.endIssue')
     )
 
-    if (!domainService.checkValidBinding(cs)) {
+    if (!utilityService.checkValidBinding(cs)) {
       return null
     }
     
@@ -406,7 +406,7 @@ class ImportService implements DataBinder {
 
   private List identifierValidator(Identifier identifier) {
     List identifiers = []
-    if (domainService.checkValidBinding(identifier)) {
+    if (utilityService.checkValidBinding(identifier)) {
       identifiers = [identifier]
     }
 
