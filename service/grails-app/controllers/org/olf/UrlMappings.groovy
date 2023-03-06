@@ -186,6 +186,9 @@ class UrlMappings {
 
     "/erm/settings/appSettings" (resources: 'setting');
 
+    "/erm/pushKB/pkg" (controller: 'pushKB', action: 'pushPkg', method: 'POST')
+    "/erm/pushKB/pci" (controller: 'pushKB', action: 'pushPci', method: 'POST')
+
     "/dashboard/definitions" (controller: 'dashboardDefinitions', action: 'getDefinitions' ,method: 'GET')
   }
 }

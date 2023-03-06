@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 
 import org.olf.dataimport.erm.CoverageStatement
-import org.olf.dataimport.erm.ErmPackageImpl
+import org.olf.dataimport.erm.ErmPackageImplWithContentItems
 import org.olf.dataimport.erm.Identifier
 import org.olf.dataimport.erm.PackageProvider
 import org.olf.dataimport.internal.HeaderImpl
@@ -65,7 +65,7 @@ class ImportService implements DataBinder {
     // Erm schema supports multiple packages per document. We should lazily parse 1 by 1.
     envelope.records?.each { Map record ->
       // Ingest 1 package at a time.
-      Map importResult = importPackage (record, ErmPackageImpl)
+      Map importResult = importPackage (record, ErmPackageImplWithContentItems)
       
       if (importResult.packageImported) {
         packageCount ++
