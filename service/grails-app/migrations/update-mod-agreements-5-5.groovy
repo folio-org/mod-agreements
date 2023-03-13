@@ -44,4 +44,20 @@ databaseChangeLog = {
   changeSet(author: "efreestone (manual)", id: "20230202-1013-002") {
     addForeignKeyConstraint(baseColumnNames: "ct_content_type_fk", baseTableName: "content_type", constraintName: "content_type_fk_rdvFK", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "rdv_id", referencedTableName: "refdata_value")
   }
+
+  changeSet(author: "efreestone (manual)", id: "20230313-1356-001") {
+    grailsChange {
+      change {
+          sql.execute("UPDATE ${database.defaultSchemaName}.package SET pkg_remote_kb=NULL".toString())
+      }
+    }
+  } 
+  
+  changeSet(author: "efreestone (manual)", id: "20230313-1356-002") {
+    dropForeignKeyConstraint(baseTableName: "package", constraintName: "FKoedx99aeb9ll9v1p7w29htqtl")
+  }
+  
+  changeSet(author: "efreestone (manual)", id: "20230313-1356-003") {
+    dropColumn(columnName: "pkg_remote_kb", tableName: "package")
+  }
 }

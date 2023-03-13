@@ -15,7 +15,6 @@ import grails.gorm.MultiTenant
 public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   String source
   String reference  // Reference contains the KBs authoritative ID for this package - Reference should be unique within KB
-  RemoteKB remoteKb
   Platform nominalPlatform
   Org vendor
   Date sourceDataCreated
@@ -52,7 +51,6 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
                         table 'package'
                        source column:'pkg_source'
                     reference column:'pkg_reference'
-                     remoteKb column:'pkg_remote_kb'
               nominalPlatform column:'pkg_nominal_platform_fk'
                        vendor column:'pkg_vendor_fk'
             sourceDataCreated column:'pkg_source_data_created'
@@ -68,7 +66,6 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
                name(nullable:false, blank:false)
              source(nullable:false, blank:false)
           reference(nullable:false, blank:false)
-           remoteKb(nullable:true, blank:false)
     nominalPlatform(nullable:true, blank:false)
              vendor(nullable:true, blank:false)
   sourceDataCreated(nullable:true, blank:false)
