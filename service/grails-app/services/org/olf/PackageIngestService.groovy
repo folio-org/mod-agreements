@@ -376,6 +376,7 @@ class PackageIngestService implements DataBinder {
    * be used both by the ingest service (via upsert pkg), as well
    * as the pushKBService (directly)
    *
+   * This method ALSO provides update information for packages.
    */
   public Pkg lookupOrCreatePkg(PackageSchema package_data) {
     Pkg pkg = null
@@ -384,8 +385,7 @@ class PackageIngestService implements DataBinder {
     pkg = Pkg.findBySourceAndReference(package_data.header.packageSource, package_data.header.packageSlug)
     if (pkg == null) {
       // at this point we check alternate slugs
-      def alternateSlugs = package_data.header.alternateSlugs;
-      for ( alternateSlug in alternateSlugs ) {
+      for ( alternateSlug in package_data.header.alternateSlugs ) {
         pkg = Pkg.findBySourceAndReference(package_data.header.packageSource, alternateSlug);
         if ( pkg != null ) {
           pkg.reference = package_data.header.packageSlug;
@@ -414,7 +414,7 @@ class PackageIngestService implements DataBinder {
         sourceDataCreated: package_data.header.sourceDataCreated,
         sourceDataUpdated: package_data.header.sourceDataUpdated,
         availabilityScope: ( package_data.header.availabilityScope != null ? Pkg.lookupOrCreateAvailabilityScope(package_data.header.availabilityScope) : null ),
-          lifecycleStatus: ( package_data.header.lifecycleStatus != null ? Pkg.lookupOrCreateLifecycleStatus(package_data.header.lifecycleStatus) : null ),
+          lifecycleStatus: (package_data.header.lifecycleStatus != null ? Pkg.lookupOrCreateLifecycleStatus(package_data.header.lifecycleStatus) : Pkg.lookupOrCreateLifecycleStatus('Unknown')), // FIXME this is def not concise enough
                     vendor: vendor,
       ).save(flush:true, failOnError:true)
 
@@ -571,5 +571,18 @@ class PackageIngestService implements DataBinder {
     }
 
     pkg.save(failOnError: true)
+  }
+
+  /* Lookup or create a package from contentItemPackage within the passed contentItem */
+  public Pkg lookupOrCreatePackageFromTitle(ContentItemSchema pc) {
+    Pkg pkg = null;
+    if (pc?.contentItemPackage) {
+      pkg = lookupOrCreatePkg(pc.contentItemPackage)
+    } else {
+      /* FIXME WIP this feels like not the right thing to do */
+      throw new Exception("Idk what do do in this situation, throw for now")
+    }
+
+    return pkg
   }
 }

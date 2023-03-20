@@ -10,7 +10,7 @@ import org.olf.dataimport.erm.ErmPackageImplWithContentItems
 import org.olf.dataimport.erm.Identifier
 import org.olf.dataimport.erm.PackageProvider
 import org.olf.dataimport.internal.HeaderImpl
-import org.olf.dataimport.internal.InternalPackageImpl
+import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema
 import org.slf4j.MDC
@@ -81,7 +81,7 @@ class ImportService implements DataBinder {
   int importPackageUsingInternalSchema (final Map envelope) {
     // The whole envelope is a single package in this format.
     
-    Map result = importPackage (envelope, InternalPackageImpl)
+    Map result = importPackage (envelope, InternalPackageImplWithPackageContents)
     result.packageImported ? 1 : 0
   }
   
@@ -189,7 +189,7 @@ class ImportService implements DataBinder {
       return (false);
     }
     
-    final InternalPackageImpl pkg = new InternalPackageImpl()
+    final InternalPackageImplWithPackageContents pkg = new InternalPackageImplWithPackageContents()
     final PackageProvider pkgPrv = new PackageProvider()
     pkgPrv.name = packageProvider
 

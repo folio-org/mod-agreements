@@ -7,7 +7,6 @@ import groovy.util.logging.Slf4j
 @CurrentTenant
 class PushKBController {
   PushKBService pushKBService
-
   /*
    * Accept a list of packages of the form packageSchema -- but ignore ALL contentItems
    * (those will be handled later)
@@ -18,15 +17,27 @@ class PushKBController {
   public pushPkg() {
     log.debug("PushKBController::pushPkg")
 
-    // getObjectToBind is defined on OkapiTenantAwareController
     final bindObj = request.JSON as Map
-    def pushPkgResult = pushKBService.pushPackages(bindObj.records)
-    respond ([message: "pushPkg successful: ${pushPkgResult}", statusCode: 200])
+    Map pushPkgResult = pushKBService.pushPackages(bindObj.records)
+    if (pushPkgResult.success == false) {
+      String messageString = pushPkgResult?.errorMessage ?: 'Something went wrong'
+      respond ([message: messageString, statusCode: 500])
+    } else {
+      respond ([message: "pushPkg successful: ${pushPkgResult}", statusCode: 200])
+    }
   }
 
   public pushPci() {
     log.debug("PushKBController::pushPci")
-    respond ([message: 'pushPci', statusCode: 200])
+
+    final bindObj = request.JSON as Map
+    Map pushPCIResult = pushKBService.pushPCIs(bindObj.records)
+    if (pushPCIResult.success == false) {
+      String messageString = pushPCIResult?.errorMessage ?: 'Something went wrong'
+      respond ([message: messageString, statusCode: 500])
+    } else {
+      respond ([message: "pushPci successful: ${pushPCIResult}", statusCode: 200])
+    }
   }
 }
 

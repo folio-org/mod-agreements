@@ -12,7 +12,7 @@ import org.olf.general.jobs.ResourceRematchJob
 
 import org.olf.kb.RemoteKB
 import org.springframework.validation.BindingResult
-import org.olf.dataimport.internal.InternalPackageImpl
+import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.kb.KBCacheUpdater
 import org.olf.general.jobs.NaiveMatchKeyAssignmentJob
 import org.olf.general.jobs.PersistentJob
@@ -47,7 +47,7 @@ class AdminController implements DataBinder{
     if ( file ) {
       def jsonSlurper = new JsonSlurper()
       
-      def package_data = new InternalPackageImpl()
+      def package_data = new InternalPackageImplWithPackageContents()
       BindingResult br = bindData (package_data, jsonSlurper.parse(file.inputStream))
       if (br?.hasErrors()) {
         br.allErrors.each {

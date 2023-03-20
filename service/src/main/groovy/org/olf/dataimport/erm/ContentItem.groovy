@@ -11,6 +11,8 @@ import grails.validation.Validateable
 import groovy.transform.Memoized
 import groovy.transform.ToString
 
+import org.springframework.validation.Errors
+
 @ToString(includePackage=false)
 @GrailsCompileStatic
 class ContentItem implements ContentItemSchema, Validateable {
@@ -21,6 +23,9 @@ class ContentItem implements ContentItemSchema, Validateable {
   LocalDate accessStart
   LocalDate accessEnd
   String embargo
+
+  // Must NOT have items of its own
+  ErmPackageImpl contentItemPackage
   
   Set<CoverageStatement> coverage
   
@@ -30,6 +35,16 @@ class ContentItem implements ContentItemSchema, Validateable {
     coverage: CoverageStatement
   ]
   
+  /* As far as I can tell, this validation isn't actually ever fired for the import process.
+   * This is fine, since in general we validate the actual domain objects we
+   * save to the db, but it does potentially leave space for optimisation if we can catch some
+   * failures earlier.
+   *
+   * The newer "pushKB" process will call a validate, so extra validators have been added
+   * to PackageContentImpl to allow fields that _ARE_ nullable, but were never previously
+   * validated, so were presumed non-nullable. Those may need to be copied over here if we
+    * turn on validate for this schema in future.
+   */
   static constraints = {
     note          nullable: true, blank: false
     depth         nullable: true, blank: false
@@ -47,7 +62,13 @@ class ContentItem implements ContentItemSchema, Validateable {
           return [ 'start.after.end', 'accessStart', item.class.name, item.accessStart, endDate]
       }
     }
-    
+
+    contentItemPackage validator: {ErmPackageImpl pkg, ContentItemSchema item, Errors errors ->
+      if ((pkg?.contentItems ?: []).size() > 0) {
+        errors.rejectValue('contentItemPackage', 'contentItemPackage.has.items')
+      }
+    }
+
     coverage (validator: AbstractCoverageStatement.STATEMENT_COLLECTION_VALIDATOR, sort:'startDate')
     platformTitleInstance nullable: false
   }
