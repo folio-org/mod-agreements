@@ -1,4 +1,4 @@
-package org.olf
+package org.olf.general.pushKB
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -17,6 +17,11 @@ import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.KBManagementBean
 import org.olf.dataimport.internal.KBManagementBean.KBIngressType
+
+// Have moved to another package to help pull some of this work together, now need to import these beans
+import org.olf.UtilityService
+import org.olf.PackageIngestService
+import org.olf.TitleIngestService
 
 import org.slf4j.MDC
 

@@ -1,5 +1,8 @@
-package org.olf
+package org.olf.general.pushKB
 
+import org.olf.general.pushKB.PushKBService
+
+import grails.gorm.multitenancy.Tenants
 import grails.gorm.multitenancy.CurrentTenant
 import groovy.util.logging.Slf4j
 
@@ -16,6 +19,7 @@ class PushKBController {
    */
   public pushPkg() {
     log.debug("PushKBController::pushPkg")
+    String tenantId = ensureTenant()
 
     final bindObj = request.JSON as Map
     Map pushPkgResult = pushKBService.pushPackages(bindObj.records)
@@ -38,6 +42,16 @@ class PushKBController {
     } else {
       respond ([message: "pushPci successful: ${pushPCIResult}", statusCode: 200])
     }
+  }
+
+  private String ensureTenant () throws IllegalStateException {
+    final String tenantId = Tenants.currentId()
+    
+    if (!tenantId) {
+      throw new IllegalStateException('Could not determine the tenant ID')
+    }
+    
+    tenantId
   }
 }
 
