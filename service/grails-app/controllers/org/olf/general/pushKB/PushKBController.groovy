@@ -1,6 +1,9 @@
 package org.olf.general.pushKB
 
+import java.time.Instant
+
 import org.olf.general.pushKB.PushKBService
+import org.olf.general.jobs.JobContext
 
 import grails.gorm.multitenancy.Tenants
 import grails.gorm.multitenancy.CurrentTenant
@@ -22,6 +25,9 @@ class PushKBController {
     String tenantId = ensureTenant()
 
     final bindObj = request.JSON as Map
+    // Handle PushKBSession and PushKBChunk
+    handleSessionAndChunk(bindObj, tenantId);
+
     Map pushPkgResult = pushKBService.pushPackages(bindObj.records)
     if (pushPkgResult.success == false) {
       String messageString = pushPkgResult?.errorMessage ?: 'Something went wrong'
@@ -29,12 +35,19 @@ class PushKBController {
     } else {
       respond ([message: "pushPkg successful: ${pushPkgResult}", statusCode: 200])
     }
+
+    // Ensure we close chunk process to end logging on this chunk
+    endChunk()
   }
 
   public pushPci() {
     log.debug("PushKBController::pushPci")
 
     final bindObj = request.JSON as Map
+
+    // Handle PushKBSession and PushKBChunk
+    handleSessionAndChunk(bindObj, tenantId);
+
     Map pushPCIResult = pushKBService.pushPCIs(bindObj.records)
     if (pushPCIResult.success == false) {
       String messageString = pushPCIResult?.errorMessage ?: 'Something went wrong'
@@ -42,6 +55,9 @@ class PushKBController {
     } else {
       respond ([message: "pushPci successful: ${pushPCIResult}", statusCode: 200])
     }
+
+    // Ensure we close chunk process to end logging on this chunk
+    endChunk()
   }
 
   private String ensureTenant () throws IllegalStateException {
@@ -52,6 +68,49 @@ class PushKBController {
     }
     
     tenantId
+  }
+
+  private void handleSessionAndChunk(Map bindObj, String tenantId) {
+    PushKBSession session = null;
+    PushKBChunk chunk = null;
+
+    // Check for passed sessionId
+    if (bindObj.sessionId) {
+      session = PushKBSession.findBySessionId(bindObj.sessionId)
+      if (!session) {
+        session = new PushKBSession([
+          sessionId: bindObj.sessionId
+        ]).save(flush: true, failOnError: true)
+      }
+    } else {
+      // If no passed sessionId, set up new session with id based on current time
+      session = new PushKBSession([
+        sessionId: "PushKBSession - ${Instant.now()}"
+      ]).save(flush: true, failOnError: true)
+    }
+
+    // Then check for passed chunkId
+    if (bindObj.chunkId) {
+      chunk = new PushKBChunk([
+        chunkId: bindObj.chunkId,
+      ])
+    } else {
+      // If no passed chunkId, set up new chunk with id based on current time
+      chunk = new PushKBChunk([
+        chunkId: "PushKBChunk - ${Instant.now()}"
+      ])
+    }
+
+    session.addToChunks(chunk)
+    session.save(flush: true, failOnError: true)
+
+    // Use the same setup as Jobs to append logs to this new Chunk object
+    JobContext.current.set(new JobContext( jobId: chunk.id, tenantId: tenantId ))
+  }
+
+  private void endChunk() {
+    JobContext.current.remove()
+    org.slf4j.MDC.clear()
   }
 }
 
