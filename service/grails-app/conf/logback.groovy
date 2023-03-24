@@ -107,3 +107,4 @@ logger ('org.olf.KbManagementService', DEBUG, ['JOB'])
 logger ('org.olf.KbHarvestService', DEBUG, ['JOB'])
 // PushKBSpecific ones
 logger ('org.olf.general.pushKB.PushKBService', DEBUG, ['JOB'])
+logger ('org.olf.UtilityService', DEBUG, ['JOB'])

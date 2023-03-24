@@ -34,6 +34,8 @@ import grails.web.databinding.DataBinder
 import static groovy.transform.TypeCheckingMode.SKIP
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import org.slf4j.MDC
+
 
 @Slf4j
 class PushKBService implements DataBinder {
@@ -50,20 +52,24 @@ class PushKBService implements DataBinder {
     KBIngressType ingressType = kbManagementBean.ingressType
 
     if (ingressType == KBIngressType.PushKB) {
-      packages.each { Map record ->
-        final PackageSchema pkg = InternalPackageImpl.newInstance();
-        bindData(pkg, record)
-        if (utilityService.checkValidBinding(pkg)) {
+      try {
+        packages.each { Map record ->
+          final PackageSchema pkg = InternalPackageImpl.newInstance();
+          bindData(pkg, record)
+          if (utilityService.checkValidBinding(pkg)) {
 
-          // Start a transaction -- method in packageIngestService needs this
-          Pkg.withNewTransaction { status ->
-            packageIngestService.upsertPackage(pkg)
+            // Start a transaction -- method in packageIngestService needs this
+            Pkg.withNewTransaction { status ->
+              packageIngestService.upsertPackage(pkg)
+            }
+
           }
-
         }
+        result.success = true
+      } catch (Exception e) {
+        log.error("Something went wrong", e);
+        result.errorMessage = "Something went wrong: ${e}"
       }
-
-      result.success = true
     } else {
       result.errorMessage = "pushPackages not valid when kbManagementBean is configured with type (${ingressType})"
     }
@@ -78,22 +84,29 @@ class PushKBService implements DataBinder {
     KBIngressType ingressType = kbManagementBean.ingressType
 
     if (ingressType == KBIngressType.PushKB) {
-      pcis.each { Map record ->
-        log.debug("LOGGING PCI: ${record}")
-        final ContentItemSchema pci = PackageContentImpl.newInstance();
-        bindData(pci, record)
-        if (utilityService.checkValidBinding(pci)) {
-          Pkg pkg = null;
-          Pkg.withNewTransaction { status ->
-            pkg = packageIngestService.lookupOrCreatePackageFromTitle(pci);
-          }
+      try {
+        pcis.each { Map record ->
+          // Handle MDC directly? Might not be the right approach
+          MDC.put('title', record.title.toString())
 
-          log.debug("LOGGING PACKAGE OBTAINED FROM PCI: ${pkg}")
-          result.success = true
-        } else {
-          // FIXME fix this exception
-          throw new Exception("Whoops, this shouldn't be happening")
+          log.debug("LOGGING PCI: ${record}")
+          final ContentItemSchema pci = PackageContentImpl.newInstance();
+          bindData(pci, record)
+          if (utilityService.checkValidBinding(pci)) {
+            Pkg pkg = null;
+            Pkg.withNewTransaction { status ->
+              pkg = packageIngestService.lookupOrCreatePackageFromTitle(pci);
+            }
+
+            log.debug("LOGGING PACKAGE OBTAINED FROM PCI: ${pkg}")
+          } else {
+            // We could log an ending error message here, but the error log messages from checkValidBinding may well suffice
+          }
         }
+        result.success = true
+      } catch (Exception e) {
+        log.error("Something went wrong", e);
+        result.errorMessage = "Something went wrong: ${e}"
       }
     } else {
       result.errorMessage = "pushPCIs not valid when kbManagementBean is configured with type (${ingressType})"
