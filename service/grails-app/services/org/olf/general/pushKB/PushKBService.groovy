@@ -62,6 +62,8 @@ class PushKBService implements DataBinder {
 
         }
       }
+
+      result.success = true
     } else {
       result.errorMessage = "pushPackages not valid when kbManagementBean is configured with type (${ingressType})"
     }
@@ -87,6 +89,7 @@ class PushKBService implements DataBinder {
           }
 
           log.debug("LOGGING PACKAGE OBTAINED FROM PCI: ${pkg}")
+          result.success = true
         } else {
           // FIXME fix this exception
           throw new Exception("Whoops, this shouldn't be happening")

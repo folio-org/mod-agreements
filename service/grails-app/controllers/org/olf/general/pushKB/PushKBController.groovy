@@ -27,13 +27,16 @@ class PushKBController {
     final bindObj = request.JSON as Map
     // Handle PushKBSession and PushKBChunk
     handleSessionAndChunk(bindObj, tenantId);
+    // FIXME we should have a try/catch here and ensure we are throwing exceptions
+    // ONLY when an entire chunk is failing. If only data is failing then we log errors
+    // but return 200
 
     Map pushPkgResult = pushKBService.pushPackages(bindObj.records)
     if (pushPkgResult.success == false) {
       String messageString = pushPkgResult?.errorMessage ?: 'Something went wrong'
       respond ([message: messageString, statusCode: 500])
     } else {
-      respond ([message: "pushPkg successful: ${pushPkgResult}", statusCode: 200])
+      respond ([message: "pushPkg successful", statusCode: 200, pushPkgResult: pushPkgResult])
     }
 
     // Ensure we close chunk process to end logging on this chunk
@@ -48,12 +51,15 @@ class PushKBController {
     // Handle PushKBSession and PushKBChunk
     handleSessionAndChunk(bindObj, tenantId);
 
+    // FIXME we should have a try/catch here and ensure we are throwing exceptions
+    // ONLY when an entire chunk is failing. If only data is failing then we log errors
+    // but return 200
     Map pushPCIResult = pushKBService.pushPCIs(bindObj.records)
     if (pushPCIResult.success == false) {
       String messageString = pushPCIResult?.errorMessage ?: 'Something went wrong'
       respond ([message: messageString, statusCode: 500])
     } else {
-      respond ([message: "pushPci successful: ${pushPCIResult}", statusCode: 200])
+      respond ([message: "pushPci successful", statusCode: 200, pushPkgResult: pushPkgResult])
     }
 
     // Ensure we close chunk process to end logging on this chunk
