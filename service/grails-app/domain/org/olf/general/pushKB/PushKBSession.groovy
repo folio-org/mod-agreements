@@ -12,8 +12,6 @@ import grails.util.Holders
  * or JobContext, so instead we set up a PushKBChunk class to house the LogContainer
  * needed to store and view logging for the ERM side of the ingest.
  *
- * This is the class which sits "above" PushKBChunk and allows for grouping of
- * several chunks into a single "Session"
  */
 
 public class PushKBSession implements MultiTenant<PushKBSession> {

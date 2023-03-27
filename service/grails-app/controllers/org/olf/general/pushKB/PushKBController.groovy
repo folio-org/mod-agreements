@@ -42,6 +42,9 @@ class PushKBController {
 
   public pushPci() {
     log.debug("PushKBController::pushPci")
+    // FIXME WIP, remove to work on this again
+    respond ([message: "Not yet implemented", statusCode: 500])
+    return null;
 
     final bindObj = request.JSON as Map
 
