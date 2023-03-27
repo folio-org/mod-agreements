@@ -179,7 +179,7 @@ dependencies {
   compile 'com.k_int.okapi:grails-okapi:5.0.1'
 
   compile 'uk.co.cacoethes:groovy-handlebars-engine:0.2'
-  compile 'com.github.jknack:handlebars-helpers:2.0.0'
+  compile 'com.github.jknack:handlebars-helpers:4.3.1'
   compile 'commons-fileupload:commons-fileupload:1.4'
 
   // Minio for file storage to S3
