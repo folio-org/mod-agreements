@@ -50,7 +50,7 @@ if (controllerName != 'remoteLicenseLink' ) {
 if ( controllerName != 'usageDataProvider' ) {
   should_expand << 'usageDataProviders'
 }
-log.debug('params.fetchItems %o', params.fetchItems);
+
 if ( ( controllerName == 'subscriptionAgreement' ) && ( ['save', 'show', 'edit', 'update'].contains(actionName) ) ) {
   if(params.fetchItems != 'false') {
     should_expand << 'items'
