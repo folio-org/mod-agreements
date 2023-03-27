@@ -1,0 +1,19 @@
+import groovy.transform.Field
+import org.olf.general.pushKB.PushKBChunk
+
+@Field
+PushKBChunk pushKBChunk
+
+final List logs = ['fullLogCount', 'errorLogCount', 'infoLogCount']
+def should_expand = []
+
+if ( controllerName != 'pushKBSession' ) {
+  should_expand << 'session'
+}
+
+json g.render(pushKBChunk, [expand: should_expand]) {
+  logs.each {final String propName ->
+    final long logCount = pushKBChunk[propName] as long
+    call(propName, logCount)
+  }
+}

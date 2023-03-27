@@ -63,7 +63,6 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
     sourceDataCreated  nullable: true, blank: false
     sourceDataUpdated  nullable: true, blank: false
     lifecycleStatus    nullable: true, blank: false
-    contentItems minSize: 1
   }
 
   @Override

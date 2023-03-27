@@ -52,116 +52,6 @@ class PackageIngestService implements DataBinder {
 
   private static final def countChanges = ['accessStart', 'accessEnd']
 
-  def updateContentTypes (String pkgId, PackageSchema package_data) {
-    Pkg pkg = Pkg.get(pkgId);
-    def contentTypes = package_data?.header?.contentTypes ?: []
-    // To avoid changing the object we're iterating over,
-    // we first iterate over the object to grab the items to remove,
-    // then iterate over _that_ list to remove them
-    def contentTypesToRemove = [];
-
-    pkg.contentTypes.each {
-      if (!contentTypes.contains(it.contentType.label)) {
-        contentTypesToRemove << it
-      }
-    }
-
-    contentTypesToRemove.each {
-      pkg.removeFromContentTypes(it)
-    }
-
-    contentTypes.each {def ct ->
-      if(!pkg.contentTypes?.collect {def pct -> pct.contentType.label }.contains(ct.contentType)) {
-        pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(ct.contentType)]))
-      }
-    }
-
-    pkg.save(failOnError: true)
-  }
-
-  def updateAlternateNames (String pkgId, PackageSchema package_data) {
-    Pkg pkg = Pkg.get(pkgId);
-
-    def resourceNames = package_data?.header?.alternateResourceNames ?: []
-    // To avoid changing the object we're iterating over,
-    // we first iterate over the object to grab the items to remove,
-    // then iterate over _that_ list to remove them
-    def alternateNamesToRemove = [];
-
-    pkg.alternateResourceNames.each {
-      if (!resourceNames.contains(it.name)) {
-        def arn_tbd = AlternateResourceName.findByName(it.name)
-        alternateNamesToRemove << arn_tbd
-      }
-    }
-
-    alternateNamesToRemove.each {
-      pkg.removeFromAlternateResourceNames(it)
-    }
-
-    resourceNames.each {def arn ->
-      if(!pkg.alternateResourceNames?.collect {def parn -> parn.name }.contains(arn.name)) {
-        pkg.addToAlternateResourceNames(new AlternateResourceName([name: arn.name]))
-      }
-    }
-
-    pkg.save(failOnError: true)
-  }
-
-  def updateAvailabilityConstraints (String pkgId, PackageSchema package_data) {
-    Pkg pkg = Pkg.get(pkgId);
-    def availabilityConstraints = package_data?.header?.availabilityConstraints ?: []
-    // To avoid changing the object we're iterating over,
-    // we first iterate over the object to grab the items to remove,
-    // then iterate over _that_ list to remove them
-    def availabilityConstraintsToRemove = [];
-
-    pkg.availabilityConstraints.each {
-      if (!availabilityConstraints.contains(it.body.label)) {
-        availabilityConstraintsToRemove << it
-      }
-    }
-
-    availabilityConstraintsToRemove.each {
-      pkg.removeFromAvailabilityConstraints(it)
-    }
-
-    availabilityConstraints.each {def ac ->
-      if(!pkg.availabilityConstraints?.collect {def pac -> pac.body.label }.contains(ac.body)) {
-        pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(ac.body)]))
-      }
-    }
-
-    pkg.save(failOnError: true)
-  }
-
-  def updatePackageDescriptionUrls (String pkgId, PackageSchema package_data) {
-    Pkg pkg = Pkg.get(pkgId);
-    def urls = package_data?.header?.packageDescriptionUrls ?: []
-    // To avoid changing the object we're iterating over,
-    // we first iterate over the object to grab the items to remove,
-    // then iterate over _that_ list to remove them
-    def urlsToRemove = [];
-
-    pkg.packageDescriptionUrls.each {
-      if (!urls.contains(it.url)) {
-        urlsToRemove << it
-      }
-    }
-
-    urlsToRemove.each {
-      pkg.removeFromPackageDescriptionUrls(it)
-    }
-
-    urls.each {def url ->
-      if(!pkg.packageDescriptionUrls?.collect {def pdu -> pdu.url }.contains(url.url)) {
-        pkg.addToPackageDescriptionUrls(new PackageDescriptionUrl([url: url.url]))
-      }
-    }
-
-    pkg.save(failOnError: true)
-  }
-
   /**
    * Load the paackage data (Given in the agreed canonical json package format) into the KB.
    * This function must be passed VALID package data. At this point, all package contents are
@@ -172,6 +62,7 @@ class PackageIngestService implements DataBinder {
    * @return id of package upserted
    */
   public Map upsertPackage(PackageSchema package_data, String remotekbname, boolean readOnly=false) {
+    Pkg pkg = null;
     // Remove MDC title at top of upsert package
     MDC.remove('title')
     def result = [
@@ -184,7 +75,6 @@ class PackageIngestService implements DataBinder {
       updatedAccessEnd: 0,
     ]
 
-    Pkg pkg = null
     Boolean trustedSourceTI = package_data.header?.trustedSourceTI
 
     // ERM caches many remote KB sources in it's local package inventory
@@ -214,88 +104,12 @@ class PackageIngestService implements DataBinder {
       result.updateTime = System.currentTimeMillis()
 
       log.info("Package header: ${package_data.header} - update start time is ${result.updateTime}")
-
-      // header.packageSlug contains the package maintainers authoritative identifier for this package.
-      pkg = Pkg.findBySourceAndReference(package_data.header.packageSource, package_data.header.packageSlug)
-      if (pkg == null) {
-        // at this point we check alternate slugs
-        def alternateSlugs = package_data.header.alternateSlugs;
-        for ( alternateSlug in alternateSlugs ) {
-          pkg = Pkg.findBySourceAndReference(package_data.header.packageSource, alternateSlug);
-          if ( pkg != null ) {
-            pkg.reference = package_data.header.packageSlug;
-            break;
-          }
-        }
-      }
-
-      def vendor = null
-      if ( ( package_data.header?.packageProvider?.name != null ) && ( package_data.header?.packageProvider?.name.trim().length() > 0 ) ) {
-        log.debug("Package contains provider information: ${package_data.header?.packageProvider?.name} -- trying to match to an existing organisation.")
-        vendor = dependentModuleProxyService.coordinateOrg(package_data.header?.packageProvider?.name)
-        // reference has been removed at the request of the UI team
-        // vendor.enrich(['reference':package_data.header?.packageProvider?.reference])
-      }
-      else {
-        log.warn('Package ingest - no provider information present')
-      }
-
-      if ( pkg == null ) {
-        pkg = new Pkg(
-                        name: package_data.header.packageName,
-                      source: package_data.header.packageSource,
-                  reference: package_data.header.packageSlug,
-                description: package_data.header.description,
-          sourceDataCreated: package_data.header.sourceDataCreated,
-          sourceDataUpdated: package_data.header.sourceDataUpdated,
-          availabilityScope: ( package_data.header.availabilityScope != null ? Pkg.lookupOrCreateAvailabilityScope(package_data.header.availabilityScope) : null ),
-            lifecycleStatus: ( package_data.header.lifecycleStatus != null ? Pkg.lookupOrCreateLifecycleStatus(package_data.header.lifecycleStatus) : null ),
-                    remoteKb: kb,
-                      vendor: vendor
-        ).save(flush:true, failOnError:true)
-        MDC.put('packageSource', pkg.source.toString())
-        MDC.put('packageReference', pkg.reference.toString())
-
-        (package_data?.header?.contentTypes ?: []).each {
-          pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
-        }
-
-        (package_data?.header?.alternateResourceNames ?: []).each {
-          pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
-        }
-
-        (package_data?.header?.availabilityConstraints ?: []).each {
-          pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(it.body)]))
-        }
-
-        (package_data?.header?.packageDescriptionUrls ?: []).each {
-          pkg.addToPackageDescriptionUrls(new PackageDescriptionUrl([url: it.url]))
-        }
-
-        pkg.save(failOnError: true)
-      } else {
-        pkg.sourceDataUpdated = package_data.header.sourceDataUpdated
-
-        if (package_data.header.lifecycleStatus) {
-          pkg.lifecycleStatusFromString = package_data.header.lifecycleStatus
-        }
-
-        if (package_data.header.availabilityScope) {
-          pkg.availabilityScopeFromString = package_data.header.availabilityScope
-        }
-
-        pkg.vendor = vendor
-        pkg.description = package_data.header.description
-        pkg.name = package_data.header.packageName
-        pkg.save(failOnError:true)
-
-        // Call separate methods for updating collections for code cleanliness
-        // These methods are responsible for their own saves
-        updateContentTypes(pkg.id, package_data)
-        updateAlternateNames(pkg.id, package_data)
-        updateAvailabilityConstraints(pkg.id, package_data)
-        updatePackageDescriptionUrls(pkg.id, package_data)
-      }
+      
+      // Farm out package lookup and creation to a separate method
+      pkg = lookupOrCreatePkg(package_data);
+      // Retain logging information
+      MDC.put('packageSource', pkg.source.toString())
+      MDC.put('packageReference', pkg.reference.toString())
 
       // Update identifiers from citation
       identifierService.updatePackageIdentifiers(pkg, package_data.identifiers)
@@ -555,5 +369,220 @@ class PackageIngestService implements DataBinder {
 //    MDC.clear()
 
     return result
+  }
+
+  /* 
+   * Separate out the create or lookup pkg code, so that it can 
+   * be used both by the ingest service (via upsert pkg), as well
+   * as the pushKBService (directly)
+   *
+   * This method ALSO provides update information for packages.
+   */
+  public Pkg lookupOrCreatePkg(PackageSchema package_data) {
+    Pkg pkg = null
+
+    // header.packageSlug contains the package maintainers authoritative identifier for this package.
+    pkg = Pkg.findBySourceAndReference(package_data.header.packageSource, package_data.header.packageSlug)
+    if (pkg == null) {
+      // at this point we check alternate slugs
+      for ( alternateSlug in package_data.header.alternateSlugs ) {
+        pkg = Pkg.findBySourceAndReference(package_data.header.packageSource, alternateSlug);
+        if ( pkg != null ) {
+          pkg.reference = package_data.header.packageSlug;
+          break;
+        }
+      }
+    }
+
+    def vendor = null
+    if ( ( package_data.header?.packageProvider?.name != null ) && ( package_data.header?.packageProvider?.name.trim().length() > 0 ) ) {
+      log.debug("Package contains provider information: ${package_data.header?.packageProvider?.name} -- trying to match to an existing organisation.")
+      vendor = dependentModuleProxyService.coordinateOrg(package_data.header?.packageProvider?.name)
+      // reference has been removed at the request of the UI team
+      // vendor.enrich(['reference':package_data.header?.packageProvider?.reference])
+    }
+    else {
+      log.warn('Package ingest - no provider information present')
+    }
+
+    if ( pkg == null ) {
+      pkg = new Pkg(
+                      name: package_data.header.packageName,
+                    source: package_data.header.packageSource,
+                reference: package_data.header.packageSlug,
+              description: package_data.header.description,
+        sourceDataCreated: package_data.header.sourceDataCreated,
+        sourceDataUpdated: package_data.header.sourceDataUpdated,
+        availabilityScope: ( package_data.header.availabilityScope != null ? Pkg.lookupOrCreateAvailabilityScope(package_data.header.availabilityScope) : null ),
+          lifecycleStatus: (package_data.header.lifecycleStatus != null ? Pkg.lookupOrCreateLifecycleStatus(package_data.header.lifecycleStatus) : Pkg.lookupOrCreateLifecycleStatus('Unknown')), // FIXME this is def not concise enough
+                    vendor: vendor,
+      ).save(flush:true, failOnError:true)
+
+      (package_data?.header?.contentTypes ?: []).each {
+        pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
+      }
+
+      (package_data?.header?.alternateResourceNames ?: []).each {
+        pkg.addToAlternateResourceNames(new AlternateResourceName([name: it.name]))
+      }
+
+      (package_data?.header?.availabilityConstraints ?: []).each {
+        pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(it.body)]))
+      }
+
+      (package_data?.header?.packageDescriptionUrls ?: []).each {
+        pkg.addToPackageDescriptionUrls(new PackageDescriptionUrl([url: it.url]))
+      }
+
+      pkg.save(failOnError: true)
+    } else {
+      pkg.sourceDataUpdated = package_data.header.sourceDataUpdated
+
+      if (package_data.header.lifecycleStatus) {
+        pkg.lifecycleStatusFromString = package_data.header.lifecycleStatus
+      }
+
+      if (package_data.header.availabilityScope) {
+        pkg.availabilityScopeFromString = package_data.header.availabilityScope
+      }
+
+      pkg.vendor = vendor
+      pkg.description = package_data.header.description
+      pkg.name = package_data.header.packageName
+      pkg.save(failOnError:true)
+
+      // Call separate methods for updating collections for code cleanliness
+      // These methods are responsible for their own saves
+      updateContentTypes(pkg.id, package_data)
+      updateAlternateNames(pkg.id, package_data)
+      updateAvailabilityConstraints(pkg.id, package_data)
+      updatePackageDescriptionUrls(pkg.id, package_data)
+    }
+
+    return pkg;
+  }
+
+  def updateContentTypes (String pkgId, PackageSchema package_data) {
+    Pkg pkg = Pkg.get(pkgId);
+    def contentTypes = package_data?.header?.contentTypes ?: []
+    // To avoid changing the object we're iterating over,
+    // we first iterate over the object to grab the items to remove,
+    // then iterate over _that_ list to remove them
+    def contentTypesToRemove = [];
+
+    pkg.contentTypes.each {
+      if (!contentTypes.contains(it.contentType.label)) {
+        contentTypesToRemove << it
+      }
+    }
+
+    contentTypesToRemove.each {
+      pkg.removeFromContentTypes(it)
+    }
+
+    contentTypes.each {def ct ->
+      if(!pkg.contentTypes?.collect {def pct -> pct.contentType.label }.contains(ct.contentType)) {
+        pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(ct.contentType)]))
+      }
+    }
+
+    pkg.save(failOnError: true)
+  }
+
+  /*  ---- Individual update package methods ---- */
+  def updateAlternateNames (String pkgId, PackageSchema package_data) {
+    Pkg pkg = Pkg.get(pkgId);
+
+    def resourceNames = package_data?.header?.alternateResourceNames ?: []
+    // To avoid changing the object we're iterating over,
+    // we first iterate over the object to grab the items to remove,
+    // then iterate over _that_ list to remove them
+    def alternateNamesToRemove = [];
+
+    pkg.alternateResourceNames.each {
+      if (!resourceNames.contains(it.name)) {
+        def arn_tbd = AlternateResourceName.findByName(it.name)
+        alternateNamesToRemove << arn_tbd
+      }
+    }
+
+    alternateNamesToRemove.each {
+      pkg.removeFromAlternateResourceNames(it)
+    }
+
+    resourceNames.each {def arn ->
+      if(!pkg.alternateResourceNames?.collect {def parn -> parn.name }.contains(arn.name)) {
+        pkg.addToAlternateResourceNames(new AlternateResourceName([name: arn.name]))
+      }
+    }
+
+    pkg.save(failOnError: true)
+  }
+
+  def updateAvailabilityConstraints (String pkgId, PackageSchema package_data) {
+    Pkg pkg = Pkg.get(pkgId);
+    def availabilityConstraints = package_data?.header?.availabilityConstraints ?: []
+    // To avoid changing the object we're iterating over,
+    // we first iterate over the object to grab the items to remove,
+    // then iterate over _that_ list to remove them
+    def availabilityConstraintsToRemove = [];
+
+    pkg.availabilityConstraints.each {
+      if (!availabilityConstraints.contains(it.body.label)) {
+        availabilityConstraintsToRemove << it
+      }
+    }
+
+    availabilityConstraintsToRemove.each {
+      pkg.removeFromAvailabilityConstraints(it)
+    }
+
+    availabilityConstraints.each {def ac ->
+      if(!pkg.availabilityConstraints?.collect {def pac -> pac.body.label }.contains(ac.body)) {
+        pkg.addToAvailabilityConstraints(new AvailabilityConstraint([body: AvailabilityConstraint.lookupOrCreateBody(ac.body)]))
+      }
+    }
+
+    pkg.save(failOnError: true)
+  }
+
+  def updatePackageDescriptionUrls (String pkgId, PackageSchema package_data) {
+    Pkg pkg = Pkg.get(pkgId);
+    def urls = package_data?.header?.packageDescriptionUrls ?: []
+    // To avoid changing the object we're iterating over,
+    // we first iterate over the object to grab the items to remove,
+    // then iterate over _that_ list to remove them
+    def urlsToRemove = [];
+
+    pkg.packageDescriptionUrls.each {
+      if (!urls.contains(it.url)) {
+        urlsToRemove << it
+      }
+    }
+
+    urlsToRemove.each {
+      pkg.removeFromPackageDescriptionUrls(it)
+    }
+
+    urls.each {def url ->
+      if(!pkg.packageDescriptionUrls?.collect {def pdu -> pdu.url }.contains(url.url)) {
+        pkg.addToPackageDescriptionUrls(new PackageDescriptionUrl([url: url.url]))
+      }
+    }
+
+    pkg.save(failOnError: true)
+  }
+
+  /* Lookup or create a package from contentItemPackage within the passed contentItem */
+  public Pkg lookupOrCreatePackageFromTitle(ContentItemSchema pc) {
+    Pkg pkg = null;
+    if (pc?.contentItemPackage) {
+      pkg = lookupOrCreatePkg(pc.contentItemPackage)
+    } else {
+      /* FIXME WIP this feels like not the right thing to do */
+      throw new Exception("Idk what do do in this situation, throw for now")
+    }
+
+    return pkg
   }
 }

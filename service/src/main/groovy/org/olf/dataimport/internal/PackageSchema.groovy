@@ -85,7 +85,6 @@ interface PackageSchema extends Validateable {
     String getReference()
   }
 
-  @CompileStatic
   public interface ContentItemSchema extends Validateable {
     /*
      {
@@ -126,6 +125,15 @@ interface PackageSchema extends Validateable {
       "_platformId": 627
     }
     */
+
+    /* 
+     * In the case of a standalone title being ingested,
+     * allow for PackageSchema to exist within ContentItemSchema
+     * rather than the other way around.
+     *
+     * IMPORTANT -- Any contentItems held within _this_ package schema MUST be ignored
+     */
+    PackageSchema getContentItemPackage()
 
     String getTitle()
     String getInstanceMedium()
