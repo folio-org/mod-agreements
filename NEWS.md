@@ -1,4 +1,5 @@
 ## 5.6.0 In progress
+  * ERM-2885 Reduce number of internal contact role defaults in Agreements
 
 ## 5.5.0 2023-02-20
   * ERM-2638 No name of linked agreement in license
