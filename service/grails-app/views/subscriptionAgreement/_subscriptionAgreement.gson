@@ -7,7 +7,7 @@ import org.olf.erm.AlternateName
 
 /*
  * to prevent fetching all entitlements (=items) for an agreement
- * one can now set the "fetchItems=false" query param
+ * one can now set the "expandItems=false" query param
  * default behaviour is "true"
  */
 
@@ -52,7 +52,7 @@ if ( controllerName != 'usageDataProvider' ) {
 }
 
 if ( ( controllerName == 'subscriptionAgreement' ) && ( ['save', 'show', 'edit', 'update'].contains(actionName) ) ) {
-  if(params.fetchItems != 'false') {
+  if(params.expandItems != 'false') {
     should_expand << 'items'
   }
 }
