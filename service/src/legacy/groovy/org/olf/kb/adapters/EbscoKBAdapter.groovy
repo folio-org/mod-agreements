@@ -9,7 +9,7 @@ import org.apache.http.*
 import org.apache.http.entity.mime.*
 import org.apache.http.entity.mime.content.*
 import org.apache.http.protocol.*
-import org.olf.dataimport.internal.InternalPackageImpl
+import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.kb.KBCache;
 import org.olf.kb.KBCacheUpdater;
 import org.springframework.validation.BindingResult
@@ -68,7 +68,7 @@ public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   public Map importPackage(Map<String, String> params,
                            KBCache cache) {
 
-    InternalPackageImpl erm_package = buildErmPackage(
+    InternalPackageImplWithPackageContents erm_package = buildErmPackage(
         params.vendorid,
         params.packageid,
         params.principal,
@@ -83,7 +83,7 @@ public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, 
    * @param params - A map containing vendorid and packageid
    * @return the canonicalpackage definition.
    */
-  private InternalPackageImpl buildErmPackage(final String vendorid, final String packageid, final String principal, final String credentials, final String package_reference) {
+  private InternalPackageImplWithPackageContents buildErmPackage(final String vendorid, final String packageid, final String principal, final String credentials, final String package_reference) {
 
     log.debug("buildErmPackage(${vendorid},${packageid},${principal},${credentials})");
 
@@ -257,7 +257,7 @@ public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       }
     }
 
-    InternalPackageImpl pkg = new InternalPackageImpl()
+    InternalPackageImplWithPackageContents pkg = new InternalPackageImplWithPackageContents()
     BindingResult binding = bindData (pkg, result)
     if (binding?.hasErrors()) {
       binding.allErrors.each { log.debug "\t${it}" }

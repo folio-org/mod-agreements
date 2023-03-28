@@ -5,6 +5,9 @@ import static groovy.transform.TypeCheckingMode.SKIP
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+import org.olf.dataimport.internal.KBManagementBean
+import org.olf.dataimport.internal.KBManagementBean.KBIngressType
+
 import org.olf.general.jobs.PackageIngestJob
 import org.olf.general.jobs.TitleIngestJob
 import org.olf.kb.RemoteKB
@@ -33,6 +36,8 @@ class KbHarvestService {
   OkapiTenantAdminService okapiTenantAdminService
   KnowledgeBaseCacheService knowledgeBaseCacheService
 
+  KBManagementBean kbManagementBean
+
   // All remote KBs not currently syncing and which have not been synced in the last 1 hour
   private static final PENDING_JOBS_HQL = '''select rkb.id
 from RemoteKB as rkb
@@ -58,43 +63,49 @@ where rkb.type is not null
 
   @CompileStatic(SKIP)
   private void triggerUpdateForTenant(final String tenant_schema_id) {
-    /* ERM-1801.
-     * We need to ensure TitleIngest happens BEFORE PackageIngest.
-     * To avoid syncronisation errors, we trigger both daily and hourly tasks from the same method,
-     * but add an extra condition to daily task query to find any that are fresher than a day old
-    */
-    Tenants.withId(tenant_schema_id) {
+    KBIngressType ingressType = kbManagementBean.ingressType
 
-      // Look for jobs queued, in progress or created more recently than a day ago (Grabbing the first will suffice)
-      TitleIngestJob titleJob = TitleIngestJob.executeQuery("""
-        SELECT tj FROM TitleIngestJob AS tj
-          WHERE (
-            (tj.status.value = 'queued' OR tj.status.value = 'in_progress') OR
-            (tj.dateCreated > :created)
-          )
-      """.toString(), [created: Instant.now().minus(1L, ChronoUnit.DAYS)])[0]
+    if (ingressType == KBIngressType.Harvest) {
+      /* ERM-1801.
+       * We need to ensure TitleIngest happens BEFORE PackageIngest.
+       * To avoid syncronisation errors, we trigger both daily and hourly tasks from the same method,
+       * but add an extra condition to daily task query to find any that are fresher than a day old
+       */
+      Tenants.withId(tenant_schema_id) {
 
-      PackageIngestJob packageJob = PackageIngestJob.findByStatusInList([
-        PackageIngestJob.lookupStatus('Queued'),
-        PackageIngestJob.lookupStatus('In progress')
-      ])
+        // Look for jobs queued, in progress or created more recently than a day ago (Grabbing the first will suffice)
+        TitleIngestJob titleJob = TitleIngestJob.executeQuery("""
+          SELECT tj FROM TitleIngestJob AS tj
+            WHERE (
+              (tj.status.value = 'queued' OR tj.status.value = 'in_progress') OR
+              (tj.dateCreated > :created)
+            )
+        """.toString(), [created: Instant.now().minus(1L, ChronoUnit.DAYS)])[0]
 
-      // ERM-1801 Ensure titleIngestJob gets created, saved and flushed first, so that the job runner can set that up in the queue ahead of packageIngestJob
-      if (!titleJob) {
-        titleJob = new TitleIngestJob(name: "Scheduled Title Ingest Job ${Instant.now()}")
-        titleJob.setStatusFromString('Queued')
-        titleJob.save(failOnError: true, flush: true)
-      } else {
-        log.info('Title harvester already running or scheduled. Ignore.')
+        PackageIngestJob packageJob = PackageIngestJob.findByStatusInList([
+          PackageIngestJob.lookupStatus('Queued'),
+          PackageIngestJob.lookupStatus('In progress')
+        ])
+
+        // ERM-1801 Ensure titleIngestJob gets created, saved and flushed first, so that the job runner can set that up in the queue ahead of packageIngestJob
+        if (!titleJob) {
+          titleJob = new TitleIngestJob(name: "Scheduled Title Ingest Job ${Instant.now()}")
+          titleJob.setStatusFromString('Queued')
+          titleJob.save(failOnError: true, flush: true)
+        } else {
+          log.info('Title harvester already running or scheduled. Ignore.')
+        }
+
+        if (!packageJob) {
+          packageJob = new PackageIngestJob(name: "Scheduled Package Ingest Job ${Instant.now()}")
+          packageJob.setStatusFromString('Queued')
+          packageJob.save(failOnError: true, flush: true)
+        } else {
+          log.info('Package harvester already running or scheduled. Ignore.')
+        }
       }
-
-      if (!packageJob) {
-        packageJob = new PackageIngestJob(name: "Scheduled Package Ingest Job ${Instant.now()}")
-        packageJob.setStatusFromString('Queued')
-        packageJob.save(failOnError: true, flush: true)
-      } else {
-        log.info('Package harvester already running or scheduled. Ignore.')
-      }
+    } else {
+      log.info("triggerUpdateForTenant is not valid when KBIngressType is (${ingressType})")
     }
   }
 

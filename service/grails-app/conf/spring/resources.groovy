@@ -1,4 +1,7 @@
 import org.olf.dataimport.internal.titleInstanceResolvers.*
+import org.olf.dataimport.internal.KBManagementBean
+import org.olf.dataimport.internal.KBManagementBean.KBIngressType
+
 // Place your Spring DSL code here
 beans = {
   /* 
@@ -8,4 +11,10 @@ beans = {
   */
   titleInstanceResolverService(IdFirstTIRSImpl)
   //titleInstanceResolverService(TitleFirstTIRSImpl)
+
+  // Swap between PushKB and Harvest processes to get data into internal KB
+  kbManagementBean(KBManagementBean) {
+    ingressType = KBIngressType.Harvest
+    //ingressType = KBIngressType.PushKB
+  }
 }

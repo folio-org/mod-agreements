@@ -5,15 +5,12 @@ import org.olf.dataimport.erm.Identifier
 
 import grails.validation.Validateable
 
+// Make distinction between InternalPackageImpl which requires packageContents and that which does not.
 @GrailsCompileStatic
-class InternalPackageImpl implements PackageSchema, Validateable {
-  
-  HeaderImpl header
-  List<Identifier> identifiers
-  List<PackageContentImpl> packageContents = []
+class InternalPackageImplWithPackageContents extends InternalPackageImpl {
   
   static constraints = {
-    header            nullable: false
+    packageContents   minSize: 1
   }
 }
 

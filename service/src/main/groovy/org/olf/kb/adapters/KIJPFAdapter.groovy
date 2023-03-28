@@ -1,6 +1,6 @@
 package org.olf.kb.adapters;
 
-import org.olf.dataimport.internal.InternalPackageImpl
+import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.kb.KBCache;
 import org.olf.kb.KBCacheUpdater;
@@ -161,7 +161,7 @@ public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, Da
 
 
   private PackageSchema kbplusToERM(Map<String,?> m) {
-    InternalPackageImpl pkg = new InternalPackageImpl()
+    InternalPackageImplWithPackageContents pkg = new InternalPackageImplWithPackageContents()
     BindingResult binding = bindData (pkg, m)
     if (binding?.hasErrors()) {
       binding.allErrors.each { log.debug "\t${it}" }

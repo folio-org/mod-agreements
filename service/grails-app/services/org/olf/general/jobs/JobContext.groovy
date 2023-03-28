@@ -4,6 +4,11 @@ import grails.gorm.multitenancy.Tenants
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
+/* As of Poppy, this will ALSO be used for setting the pushKB context
+ * so that logs reflect on those objects in the same way as on jobs
+ * Keeping the naming/package scheme the same in case we want to lift
+ * just the job part out later
+ */
 @CompileStatic
 @Slf4j
 final class JobContext {

@@ -185,14 +185,14 @@ class BaseTIRS {
         // If not already set, stash the instanceMedia we are looking at in instancePublicationMedia
         // citation.instanceMedia = 'serial';
         resource_type = 'serial'
-        resource_pub_type = citation.instancePublicationMedia ?: 'serial'
+        resource_pub_type = citation.instancePublicationMedia ?: citation.instanceMedia ?: 'serial'
         break;
       case 'BKM':
       case 'book':
         // If not already set, stash the instanceMedia we are looking at in instancePublicationMedia
         // citation.instanceMedia = 'monograph';
         resource_type = 'monograph'
-        resource_pub_type = citation.instancePublicationMedia ?: 'monograph'
+        resource_pub_type = citation.instancePublicationMedia ?: citation.instanceMedia ?: 'monograph'
         break;
       default:
         log.warn("Unhandled media type ${citation.instanceMedia}");

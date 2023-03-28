@@ -5,7 +5,7 @@ import static groovy.transform.TypeCheckingMode.SKIP
 import java.text.*
 
 import org.olf.TitleEnricherService
-import org.olf.dataimport.internal.InternalPackageImpl
+import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
@@ -322,7 +322,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
    *   https://gokbt.gbv.de/gokb/oai/index/packages?verb=ListRecords&metadataPrefix=gokb
    */
   @CompileStatic(SKIP)
-  private InternalPackageImpl gokbToERM(GPathResult xml_gokb_record, boolean trustedSourceTI) {
+  private InternalPackageImplWithPackageContents gokbToERM(GPathResult xml_gokb_record, boolean trustedSourceTI) {
 
     def package_record = xml_gokb_record?.metadata?.gokb?.package
     def header = xml_gokb_record?.header
@@ -544,7 +544,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       throw new RuntimeException("Problem decoding package record: ${package_record}")
     }
 
-    InternalPackageImpl pkg = new InternalPackageImpl()
+    InternalPackageImplWithPackageContents pkg = new InternalPackageImplWithPackageContents()
     BindingResult binding = bindData (pkg, result)
     if (binding?.hasErrors()) {
       binding.allErrors.each { log.debug "\t${it}" }

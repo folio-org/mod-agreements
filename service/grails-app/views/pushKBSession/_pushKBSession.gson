@@ -1,0 +1,12 @@
+import groovy.transform.Field
+import org.olf.general.pushKB.PushKBSession
+
+@Field
+PushKBSession pushKBSession
+
+def should_expand = []
+if ( controllerName != 'pushKBChunk' ) {
+  should_expand << 'chunks'
+}
+
+json g.render(pushKBSession, [expand: should_expand])

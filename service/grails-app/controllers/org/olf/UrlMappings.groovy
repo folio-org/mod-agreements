@@ -186,6 +186,19 @@ class UrlMappings {
 
     "/erm/settings/appSettings" (resources: 'setting');
 
+    "/erm/pushKB/pkg" (controller: 'pushKB', action: 'pushPkg', method: 'POST')
+    "/erm/pushKB/pci" (controller: 'pushKB', action: 'pushPci', method: 'POST')
+    // Two GET ONLY endpoints for sessions/chunks
+    "/erm/pushKB/sessions" (resources: 'pushKBSession', excludes: ['delete', 'update', 'patch', 'save', 'edit', 'create'])
+    "/erm/pushKB/chunks" (resources: 'pushKBChunk', excludes: ['delete', 'update', 'patch', 'save', 'edit', 'create']) {
+      "/fullLog" ( controller: 'pushKBChunk', action: 'fullLog', method: 'GET' )
+      "/fullLogStream" ( controller: 'pushKBChunk', action: 'fullLogStream', method: 'GET' )
+      "/errorLog" ( controller: 'pushKBChunk', action: 'errorLog', method: 'GET' )
+      "/errorLogStream" ( controller: 'pushKBChunk', action: 'errorLogStream', method: 'GET' )
+      "/infoLog" ( controller: 'pushKBChunk', action: 'infoLog', method: 'GET' )
+      "/infoLogStream" ( controller: 'pushKBChunk', action: 'infoLogStream', method: 'GET' )
+    }
+
     "/dashboard/definitions" (controller: 'dashboardDefinitions', action: 'getDefinitions' ,method: 'GET')
   }
 }

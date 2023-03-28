@@ -40,6 +40,9 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Transactional(readOnly=true)
 public class CoverageService {
+  private static UtilityService getUtilityService() {
+    Holders.grailsApplication.mainContext.getBean('utilityService')
+  }
 
   private static MessageSource getMessageSource() {
     Holders.grailsApplication.mainContext.getBean('messageSource')
@@ -143,6 +146,9 @@ public class CoverageService {
         }
 
         for ( CoverageStatementSchema cs : coverage_statements ) {
+          /* Not using utilityService.checkValidBinding here
+           * because we have custom error logging behaviour
+           */
           if (cs.validate()) {
             CoverageStatement new_cs = new CoverageStatement([
               startDate   : cs.startDate,
@@ -155,22 +161,20 @@ public class CoverageService {
 
             resource.addToCoverage( new_cs )
 
-            // Validate the object at each step.
-            if (!resource.validate()) {
-              resource.errors.allErrors.each { ObjectError error ->
-                log.error (messageSource.getMessage(error, LocaleContextHolder.locale))
-              }
+            if (!utilityService.checkValidBinding(resource)) {
               throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
             }
 
             resource.save()
           } else {
+
             // Not valid coverage statement
             cs.errors.allErrors.each { ObjectError error ->
-             // ERM-1932 coverage startDate nullable errors should not make it in the user's error log
-             if (!(error.getArguments()[0] == 'startDate' && error.getCode() == 'nullable')) {
-               log.error (messageSource.getMessage(error, LocaleContextHolder.locale))
-             }
+              /* TODO Perhaps in future we can extend checkValidBinding to this use case */
+              // ERM-1932 coverage startDate nullable errors should not make it in the user's error log
+              if (!(error.getArguments()[0] == 'startDate' && error.getCode() == 'nullable')) {
+                log.error (messageSource.getMessage(error, LocaleContextHolder.locale))
+              }
             }
           }
         }
