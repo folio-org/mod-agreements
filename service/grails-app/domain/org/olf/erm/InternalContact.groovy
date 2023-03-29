@@ -9,12 +9,12 @@ import grails.gorm.MultiTenant
 
 @GrailsCompileStatic
 public class InternalContact implements MultiTenant<InternalContact>, Clonable<InternalContact> {
-  
+
   String id
   String user
-  @Defaults(['Agreement owner', 'Authorized signatory', 'ERM librarian', 'Subject specialist']) // Defaults to create for this property.
+  @Defaults(['Subject specialist']) // Defaults to create for this property.
   RefdataValue role
-  
+
   static belongsTo = [
     owner: SubscriptionAgreement
   ]
@@ -33,7 +33,7 @@ public class InternalContact implements MultiTenant<InternalContact>, Clonable<I
         user(nullable:true, blank:false);
         role(nullable:true, blank:false);
   }
-  
+
   /**
    * Need to resolve the conflict manually and add the call to the clonable method here.
    */

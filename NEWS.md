@@ -1,5 +1,6 @@
 ## 5.6.0 In progress
   * ERM-2888 Do not load Agreement lines as part of agreement when viewing the agreement
+  * ERM-2885 Reduce number of internal contact role defaults in Agreements
 
 ## 5.5.0 2023-02-20
   * ERM-2638 No name of linked agreement in license
