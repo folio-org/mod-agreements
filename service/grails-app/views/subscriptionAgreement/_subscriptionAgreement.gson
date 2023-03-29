@@ -6,7 +6,7 @@ import org.olf.erm.AlternateName
 @Field SubscriptionAgreement subscriptionAgreement
 
 /*
- * to prevent fetching all entitlements (=items) for an agreement
+ * to prevent expanding all entitlements (=items) for an agreement
  * one can now set the "expandItems=false" query param
  * default behaviour is "true"
  */
