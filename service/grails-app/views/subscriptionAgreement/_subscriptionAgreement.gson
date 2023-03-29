@@ -51,10 +51,10 @@ if ( controllerName != 'usageDataProvider' ) {
   should_expand << 'usageDataProviders'
 }
 
-if ( ( controllerName == 'subscriptionAgreement' ) && ( ['save', 'show', 'edit', 'update'].contains(actionName) ) ) {
-  if(params.expandItems != 'false') {
+if ( ( controllerName == 'subscriptionAgreement' ) &&
+ ( ['save', 'show', 'edit', 'update'].contains(actionName) ) &&
+ ( params.expandItems != 'false' ) ) {
     should_expand << 'items'
-  }
 }
 
 def altNames = subscriptionAgreement.alternateNames?.toSorted { AlternateName a, AlternateName b -> a.name <=> b.name } ?: []
