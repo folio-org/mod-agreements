@@ -1,5 +1,5 @@
 
-## 5.5.2 In progress
+## 5.5.2 2023-03-30
   * ERM-2888 Do not load Agreement lines as part of agreement when viewing the agreement
   * ERM-2886 Proxying of platform customised urls not working as expected
 
