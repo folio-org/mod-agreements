@@ -1,3 +1,6 @@
+## 5.4.5 2023-04-20
+  * ERM-2914 Backport ERM-2638 to mod-agreements 5.4.x
+
 ## 5.4.4 2022-12-05
   * ERM-2508 Cannot delete string templates
   * ERM-2509 URL customisers applied for all platforms
