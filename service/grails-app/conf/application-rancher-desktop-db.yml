@@ -37,6 +37,10 @@ okapi:
   service:
     host: localhost
     port: 30100
+logging:
+  config: classpath:logback-development.xml
+hibernate:
+  enable_lazy_load_no_trans: true
 
 #    register: true
 #    deploy: true
