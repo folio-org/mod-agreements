@@ -5,7 +5,7 @@ import groovy.transform.*
 @Field
 TitleInstance titleInstance
 
-json g.render(titleInstance, [expand: ['type', 'publicationType', 'subType', 'coverage', 'tags'], excludes: ['identifiers', 'entitlements']]) {
+json g.render(titleInstance, [expand: ['type', 'publicationType', 'subType', 'coverage', 'tags'], excludes: ['identifiers', 'entitlements', 'relatedTitles']]) {
   'class' TitleInstance.name
   longName titleInstance.longName
   
@@ -19,7 +19,6 @@ json g.render(titleInstance, [expand: ['type', 'publicationType', 'subType', 'co
   }
 
   relatedTitles (titleInstance.relatedTitles) { TitleInstance relation ->
-    
     // Also render a minimal title instance for the relation
     g.inline (relation, [includes: ['id', 'name', 'type', 'publicationType', 'subType'], expand: ['type', 'publicationType', 'subType']]) {
       longName titleInstance.longName
