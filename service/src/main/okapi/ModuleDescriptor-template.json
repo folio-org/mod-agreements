@@ -170,6 +170,10 @@
           "methods": ["GET"],
           "pathPattern": "/erm/packages/{id}/content/*",
           "permissionsRequired": [ "erm.packages.item.content.get" ]
+        },{
+          "methods": ["GET"],
+          "pathPattern": "/erm/packages/sources",
+          "permissionsRequired": [ "erm.packages.collection.get" ]
         },
 
         {
@@ -525,7 +529,7 @@
           "methods": [ "GET" ],
           "pathPattern": "/erm/admin/triggerHousekeeping",
           "unit": "hour",
-          "delay": "24" 
+          "delay": "24"
         },
         {
           "permissionsRequired" : [],
@@ -1171,7 +1175,7 @@
       "displayName": "settings get",
       "description": "get settings",
       "visible": false
-    }, 
+    },
     {
       "permissionName": "erm.settings.collection.get",
       "displayName": "settings collection get",
@@ -1183,13 +1187,13 @@
       "displayName": "settings post",
       "description": "post settings",
       "visible": false
-    }, 
+    },
     {
       "permissionName": "erm.settings.put",
       "displayName": "settings put",
       "description": "put settings",
       "visible": false
-    }, 
+    },
     {
       "permissionName": "erm.settings.delete",
       "displayName": "settings delete",

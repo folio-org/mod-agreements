@@ -5,9 +5,9 @@ import org.olf.erm.SubscriptionAgreement
 class UrlMappings {
 
   static mappings = {
-    
+
     "/erm/compare" (controller: 'comparison', action: 'compare', method: 'POST')
-    
+
     "/"(controller: 'application', action:'index')
     "500"(view: '/error')
     "404"(view: '/notFound')
@@ -28,42 +28,42 @@ class UrlMappings {
       "/resources/export/all/$format?"  (controller: 'export', action: 'index', method: 'GET')
 //      "/resources/export/future/$format?"   (controller: 'export', action: 'future', method: 'GET')
 //      "/resources/export/dropped/$format?"  (controller: 'export', action: 'dropped', method: 'GET')
-      
+
       "/export"          (action: 'export', method: 'GET')
       "/export/current"  (action: 'export', method: 'GET') {
         currentOnly = true
       }
-	  
+
       '/clone' (controller: 'subscriptionAgreement', action: 'doClone', method: 'POST')
-      
+
       '/linkedLicenses' {
         controller = 'remoteLicenseLink'
         method = 'GET'
         filters = { "owner==${params.subscriptionAgreementId}" }
       }
-	  
+
       '/usageDataProviders' {
   		  controller = 'usageDataProvider'
   		  method = 'GET'
   		  filters = { "owner==${params.subscriptionAgreementId}" }
   	  }
-      
+
       // Root level extensions
       collection {
         '/publicLookup' (action: 'publicLookup', method: 'GET') {
           perPage = { Math.min(params.int('perPage') ?: params.int('max') ?: 5, 5) }
         }
-        
+
         '/linkedLicenses' {
           controller = 'remoteLicenseLink'
           method = 'GET'
         }
-        
+
         '/usageDataProviders' {
           controller = 'usageDataProvider'
           method = 'GET'
         }
-        
+
         "/validate/$prop?" (controller: 'validate', method: 'POST') {
           domain = SubscriptionAgreement.class.name
         }
@@ -83,15 +83,16 @@ class UrlMappings {
         "/electronic" (action: 'electronic', method: 'GET')
       }
     }
-    
+
     '/erm/pti' (resources: 'platformTitleInstance', excludes: ['patch', 'save', 'create', 'edit', 'delete'])
 
     '/erm/packages'(resources: 'package') {
       collection {
         "/import" (controller: 'package', action: 'import', method: 'POST')
         "/tsvParse" (controller: 'package', action: 'tsvParse', method: 'POST')
+        "/sources" (controller: 'package', action: 'fetchSources', method: 'GET')
       }
-      
+
       "/content"         (controller: 'package', action: 'content', method: 'GET')
       "/content/all"     (controller: 'package', action: 'content', method: 'GET')
       "/content/current" (controller: 'package', action: 'currentContent', method: 'GET')
@@ -113,7 +114,7 @@ class UrlMappings {
         "/$domain/$property" (controller: 'refdata', action: 'lookup', method: 'GET')
       }
     }
-    
+
     '/erm/org'(resources: 'org') {
       collection {
         "/find/$id"(controller:'org', action:'find')
@@ -130,13 +131,13 @@ class UrlMappings {
 
 //    "/erm/knowledgebase" ( controller:'kb', action:'index')
 //    "/erm/knowledgebase/$action" ( controller:'kb' )
-    
+
     "/erm/jobs" ( resources:'persistentJob', excludes: ['update', 'patch', 'save']) {
       collection {
         "/type/$type" ( action: 'listTyped', method: 'GET' )
         "/$type" ( action: 'save', method: 'POST' )
       }
-      
+
       "/fullLog" ( controller: 'persistentJob', action: 'fullLog', method: 'GET' )
       "/fullLogStream" ( controller: 'persistentJob', action: 'fullLogStream', method: 'GET' )
       "/errorLog" ( controller: 'persistentJob', action: 'errorLog', method: 'GET' )
@@ -165,14 +166,14 @@ class UrlMappings {
       }
       "/raw" ( controller: "fileUpload", action: "downloadFile", method: 'GET' )
     }
-    
+
     '/erm/custprops'(resources: 'customPropertyDefinition') {
       collection {
         "/" (controller: 'customPropertyDefinition', action: 'index')
         "/contexts" (controller: 'customPropertyDefinition', action: "fetchContexts", method: 'GET')
       }
     }
-    
+
     // export endpoints
     "/export/$format?"          (controller: 'export', method: 'GET')
     "/export/current/$format?"  (controller: 'export', action: 'current', method: 'GET')

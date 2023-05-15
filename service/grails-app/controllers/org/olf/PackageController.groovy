@@ -23,7 +23,7 @@ import com.opencsv.CSVReaderBuilder
 @Slf4j
 @CurrentTenant
 class PackageController extends OkapiTenantAwareController<Pkg> {
-  
+
   ImportService importService
 
   PackageController() {
@@ -48,12 +48,12 @@ class PackageController extends OkapiTenantAwareController<Pkg> {
         log.warn("More than one package imported, can't return id")
         break;
     }
-    
+
     Map result = [packageId: packageId]
     render (result as JSON)
     return;
   }
-  
+
   def 'tsvParse' () {
     MultipartFile file = request.getFile('upload')
 
@@ -64,7 +64,7 @@ class PackageController extends OkapiTenantAwareController<Pkg> {
       trustedSourceTI: request.getParameter("trustedSourceTI"),
       packageProvider: request.getParameter("packageProvider")
     ]
-    
+
     BOMInputStream bis = new BOMInputStream(file.getInputStream());
     Reader fr = new InputStreamReader(bis);
     CSVParser parser = new CSVParserBuilder().withSeparator('\t' as char)
@@ -90,7 +90,7 @@ class PackageController extends OkapiTenantAwareController<Pkg> {
       isNull 'removedTimestamp'
     }
   }
-  
+
   def currentContent () {
     final LocalDate today = LocalDate.now()
     respond doTheLookup(PackageContentItem) {
@@ -108,7 +108,7 @@ class PackageController extends OkapiTenantAwareController<Pkg> {
       isNull 'removedTimestamp'
     }
   }
-  
+
   def futureContent () {
     final LocalDate today = LocalDate.now()
     respond doTheLookup(PackageContentItem) {
@@ -117,7 +117,7 @@ class PackageController extends OkapiTenantAwareController<Pkg> {
       isNull 'removedTimestamp'
     }
   }
-  
+
   def droppedContent () {
     final LocalDate today = LocalDate.now()
     respond doTheLookup(PackageContentItem) {
@@ -125,6 +125,17 @@ class PackageController extends OkapiTenantAwareController<Pkg> {
       lt 'accessEnd', today
       isNull 'removedTimestamp'
     }
+  }
+
+  List<String> fetchSources() {
+    List<String> sources = Pkg.createCriteria().list {
+      isNotNull('source')
+
+      projections {
+        distinct 'source'
+      }
+    }
+    respond sources
   }
 }
 
