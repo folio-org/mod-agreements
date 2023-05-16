@@ -220,14 +220,18 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
   }
 
   private List<TitleInstance> titleMatch(final String title, final float threshold, final String subtype) {
+    String matchTitle = title;
+    /*if (title.length > 255) {
+      matchTitle = "${field.take(truncateLength - 3)}...".toString()
+    } */
 
     List<TitleInstance> result = new ArrayList<TitleInstance>()
     TitleInstance.withSession { session ->
       try {
-        result = TitleInstance.executeQuery(TEXT_MATCH_TITLE_HQL,[qrytitle: (title),threshold: (threshold), subtype:subtype], [max:20])
+        result = TitleInstance.executeQuery(TEXT_MATCH_TITLE_HQL,[qrytitle: (matchTitle),threshold: (threshold), subtype:subtype], [max:20])
       }
       catch ( Exception e ) {
-        log.debug("Problem attempting to run HQL Query ${TEXT_MATCH_TITLE_HQL} on string ${title} with threshold ${threshold}",e)
+        log.debug("Problem attempting to run HQL Query ${TEXT_MATCH_TITLE_HQL} on string ${matchTitle} with threshold ${threshold}",e)
       }
     }
  
