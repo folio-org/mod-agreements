@@ -87,7 +87,7 @@ alternateResourceNames cascade: 'all-delete-orphan'
   
   private validating = false  
   def beforeValidate() {
-    trunc("name", name)
+    this.name = StringUtils.truncate(name)
 
     if (!validating) {
       validating = true
@@ -115,12 +115,4 @@ alternateResourceNames cascade: 'all-delete-orphan'
         a.identifier.value <=> b.identifier.value
       }
   }
-
-  private void trunc(String fieldName, String field, int truncateLength = 255) {
-    if ( field?.length() > truncateLength ) {
-      this[fieldName] = "${field.take(truncateLength - 3)}...".toString()
-    }
-  }
-
-   
 }

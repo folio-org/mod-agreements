@@ -5,6 +5,8 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 
+import org.olf.general.StringUtils
+
 import org.olf.dataimport.erm.CoverageStatement
 import org.olf.dataimport.erm.ErmPackageImplWithContentItems
 import org.olf.dataimport.erm.Identifier
@@ -285,7 +287,7 @@ class ImportService implements DataBinder {
           monographEdition: getFieldFromLine(currentRecord, acceptedFields, 'monographEdition'),
           firstEditor: getFieldFromLine(currentRecord, acceptedFields, 'firstEditor')
         )
-        MDC.put('title', pkgLine.title)
+        MDC.put('title', StringUtils.truncate(pkgLine.title))
 
         pkg.packageContents << pkgLine
       }

@@ -2,6 +2,8 @@ package org.olf
 
 import java.util.concurrent.TimeUnit
 
+import org.olf.general.StringUtils
+
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.CoverageStatementSchema
@@ -119,7 +121,7 @@ class PackageIngestService implements DataBinder {
 
     package_data.packageContents.eachWithIndex { ContentItemSchema pc, int index ->
       // ENSURE MDC title is set as early as possible
-      MDC.put('title', pc.title.toString())
+      MDC.put('title', StringUtils.truncate(pc.title.toString()))
 
       // log.debug("Try to resolve ${pc}")
 
@@ -324,7 +326,7 @@ class PackageIngestService implements DataBinder {
     int removal_counter = 0
 
     PackageContentItem.withNewTransaction { status ->
-
+      // FIXME we're querying on pkg itself here
       PackageContentItem.executeQuery('select pci from PackageContentItem as pci where pci.pkg = :pkg and pci.lastSeenTimestamp < :updateTime and pci.removedTimestamp is null',
                                       [pkg:pkg, updateTime:result.updateTime]).each { removal_candidate ->
         try {

@@ -1,5 +1,6 @@
 package org.olf
 
+import org.olf.general.StringUtils
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.kb.ErmResource
@@ -24,7 +25,7 @@ class MatchKeyService implements DataBinder{
 
     matchKeys.add([
       key: 'title_string',
-      value: pc.title
+      value: StringUtils.truncate(pc.title)
     ])
 
    /* ERM-1799 not sure about this. PackageContentImpl contains a dateMonographPublishedPrint,

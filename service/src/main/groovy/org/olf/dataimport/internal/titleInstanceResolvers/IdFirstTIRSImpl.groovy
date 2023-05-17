@@ -1,5 +1,7 @@
 package org.olf.dataimport.internal.titleInstanceResolvers
 
+import org.olf.general.StringUtils
+
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
@@ -220,14 +222,15 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
   }
 
   private List<TitleInstance> titleMatch(final String title, final float threshold, final String subtype) {
+    String matchTitle = StringUtils.truncate(title);
 
     List<TitleInstance> result = new ArrayList<TitleInstance>()
     TitleInstance.withSession { session ->
       try {
-        result = TitleInstance.executeQuery(TEXT_MATCH_TITLE_HQL,[qrytitle: (title),threshold: (threshold), subtype:subtype], [max:20])
+        result = TitleInstance.executeQuery(TEXT_MATCH_TITLE_HQL,[qrytitle: (matchTitle),threshold: (threshold), subtype:subtype], [max:20])
       }
       catch ( Exception e ) {
-        log.debug("Problem attempting to run HQL Query ${TEXT_MATCH_TITLE_HQL} on string ${title} with threshold ${threshold}",e)
+        log.debug("Problem attempting to run HQL Query ${TEXT_MATCH_TITLE_HQL} on string ${matchTitle} with threshold ${threshold}",e)
       }
     }
  

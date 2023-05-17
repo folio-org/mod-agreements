@@ -1,5 +1,6 @@
 package org.olf.kb
 
+import org.olf.general.StringUtils
 import grails.gorm.MultiTenant
 
 
@@ -21,5 +22,7 @@ public class Work implements MultiTenant<Work> {
           title(nullable:false, blank:false)
   }
 
-
+  def beforeValidate() {
+    this.title = StringUtils.truncate(title)
+  }
 }
