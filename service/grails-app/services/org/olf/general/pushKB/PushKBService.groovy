@@ -1,5 +1,7 @@
 package org.olf.general.pushKB
 
+import org.olf.general.StringUtils
+
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
@@ -87,7 +89,7 @@ class PushKBService implements DataBinder {
       try {
         pcis.each { Map record ->
           // Handle MDC directly? Might not be the right approach
-          MDC.put('title', record.title.toString())
+          MDC.put('title', StringUtils.truncate(record.title.toString()))
 
           log.debug("LOGGING PCI: ${record}")
           final ContentItemSchema pci = PackageContentImpl.newInstance();

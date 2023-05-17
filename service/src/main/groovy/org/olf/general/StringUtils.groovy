@@ -1,7 +1,7 @@
 package org.olf.general
 
 public class StringUtils {
-  private static String truncate(String str, int maxLength) {
+  public static String truncate(String str, int maxLength = 255) {
     ( str?.length() ?: 0) > maxLength ? str.take(maxLength - 3) + "..." : str
   }
 

@@ -1,5 +1,7 @@
 package org.olf.dataimport.internal.titleInstanceResolvers
 
+import org.olf.general.StringUtils
+
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
@@ -220,10 +222,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
   }
 
   private List<TitleInstance> titleMatch(final String title, final float threshold, final String subtype) {
-    String matchTitle = title;
-    /*if (title.length > 255) {
-      matchTitle = "${field.take(truncateLength - 3)}...".toString()
-    } */
+    String matchTitle = StringUtils.truncate(title);
 
     List<TitleInstance> result = new ArrayList<TitleInstance>()
     TitleInstance.withSession { session ->

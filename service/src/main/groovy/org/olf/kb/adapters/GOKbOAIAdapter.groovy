@@ -23,7 +23,7 @@ import org.slf4j.MDC
 
 /**
  * An adapter to go between the GOKb OAI service, for example the one at
- *   https://gokbt.gbv.de/gokb/oai/index/packages?verb=ListRecords&metadataPrefix=gokb
+ *   https://gokbt.gbv.de/gokb/oai/index/packages?verb=ListRecords&metadataPrefix=gokb&from=2023-05-16T10:42:00Z
  * and our internal KBCache implementation.
  */
 
