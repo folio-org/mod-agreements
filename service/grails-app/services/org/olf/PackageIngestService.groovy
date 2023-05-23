@@ -229,7 +229,7 @@ class PackageIngestService implements DataBinder {
 
               // Add/Update common properties.
               pci.with {
-                note = pc.coverageNote
+                note = StringUtils.truncate(pc.coverageNote)
                 depth = pc.coverageDepth
                 accessStart = pc.accessStart
                 accessEnd = pc.accessEnd
