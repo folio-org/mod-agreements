@@ -290,7 +290,7 @@ task prepareDocker(type: Copy, dependsOn: assemble) {
   description = 'Copy files to build directory'
   group = 'Docker'
 
-  from project.jar
+  from project.bootJar
 
   // from otherfileLoc
 
@@ -309,7 +309,7 @@ task createDockerfile(type: Dockerfile, dependsOn: prepareDocker) {
   exposePort 8080
 
   // Copying straight into the default directory should be enough
-  copyFile jar.archiveName, '/usr/verticles/application.jar'
+  copyFile bootJar.archiveName, '/usr/verticles/application.jar'
 }
 
 task buildImage(type: DockerBuildImage, dependsOn: createDockerfile) {
