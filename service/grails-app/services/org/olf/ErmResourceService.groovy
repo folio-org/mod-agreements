@@ -6,6 +6,7 @@ import org.olf.kb.ErmResource
 import org.olf.kb.TitleInstance
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.PackageContentItem
+import org.olf.kb.Pkg
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -96,20 +97,22 @@ public class ErmResourceService {
             pci.save()
           }
         }
-    // }  else if (res instanceof PackageContentItem) {
-    //     Package.withNewSession {
-    //       PackageContentItem pci = (PackageContentItem) res
+    }  else if (res instanceof PackageContentItem) {
+        Pkg.withNewSession {
+          PackageContentItem pci = (PackageContentItem) res
+          log.debug("pci.pkg.id: ${pci.pkg.id}")
 
-    //       List<Package> pkgs = Package.executeQuery("""
-    //       SELECT pkg FROM Package AS pkg
-    //       WHERE pkg.id = pci.pkg.id
-    //       """)
+          List<Pkg> pkgs = Pkg.executeQuery("""
+          SELECT pkg FROM Pkg AS pkg
+          WHERE pkg.id = :pciPkgId
+          """, [pciPkgId: pci.pkg.id])
 
-    //       pkgs.each { Package pkg ->
-    //         pkg.lastUpdated = pci.lastUpdated
-    //         pkg.save()
-    //       }
-    //     }
+          pkgs.each { Pkg pkg ->
+          log.debug("pkg: ${pkg}")
+            pkg.lastUpdated = pci.lastUpdated
+            pkg.save()
+          }
+        }
     }
   }
 
