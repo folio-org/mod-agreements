@@ -98,21 +98,11 @@ public class ErmResourceService {
           }
         }
     }  else if (res instanceof PackageContentItem) {
-        Pkg.withNewSession {
-          PackageContentItem pci = (PackageContentItem) res
-          log.debug("pci.pkg.id: ${pci.pkg.id}")
+        PackageContentItem pci = (PackageContentItem) res
 
-          List<Pkg> pkgs = Pkg.executeQuery("""
-          SELECT pkg FROM Pkg AS pkg
-          WHERE pkg.id = :pciPkgId
-          """, [pciPkgId: pci.pkg.id])
-
-          pkgs.each { Pkg pkg ->
-          log.debug("pkg: ${pkg}")
-            pkg.lastUpdated = pci.lastUpdated
-            pkg.save()
-          }
-        }
+        Pkg pkg = pci.pkg;
+        pkg.lastUpdated = pci.lastUpdated
+        pkg.save()
     }
   }
 
