@@ -133,16 +133,21 @@ public class CoverageService {
   public static void setCoverageFromSchema (final ErmResource resource, final Iterable<CoverageStatementSchema> coverage_statements) {
 
 //    ErmResource.withTransaction {
-
-      boolean changed = false
-      final Set<CoverageStatement> statements = []
+log.debug("resource.coverage: ${resource.coverage}")
+// log.debug("coverage_statements: ${coverage_statements}")
+      // boolean changed = false
+      final Set<CoverageStatement> existingStatements = []
+      final Set<CoverageStatement> newStatements = []
       try {
 
         // Clear the existing coverage, or initialize to empty set.
         if (resource.coverage) {
-          statements.addAll( resource.coverage.collect() )
+          // log.debug("resource.coverage.collect(): ${resource.coverage.collect()}")
+          existingStatements.addAll( resource.coverage.collect() )
+          log.debug("existingStatements: ${existingStatements}")
           resource.coverage.clear()
-          resource.save(failOnError: true) // Necessary to remove the orphans.
+          // log.debug("resource.coverage (coverage cleared): ${resource.coverage}")
+          // resource.save(failOnError: true) // Necessary to remove the orphans.
         }
 
         for ( CoverageStatementSchema cs : coverage_statements ) {
@@ -158,14 +163,17 @@ public class CoverageService {
               endVolume   : ("${cs.endVolume}".trim() ? cs.endVolume : null),
               endIssue    : ("${cs.endIssue}".trim() ? cs.endIssue : null)
             ])
-
+            log.debug("new_cs: ${new_cs}")
             resource.addToCoverage( new_cs )
+            // log.debug("resource.coverage (new_cs added): ${resource.coverage}")
+            newStatements.add( new_cs )
+            // log.debug("newStatements add new_cs: ${newStatements}")
 
             if (!utilityService.checkValidBinding(resource)) {
               throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
             }
-
-            resource.save()
+            // do not save here, only save when coverage has changed, outside this for loop
+            // resource.save()
           } else {
 
             // Not valid coverage statement
@@ -179,21 +187,30 @@ public class CoverageService {
           }
         }
 
-        // log.debug("New coverage saved")
-        changed = true
+        log.debug("existingStatements finally: ${existingStatements}")
+        log.debug("newStatements finally: ${newStatements}")
+        if ( existingStatements.sort() == newStatements.sort() ) {
+          log.debug("No changes in coverage statements.")
+        } else {
+        resource.save(failOnError: true, flush:true)
+        log.debug("New coverage saved for ${resource.class}")
+        // changed = true
+        }
       } catch (ValidationException e) {
         log.error("Coverage changes to Resource ${resource.id} not saved")
       }
 
-      if (!changed) {
-        // Revert the coverage set.
-        if (!resource.coverage) resource.coverage = []
-        statements.each {
-          resource.addToCoverage( it )
-        }
-      }
+      // if (!changed) {
+      // We actually don't have to revert the coverage set because we didn't save it when we cleared it
+      //   // Revert the coverage set.
+      //   if (!resource.coverage) resource.coverage = []
+      //   existingStatements.each {
+      //     resource.addToCoverage( it )
+      //   }
+      //   resource.save(failOnError: true, flush:true) // Save.
+      // }
 
-      resource.save(failOnError: true, flush:true) // Save.
+      // resource.save(failOnError: true, flush:true) // Save.
 //    }
   }
 
@@ -226,8 +243,10 @@ public class CoverageService {
       }
 
       allCoverage = collateCoverageStatements(allCoverage)
+      log.debug ("allCoverage from calculateCoverage for PTI: ${allCoverage}")
 
       setCoverageFromSchema(pti, allCoverage)
+      log.debug("PTI coverage from calculateCoverage: $pti.coverage")
   }
 
   /**
@@ -259,8 +278,10 @@ public class CoverageService {
       }
 
       allCoverage = collateCoverageStatements(allCoverage)
+      log.debug("allCoverage from calculateCoverage for TI: ${allCoverage}")
 
       setCoverageFromSchema(ti, allCoverage)
+      log.debug("TI coverage from calculateCoverage: $ti.coverage")
 //    }
   }
 
@@ -425,19 +446,19 @@ public class CoverageService {
 
     final PackageContentItem pci = asPCI(res)
     if ( pci ) {
-      log.trace "PCI updated, regenerate PTI's coverage"
+      log.debug "PCI updated, regenerate PTI's coverage"
       calculateCoverage( pci.pti )
     }
 
     final PlatformTitleInstance pti = asPTI(res)
     if ( pti ) {
-      log.trace "PTI updated regenerate TI's coverage"
+      log.debug "PTI updated regenerate TI's coverage"
       calculateCoverage( pti.titleInstance )
     }
 
     final TitleInstance ti = asTI(res)
     if ( ti ) {
-      log.trace 'TI updated'
+      log.debug 'TI updated'
     }
   }
 
@@ -499,7 +520,7 @@ public class CoverageService {
       ptis.each { final PlatformTitleInstance pti ->
 
         PlatformTitleInstance.withNewTransaction {
-          log.trace "Recalculating coverage for PTI ${pti.id}"
+          log.debug "Recalculating coverage for PTI ${pti.id}"
           calculateCoverage( pti )
         }
       }
