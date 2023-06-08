@@ -134,10 +134,12 @@ public class CoverageService {
 
 //    ErmResource.withTransaction {
 log.debug("resource.coverage: ${resource.coverage}")
-// log.debug("coverage_statements: ${coverage_statements}")
+log.debug("coverage_statements: ${coverage_statements}")
       // boolean changed = false
-      final Set<CoverageStatement> existingStatements = []
-      final Set<CoverageStatement> newStatements = []
+
+      // Set these up as Lists so they're sortable for easy comparison later
+      ArrayList<CoverageStatement> existingStatements = []
+      ArrayList<CoverageStatement> newStatements = []
       try {
 
         // Clear the existing coverage, or initialize to empty set.
@@ -145,7 +147,7 @@ log.debug("resource.coverage: ${resource.coverage}")
           // log.debug("resource.coverage.collect(): ${resource.coverage.collect()}")
           existingStatements.addAll( resource.coverage.collect() )
           log.debug("existingStatements: ${existingStatements}")
-          resource.coverage.clear()
+          
           // log.debug("resource.coverage (coverage cleared): ${resource.coverage}")
           // resource.save(failOnError: true) // Necessary to remove the orphans.
         }
@@ -164,14 +166,11 @@ log.debug("resource.coverage: ${resource.coverage}")
               endIssue    : ("${cs.endIssue}".trim() ? cs.endIssue : null)
             ])
             log.debug("new_cs: ${new_cs}")
-            resource.addToCoverage( new_cs )
+            //resource.addToCoverage( new_cs )
             // log.debug("resource.coverage (new_cs added): ${resource.coverage}")
             newStatements.add( new_cs )
             // log.debug("newStatements add new_cs: ${newStatements}")
 
-            if (!utilityService.checkValidBinding(resource)) {
-              throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
-            }
             // do not save here, only save when coverage has changed, outside this for loop
             // resource.save()
           } else {
@@ -187,14 +186,51 @@ log.debug("resource.coverage: ${resource.coverage}")
           }
         }
 
+        // Compare the new statements to the existing ones
+        //SORT by all fields
+        Closure sortClosure = { a,b ->
+          a.startDate <=> b.startDate ?:
+          a.endDate <=> b.endDate ?:
+          a.startVolume <=> b.startVolume ?:
+          a.endVolume <=> b.endVolume ?:
+          a.startIssue <=> b.startIssue ?:
+          a.endIssue <=> b.endIssue
+        }
+
+        existingStatements = existingStatements.sort(sortClosure)
+        newStatements = newStatements.sort(sortClosure)
+
         log.debug("existingStatements finally: ${existingStatements}")
         log.debug("newStatements finally: ${newStatements}")
-        if ( existingStatements.sort() == newStatements.sort() ) {
-          log.debug("No changes in coverage statements.")
+
+        if (
+          existingStatements.size() == newStatements.size()
+        ) {
+          boolean changed = true;
+          existingStatements.eachWithIndex { statement, index ->
+            if (!statement.equals(newStatements[index])) {
+              changed = false;
+            }
+          }
+          if (!changed) {
+            log.debug("No changes in coverage statements.")
+          }
         } else {
-        resource.save(failOnError: true, flush:true)
-        log.debug("New coverage saved for ${resource.class}")
-        // changed = true
+          // Clear existing coverage
+          resource.coverage.clear()
+          resource.save(failOnError: true) // Necessary to remove the orphans.
+          
+          newStatements.each {
+            resource.addToCoverage(it)
+          }
+
+          if (!utilityService.checkValidBinding(resource)) {
+            throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
+          }
+
+          resource.save(failOnError: true, flush:true)
+          log.debug("New coverage saved for ${resource.class}")
+          // changed = true
         }
       } catch (ValidationException e) {
         log.error("Coverage changes to Resource ${resource.id} not saved")

@@ -58,4 +58,17 @@ public class CoverageStatement extends AbstractCoverageStatement implements Vali
             endVolume column:'cs_end_volume'
              endIssue column:'cs_end_issue'
   }
+
+  // An equality check 
+  boolean equals(comparator) {
+    if (!comparator) return false
+    if (is(comparator)) return true
+    comparator instanceof CoverageStatement &&
+      startDate == comparator.startDate &&
+      endDate == comparator.endDate &&
+      startVolume == comparator.startVolume &&
+      endVolume == comparator.endVolume &&
+      startIssue == comparator.startIssue &&
+      endIssue == comparator.endIssue
+  }
 }

@@ -70,7 +70,8 @@ public class ErmResourceService {
 
   public void handleResourceHierarchyUpdate(ErmResource res) {
     if (res instanceof TitleInstance) {
-      PlatformTitleInstance.withNewSession {
+
+      //PlatformTitleInstance.withNewSession {
         TitleInstance ti = (TitleInstance) res
 
         List<PlatformTitleInstance> ptis = PlatformTitleInstance.executeQuery("""
@@ -79,12 +80,12 @@ public class ErmResourceService {
          """, [tiId: ti.id])
 
         ptis.each { PlatformTitleInstance pti ->
-            pti.lastUpdated = ti.lastUpdated
-            pti.save()
+          pti.lastUpdated = ti.lastUpdated
+          pti.save(failOnError: true, flush: true)
         }
-      }
+      //}
     } else if (res instanceof PlatformTitleInstance) {
-        PackageContentItem.withNewSession {
+        //PackageContentItem.withNewSession {
           PlatformTitleInstance pti = (PlatformTitleInstance) res
 
           List<PackageContentItem> pcis = PackageContentItem.executeQuery("""
@@ -94,15 +95,21 @@ public class ErmResourceService {
 
           pcis.each { PackageContentItem pci ->
             pci.lastUpdated = pti.lastUpdated
-            pci.save()
+            pci.save(failOnError: true, flush: true)
           }
-        }
+        //}
     }  else if (res instanceof PackageContentItem) {
-        PackageContentItem pci = (PackageContentItem) res
+        //Pkg.withNewSession {
+          PackageContentItem pci = (PackageContentItem) res
 
-        Pkg pkg = pci.pkg;
-        pkg.lastUpdated = pci.lastUpdated
-        pkg.save()
+          Pkg pkg = Pkg.executeQuery("""
+          SELECT pkg FROM Pkg AS pkg
+          WHERE pkg.id = :pciPkgId
+          """, [pciPkgId: pci.pkg.id])[0]
+
+          pkg.lastUpdated = pci.lastUpdated
+          pkg.save(failOnError: true, flush: true)
+        //}
     }
   }
 
