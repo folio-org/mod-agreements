@@ -70,8 +70,7 @@ public class ErmResourceService {
 
   public void handleResourceHierarchyUpdate(ErmResource res) {
     if (res instanceof TitleInstance) {
-
-      //PlatformTitleInstance.withNewSession {
+      PlatformTitleInstance.withNewSession {
         TitleInstance ti = (TitleInstance) res
 
         List<PlatformTitleInstance> ptis = PlatformTitleInstance.executeQuery("""
@@ -83,9 +82,9 @@ public class ErmResourceService {
           pti.lastUpdated = ti.lastUpdated
           pti.save(failOnError: true, flush: true)
         }
-      //}
+      }
     } else if (res instanceof PlatformTitleInstance) {
-        //PackageContentItem.withNewSession {
+        PackageContentItem.withNewSession {
           PlatformTitleInstance pti = (PlatformTitleInstance) res
 
           List<PackageContentItem> pcis = PackageContentItem.executeQuery("""
@@ -97,9 +96,9 @@ public class ErmResourceService {
             pci.lastUpdated = pti.lastUpdated
             pci.save(failOnError: true, flush: true)
           }
-        //}
+        }
     }  else if (res instanceof PackageContentItem) {
-        //Pkg.withNewSession {
+        Pkg.withNewSession {
           PackageContentItem pci = (PackageContentItem) res
 
           Pkg pkg = Pkg.executeQuery("""
@@ -109,7 +108,7 @@ public class ErmResourceService {
 
           pkg.lastUpdated = pci.lastUpdated
           pkg.save(failOnError: true, flush: true)
-        //}
+        }
     }
   }
 

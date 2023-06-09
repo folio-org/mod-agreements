@@ -137,9 +137,8 @@ log.debug("resource.coverage: ${resource.coverage}")
 log.debug("coverage_statements: ${coverage_statements}")
       // boolean changed = false
 
-      // Set these up as Lists so they're sortable for easy comparison later
-      ArrayList<CoverageStatement> existingStatements = []
-      ArrayList<CoverageStatement> newStatements = []
+      Set<CoverageStatement> existingStatements = []
+      Set<CoverageStatement> newStatements = []
       try {
 
         // Clear the existing coverage, or initialize to empty set.
@@ -187,35 +186,14 @@ log.debug("coverage_statements: ${coverage_statements}")
         }
 
         // Compare the new statements to the existing ones
-        //SORT by all fields
-        Closure sortClosure = { a,b ->
-          a.startDate <=> b.startDate ?:
-          a.endDate <=> b.endDate ?:
-          a.startVolume <=> b.startVolume ?:
-          a.endVolume <=> b.endVolume ?:
-          a.startIssue <=> b.startIssue ?:
-          a.endIssue <=> b.endIssue
-        }
-
-        existingStatements = existingStatements.sort(sortClosure)
-        newStatements = newStatements.sort(sortClosure)
 
         log.debug("existingStatements finally: ${existingStatements}")
         log.debug("newStatements finally: ${newStatements}")
-
+      
+        def statementDifferences = (existingStatements + newStatements) - existingStatements.intersect( newStatements )
         if (
-          existingStatements.size() == newStatements.size()
+          statementDifferences
         ) {
-          boolean changed = true;
-          existingStatements.eachWithIndex { statement, index ->
-            if (!statement.equals(newStatements[index])) {
-              changed = false;
-            }
-          }
-          if (!changed) {
-            log.debug("No changes in coverage statements.")
-          }
-        } else {
           // Clear existing coverage
           resource.coverage.clear()
           resource.save(failOnError: true) // Necessary to remove the orphans.
@@ -231,6 +209,8 @@ log.debug("coverage_statements: ${coverage_statements}")
           resource.save(failOnError: true, flush:true)
           log.debug("New coverage saved for ${resource.class}")
           // changed = true
+        } else {
+          log.debug("No changes in coverage statements.")
         }
       } catch (ValidationException e) {
         log.error("Coverage changes to Resource ${resource.id} not saved")

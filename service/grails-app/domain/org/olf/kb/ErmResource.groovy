@@ -100,7 +100,7 @@ alternateResourceNames cascade: 'all-delete-orphan'
       validating = false
     }
   }
-  
+
   String toString() {
     name
   }

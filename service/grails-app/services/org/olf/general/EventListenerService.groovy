@@ -36,9 +36,7 @@ public class EventListenerService implements ApplicationListener<ApplicationEven
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
       entitlementService.handleErmResourceChange(res)
-      ErmResource.withNewSession {
-        ermResourceService.handleResourceHierarchyUpdate(res)
-      }
+      ermResourceService.handleResourceHierarchyUpdate(res)
     }
   }
 

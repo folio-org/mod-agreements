@@ -7,11 +7,13 @@ import org.hibernate.Hibernate
 import grails.gorm.MultiTenant
 import grails.validation.Validateable
 
+import groovy.transform.EqualsAndHashCode
 
 /**
  * A coverage statement - can apply to a PackageContentItem OR a TitlePlatform OR a title
  * but that should be an exclusive link
  */
+@EqualsAndHashCode(excludes=["id","resource"])
 public class CoverageStatement extends AbstractCoverageStatement implements Validateable, MultiTenant<CoverageStatement> {
   public static final Class<? extends ErmResource>[] ALLOWED_RESOURCES = [PackageContentItem, PlatformTitleInstance, TitleInstance] as Class[]
 
@@ -57,18 +59,5 @@ public class CoverageStatement extends AbstractCoverageStatement implements Vali
            startIssue column:'cs_start_issue'
             endVolume column:'cs_end_volume'
              endIssue column:'cs_end_issue'
-  }
-
-  // An equality check 
-  boolean equals(comparator) {
-    if (!comparator) return false
-    if (is(comparator)) return true
-    comparator instanceof CoverageStatement &&
-      startDate == comparator.startDate &&
-      endDate == comparator.endDate &&
-      startVolume == comparator.startVolume &&
-      endVolume == comparator.endVolume &&
-      startIssue == comparator.startIssue &&
-      endIssue == comparator.endIssue
   }
 }
