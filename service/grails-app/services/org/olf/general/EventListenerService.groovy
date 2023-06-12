@@ -11,6 +11,7 @@ import org.olf.kb.CoverageStatement
 
 import org.olf.EntitlementService
 import org.olf.ErmResourceService
+import org.olf.CoverageService
 
 import grails.gorm.transactions.Transactional
 
@@ -35,6 +36,7 @@ public class EventListenerService implements ApplicationListener<ApplicationEven
   void afterUpdate(PostUpdateEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
+      CoverageService.changeListener(res)
       entitlementService.handleErmResourceChange(res)
     }
   }
@@ -42,6 +44,7 @@ public class EventListenerService implements ApplicationListener<ApplicationEven
   void afterInsert(PostInsertEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
+      CoverageService.changeListener(res)
       entitlementService.handleErmResourceChange(res)
     }
   }
@@ -49,6 +52,7 @@ public class EventListenerService implements ApplicationListener<ApplicationEven
   void afterDelete(PostDeleteEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
+      CoverageService.changeListener(res)
       entitlementService.handleErmResourceChange(res)
     }
   }

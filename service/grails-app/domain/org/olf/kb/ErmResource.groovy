@@ -15,11 +15,11 @@ import grails.gorm.MultiTenant
  * Represents a selectable resource - a package, a title in a package, a title on a platform, etc
  */
 public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource> {
- 
+
   String name
   String normalizedName
   String description
-  
+
   RefdataValue type
   RefdataValue publicationType
   RefdataValue subType
@@ -28,12 +28,12 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
   Date lastUpdated
 
   boolean suppressFromDiscovery = false
-  
+
   Set<AlternateResourceName> alternateResourceNames
-  
+
   Set<TemplatedUrl> templatedUrls = []
-  
-  
+
+
   static hasMany = [
     coverage: CoverageStatement,
     entitlements: Entitlement,
@@ -84,23 +84,20 @@ alternateResourceNames cascade: 'all-delete-orphan'
                coverage (validator: CoverageStatement.STATEMENT_COLLECTION_VALIDATOR, sort:'startDate')
           templatedUrls (bindable: false)
   }
-  
-  private validating = false  
+
+  private validating = false
   def beforeValidate() {
     this.name = StringUtils.truncate(name)
 
     if (!validating) {
       validating = true
       // Attempt to avoid session locking
-      ErmResource.withSession {
-        CoverageService.changeListener(this)
-      }
 
       normalizedName = StringUtils.normaliseWhitespaceAndCase(name)
       validating = false
     }
   }
-  
+
   String toString() {
     name
   }

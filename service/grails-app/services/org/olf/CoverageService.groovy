@@ -130,19 +130,21 @@ public class CoverageService {
   /**
    * Set coverage from schema
    */
-  public static void setCoverageFromSchema (final ErmResource resource, final Iterable<CoverageStatementSchema> coverage_statements) {
+   public static void setCoverageFromSchema (final ErmResource resource, final Iterable<CoverageStatementSchema> coverage_statements) {
 
 //    ErmResource.withTransaction {
+      // boolean changed = false
 
-      boolean changed = false
-      final Set<CoverageStatement> statements = []
+      Set<CoverageStatement> existingStatements = []
+      Set<CoverageStatement> newStatements = []
       try {
 
         // Clear the existing coverage, or initialize to empty set.
         if (resource.coverage) {
-          statements.addAll( resource.coverage.collect() )
-          resource.coverage.clear()
-          resource.save(failOnError: true) // Necessary to remove the orphans.
+          existingStatements.addAll( resource.coverage.collect() )
+          if (resource instanceof PlatformTitleInstance) {
+            log.debug("existingStatements: ${existingStatements}")
+          }
         }
 
         for ( CoverageStatementSchema cs : coverage_statements ) {
@@ -158,14 +160,14 @@ public class CoverageService {
               endVolume   : ("${cs.endVolume}".trim() ? cs.endVolume : null),
               endIssue    : ("${cs.endIssue}".trim() ? cs.endIssue : null)
             ])
+            newStatements.add( new_cs )
 
-            resource.addToCoverage( new_cs )
-
-            if (!utilityService.checkValidBinding(resource)) {
-              throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
+            if (resource instanceof PlatformTitleInstance) {
+              log.debug("cs: ${cs}")
+              log.debug("new_cs: ${new_cs}")
+              log.debug("resource coverage after adding new_cs: ${resource.coverage}")
+              log.debug("newStatements after adding new_cs: ${newStatements}")
             }
-
-            resource.save()
           } else {
 
             // Not valid coverage statement
@@ -179,22 +181,51 @@ public class CoverageService {
           }
         }
 
-        // log.debug("New coverage saved")
-        changed = true
+        // Compare the new statements to the existing ones
+
+ if (resource instanceof PlatformTitleInstance) {
+        log.debug("existingStatements finally: ${existingStatements}")
+        log.debug("newStatements finally: ${newStatements}")
+        def allStatements = (existingStatements + newStatements)
+        log.debug("existingStatements + newStatements: ${allStatements}")
+        def intersectStatements = existingStatements.intersect( newStatements )
+        log.debug("existingStatements.intersect( newStatements ): ${intersectStatements}")
+ }
+
+        def statementDifferences = (existingStatements + newStatements) - existingStatements.intersect( newStatements )
+
+        if (
+          statementDifferences
+        ) {
+          // Clear existing coverage
+          ErmResource.withNewSession {
+            resource.coverage.clear()
+            resource.save(failOnError: true) // Necessary to remove the orphans.
+          }
+          if (resource instanceof PlatformTitleInstance) {
+            log.debug("statementDifferences: ${statementDifferences}")
+            log.debug("resource.coverage: ${resource.coverage}")
+            log.debug("resource cleared and saved")
+          }
+
+          newStatements.each {
+            resource.addToCoverage(it)
+          }
+
+          if (!utilityService.checkValidBinding(resource)) {
+            throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
+          }
+
+          resource.save(failOnError: true, flush:true)
+          if (resource instanceof PlatformTitleInstance) {
+            log.debug("resource is saved again")
+          }
+        } else {
+          log.debug("No changes in coverage statements.")
+        }
       } catch (ValidationException e) {
         log.error("Coverage changes to Resource ${resource.id} not saved")
       }
-
-      if (!changed) {
-        // Revert the coverage set.
-        if (!resource.coverage) resource.coverage = []
-        statements.each {
-          resource.addToCoverage( it )
-        }
-      }
-
-      resource.save(failOnError: true, flush:true) // Save.
-//    }
   }
 
   /**
@@ -226,7 +257,7 @@ public class CoverageService {
       }
 
       allCoverage = collateCoverageStatements(allCoverage)
-
+      log.debug("allCoverage from calculateCoverage for PTI: ${allCoverage}")
       setCoverageFromSchema(pti, allCoverage)
   }
 
@@ -425,14 +456,20 @@ public class CoverageService {
 
     final PackageContentItem pci = asPCI(res)
     if ( pci ) {
-      log.trace "PCI updated, regenerate PTI's coverage"
-      calculateCoverage( pci.pti )
+      log.debug "PCI updated, regenerate PTI's coverage"
+      log.debug("PCI coverage: ${pci.coverage}")
+      log.debug("PCI-PTI coverage: ${pci.pti.coverage}")
+      ErmResource.withNewTransaction {
+        calculateCoverage( pci.pti )
+      }
     }
 
     final PlatformTitleInstance pti = asPTI(res)
     if ( pti ) {
       log.trace "PTI updated regenerate TI's coverage"
-      calculateCoverage( pti.titleInstance )
+      ErmResource.withNewTransaction {
+        calculateCoverage( pti.titleInstance )
+      }
     }
 
     final TitleInstance ti = asTI(res)
@@ -499,7 +536,7 @@ public class CoverageService {
       ptis.each { final PlatformTitleInstance pti ->
 
         PlatformTitleInstance.withNewTransaction {
-          log.trace "Recalculating coverage for PTI ${pti.id}"
+          log.debug "Recalculating coverage for PTI ${pti.id}"
           calculateCoverage( pti )
         }
       }
