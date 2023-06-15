@@ -32,11 +32,17 @@ dataSource:
       abandonWhenPercentageFull: 50
       jdbcInterceptors: ConnectionState
       defaultTransactionIsolation: 2 # TRANSACTION_READ_COMMITTED
+  hibernate:
+    enable_lazy_load_no_trans: true
 
 okapi: 
   service:
     host: localhost
     port: 30100
+logging:
+  config: classpath:logback-development.xml
+
+
 
 #    register: true
 #    deploy: true

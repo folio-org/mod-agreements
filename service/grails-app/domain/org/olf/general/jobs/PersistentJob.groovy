@@ -14,7 +14,6 @@ import grails.gorm.dirty.checking.DirtyCheck
 import grails.gorm.multitenancy.Tenants
 import grails.util.Holders
 
-
 @DirtyCheck
 abstract class PersistentJob extends SingleFileAttachment implements EventBusAware, MultiTenant<PersistentJob> {
   
@@ -57,7 +56,7 @@ abstract class PersistentJob extends SingleFileAttachment implements EventBusAwa
                   result (nullable:true)
                 runnerId (nullable:true, bindable: false, blank: false)
   }
-  
+
 //  def afterInsert () {
 //    // Ugly work around events being raised on multi-tenant GORM entities not finding subscribers
 //    // from the root context.
@@ -73,27 +72,39 @@ abstract class PersistentJob extends SingleFileAttachment implements EventBusAwa
 //  }
   
   long getErrorLogCount() {
-    LogEntry.countByOriginAndType (this.id, LogEntry.TYPE_ERROR)
+    Tenants.withCurrent {
+      LogEntry.countByOriginAndType (this.id, LogEntry.TYPE_ERROR)
+    }
   }
   
   List<LogEntry> getErrorLog() {
-    LogEntry.findAllByOriginAndType (this.id, LogEntry.TYPE_ERROR, [sort: 'dateCreated', order: "asc"])
+    Tenants.withCurrent {
+      LogEntry.findAllByOriginAndType (this.id, LogEntry.TYPE_ERROR, [sort: 'dateCreated', order: "asc"])
+    }
   }
   
   long getInfoLogCount() {
-    LogEntry.countByOriginAndType (this.id, LogEntry.TYPE_INFO)
+    Tenants.withCurrent {
+      LogEntry.countByOriginAndType (this.id, LogEntry.TYPE_INFO)
+    }
   }
   
   List<LogEntry> getInfoLog() {
-    LogEntry.findAllByOriginAndType (this.id, LogEntry.TYPE_INFO, [sort: 'dateCreated', order: "asc"])
+    Tenants.withCurrent {
+      LogEntry.findAllByOriginAndType (this.id, LogEntry.TYPE_INFO, [sort: 'dateCreated', order: "asc"])
+    }
   }
   
   long getFullLogCount() {
-    LogEntry.countByOrigin (this.id)
+    Tenants.withCurrent {
+      LogEntry.countByOrigin (this.id)
+    }
   }
   
   List<LogEntry> getFullLog() {
-    LogEntry.findAllByOrigin(this.id, [sort: 'dateCreated', order: "asc"])
+    Tenants.withCurrent {
+      LogEntry.findAllByOrigin(this.id, [sort: 'dateCreated', order: "asc"])
+    }
   }
   
   abstract Runnable getWork()

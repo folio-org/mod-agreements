@@ -24,7 +24,7 @@ abstract class BaseSpec extends HttpSpec {
   }
   
   Map<String, String> getAllHeaders() {
-    specDefaultHeaders + headersOverride
+    state.specDefaultHeaders + headersOverride
   }
   
   String getCurrentTenant() {

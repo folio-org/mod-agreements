@@ -1,0 +1,188 @@
+<configuration>
+  <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+  <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <charset>UTF-8</charset> 
+      <pattern>
+        <!--Date-->%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} <!--Log level--> %clr(%5p) <!--Thread--> %clr(---){faint} %clr([%15.15t]){faint} <!--Logger-->%clr(%-30.30logger{29} %15(%replace([%X{tenant:-_NO_TENANT_}]){'\\[_NO_TENANT_\\]',''})){cyan} %clr(:){faint} %m%n%wex
+      </pattern>
+    </encoder>
+  </appender>
+
+  <logger name="org.hibernate.orm.deprecation">
+    <level value="ERROR" />
+  </logger>
+
+  <logger name="com.k_int.okapi.OkapiSchemaHandler">
+    <level value="INFO" />
+  </logger>
+
+  <logger name="org.olf.general.DocumentAttachment">
+    <level value="DEBUG" />
+  </logger>
+
+  <logger name="com.k_int.web.toolkit.files">
+    <level value="DEBUG" />
+  </logger>
+
+  <!-- For dev increase org.olf to debug -->
+  <logger name="org.olf">
+    <level value="DEBUG" />
+  </logger>
+
+  <!-- For dev increase root to info -->
+  <root level="info">
+    <appender-ref ref="STDOUT" />
+  </root>
+  <!-- For dev increase specific levels to debug -->
+  <logger name="grails.app.init">
+    <level value="DEBUG" />
+  </logger>
+
+  <logger name="grails.app.controllers">
+    <level value="DEBUG" />
+  </logger>
+
+  <logger name="grails.app.domains">
+    <level value="DEBUG" />
+  </logger>
+
+  <logger name="grails.app.jobs">
+    <level value="DEBUG" />
+  </logger>
+
+  <logger name="grails.app.services">
+    <level value="DEBUG" />
+  </logger>
+
+  <logger name="com.zaxxer.hikari.HikariConfig">
+    <level value="DEBUG" />
+  </logger>
+
+  <logger name="com.zaxxer.hikari.pool.HikariPool">
+    <level value="WARN" />
+  </logger>
+  
+  <logger name="services.k_int">
+    <level value="TRACE" />
+  </logger>
+
+  <logger name="com.k_int">
+    <level value="DEBUG" />
+  </logger>
+
+  <logger name="com.k_int.web.toolkit">
+    <level value="DEBUG" />
+  </logger>
+
+  <if condition='isDefined("grails.util.BuildSettings.TARGET_DIR")'>
+    <then>
+      <appender name="FULL_STACKTRACE" class="ch.qos.logback.core.FileAppender" append="true">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+          <file>${grails.util.BuildSettings.TARGET_DIR}/stacktrace.log</file> 
+          <pattern>
+            %level %logger - %msg%n
+          </pattern>
+        </encoder>
+      </appender>
+
+      <logger name="StackTrace" additivity="false">
+        <level value="ERROR" />
+        <appender-ref ref="FULL_STACKTRACE" />
+      </logger>
+    </then>
+  </if>
+
+  <!--LOG SQL - VERBOSE!!!!!!-->
+  <!--
+  <logger name="org.hibernate.SQL">
+    <level value="TRACE" />
+    <appender-ref ref="STDOUT" />
+  </logger>
+  -->
+
+  <!--This one for SQL bind parameters-->
+  <!--
+  <logger name="org.hibernate.type.descriptor.sql.BasicBinder">
+    <level value="TRACE" />
+    <appender-ref ref="STDOUT" />
+  </logger>
+  -->
+
+  <appender name="JOB" class="org.olf.general.jobs.JobAwareAppender"/>
+
+  <logger name="org.olf.PackageIngestService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.TitleIngestService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.TitleInstanceResolverService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.TitleEnricherService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.IdentifierService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.MatchKeyService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.kb.adapters.GOKbOAIAdapter">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.CoverageService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.ImportService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.DocumentAttachmentService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.KbManagementService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.KbHarvestService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <!-- PushKBSpecific ones -->
+  <logger name="org.olf.general.pushKB.PushKBService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
+  <logger name="org.olf.UtilityService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+</configuration>
+
+<!-- For GROOVY file see logback.xml -->

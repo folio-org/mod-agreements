@@ -1,5 +1,5 @@
-FROM folioci/alpine-jre-openjdk11:latest
-MAINTAINER Ian.Ibbotson@k-int.com
+FROM folioci/alpine-jre-openjdk17:latest
+MAINTAINER Knowledge Integration
 VOLUME /tmp
 ENV VERTICLE_FILE mod-agreements.war
 ENV VERTICLE_HOME /

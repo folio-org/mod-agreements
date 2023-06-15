@@ -170,6 +170,8 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     agreementContentTypes cascade: 'all-delete-orphan'
   }
 
+  static fetchMode = [periods: 'eager']
+
   static constraints = {
                     name(nullable:false, blank:false, unique: true)
              dateCreated(nullable:true)
@@ -264,54 +266,28 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
 
   public String findCurrentPeriod() {
     log.debug "Find current period"
-    String cpId
     LocalDate ld = getLocalDate()
-    cpId = Period.executeQuery("""
-      SELECT p.id FROM Period p
-      WHERE p.startDate <= :ld
-      AND (p.endDate >= :ld OR p.endDate = NULL)
-      AND p.owner.id = :id
-      """,
-      [id: id, ld: ld]
-    )[0]
+
+    String cpId = this.periods.find(p ->
+      (p.startDate <= ld) &&
+      (p.endDate >= ld || p.endDate == null)
+    )?.id
 
     cpId
   }
 
   public String findPreviousPeriod() {
     log.debug "Find previous period"
-    String ppId
     LocalDate ld = getLocalDate()
-    ppId = Period.executeQuery("""
-      SELECT p.id FROM Period p
-      WHERE p.startDate = (
-        SELECT MAX(p1.startDate) FROM Period p1
-        WHERE p1.endDate < :ld
-        AND p1.owner.id = :id
-      )
-      AND p.owner.id = :id
-      """,
-      [id: id, ld: ld]
-    )[0]
+    String ppId = this.periods.findAll(p -> (p.endDate != null && p.endDate < ld)).max({a,b -> a.startDate - b.startDate})?.id;
 
     ppId
   }
 
   public String findNextPeriod() {
     log.debug "Find next period"
-    String npId
     LocalDate ld = getLocalDate()
-    npId = Period.executeQuery("""
-      SELECT p.id FROM Period p
-      WHERE p.startDate = (
-        SELECT MIN(p1.startDate) FROM Period p1
-        WHERE p1.startDate > :ld
-        AND p1.owner.id = :id
-      )
-      AND p.owner.id = :id
-      """,
-      [id: id, ld: ld]
-    )[0]
+    String npId = this.periods.findAll(p -> p.startDate > ld).min({a,b -> a.startDate - b.startDate})?.id;
 
     npId
   }
