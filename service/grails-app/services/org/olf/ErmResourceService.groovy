@@ -71,7 +71,6 @@ public class ErmResourceService {
   public void handleResourceHierarchyUpdate(ErmResource res) {
     if (res instanceof TitleInstance) {
       TitleInstance ti = (TitleInstance) res
-
       List<PlatformTitleInstance> ptis = PlatformTitleInstance.executeQuery("""
       SELECT pti FROM PlatformTitleInstance AS pti
         WHERE pti.titleInstance.id = :tiId
@@ -79,11 +78,10 @@ public class ErmResourceService {
 
       ptis.each { PlatformTitleInstance pti ->
         pti.lastUpdated = ti.lastUpdated
-        pti.save(failOnError: true)
+        pti.save(failOnError: true, flush: true)
       }
     } else if (res instanceof PlatformTitleInstance) {
         PlatformTitleInstance pti = (PlatformTitleInstance) res
-
         List<PackageContentItem> pcis = PackageContentItem.executeQuery("""
         SELECT pci FROM PackageContentItem AS pci
         WHERE pci.pti.id = :ptiId
@@ -91,18 +89,17 @@ public class ErmResourceService {
 
         pcis.each { PackageContentItem pci ->
           pci.lastUpdated = pti.lastUpdated
-          pci.save(failOnError: true)
+          pci.save(failOnError: true, flush: true)
         }
     }  else if (res instanceof PackageContentItem) {
         PackageContentItem pci = (PackageContentItem) res
-
         Pkg pkg = Pkg.executeQuery("""
         SELECT pkg FROM Pkg AS pkg
         WHERE pkg.id = :pciPkgId
         """, [pciPkgId: pci.pkg.id])[0]
 
         pkg.lastUpdated = pci.lastUpdated
-        pkg.save(failOnError: true)
+        pkg.save(failOnError: true, flush: true)
     }
   }
 
