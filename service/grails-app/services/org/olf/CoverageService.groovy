@@ -234,31 +234,27 @@ public class CoverageService {
   public static void calculateCoverage( final TitleInstance ti ) {
     // Use a sub query to select all the coverage statements linked to PTIs,
     // linked to this TI
-//    TitleInstance.withTransaction {
-      List<CoverageStatement> results = CoverageStatement.createCriteria().list {
-        'in' 'resource.id', new DetachedCriteria(PlatformTitleInstance, 'linked_ptis').build {
-          readOnly (true)
-          eq 'titleInstance.id', ti.id
+    // TitleInstance.withTransaction {
+    List<CoverageStatement> results = CoverageStatement.createCriteria().list {
+      'in' 'resource.id', new DetachedCriteria(PlatformTitleInstance, 'linked_ptis').build {
+        readOnly (true)
+        eq 'titleInstance.id', ti.id
 
-          projections {
-            property ('id')
-          }
+        projections {
+          property ('id')
         }
       }
+    }
 
-      List<org.olf.dataimport.erm.CoverageStatement> allCoverage = results.collect { CoverageStatement cs ->
-        new org.olf.dataimport.erm.CoverageStatement([
-          'startDate': cs.startDate,
-          'endDate': cs.endDate
-        ])
-      }
+    List<org.olf.dataimport.erm.CoverageStatement> allCoverage = results.collect { CoverageStatement cs ->
+      new org.olf.dataimport.erm.CoverageStatement([
+        'startDate': cs.startDate,
+        'endDate': cs.endDate
+      ])
+    }
 
-      allCoverage = collateCoverageStatements(allCoverage)
-      log.debug("allCoverage from calculateCoverage for TI: ${allCoverage}")
-
-      setCoverageFromSchema(ti, allCoverage)
-      log.debug("TI coverage from calculateCoverage: $ti.coverage")
-//    }
+    allCoverage = collateCoverageStatements(allCoverage)
+    setCoverageFromSchema(ti, allCoverage)
   }
 
   private static int dateWithinCoverage(CoverageStatementSchema cs, LocalDate date, int defaultValue) {
@@ -422,19 +418,19 @@ public class CoverageService {
 
     final PackageContentItem pci = asPCI(res)
     if ( pci ) {
-      log.debug "PCI updated, regenerate PTI's coverage"
+      log.trace "PCI updated, regenerate PTI's coverage"
       calculateCoverage( pci.pti )
     }
 
     final PlatformTitleInstance pti = asPTI(res)
     if ( pti ) {
-      log.debug "PTI updated regenerate TI's coverage"
+      log.trace "PTI updated regenerate TI's coverage"
       calculateCoverage( pti.titleInstance )
     }
 
     final TitleInstance ti = asTI(res)
     if ( ti ) {
-      log.debug 'TI updated'
+      log.trace 'TI updated'
     }
   }
 

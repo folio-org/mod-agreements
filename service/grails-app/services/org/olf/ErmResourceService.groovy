@@ -70,45 +70,39 @@ public class ErmResourceService {
 
   public void handleResourceHierarchyUpdate(ErmResource res) {
     if (res instanceof TitleInstance) {
-      PlatformTitleInstance.withNewSession {
-        TitleInstance ti = (TitleInstance) res
+      TitleInstance ti = (TitleInstance) res
 
-        List<PlatformTitleInstance> ptis = PlatformTitleInstance.executeQuery("""
-        SELECT pti FROM PlatformTitleInstance AS pti
-         WHERE pti.titleInstance.id = :tiId
-         """, [tiId: ti.id])
+      List<PlatformTitleInstance> ptis = PlatformTitleInstance.executeQuery("""
+      SELECT pti FROM PlatformTitleInstance AS pti
+        WHERE pti.titleInstance.id = :tiId
+        """, [tiId: ti.id])
 
-        ptis.each { PlatformTitleInstance pti ->
-          pti.lastUpdated = ti.lastUpdated
-          pti.save(failOnError: true, flush: true)
-        }
+      ptis.each { PlatformTitleInstance pti ->
+        pti.lastUpdated = ti.lastUpdated
+        pti.save(failOnError: true)
       }
     } else if (res instanceof PlatformTitleInstance) {
-        PackageContentItem.withNewSession {
-          PlatformTitleInstance pti = (PlatformTitleInstance) res
+        PlatformTitleInstance pti = (PlatformTitleInstance) res
 
-          List<PackageContentItem> pcis = PackageContentItem.executeQuery("""
-          SELECT pci FROM PackageContentItem AS pci
-          WHERE pci.pti.id = :ptiId
-          """, [ptiId: pti.id])
+        List<PackageContentItem> pcis = PackageContentItem.executeQuery("""
+        SELECT pci FROM PackageContentItem AS pci
+        WHERE pci.pti.id = :ptiId
+        """, [ptiId: pti.id])
 
-          pcis.each { PackageContentItem pci ->
-            pci.lastUpdated = pti.lastUpdated
-            pci.save(failOnError: true, flush: true)
-          }
+        pcis.each { PackageContentItem pci ->
+          pci.lastUpdated = pti.lastUpdated
+          pci.save(failOnError: true)
         }
     }  else if (res instanceof PackageContentItem) {
-        Pkg.withNewSession {
-          PackageContentItem pci = (PackageContentItem) res
+        PackageContentItem pci = (PackageContentItem) res
 
-          Pkg pkg = Pkg.executeQuery("""
-          SELECT pkg FROM Pkg AS pkg
-          WHERE pkg.id = :pciPkgId
-          """, [pciPkgId: pci.pkg.id])[0]
+        Pkg pkg = Pkg.executeQuery("""
+        SELECT pkg FROM Pkg AS pkg
+        WHERE pkg.id = :pciPkgId
+        """, [pciPkgId: pci.pkg.id])[0]
 
-          pkg.lastUpdated = pci.lastUpdated
-          pkg.save(failOnError: true, flush: true)
-        }
+        pkg.lastUpdated = pci.lastUpdated
+        pkg.save(failOnError: true)
     }
   }
 
