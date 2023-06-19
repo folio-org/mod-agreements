@@ -109,7 +109,7 @@
             {"value": "detached"},
             {"value": "external"}
           ],
-          "comparators": ["==", "!="]
+          "comparators": ["==", "!=", "isNull"]
         },
         {
           "name":"activeFrom",
@@ -147,6 +147,18 @@
           "name": "resourceName",
           "label": "Resource name",
           "accessPath": "resource.name",
+          "default": true
+        },
+        {
+          "name": "resourceReference",
+          "label": "Resource reference",
+          "accessPath": "reference",
+          "default": true
+        },
+        {
+          "name": "resourceDescription",
+          "label": "Resource description",
+          "accessPath": "description",
           "default": true
         }
       ],
