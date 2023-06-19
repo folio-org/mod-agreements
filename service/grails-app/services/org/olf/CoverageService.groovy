@@ -142,9 +142,6 @@ public class CoverageService {
         // Clear the existing coverage, or initialize to empty set.
         if (resource.coverage) {
           existingStatements.addAll( resource.coverage.collect() )
-          if (resource instanceof PlatformTitleInstance) {
-            log.debug("existingStatements: ${existingStatements}")
-          }
         }
 
         for ( CoverageStatementSchema cs : coverage_statements ) {
@@ -161,13 +158,6 @@ public class CoverageService {
               endIssue    : ("${cs.endIssue}".trim() ? cs.endIssue : null)
             ])
             newStatements.add( new_cs )
-
-            if (resource instanceof PlatformTitleInstance) {
-              log.debug("cs: ${cs}")
-              log.debug("new_cs: ${new_cs}")
-              log.debug("resource coverage after adding new_cs: ${resource.coverage}")
-              log.debug("newStatements after adding new_cs: ${newStatements}")
-            }
           } else {
 
             // Not valid coverage statement
@@ -182,32 +172,14 @@ public class CoverageService {
         }
 
         // Compare the new statements to the existing ones
-
- if (resource instanceof PlatformTitleInstance) {
-        log.debug("existingStatements finally: ${existingStatements}")
-        log.debug("newStatements finally: ${newStatements}")
-        def allStatements = (existingStatements + newStatements)
-        log.debug("existingStatements + newStatements: ${allStatements}")
-        def intersectStatements = existingStatements.intersect( newStatements )
-        log.debug("existingStatements.intersect( newStatements ): ${intersectStatements}")
- }
-
         def statementDifferences = (existingStatements + newStatements) - existingStatements.intersect( newStatements )
 
         if (
           statementDifferences
         ) {
           // Clear existing coverage
-          ErmResource.withNewSession {
-            resource.coverage.clear()
-            resource.save(failOnError: true) // Necessary to remove the orphans.
-          }
-          if (resource instanceof PlatformTitleInstance) {
-            log.debug("statementDifferences: ${statementDifferences}")
-            log.debug("resource.coverage: ${resource.coverage}")
-            log.debug("resource cleared and saved")
-          }
-
+          resource.coverage.clear()
+          resource.save(failOnError: true) // Necessary to remove the orphans.
           newStatements.each {
             resource.addToCoverage(it)
           }
@@ -216,10 +188,7 @@ public class CoverageService {
             throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
           }
 
-          resource.save(failOnError: true, flush:true)
-          if (resource instanceof PlatformTitleInstance) {
-            log.debug("resource is saved again")
-          }
+          resource.save(failOnError: true)
         } else {
           log.debug("No changes in coverage statements.")
         }
@@ -235,9 +204,6 @@ public class CoverageService {
    * @param pti The PlatformTitleInstance
    */
   public static void calculateCoverage( final PlatformTitleInstance pti ) {
-
-    // log.debug 'Calculate coverage for PlatformTitleInstance {}', pti.id
-
       // Use a sub query to select all the coverage statements linked to PCIs,
       // linked to this pti
       List<org.olf.dataimport.erm.CoverageStatement> allCoverage = CoverageStatement.createCriteria().list {
@@ -257,7 +223,6 @@ public class CoverageService {
       }
 
       allCoverage = collateCoverageStatements(allCoverage)
-      log.debug("allCoverage from calculateCoverage for PTI: ${allCoverage}")
       setCoverageFromSchema(pti, allCoverage)
   }
 
@@ -456,20 +421,14 @@ public class CoverageService {
 
     final PackageContentItem pci = asPCI(res)
     if ( pci ) {
-      log.debug "PCI updated, regenerate PTI's coverage"
-      log.debug("PCI coverage: ${pci.coverage}")
-      log.debug("PCI-PTI coverage: ${pci.pti.coverage}")
-      ErmResource.withNewTransaction {
-        calculateCoverage( pci.pti )
-      }
+      log.trace "PCI updated, regenerate PTI's coverage"
+      calculateCoverage( pci.pti )
     }
 
     final PlatformTitleInstance pti = asPTI(res)
     if ( pti ) {
       log.trace "PTI updated regenerate TI's coverage"
-      ErmResource.withNewTransaction {
-        calculateCoverage( pti.titleInstance )
-      }
+      calculateCoverage( pti.titleInstance )
     }
 
     final TitleInstance ti = asTI(res)

@@ -36,24 +36,39 @@ public class EventListenerService implements ApplicationListener<ApplicationEven
   void afterUpdate(PostUpdateEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
-      CoverageService.changeListener(res)
-      entitlementService.handleErmResourceChange(res)
+      ErmResource.withNewSession{
+        // Ensure we pass a new object in with each session
+        CoverageService.changeListener(ErmResource.get(res.id))
+      }
+      ErmResource.withNewSession{
+        entitlementService.handleErmResourceChange(ErmResource.get(res.id))
+      }
     }
   }
 
   void afterInsert(PostInsertEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
-      CoverageService.changeListener(res)
-      entitlementService.handleErmResourceChange(res)
+      ErmResource.withNewSession{
+        // Ensure we pass a new object in with each session
+        CoverageService.changeListener(ErmResource.get(res.id))
+      }
+      ErmResource.withNewSession{
+        entitlementService.handleErmResourceChange(ErmResource.get(res.id))
+      }
     }
   }
 
   void afterDelete(PostDeleteEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
-      CoverageService.changeListener(res)
-      entitlementService.handleErmResourceChange(res)
+      ErmResource.withNewSession{
+        // Ensure we pass a new object in with each session
+        CoverageService.changeListener(ErmResource.get(res.id))
+      }
+      ErmResource.withNewSession{
+        entitlementService.handleErmResourceChange(ErmResource.get(res.id))
+      }
     }
   }
 
