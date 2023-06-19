@@ -132,102 +132,68 @@ public class CoverageService {
    */
   public static void setCoverageFromSchema (final ErmResource resource, final Iterable<CoverageStatementSchema> coverage_statements) {
 
-//    ErmResource.withTransaction {
-log.debug("resource.coverage: ${resource.coverage}")
-log.debug("coverage_statements: ${coverage_statements}")
-      // boolean changed = false
+    // ErmResource.withTransaction {
+    // boolean changed = false
 
-      Set<CoverageStatement> existingStatements = []
-      Set<CoverageStatement> newStatements = []
-      try {
+    Set<CoverageStatement> existingStatements = []
+    Set<CoverageStatement> newStatements = []
+    try {
 
-        // Clear the existing coverage, or initialize to empty set.
-        if (resource.coverage) {
-          // log.debug("resource.coverage.collect(): ${resource.coverage.collect()}")
-          existingStatements.addAll( resource.coverage.collect() )
-          log.debug("existingStatements: ${existingStatements}")
-          
-          // log.debug("resource.coverage (coverage cleared): ${resource.coverage}")
-          // resource.save(failOnError: true) // Necessary to remove the orphans.
-        }
+      // Clear the existing coverage, or initialize to empty set.
+      if (resource.coverage) {
+        existingStatements.addAll( resource.coverage.collect() )
+      }
 
-        for ( CoverageStatementSchema cs : coverage_statements ) {
-          /* Not using utilityService.checkValidBinding here
-           * because we have custom error logging behaviour
-           */
-          if (cs.validate()) {
-            CoverageStatement new_cs = new CoverageStatement([
-              startDate   : cs.startDate,
-              endDate     : cs.endDate,
-              startVolume : ("${cs.startVolume}".trim() ? cs.startVolume : null),
-              startIssue  : ("${cs.startIssue}".trim() ? cs.startIssue : null),
-              endVolume   : ("${cs.endVolume}".trim() ? cs.endVolume : null),
-              endIssue    : ("${cs.endIssue}".trim() ? cs.endIssue : null)
-            ])
-            log.debug("new_cs: ${new_cs}")
-            //resource.addToCoverage( new_cs )
-            // log.debug("resource.coverage (new_cs added): ${resource.coverage}")
-            newStatements.add( new_cs )
-            // log.debug("newStatements add new_cs: ${newStatements}")
-
-            // do not save here, only save when coverage has changed, outside this for loop
-            // resource.save()
-          } else {
-
-            // Not valid coverage statement
-            cs.errors.allErrors.each { ObjectError error ->
-              /* TODO Perhaps in future we can extend checkValidBinding to this use case */
-              // ERM-1932 coverage startDate nullable errors should not make it in the user's error log
-              if (!(error.getArguments()[0] == 'startDate' && error.getCode() == 'nullable')) {
-                log.error (messageSource.getMessage(error, LocaleContextHolder.locale))
-              }
+      for ( CoverageStatementSchema cs : coverage_statements ) {
+        /* Not using utilityService.checkValidBinding here
+          * because we have custom error logging behaviour
+          */
+        if (cs.validate()) {
+          CoverageStatement new_cs = new CoverageStatement([
+            startDate   : cs.startDate,
+            endDate     : cs.endDate,
+            startVolume : ("${cs.startVolume}".trim() ? cs.startVolume : null),
+            startIssue  : ("${cs.startIssue}".trim() ? cs.startIssue : null),
+            endVolume   : ("${cs.endVolume}".trim() ? cs.endVolume : null),
+            endIssue    : ("${cs.endIssue}".trim() ? cs.endIssue : null)
+          ])
+          newStatements.add( new_cs )
+        } else {
+          // Not valid coverage statement
+          cs.errors.allErrors.each { ObjectError error ->
+            /* TODO Perhaps in future we can extend checkValidBinding to this use case */
+            // ERM-1932 coverage startDate nullable errors should not make it in the user's error log
+            if (!(error.getArguments()[0] == 'startDate' && error.getCode() == 'nullable')) {
+              log.error (messageSource.getMessage(error, LocaleContextHolder.locale))
             }
           }
         }
-
-        // Compare the new statements to the existing ones
-
-        log.debug("existingStatements finally: ${existingStatements}")
-        log.debug("newStatements finally: ${newStatements}")
-      
-        def statementDifferences = (existingStatements + newStatements) - existingStatements.intersect( newStatements )
-        if (
-          statementDifferences
-        ) {
-          // Clear existing coverage
-          resource.coverage.clear()
-          resource.save(failOnError: true) // Necessary to remove the orphans.
-          
-          newStatements.each {
-            resource.addToCoverage(it)
-          }
-
-          if (!utilityService.checkValidBinding(resource)) {
-            throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
-          }
-
-          resource.save(failOnError: true, flush:true)
-          log.debug("New coverage saved for ${resource.class}")
-          // changed = true
-        } else {
-          log.debug("No changes in coverage statements.")
-        }
-      } catch (ValidationException e) {
-        log.error("Coverage changes to Resource ${resource.id} not saved")
       }
 
-      // if (!changed) {
-      // We actually don't have to revert the coverage set because we didn't save it when we cleared it
-      //   // Revert the coverage set.
-      //   if (!resource.coverage) resource.coverage = []
-      //   existingStatements.each {
-      //     resource.addToCoverage( it )
-      //   }
-      //   resource.save(failOnError: true, flush:true) // Save.
-      // }
+      // Compare the new statements to the existing ones
+      def statementDifferences = (existingStatements + newStatements) - existingStatements.intersect( newStatements )
 
-      // resource.save(failOnError: true, flush:true) // Save.
-//    }
+      if (
+        statementDifferences
+      ) {
+        // Clear existing coverage
+        resource.coverage.clear()
+        resource.save(failOnError: true) // Necessary to remove the orphans.
+        newStatements.each {
+          resource.addToCoverage(it)
+        }
+
+        if (!utilityService.checkValidBinding(resource)) {
+          throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
+        }
+
+        resource.save(failOnError: true)
+      } else {
+        log.debug("No changes in coverage statements.")
+      }
+    } catch (ValidationException e) {
+      log.error("Coverage changes to Resource ${resource.id} not saved")
+    }
   }
 
   /**
@@ -237,9 +203,6 @@ log.debug("coverage_statements: ${coverage_statements}")
    * @param pti The PlatformTitleInstance
    */
   public static void calculateCoverage( final PlatformTitleInstance pti ) {
-
-    // log.debug 'Calculate coverage for PlatformTitleInstance {}', pti.id
-
       // Use a sub query to select all the coverage statements linked to PCIs,
       // linked to this pti
       List<org.olf.dataimport.erm.CoverageStatement> allCoverage = CoverageStatement.createCriteria().list {
@@ -259,10 +222,7 @@ log.debug("coverage_statements: ${coverage_statements}")
       }
 
       allCoverage = collateCoverageStatements(allCoverage)
-      log.debug ("allCoverage from calculateCoverage for PTI: ${allCoverage}")
-
       setCoverageFromSchema(pti, allCoverage)
-      log.debug("PTI coverage from calculateCoverage: $pti.coverage")
   }
 
   /**

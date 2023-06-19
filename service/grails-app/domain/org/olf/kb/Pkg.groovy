@@ -7,6 +7,7 @@ import org.olf.general.Org
 import com.k_int.web.toolkit.refdata.Defaults
 import com.k_int.web.toolkit.refdata.RefdataValue
 
+import grails.gorm.multitenancy.Tenants
 import grails.gorm.MultiTenant
 
 /**
@@ -74,18 +75,25 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   availabilityScope(nullable:true, blank:false)
   }
 
-
+  /*
+   * TODO
+   * This is an example of where we don't want to load all resources
+   * into memory and count them, so we're forced to query within the
+   * domain class for now.
+   * This behaviour should be looked at at some point.
+   */
   @Transient
   public long getResourceCount() {
-    long num_items = (PackageContentItem.executeQuery("""
-      SELECT count(*) FROM PackageContentItem pci
-      WHERE pci.pkg.id = :id
-      AND pci.removedTimestamp = NULL
-      """,
-      [id: id]
-    ) ?: [])[0];
-    
-    return num_items;
+    Tenants.withCurrent {
+      long num_items = (PackageContentItem.executeQuery("""
+        SELECT count(*) FROM PackageContentItem pci
+        WHERE pci.pkg.id = :id
+        AND pci.removedTimestamp = NULL
+        """,
+        [id: id]
+      ) ?: [])[0];
+      
+      return num_items;
+    }
   }
-
 }

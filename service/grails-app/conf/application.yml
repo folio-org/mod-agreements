@@ -170,6 +170,7 @@ hibernate:
     use_query_cache: false
 
   allow_update_outside_transaction: true #TODO: We should remove this in the near future and fix all dependants to wrap transactions.
+  enable_lazy_load_no_trans: true
 
 management:
   endpoints:
@@ -253,6 +254,7 @@ environments:
         aws_access_key_id: "${aws.access.key.id:none}"
   development:
     logging:
+      config: classpath:logback-development.xml
       level:
         web: DEBUG
     kiwt:
