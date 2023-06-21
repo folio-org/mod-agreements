@@ -36,15 +36,12 @@ public class EventListenerService implements ApplicationListener<ApplicationEven
   void afterUpdate(PostUpdateEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
-      ErmResource.withNewSession {
+      ErmResource.withNewSession{
         // Ensure we pass a new object in with each session
         CoverageService.changeListener(ErmResource.get(res.id))
       }
-      ErmResource.withNewSession {
+      ErmResource.withNewSession{
         entitlementService.handleErmResourceChange(ErmResource.get(res.id))
-      }
-      ErmResource.withNewSession {
-        ermResourceService.handleResourceHierarchyUpdate(ErmResource.get(res.id))
       }
     }
   }
@@ -52,11 +49,11 @@ public class EventListenerService implements ApplicationListener<ApplicationEven
   void afterInsert(PostInsertEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
-      ErmResource.withNewSession {
+      ErmResource.withNewSession{
         // Ensure we pass a new object in with each session
         CoverageService.changeListener(ErmResource.get(res.id))
       }
-      ErmResource.withNewSession {
+      ErmResource.withNewSession{
         entitlementService.handleErmResourceChange(ErmResource.get(res.id))
       }
     }
@@ -65,11 +62,11 @@ public class EventListenerService implements ApplicationListener<ApplicationEven
   void afterDelete(PostDeleteEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
-      ErmResource.withNewSession {
+      ErmResource.withNewSession{
         // Ensure we pass a new object in with each session
         CoverageService.changeListener(ErmResource.get(res.id))
       }
-      ErmResource.withNewSession {
+      ErmResource.withNewSession{
         entitlementService.handleErmResourceChange(ErmResource.get(res.id))
       }
     }
