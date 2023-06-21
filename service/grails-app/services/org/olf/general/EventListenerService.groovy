@@ -11,6 +11,7 @@ import org.olf.kb.CoverageStatement
 
 import org.olf.EntitlementService
 import org.olf.ErmResourceService
+import org.olf.CoverageService
 
 import grails.gorm.transactions.Transactional
 
@@ -35,21 +36,42 @@ public class EventListenerService implements ApplicationListener<ApplicationEven
   void afterUpdate(PostUpdateEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
-      entitlementService.handleErmResourceChange(res)
+      ErmResource.withNewSession {
+        // Ensure we pass a new object in with each session
+        CoverageService.changeListener(ErmResource.get(res.id))
+      }
+      ErmResource.withNewSession {
+        entitlementService.handleErmResourceChange(ErmResource.get(res.id))
+      }
+      ErmResource.withNewSession {
+        ermResourceService.handleResourceHierarchyUpdate(ErmResource.get(res.id))
+      }
     }
   }
 
   void afterInsert(PostInsertEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
-      entitlementService.handleErmResourceChange(res)
+      ErmResource.withNewSession {
+        // Ensure we pass a new object in with each session
+        CoverageService.changeListener(ErmResource.get(res.id))
+      }
+      ErmResource.withNewSession {
+        entitlementService.handleErmResourceChange(ErmResource.get(res.id))
+      }
     }
   }
 
   void afterDelete(PostDeleteEvent event) {
     if (event.entityObject instanceof ErmResource) {
       ErmResource res = (ErmResource) event.entityObject
-      entitlementService.handleErmResourceChange(res)
+      ErmResource.withNewSession {
+        // Ensure we pass a new object in with each session
+        CoverageService.changeListener(ErmResource.get(res.id))
+      }
+      ErmResource.withNewSession {
+        entitlementService.handleErmResourceChange(ErmResource.get(res.id))
+      }
     }
   }
 
