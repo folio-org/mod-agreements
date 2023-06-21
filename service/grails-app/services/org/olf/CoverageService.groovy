@@ -130,18 +130,19 @@ public class CoverageService {
   /**
    * Set coverage from schema
    */
-   public static void setCoverageFromSchema (final ErmResource resource, final Iterable<CoverageStatementSchema> coverage_statements) {
+  public static void setCoverageFromSchema (final ErmResource resource, final Iterable<CoverageStatementSchema> coverage_statements) {
 
 //    ErmResource.withTransaction {
-      // boolean changed = false
 
-      Set<CoverageStatement> existingStatements = []
-      Set<CoverageStatement> newStatements = []
+      boolean changed = false
+      final Set<CoverageStatement> statements = []
       try {
 
         // Clear the existing coverage, or initialize to empty set.
         if (resource.coverage) {
-          existingStatements.addAll( resource.coverage.collect() )
+          statements.addAll( resource.coverage.collect() )
+          resource.coverage.clear()
+          resource.save(failOnError: true) // Necessary to remove the orphans.
         }
 
         for ( CoverageStatementSchema cs : coverage_statements ) {
@@ -157,7 +158,14 @@ public class CoverageService {
               endVolume   : ("${cs.endVolume}".trim() ? cs.endVolume : null),
               endIssue    : ("${cs.endIssue}".trim() ? cs.endIssue : null)
             ])
-            newStatements.add( new_cs )
+
+            resource.addToCoverage( new_cs )
+
+            if (!utilityService.checkValidBinding(resource)) {
+              throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
+            }
+
+            resource.save()
           } else {
 
             // Not valid coverage statement
@@ -171,30 +179,22 @@ public class CoverageService {
           }
         }
 
-        // Compare the new statements to the existing ones
-        def statementDifferences = (existingStatements + newStatements) - existingStatements.intersect( newStatements )
-
-        if (
-          statementDifferences
-        ) {
-          // Clear existing coverage
-          resource.coverage.clear()
-          resource.save(failOnError: true) // Necessary to remove the orphans.
-          newStatements.each {
-            resource.addToCoverage(it)
-          }
-
-          if (!utilityService.checkValidBinding(resource)) {
-            throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
-          }
-
-          resource.save(failOnError: true)
-        } else {
-          log.debug("No changes in coverage statements.")
-        }
+        // log.debug("New coverage saved")
+        changed = true
       } catch (ValidationException e) {
         log.error("Coverage changes to Resource ${resource.id} not saved")
       }
+
+      if (!changed) {
+        // Revert the coverage set.
+        if (!resource.coverage) resource.coverage = []
+        statements.each {
+          resource.addToCoverage( it )
+        }
+      }
+
+      resource.save(failOnError: true, flush:true) // Save.
+//    }
   }
 
   /**
@@ -204,6 +204,9 @@ public class CoverageService {
    * @param pti The PlatformTitleInstance
    */
   public static void calculateCoverage( final PlatformTitleInstance pti ) {
+
+    // log.debug 'Calculate coverage for PlatformTitleInstance {}', pti.id
+
       // Use a sub query to select all the coverage statements linked to PCIs,
       // linked to this pti
       List<org.olf.dataimport.erm.CoverageStatement> allCoverage = CoverageStatement.createCriteria().list {
@@ -223,6 +226,7 @@ public class CoverageService {
       }
 
       allCoverage = collateCoverageStatements(allCoverage)
+
       setCoverageFromSchema(pti, allCoverage)
   }
 
