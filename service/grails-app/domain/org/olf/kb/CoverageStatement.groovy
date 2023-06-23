@@ -7,11 +7,13 @@ import org.hibernate.Hibernate
 import grails.gorm.MultiTenant
 import grails.validation.Validateable
 
+import groovy.transform.EqualsAndHashCode
 
 /**
  * A coverage statement - can apply to a PackageContentItem OR a TitlePlatform OR a title
  * but that should be an exclusive link
  */
+@EqualsAndHashCode(excludes=["id","resource"])
 public class CoverageStatement extends AbstractCoverageStatement implements Validateable, MultiTenant<CoverageStatement> {
   public static final Class<? extends ErmResource>[] ALLOWED_RESOURCES = [PackageContentItem, PlatformTitleInstance, TitleInstance] as Class[]
 
