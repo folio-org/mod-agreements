@@ -4,46 +4,46 @@
     "version": "1.0"
   },
   "version": "1.0",
-  "name":"ERM Agreement Lines",
-  "definition":{
-    "baseUrl":"/erm/entitlements",
+  "name": "ERM Agreement Lines",
+  "definition": {
+    "baseUrl": "/erm/entitlements",
     "resource": "entitlements",
     "results": {
       "columns": [
         {
-          "name":"resourceName",
+          "name": "resourceName",
           "label": "Resource name",
-          "accessPath":"resource.name",
+          "accessPath": "resource.name",
           "valueType": "Link"
         },
         {
-          "name":"resourceReference",
+          "name": "resourceReference",
           "label": "Resource reference",
-          "accessPath":"reference",
+          "accessPath": "reference",
           "valueType": "Link"
         },
         {
-          "name":"resourceDescription",
+          "name": "resourceDescription",
           "label": "Resource description",
-          "accessPath":"description",
+          "accessPath": "description",
           "valueType": "Link"
         },
         {
-          "name":"parentAgreement",
+          "name": "parentAgreement",
           "label": "Parent agreement",
-          "accessPath":"owner.name",
+          "accessPath": "owner.name",
           "valueType": "Link"
         },
         {
-          "name":"activeFrom",
+          "name": "activeFrom",
           "label": "Active from",
-          "accessPath":"activeFrom",
+          "accessPath": "activeFrom",
           "valueType": "Date"
         },
         {
-          "name":"activeTo",
+          "name": "activeTo",
           "label": "Active to",
-          "accessPath":"activeTo",
+          "accessPath": "activeTo",
           "valueType": "Date"
         },
         {
@@ -58,84 +58,83 @@
           "accessPath": "tags",
           "valueType": "Array",
           "arrayDisplayPath": "value"
-
         }
       ]
     },
     "filters": {
       "columns": [
         {
-          "name":"resourceName",
+          "name": "resourceName",
           "label": "Resource name",
-          "filterPath":"resource.name",
+          "filterPath": "resource.name",
           "valueType": "String",
           "comparators": ["==", "!=", "=~", "!~"]
         },
         {
-          "name":"resourceReference",
+          "name": "resourceReference",
           "label": "Resource reference",
-          "filterPath":"reference",
+          "filterPath": "reference",
           "valueType": "String",
           "comparators": ["==", "!=", "=~", "!~"]
         },
         {
-          "name":"resourceDescription",
+          "name": "resourceDescription",
           "label": "Resource description",
-          "filterPath":"description",
+          "filterPath": "description",
           "valueType": "String",
           "comparators": ["==", "!=", "=~", "!~"]
         },
         {
-          "name":"note",
+          "name": "note",
           "label": "Note",
-          "filterPath":"note",
+          "filterPath": "note",
           "valueType": "String",
           "comparators": ["==", "!=", "=~", "!~"]
         },
         {
-          "name":"agreement",
+          "name": "agreement",
           "label": "Agreement",
-          "filterPath":"owner.id",
+          "filterPath": "owner.id",
           "valueType": "UUID",
           "resource": "agreement",
           "comparators": ["==", "!="]
         },
         {
-          "name":"agreementLineType",
+          "name": "agreementLineType",
           "label": "Agreement line type",
-          "filterPath":"type",
+          "filterPath": "type",
           "valueType": "Enum",
           "enumValues": [
-            {"value": "detached"},
-            {"value": "external"}
+            { "label": "Unlinked", "value": "detached" },
+            { "label": "External", "value": "external" }
           ],
           "comparators": ["==", "!=", "isNull"]
         },
         {
-          "name":"activeFrom",
+          "name": "activeFrom",
           "label": "Active from",
-          "filterPath":"activeFrom",
+          "filterPath": "activeFrom",
           "valueType": "Date",
           "comparators": ["==", "!=", ">=", "<=", "isSet", "isNotSet"]
         },
         {
-          "name":"activeTo",
+          "name": "activeTo",
           "label": "Active to",
-          "filterPath":"activeTo",
+          "filterPath": "activeTo",
           "valueType": "Date",
           "comparators": ["==", "!=", ">=", "<=", "isSet", "isNotSet"]
         },
         {
-          "name":"lastUpdated",
+          "name": "lastUpdated",
           "label": "Last updated",
-          "filterPath":"lastUpdated",
+          "filterPath": "lastUpdated",
           "valueType": "DateTime",
           "comparators": ["==", "!=", ">=", "<=", "isSet", "isNotSet"]
         },
         {
-          "name":"tags",
+          "name": "tags",
           "label": "Tags",
-          "filterPath":"tags.value",
+          "filterPath": "tags.value",
           "valueType": "String",
           "comparators": ["==", "=~"]
         }
@@ -167,46 +166,46 @@
     "sort": {
       "columns": [
         {
-          "name":"id",
+          "name": "id",
           "label": "Id",
-          "sortPath":"id",
+          "sortPath": "id",
           "sortTypes": ["asc", "desc"]
         },
         {
-          "name":"lastUpdated",
+          "name": "lastUpdated",
           "label": "Last updated",
-          "sortPath":"lastUpdated",
+          "sortPath": "lastUpdated",
           "sortTypes": ["asc", "desc"]
         },
         {
-          "name":"resourceName",
+          "name": "resourceName",
           "label": "Resource name",
-          "sortPath":"resource.name",
+          "sortPath": "resource.name",
           "sortTypes": ["asc", "desc"]
         },
         {
-          "name":"resourceReference",
+          "name": "resourceReference",
           "label": "Resource reference",
-          "sortPath":"reference",
+          "sortPath": "reference",
           "sortTypes": ["asc", "desc"]
         },
         {
-          "name":"resourceDescription",
+          "name": "resourceDescription",
           "label": "Resource description",
-          "sortPath":"description",
+          "sortPath": "description",
           "sortTypes": ["asc", "desc"]
         },
         {
-          "name":"activeFrom",
+          "name": "activeFrom",
           "label": "Active from",
-          "sortPath":"activeFrom",
+          "sortPath": "activeFrom",
           "sortTypes": ["asc", "desc"]
         },
         {
-          "name":"activeTo",
-          "label":"Active to",
-          "sortPath":"activeTo",
-          "sortTypes": ["asc", "desc"] 
+          "name": "activeTo",
+          "label": "Active to",
+          "sortPath": "activeTo",
+          "sortTypes": ["asc", "desc"]
         }
       ]
     },
