@@ -6,7 +6,6 @@ import org.olf.kb.ErmResource
 import org.olf.kb.TitleInstance
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.PackageContentItem
-import org.olf.kb.Pkg
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -33,7 +32,7 @@ public class ErmResourceService {
    *
    * If the passed resource is a PTI then the returned list will comprise
    * of the resource's id, and the ids of all PCIs for that PTI
-   *
+   * 
    * If the passed resource is a PCI then the returned list should only comprise
    * of the resource's own id
    */
@@ -49,7 +48,7 @@ public class ErmResourceService {
         )
       }
 
-      // If res is a PTI, find all PCIS associated and store them
+      // If res is a PTI, find all PCIS associated and store them    
       if (res instanceof PlatformTitleInstance) {
         pcis.addAll(
           PackageContentItem.executeQuery(PCI_HQL, [resId: res.id])
@@ -68,40 +67,6 @@ public class ErmResourceService {
     resourceList
   }
 
-  public void handleResourceHierarchyUpdate(ErmResource res) {
-    if (res instanceof TitleInstance) {
-      TitleInstance ti = (TitleInstance) res
-      List<PlatformTitleInstance> ptis = PlatformTitleInstance.executeQuery("""
-      SELECT pti FROM PlatformTitleInstance AS pti
-        WHERE pti.titleInstance.id = :tiId
-        """, [tiId: ti.id])
-
-      ptis.each { PlatformTitleInstance pti ->
-        pti.lastUpdated = ti.lastUpdated
-        pti.save(failOnError: true, flush: true)
-      }
-    } else if (res instanceof PlatformTitleInstance) {
-        PlatformTitleInstance pti = (PlatformTitleInstance) res
-        List<PackageContentItem> pcis = PackageContentItem.executeQuery("""
-        SELECT pci FROM PackageContentItem AS pci
-        WHERE pci.pti.id = :ptiId
-        """, [ptiId: pti.id])
-
-        pcis.each { PackageContentItem pci ->
-          pci.lastUpdated = pti.lastUpdated
-          pci.save(failOnError: true, flush: true)
-        }
-    }  else if (res instanceof PackageContentItem) {
-        PackageContentItem pci = (PackageContentItem) res
-        Pkg pkg = Pkg.executeQuery("""
-        SELECT pkg FROM Pkg AS pkg
-        WHERE pkg.id = :pciPkgId
-        """, [pciPkgId: pci.pkg.id])[0]
-
-        pkg.lastUpdated = pci.lastUpdated
-        pkg.save(failOnError: true, flush: true)
-    }
-  }
 
   // FIXME do we actually want this?
   // This method should take in an ErmResource and return a ContentItemSchema, which can then be used to create matchKeys
