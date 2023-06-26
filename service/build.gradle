@@ -149,8 +149,8 @@ dependencies {
   implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.10'
 
 	/*  ---- Manually installed testing dependencies ---- */
-	implementation "org.grails:grails-gorm-testing-support:2.6.1"
-	implementation "org.grails:grails-web-testing-support:2.6.1"
+	testImplementation "org.grails:grails-gorm-testing-support:2.6.1"
+	testImplementation "org.grails:grails-web-testing-support:2.6.1"
 	testImplementation "org.grails.plugins:geb"
 	testImplementation "org.seleniumhq.selenium:selenium-remote-driver:3.14.0"
 	testImplementation "org.seleniumhq.selenium:selenium-api:3.14.0"
@@ -165,6 +165,8 @@ dependencies {
 	testImplementation( 'com.athaydes:spock-reports:2.3.2-groovy-3.0' ) {
 		transitive = false // this avoids affecting your version of Groovy/Spock
 	}
+
+	implementation 'org.springframework:spring-webmvc:5.3.28'
 }
 
 bootRun {
