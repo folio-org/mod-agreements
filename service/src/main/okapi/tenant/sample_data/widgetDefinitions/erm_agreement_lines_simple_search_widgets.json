@@ -1,0 +1,223 @@
+{
+  "type": {
+    "name": "SimpleSearch",
+    "version": "1.0"
+  },
+  "version": "1.0",
+  "name": "ERM Agreement Lines",
+  "definition": {
+    "baseUrl": "/erm/entitlements",
+    "resource": "entitlements",
+    "results": {
+      "columns": [
+        {
+          "name": "resourceName",
+          "label": "Resource name",
+          "accessPath": "resource.name",
+          "valueType": "Link"
+        },
+        {
+          "name": "resourceReference",
+          "label": "Resource reference",
+          "accessPath": "reference",
+          "valueType": "Link"
+        },
+        {
+          "name": "resourceDescription",
+          "label": "Resource description",
+          "accessPath": "description",
+          "valueType": "Link"
+        },
+        {
+          "name": "parentAgreement",
+          "label": "Parent agreement",
+          "accessPath": "owner.name",
+          "valueType": "Link"
+        },
+        {
+          "name": "activeFrom",
+          "label": "Active from",
+          "accessPath": "activeFrom",
+          "valueType": "Date"
+        },
+        {
+          "name": "activeTo",
+          "label": "Active to",
+          "accessPath": "activeTo",
+          "valueType": "Date"
+        },
+        {
+          "name": "note",
+          "label": "Notes",
+          "accessPath": "note",
+          "valueType": "String"
+        },
+        {
+          "name": "tages",
+          "label": "Tags",
+          "accessPath": "tags",
+          "valueType": "Array",
+          "arrayDisplayPath": "value"
+        }
+      ]
+    },
+    "filters": {
+      "columns": [
+        {
+          "name": "resourceName",
+          "label": "Resource name",
+          "filterPath": "resource.name",
+          "valueType": "String",
+          "comparators": ["==", "!=", "=~", "!~"]
+        },
+        {
+          "name": "resourceReference",
+          "label": "Resource reference",
+          "filterPath": "reference",
+          "valueType": "String",
+          "comparators": ["==", "!=", "=~", "!~"]
+        },
+        {
+          "name": "resourceDescription",
+          "label": "Resource description",
+          "filterPath": "description",
+          "valueType": "String",
+          "comparators": ["==", "!=", "=~", "!~"]
+        },
+        {
+          "name": "note",
+          "label": "Note",
+          "filterPath": "note",
+          "valueType": "String",
+          "comparators": ["==", "!=", "=~", "!~"]
+        },
+        {
+          "name": "agreement",
+          "label": "Agreement",
+          "filterPath": "owner.id",
+          "valueType": "UUID",
+          "resource": "agreement",
+          "comparators": ["==", "!="]
+        },
+        {
+          "name": "agreementLineType",
+          "label": "Agreement line type",
+          "filterPath": "type",
+          "valueType": "Enum",
+          "enumValues": [
+            { "label": "Unlinked", "value": "detached" },
+            { "label": "External", "value": "external" }
+          ],
+          "comparators": ["==", "!=", "isNull"]
+        },
+        {
+          "name": "activeFrom",
+          "label": "Active from",
+          "filterPath": "activeFrom",
+          "valueType": "Date",
+          "comparators": ["==", "!=", ">=", "<=", "isSet", "isNotSet"]
+        },
+        {
+          "name": "activeTo",
+          "label": "Active to",
+          "filterPath": "activeTo",
+          "valueType": "Date",
+          "comparators": ["==", "!=", ">=", "<=", "isSet", "isNotSet"]
+        },
+        {
+          "name": "lastUpdated",
+          "label": "Last updated",
+          "filterPath": "lastUpdated",
+          "valueType": "DateTime",
+          "comparators": ["==", "!=", ">=", "<=", "isSet", "isNotSet"]
+        },
+        {
+          "name": "tags",
+          "label": "Tags",
+          "filterPath": "tags.value",
+          "valueType": "String",
+          "comparators": ["==", "=~"]
+        }
+      ]
+    },
+    "matches": {
+      "columns": [
+        {
+          "name": "resourceName",
+          "label": "Resource name",
+          "accessPath": "resource.name",
+          "default": true
+        },
+        {
+          "name": "resourceReference",
+          "label": "Resource reference",
+          "accessPath": "reference",
+          "default": true
+        },
+        {
+          "name": "resourceDescription",
+          "label": "Resource description",
+          "accessPath": "description",
+          "default": true
+        }
+      ],
+      "termConfigurable": true
+    },
+    "sort": {
+      "columns": [
+        {
+          "name": "id",
+          "label": "Id",
+          "sortPath": "id",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name": "lastUpdated",
+          "label": "Last updated",
+          "sortPath": "lastUpdated",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name": "resourceName",
+          "label": "Resource name",
+          "sortPath": "resource.name",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name": "resourceReference",
+          "label": "Resource reference",
+          "sortPath": "reference",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name": "resourceDescription",
+          "label": "Resource description",
+          "sortPath": "description",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name": "activeFrom",
+          "label": "Active from",
+          "sortPath": "activeFrom",
+          "sortTypes": ["asc", "desc"]
+        },
+        {
+          "name": "activeTo",
+          "label": "Active to",
+          "sortPath": "activeTo",
+          "sortTypes": ["asc", "desc"]
+        }
+      ]
+    },
+    "configurableProperties": {
+      "urlLink": {
+        "configurable": true,
+        "defValue": "/erm/agreementLines"
+      },
+      "numberOfRows": {
+        "configurable": true,
+        "defValue": 10
+      }
+    }
+  }
+}
