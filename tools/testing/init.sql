@@ -1,5 +1,10 @@
 select 1;
 
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS btree_gin;
+CREATE EXTENSION IF NOT EXISTS pg_trgm with schema pg_catalog;
+CREATE EXTENSION IF NOT EXISTS btree_gin with schema pg_catalog;
+
 CREATE USER folio_admin WITH PASSWORD 'folio_admin';
 CREATE USER folio WITH PASSWORD 'folio';
 
@@ -24,4 +29,3 @@ ALTER USER folio_admin WITH SUPERUSER;
 ALTER USER folio CREATEDB;
 ALTER USER folio CREATEROLE;
 ALTER USER folio WITH SUPERUSER;
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
