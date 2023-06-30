@@ -52,6 +52,8 @@ class PackageIngestService implements DataBinder {
     return upsertPackage(package_data,'LOCAL',true)
   }
 
+
+  // For now this is repeated in pushKBService
   private static final def countChanges = ['accessStart', 'accessEnd']
 
   /**
@@ -132,174 +134,50 @@ class PackageIngestService implements DataBinder {
 
           // titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
           if ( titleIngestResult.titleInstanceId != null ) {
-
-            // ERM-1799 TI has been created, harvest matchKey information at this point to apply to any PTI/PCIs
-            List<Map> matchKeys = matchKeyService.collectMatchKeyInformation(pc)
-
             TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
-            // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
 
-            // lets try and work out the platform for the item
-            def platform_url_to_use = pc.platformUrl
+            // Pass off to new hierarchy method (?)
+            // FIXME some steps of the MDC and stuff still feel like packageUpsert territory, not needed for pushKB?
+            Map hierarchyResult = lookupOrCreateTitleHierarchy(
+              title,
+              pkg,
+              trustedSourceTI,
+              pc,
+              result.updateTime
+            )
+    
+            // Handle MDC stuffs
+            // TODO perhaps break some of this out so pushKB can use the same code but in a different way
+            switch (hierarchyResult.pciStatus) {
+              case 'updated':
+                // This means we have changes to an existing PCI and not a new one.
+                result.updatedTitles++
 
-            if ( ( pc.platformUrl == null ) && ( pc.url != null ) ) {
-              // No platform URL, but a URL for the title. Parse the URL and generate a platform URL
-              def parsed_url = new java.net.URL(pc.url)
-              platform_url_to_use = "${parsed_url.getProtocol()}://${parsed_url.getHost()}"
-            }
-
-            Platform platform = Platform.resolve(platform_url_to_use, pc.platformName)
-            // log.debug("Platform: ${platform}")
-
-            if ( platform == null && PROXY_MISSING_PLATFORM ) {
-              platform = Platform.resolve('http://localhost.localdomain', 'This platform entry is used for error cases')
-            }
-
-            if ( platform != null ) {
-
-              // See if we already have a title platform record for the presence of this title on this platform
-              PlatformTitleInstance pti = PlatformTitleInstance.findByTitleInstanceAndPlatform(title, platform)
-              if ( pti == null ) {
-                pti = new PlatformTitleInstance(titleInstance:title,
-                  platform:platform,
-                  url:pc.url,
-                ).save(failOnError: true)
-
-                // ERM-1799 Ensure initial matchKeyCreation
-                matchKeyService.updateMatchKeys(pti, matchKeys)
-              } else if (trustedSourceTI) {
-                // Update any PTI fields directly
-                if (pti.url != pc.url) {
-                  pti.url = pc.url
-                }
-                pti.save(failOnError: true)
-
-                /*
-                  * We may need to update the match key information
-                  * from the incoming package for existing PTIs
-                  */
-                matchKeyService.updateMatchKeys(pti, matchKeys)
-              }
-
-              // Lookup or create a package content item record for this title on this platform in this package
-              // We only check for currently live pci records, as titles can come and go from the package.
-              // N.B. addedTimestamp removedTimestamp lastSeenTimestamp
-              def pci_qr = PackageContentItem.executeQuery('select pci from PackageContentItem as pci where pci.pti = :pti and pci.pkg.id = :pkg and pci.removedTimestamp is null',
-                  [pti:pti, pkg:result.packageId])
-              PackageContentItem pci = pci_qr.size() == 1 ? pci_qr.get(0) : null;
-
-              boolean isUpdate = false
-              boolean isNew = false
-              if ( pci == null ) {
-                log.debug("Record ${result.titleCount} - Create new package content item")
-                MDC.put('recordNumber', (result.titleCount+1).toString())
-                pci = new PackageContentItem(
-                  pti:pti,
-                  pkg:Pkg.get(result.packageId),
-                  addedTimestamp:result.updateTime,
-                )
-
-                // ERM-1799, match keys need adding to PCI
-                matchKeyService.updateMatchKeys(pci, matchKeys, false)
-                isNew = true
-              }
-              else {
-                // Note that we have seen the package content item now - so we don't delete it at the end.
-                log.debug("Record ${result.titleCount} - Update package content item (${pci.id})")
-                isUpdate = true
-                if (trustedSourceTI) {
-                  /*
-                  * We may need to update the match key information
-                  * from the incoming package for existing PCIs
-                  */
-                  matchKeyService.updateMatchKeys(pci, matchKeys, false)
-                }
-              }
-
-              String embStr = pc.embargo?.trim()
-
-              // Pre attempt to parse. And log error.
-              Embargo emb = null
-              if (embStr) {
-                emb = Embargo.parse(embStr)
-                if (!emb) {
-                  log.error "Could not parse ${embStr} as Embargo"
-                }
-              }
-
-              // Add/Update common properties.
-              pci.with {
-                note = StringUtils.truncate(pc.coverageNote)
-                depth = pc.coverageDepth
-                accessStart = pc.accessStart
-                accessEnd = pc.accessEnd
-                addedTimestamp = result.updateTime
-                lastSeenTimestamp = result.updateTime
-
-                if (emb) {
-                  if (embargo) {
-                    // Edit
-                    bindData(embargo, emb.properties, [exclude: ['id']])
-                  } else {
-                    // New
-                    emb.save()
-                    embargo = emb
+                // Grab the dirty properties
+                def modifiedFieldNames = pci.getDirtyPropertyNames()
+                for (fieldName in modifiedFieldNames) {
+                  if (fieldName == "accessStart") {
+                    result.updatedAccessStart++
                   }
-                }
-              }
-
-              // ensure that accessStart is earlier than accessEnd, otherwise stop processing the current item
-              if (pci.accessStart != null && pci.accessEnd != null) {
-                if (pci.accessStart > pci.accessEnd ) {
-                  log.error("accessStart date cannot be after accessEnd date for title: ${title} in package: ${pkg.name}")
-                  return
-                }
-              }
-
-              if (isUpdate) {
-                if (pci.isDirty()) {
-                  // This means we have changes to an existing PCI and not a new one.
-                  result.updatedTitles++
-
-                  // Grab the dirty properties
-                  def modifiedFieldNames = pci.getDirtyPropertyNames()
-                  for (fieldName in modifiedFieldNames) {
-                    if (fieldName == "accessStart") {
-                      result.updatedAccessStart++
-                    }
-                    if (fieldName == "accessEnd") {
-                      result.updatedAccessEnd++
-                    }
-                    if (countChanges.contains(fieldName)) {
-                      def currentValue = pci."$fieldName"
-                      def originalValue = pci.getPersistentValue(fieldName)
-                      if (currentValue != originalValue) {
-                        result["${fieldName}"] = (result["${fieldName}"] ?: 0)++
-                      }
+                  if (fieldName == "accessEnd") {
+                    result.updatedAccessEnd++
+                  }
+                  if (countChanges.contains(fieldName)) {
+                    def currentValue = pci."$fieldName"
+                    def originalValue = pci.getPersistentValue(fieldName)
+                    if (currentValue != originalValue) {
+                      result["${fieldName}"] = (result["${fieldName}"] ?: 0)++
                     }
                   }
                 }
-              } else if (isNew) {
+                break;
+              case 'new':
                 // New item.
                 result.newTitles++
-              }
-
-              pci.save(flush: true, failOnError: true)
-
-              // If the row has a coverage statement, check that the range of coverage we know about for this title on this platform
-              // extends to include the supplied information. It is a contract with the KB that we assume this is correct info.
-              // We store this generally for the title on the platform, and specifically for this title in this package on this platform.
-              if ( pc.coverage ) {
-
-                // We define coverage to be a list in the exchange format, but sometimes it comes just as a JSON map. Convert that
-                // to the list of maps that coverageService.extend expects
-                Iterable<CoverageStatementSchema> cov = pc.coverage instanceof Iterable ? pc.coverage : [ pc.coverage ]
-                coverageService.setCoverageFromSchema (pci, cov)
-              }
-            }
-            else {
-              String message = "Skipping \"${pc.title}\". Unable to identify platform from ${platform_url_to_use} and ${pc.platformName}"
-              log.error(message)
+                break;
+              case 'none':
+              default:
+                break;
             }
           }
           else {
@@ -319,6 +197,7 @@ class PackageIngestService implements DataBinder {
     }
     def finishedTime = (System.currentTimeMillis()-result.startTime)/1000
 
+    // FIXME this removed logic is WRONG under pushKB because it's chunked
     // At the end - Any PCIs that are currently live (Don't have a removedTimestamp) but whos lastSeenTimestamp is < result.updateTime
     // were not found on this run, and have been removed. We *may* introduce some extra checks here - like 3 times or a time delay, but for now,
     // this is how we detect deletions in the package file.
@@ -578,7 +457,7 @@ class PackageIngestService implements DataBinder {
   /* Lookup or create a package from contentItemPackage within the passed contentItem */
   public Pkg lookupOrCreatePackageFromTitle(ContentItemSchema pc) {
     Pkg pkg = null;
-    if (pc?.contentItemPackage) {
+    if (pc?.contentItemPackage) {`
       pkg = lookupOrCreatePkg(pc.contentItemPackage)
     } else {
       /* FIXME WIP this feels like not the right thing to do */
@@ -586,5 +465,174 @@ class PackageIngestService implements DataBinder {
     }
 
     return pkg
+  }
+
+  public Platform lookupOrCreatePlatform(ContentItemSchema pc) {
+    // lets try and work out the platform for the item
+    def platform_url_to_use = pc.platformUrl
+
+    if ( ( pc.platformUrl == null ) && ( pc.url != null ) ) {
+      // No platform URL, but a URL for the title. Parse the URL and generate a platform URL
+      def parsed_url = new java.net.URL(pc.url)
+      platform_url_to_use = "${parsed_url.getProtocol()}://${parsed_url.getHost()}"
+    }
+
+    Platform platform = Platform.resolve(platform_url_to_use, pc.platformName)
+    // log.debug("Platform: ${platform}")
+
+    if ( platform == null && PROXY_MISSING_PLATFORM ) {
+      platform = Platform.resolve('http://localhost.localdomain', 'This platform entry is used for error cases')
+    }
+
+    platform
+  }
+
+  public PlatformTitleInstance lookupOrCreatePTI(TitleInstance title, Platform platform, Boolean trustedSourceTI, ContentItemSchema pc) {
+    PlatformTitleInstance pti = PlatformTitleInstance.findByTitleInstanceAndPlatform(title, platform)
+    if ( pti == null ) {
+      pti = new PlatformTitleInstance(titleInstance:title,
+        platform:platform,
+        url:pc.url,
+      ).save(failOnError: true)
+    } else if (trustedSourceTI) {
+      // Update any PTI fields directly
+      if (pti.url != pc.url) {
+        pti.url = pc.url
+      }
+      pti.save(failOnError: true)
+    }
+
+    pti
+  }
+
+
+  // Once package/title has been created, setup rest of hierarchy PTI/PCI etc PCI etc
+  // Return special map containing data on whether PCI was created or updated,
+  public Map lookupOrCreateTitleHierarchy(
+    TitleInstance title,
+    Pkg pkg,
+    Boolean trustedSourceTI,
+    ContentItemSchema pc,
+    long updateTime
+  ) {
+    Map result = [
+      pciStatus: 'none' // This should be 'none', 'updated' or 'new'
+    ]
+
+    // ERM-1799 TI has been created, harvest matchKey information at this point to apply to any PTI/PCIs
+    List<Map> matchKeys = matchKeyService.collectMatchKeyInformation(pc)
+
+    // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
+
+    // lets try and work out the platform for the item
+    Platform platform = lookupPlatform(pc);
+
+    if ( platform != null ) {
+
+      // See if we already have a title platform record for the presence of this title on this platform
+      PlatformTitleInstance pti = lookupOrCreatePTI(title, platform, trustedSourceTI pc)
+      matchKeyService.updateMatchKeys(pti, matchKeys)
+
+      // Lookup or create a package content item record for this title on this platform in this package
+      // We only check for currently live pci records, as titles can come and go from the package.
+      // N.B. addedTimestamp removedTimestamp lastSeenTimestamp
+      def pci_qr = PackageContentItem.executeQuery('select pci from PackageContentItem as pci where pci.pti = :pti and pci.pkg.id = :pkg and pci.removedTimestamp is null',
+          [pti:pti, pkg:pkg.id])
+      PackageContentItem pci = pci_qr.size() == 1 ? pci_qr.get(0) : null;
+
+      boolean isUpdate = false
+      boolean isNew = false
+      if ( pci == null ) {
+        log.debug("Record ${result.titleCount} - Create new package content item")
+        MDC.put('recordNumber', (result.titleCount+1).toString())
+        pci = new PackageContentItem(
+          pti:pti,
+          pkg:pkg,
+          addedTimestamp:updateTime,
+        )
+
+        // ERM-1799, match keys need adding to PCI
+        matchKeyService.updateMatchKeys(pci, matchKeys, false)
+        isNew = true
+      }
+      else {
+        // Note that we have seen the package content item now - so we don't delete it at the end.
+        log.debug("Record ${result.titleCount} - Update package content item (${pci.id})")
+        isUpdate = true
+        if (trustedSourceTI) {
+          /*
+          * We may need to update the match key information
+          * from the incoming package for existing PCIs
+          */
+          matchKeyService.updateMatchKeys(pci, matchKeys, false)
+        }
+      }
+
+      String embStr = pc.embargo?.trim()
+
+      // Pre attempt to parse. And log error.
+      Embargo emb = null
+      if (embStr) {
+        emb = Embargo.parse(embStr)
+        if (!emb) {
+          log.error "Could not parse ${embStr} as Embargo"
+        }
+      }
+
+      // Add/Update common properties.
+      pci.with {
+        note = StringUtils.truncate(pc.coverageNote)
+        depth = pc.coverageDepth
+        accessStart = pc.accessStart
+        accessEnd = pc.accessEnd
+        addedTimestamp = updateTime
+        lastSeenTimestamp = updateTime
+
+        if (emb) {
+          if (embargo) {
+            // Edit
+            bindData(embargo, emb.properties, [exclude: ['id']])
+          } else {
+            // New
+            emb.save()
+            embargo = emb
+          }
+        }
+      }
+
+      // ensure that accessStart is earlier than accessEnd, otherwise stop processing the current item
+      if (pci.accessStart != null && pci.accessEnd != null) {
+        if (pci.accessStart > pci.accessEnd ) {
+          log.error("accessStart date cannot be after accessEnd date for title: ${title} in package: ${pkg.name}")
+          return
+        }
+      }
+
+      // Return a status containing information about whether the PCI was created or updated
+      if (isUpdate && pci.isDirty()) {
+        result.pciStatus = 'updated'
+      } else if (isNew) {
+        result.pciStatus = 'new'
+      }
+
+      pci.save(flush: true, failOnError: true)
+
+      // If the row has a coverage statement, check that the range of coverage we know about for this title on this platform
+      // extends to include the supplied information. It is a contract with the KB that we assume this is correct info.
+      // We store this generally for the title on the platform, and specifically for this title in this package on this platform.
+      if ( pc.coverage ) {
+
+        // We define coverage to be a list in the exchange format, but sometimes it comes just as a JSON map. Convert that
+        // to the list of maps that coverageService.extend expects
+        Iterable<CoverageStatementSchema> cov = pc.coverage instanceof Iterable ? pc.coverage : [ pc.coverage ]
+        coverageService.setCoverageFromSchema (pci, cov)
+      }
+    }
+    else {
+      String message = "Skipping \"${pc.title}\". Unable to identify platform from ${platform_url_to_use} and ${pc.platformName}"
+      log.error(message)
+    }
+
+    result
   }
 }

@@ -18,8 +18,8 @@ class TitleEnricherService {
     // Check for existence of sourceIdentifier. LOCAL source imports will pass null here.
     if (sourceIdentifier) {
 
-      // Only bother continuing if the source is trusted for TI metadata
-      if (kb.trustedSourceTI) {
+      // Only bother continuing if the source is trusted for TI metadata and a kb.type exists
+      if (kb.trustedSourceTI && kb.type) {
         Class cls = Class.forName(kb.type)
         KBCacheUpdater cache_updater = cls.newInstance()
         // If this KB doesn't require a secondary enrichment call then we can exit here.

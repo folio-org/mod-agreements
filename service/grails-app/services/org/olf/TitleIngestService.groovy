@@ -26,15 +26,17 @@ class TitleIngestService implements DataBinder {
   TitleInstanceResolverService titleInstanceResolverService
   TitleEnricherService titleEnricherService
 
-
+  // Seemingly unused
   public Map upsertTitle(ContentItemSchema pc) {
     return upsertTitle(pc, 'LOCAL_TITLE')
   }
 
+  // Used by KnowledgeBaseCacheService
   public Map upsertTitle(ContentItemSchema pc, String remotekbname) {
     RemoteKB kb = RemoteKB.findByName(remotekbname)
     TitleInstance.withNewTransaction {
       if (!kb) {
+        // This KB is created without a Type... so if it was trusted for TI data then it'd fail secondary enrichment
        kb = new RemoteKB( name:remotekbname,
                           rectype: RemoteKB.RECTYPE_TITLE,
                           active: Boolean.TRUE,
@@ -47,8 +49,9 @@ class TitleIngestService implements DataBinder {
   }
 
   // Bear in mind the kb's rectype here could be RECTYPE_PACKAGE, if called from packageIngestService
+  // FIXME upsertTitle should not need RemoteKB I think... work out trustedSourceTI
   public Map upsertTitle(ContentItemSchema pc, RemoteKB kb, Boolean trusted = null) {
-    log.debug("TitleIngestService::UpsertTitle called")
+    //log.debug("TitleIngestService::UpsertTitle called")
     def result = [
       startTime: System.currentTimeMillis(),
     ]
@@ -101,6 +104,34 @@ class TitleIngestService implements DataBinder {
     }
 
     // log.debug("TitleIngestService::UpsertTitle completed - return ${result}")
+
+    result
+  }
+
+  // This is entirely separate to the logic above, used for pushKB
+  // DOES NOT USE REMOTEKBs
+  // Trust calling code to do the work to figure out if its trusted
+  // or not -- no secondary enrichment call
+  public Map upsertTitleDirect(ContentItemSchema pc, boolean trustedSourceTI = true) {
+    //log.debug("TitleIngestService::upsertTitleDirect called")
+    def result = [
+      startTime: System.currentTimeMillis(),
+    ];
+    TitleInstance title;
+    try {
+      title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
+    } catch (Exception e){
+      log.error("Error resolving title (${pc.title}), skipping ${e.message}")
+    }
+
+    if (title != null) {
+      // Append titleInstanceId to resultList, so we can use it elsewhere to look up titles ingested with this method
+      result.titleInstanceId = title.id
+      result.finishTime = System.currentTimeMillis()
+    } else {
+      String message = "Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
+      log.error(message)
+    }
 
     result
   }

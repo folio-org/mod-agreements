@@ -7,6 +7,9 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 
+// FIXME may not need this longer term
+import org.olf.kb.TitleInstance
+
 import org.olf.dataimport.erm.CoverageStatement
 import org.olf.dataimport.erm.ErmPackageImpl
 import org.olf.dataimport.erm.ContentItem
@@ -24,6 +27,7 @@ import org.olf.dataimport.internal.KBManagementBean.KBIngressType
 import org.olf.UtilityService
 import org.olf.PackageIngestService
 import org.olf.TitleIngestService
+import org.olf.MatchKeyService
 
 import org.slf4j.MDC
 
@@ -44,8 +48,12 @@ class PushKBService implements DataBinder {
   UtilityService utilityService
   PackageIngestService packageIngestService
   TitleIngestService titleIngestService
+  MatchKeyService matchKeyService
 
   KBManagementBean kbManagementBean
+
+  // For now this is repeated in packageIngestService
+  private static final def countChanges = ['accessStart', 'accessEnd']
 
   public Map pushPackages(final List<Map> packages) {
     Map result = [
@@ -81,31 +89,144 @@ class PushKBService implements DataBinder {
 
   public Map pushPCIs(final List<Map> pcis) {
     Map result = [
-      success: false
+      success: false,
+      startTime: System.currentTimeMillis(),
+      titleCount: 0,
+      newTitles: 0,
+      removedTitles: 0,
+      updatedTitles: 0,
+      updatedAccessStart: 0,
+      updatedAccessEnd: 0,
     ]
     KBIngressType ingressType = kbManagementBean.ingressType
 
     if (ingressType == KBIngressType.PushKB) {
       try {
         pcis.each { Map record ->
+
+          // FIXME check for deleted/retired here, before potentially creating a PKG for a deleted/retired TIPP
+
+
           // Handle MDC directly? Might not be the right approach
+          // FIXME this needs coordinating between pushKB and harvest
           MDC.put('title', StringUtils.truncate(record.title.toString()))
 
           log.debug("LOGGING PCI: ${record}")
+
+          // Not entirely sure why we would need this and startTime... left for consistency with upsertPackage
+          result.updateTime = System.currentTimeMillis()
+
           final ContentItemSchema pci = PackageContentImpl.newInstance();
           bindData(pci, record)
           if (utilityService.checkValidBinding(pci)) {
-            Pkg pkg = null;
-            Pkg.withNewTransaction { status ->
-              pkg = packageIngestService.lookupOrCreatePackageFromTitle(pci);
+            try {
+              Pkg pkg = null;
+              Pkg.withNewTransaction { status ->
+                // TODO this will allow the PCI data to update the PKG record... do we want this?
+                pkg = packageIngestService.lookupOrCreatePackageFromTitle(pci);
+                log.debug("LOGGING PACKAGE OBTAINED FROM PCI: ${pkg}")
+                
+                Map titleIngestResult = titleIngestService.upsertTitleDirect(pci)
+                log.debug("LOGGING titleIngestResult: ${titleIngestResult}")
+
+                if ( titleIngestResult.titleInstanceId != null ) {
+                  TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
+                  log.debug("LOGDEBUG TITLE: ${title}")
+                  Map hierarchyResult = lookupOrCreateTitleHierarchy(
+                    title,
+                    pkg,
+                    trustedSourceTI,
+                    pc,
+                    result.updateTime
+                  )
+
+                  // FIXME DRY with PackageIngestService
+                  // Handle MDC stuffs
+                  // TODO perhaps break some of this out so pushKB can use the same code but in a different way
+                  switch (hierarchyResult.pciStatus) {
+                    case 'updated':
+                      // This means we have changes to an existing PCI and not a new one.
+                      result.updatedTitles++
+
+                      // Grab the dirty properties
+                      def modifiedFieldNames = pci.getDirtyPropertyNames()
+                      for (fieldName in modifiedFieldNames) {
+                        if (fieldName == "accessStart") {
+                          result.updatedAccessStart++
+                        }
+                        if (fieldName == "accessEnd") {
+                          result.updatedAccessEnd++
+                        }
+                        if (countChanges.contains(fieldName)) {
+                          def currentValue = pci."$fieldName"
+                          def originalValue = pci.getPersistentValue(fieldName)
+                          if (currentValue != originalValue) {
+                            result["${fieldName}"] = (result["${fieldName}"] ?: 0)++
+                          }
+                        }
+                      }
+                      break;
+                    case 'new':
+                      // New item.
+                      result.newTitles++
+                      break;
+                    case 'none':
+                    default:
+                      break;
+                  }
+                } else {
+                  String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
+                  log.error(message)
+                }
+              }
+            }  catch ( Exception e ) {
+              String message = "Skipping \"${pc.title}\". System error: ${e.message}"
+              log.error(message,e)
             }
 
-            log.debug("LOGGING PACKAGE OBTAINED FROM PCI: ${pkg}")
+            // FIXME logging repeated here again
+            result.titleCount++
+            result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/result.titleCount
+            if ( result.titleCount % 100 == 0 ) {
+              log.debug ("Processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}")
+            }
           } else {
             // We could log an ending error message here, but the error log messages from checkValidBinding may well suffice
           }
         }
+
+        def finishedTime = (System.currentTimeMillis()-result.startTime)/1000
         result.success = true
+
+        // FIXME same as above, logging may need tweaking between pushKB and harvest
+        // Currently this is copied from packageIngestService
+        MDC.remove('recordNumber')
+        MDC.remove('title')
+        // Need to pause long enough so that the timestamps are different
+        TimeUnit.MILLISECONDS.sleep(1)
+        if (result.titleCount > 0) {
+          log.info ("Processed ${result.titleCount} titles in ${finishedTime} seconds (${finishedTime/result.titleCount} average)")
+          TimeUnit.MILLISECONDS.sleep(1)
+          log.info ("Added ${result.newTitles} titles")
+          TimeUnit.MILLISECONDS.sleep(1)
+          log.info ("Updated ${result.updatedTitles} titles")
+          TimeUnit.MILLISECONDS.sleep(1)
+          log.info ("Removed ${result.removedTitles} titles")
+          log.info ("Updated accessStart on ${result.updatedAccessStart} title(s)")
+          log.info ("Updated accessEnd on ${result.updatedAccessEnd} title(s)")
+
+          // Log the counts too.
+          for (final String change : countChanges) {
+            if (result[change]) {
+              TimeUnit.MILLISECONDS.sleep(1)
+              log.info ("Changed ${GrailsNameUtils.getNaturalName(change).toLowerCase()} on ${result[change]} titles")
+            }
+          }
+        } else {
+          if (result.titleCount > 0) {
+            log.info ("No titles to process")
+          }
+        }
       } catch (Exception e) {
         log.error("Something went wrong", e);
         result.errorMessage = "Something went wrong: ${e}"
