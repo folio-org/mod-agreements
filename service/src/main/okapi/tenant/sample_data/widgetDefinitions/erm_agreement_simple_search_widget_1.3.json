@@ -88,6 +88,13 @@
           "comparators": ["==", "!=", "=~", "!~"]
         },
         {
+          "name":"alternativeNameArray",
+          "label": "Alternative name exists",
+          "filterPath":"alternateNames",
+          "valueType": "Array",
+          "comparators": ["isEmpty", "isNotEmpty"]
+        },
+        {
           "name":"description",
           "label": "Description",
           "filterPath":"description",
