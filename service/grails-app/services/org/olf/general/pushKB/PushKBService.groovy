@@ -2,13 +2,12 @@ package org.olf.general.pushKB
 
 import org.olf.general.StringUtils
 
+import java.util.concurrent.TimeUnit
+
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
-
-// FIXME may not need this longer term
-import org.olf.kb.TitleInstance
 
 import org.olf.dataimport.erm.CoverageStatement
 import org.olf.dataimport.erm.ErmPackageImpl
@@ -33,6 +32,9 @@ import org.slf4j.MDC
 
 import org.olf.kb.RemoteKB
 import org.olf.kb.Pkg
+import org.olf.kb.PackageContentItem
+// FIXME may not need this longer term
+import org.olf.kb.TitleInstance
 
 import com.opencsv.CSVReader
 
@@ -116,29 +118,38 @@ class PushKBService implements DataBinder {
           // Not entirely sure why we would need this and startTime... left for consistency with upsertPackage
           result.updateTime = System.currentTimeMillis()
 
-          final ContentItemSchema pci = PackageContentImpl.newInstance();
-          bindData(pci, record)
-          if (utilityService.checkValidBinding(pci)) {
+          final ContentItemSchema pc = PackageContentImpl.newInstance();
+
+          // Ensure electronic
+          if (!pc.instanceMedium) {
+            pc.instanceMedium = 'Electronic'
+          }
+
+          bindData(pc, record)
+          if (utilityService.checkValidBinding(pc)) {
             try {
               Pkg pkg = null;
               Pkg.withNewTransaction { status ->
                 // TODO this will allow the PCI data to update the PKG record... do we want this?
-                pkg = packageIngestService.lookupOrCreatePackageFromTitle(pci);
+                pkg = packageIngestService.lookupOrCreatePackageFromTitle(pc);
                 log.debug("LOGGING PACKAGE OBTAINED FROM PCI: ${pkg}")
                 
-                Map titleIngestResult = titleIngestService.upsertTitleDirect(pci)
+                Map titleIngestResult = titleIngestService.upsertTitleDirect(pc)
                 log.debug("LOGGING titleIngestResult: ${titleIngestResult}")
 
                 if ( titleIngestResult.titleInstanceId != null ) {
                   TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
                   log.debug("LOGDEBUG TITLE: ${title}")
-                  Map hierarchyResult = lookupOrCreateTitleHierarchy(
+                  Map hierarchyResult = packageIngestService.lookupOrCreateTitleHierarchy(
                     title,
                     pkg,
-                    trustedSourceTI,
+                    true,
                     pc,
-                    result.updateTime
+                    result.updateTime,
+                    result.titleCount // FIXME not sure about this
                   )
+
+                  PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
 
                   // FIXME DRY with PackageIngestService
                   // Handle MDC stuffs

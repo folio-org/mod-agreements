@@ -143,8 +143,11 @@ class PackageIngestService implements DataBinder {
               pkg,
               trustedSourceTI,
               pc,
-              result.updateTime
+              result.updateTime,
+              result.titleCount
             )
+
+            PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
     
             // Handle MDC stuffs
             // TODO perhaps break some of this out so pushKB can use the same code but in a different way
@@ -457,7 +460,7 @@ class PackageIngestService implements DataBinder {
   /* Lookup or create a package from contentItemPackage within the passed contentItem */
   public Pkg lookupOrCreatePackageFromTitle(ContentItemSchema pc) {
     Pkg pkg = null;
-    if (pc?.contentItemPackage) {`
+    if (pc?.contentItemPackage) {
       pkg = lookupOrCreatePkg(pc.contentItemPackage)
     } else {
       /* FIXME WIP this feels like not the right thing to do */
@@ -499,7 +502,7 @@ class PackageIngestService implements DataBinder {
       if (pti.url != pc.url) {
         pti.url = pc.url
       }
-      pti.save(failOnError: true)
+      pti.save(flush: true, failOnError: true)
     }
 
     pti
@@ -513,7 +516,8 @@ class PackageIngestService implements DataBinder {
     Pkg pkg,
     Boolean trustedSourceTI,
     ContentItemSchema pc,
-    long updateTime
+    long updateTime,
+    long titleCount
   ) {
     Map result = [
       pciStatus: 'none' // This should be 'none', 'updated' or 'new'
@@ -525,13 +529,17 @@ class PackageIngestService implements DataBinder {
     // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
 
     // lets try and work out the platform for the item
-    Platform platform = lookupPlatform(pc);
+    Platform platform = lookupOrCreatePlatform(pc);
 
     if ( platform != null ) {
 
       // See if we already have a title platform record for the presence of this title on this platform
-      PlatformTitleInstance pti = lookupOrCreatePTI(title, platform, trustedSourceTI pc)
+      PlatformTitleInstance pti = lookupOrCreatePTI(title, platform, trustedSourceTI, pc)
       matchKeyService.updateMatchKeys(pti, matchKeys)
+
+
+      // ADD PTI AND PCI ID TO RESULT
+      result.ptiId = pti.id;
 
       // Lookup or create a package content item record for this title on this platform in this package
       // We only check for currently live pci records, as titles can come and go from the package.
@@ -543,8 +551,8 @@ class PackageIngestService implements DataBinder {
       boolean isUpdate = false
       boolean isNew = false
       if ( pci == null ) {
-        log.debug("Record ${result.titleCount} - Create new package content item")
-        MDC.put('recordNumber', (result.titleCount+1).toString())
+        log.debug("Record ${titleCount} - Create new package content item")
+        MDC.put('recordNumber', (titleCount+1).toString())
         pci = new PackageContentItem(
           pti:pti,
           pkg:pkg,
@@ -557,7 +565,7 @@ class PackageIngestService implements DataBinder {
       }
       else {
         // Note that we have seen the package content item now - so we don't delete it at the end.
-        log.debug("Record ${result.titleCount} - Update package content item (${pci.id})")
+        log.debug("Record ${titleCount} - Update package content item (${pci.id})")
         isUpdate = true
         if (trustedSourceTI) {
           /*
@@ -616,6 +624,9 @@ class PackageIngestService implements DataBinder {
       }
 
       pci.save(flush: true, failOnError: true)
+
+      // ADD PTI AND PCI ID TO RESULT
+      result.pciId = pci.id;
 
       // If the row has a coverage statement, check that the range of coverage we know about for this title on this platform
       // extends to include the supplied information. It is a contract with the KB that we assume this is correct info.
