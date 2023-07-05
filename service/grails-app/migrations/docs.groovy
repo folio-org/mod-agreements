@@ -62,27 +62,27 @@ databaseChangeLog = {
 
   // Foreign key constraints for external license documents
   changeSet(author: "ibbo (generated)", id: "2019-02-28-00002") {
-    addForeignKeyConstraint(baseColumnNames: "saeld_sa_fk",
-                            baseTableName: "subscription_agreement_ext_lic_doc",
-                            constraintName: "sa_eld_to_sa_fk",
-                            deferrable: "false", initiallyDeferred: "false",
-                            referencedColumnNames: "sa_id",
+    addForeignKeyConstraint(baseColumnNames: "saeld_sa_fk", 
+                            baseTableName: "subscription_agreement_ext_lic_doc", 
+                            constraintName: "sa_eld_to_sa_fk", 
+                            deferrable: "false", initiallyDeferred: "false", 
+                            referencedColumnNames: "sa_id", 
                             referencedTableName: "subscription_agreement")
   }
 
   changeSet(author: "ibbo (generated)", id: "2019-02-28-00003") {
-    addForeignKeyConstraint(baseColumnNames: "saeld_da_fk",
-                            baseTableName: "subscription_agreement_ext_lic_doc",
-                            constraintName: "sa_eld_to_da_fk",
-                            deferrable: "false", initiallyDeferred: "false",
-                            referencedColumnNames: "da_id",
+    addForeignKeyConstraint(baseColumnNames: "saeld_da_fk", 
+                            baseTableName: "subscription_agreement_ext_lic_doc", 
+                            constraintName: "sa_eld_to_da_fk", 
+                            deferrable: "false", initiallyDeferred: "false", 
+                            referencedColumnNames: "da_id", 
                             referencedTableName: "document_attachment")
   }
-// extend document_attachment's url field to 2048 characters
+
+  // extend document_attachment's url field to 2048 characters
   changeSet(author: "Claudia (manual)", id: "20230703-001") {
     modifyDataType (
       tableName: "document_attachment",
       columnName: "da_url",
       newDataType: "varchar(2048)")
-  }
 }
