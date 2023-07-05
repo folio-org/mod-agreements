@@ -78,4 +78,11 @@ databaseChangeLog = {
                             referencedColumnNames: "da_id", 
                             referencedTableName: "document_attachment")
   }
+
+  // extend document_attachment's url field to 2048 characters
+  changeSet(author: "Claudia (manual)", id: "20230703-001") {
+    modifyDataType (
+      tableName: "document_attachment",
+      columnName: "da_url",
+      newDataType: "varchar(2048)")
 }
