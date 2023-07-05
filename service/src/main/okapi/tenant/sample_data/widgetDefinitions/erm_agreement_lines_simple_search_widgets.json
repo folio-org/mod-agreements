@@ -128,7 +128,7 @@
           "name": "lastUpdated",
           "label": "Last updated",
           "filterPath": "lastUpdated",
-          "valueType": "DateTime",
+          "valueType": "Date",
           "comparators": ["==", "!=", ">=", "<=", "isSet", "isNotSet"]
         },
         {
