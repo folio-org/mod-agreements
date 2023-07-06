@@ -84,5 +84,7 @@ databaseChangeLog = {
     modifyDataType (
       tableName: "document_attachment",
       columnName: "da_url",
-      newDataType: "varchar(2048)")
+      newDataType: "varchar(2048)"
+    )
+  }
 }
