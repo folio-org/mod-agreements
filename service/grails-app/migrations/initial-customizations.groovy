@@ -23,6 +23,8 @@ databaseChangeLog = {
     changeSet(author: "ianibbo (generated)", id: "1537982176428-2") {
       grailsChange {
         change {
+					
+					sql.execute("SET SEARCH_PATH=${database.defaultSchemaName}, public;".toString())
           // grailsChange gives us an sql variable which inherits the current connection, and hence should
           // get the schema
           // sql.execute seems to get a bit confused when passed a GString. Work it out before
@@ -46,6 +48,7 @@ databaseChangeLog = {
     changeSet(author: "ianibbo (generated)", id: "1537982176428-4") {
       grailsChange {
         change {
+					sql.execute("SET SEARCH_PATH=${database.defaultSchemaName}, public;".toString())
           // grailsChange gives us an sql variable which inherits the current connection, and hence should
           // get the schema. sql.execute seems to get a bit confused when passed a GString. Work it out before by calling toString
           def cmd = "CREATE INDEX work_title_trigram_idx ON ${database.defaultSchemaName}.work USING GIN (w_title gin_trgm_ops)".toString()
