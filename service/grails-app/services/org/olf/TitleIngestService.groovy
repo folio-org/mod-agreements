@@ -49,7 +49,6 @@ class TitleIngestService implements DataBinder {
   }
 
   // Bear in mind the kb's rectype here could be RECTYPE_PACKAGE, if called from packageIngestService
-  // FIXME upsertTitle should not need RemoteKB I think... work out trustedSourceTI
   public Map upsertTitle(ContentItemSchema pc, RemoteKB kb, Boolean trusted = null) {
     //log.debug("TitleIngestService::UpsertTitle called")
     def result = [

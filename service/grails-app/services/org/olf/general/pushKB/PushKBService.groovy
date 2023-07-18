@@ -185,6 +185,21 @@ class PushKBService implements DataBinder {
                     default:
                       break;
                   }
+                  /* TODO figure out if use of removedTimestamp
+                   * should be something harvest also needs to do directly
+                   * And whether we should be doing it after all the above
+                   * or before.
+                   */
+                  if (pc.removedTimestamp) {
+                      try {
+                      log.debug("Removal candidate: pci.id #${pci.id} (Last seen ${pci.lastSeenTimestamp}, thisUpdate ${result.updateTime}) -- Set removed")
+                      pci.removedTimestamp = pc.removedTimestamp
+                      pci.save(failOnError:true)
+                    } catch ( Exception e ) {
+                      log.error("Problem removing ${pci} in package load", e)
+                    }
+                    result.removedTitles++
+                  }
                 } else {
                   String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
                   log.error(message)
@@ -195,15 +210,17 @@ class PushKBService implements DataBinder {
               log.error(message,e)
             }
 
-            // FIXME logging repeated here again
             result.titleCount++
-            result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/result.titleCount
-            if ( result.titleCount % 100 == 0 ) {
-              log.debug ("Processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}")
-            }
+            
           } else {
             // We could log an ending error message here, but the error log messages from checkValidBinding may well suffice
           }
+        }
+
+        // FIXME logging repeated here again
+        result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/result.titleCount
+        if ( result.titleCount % 100 == 0 ) {
+          log.debug ("Processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}")
         }
 
         def finishedTime = (System.currentTimeMillis()-result.startTime)/1000

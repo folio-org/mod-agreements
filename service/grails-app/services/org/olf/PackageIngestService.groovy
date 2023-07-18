@@ -457,7 +457,12 @@ class PackageIngestService implements DataBinder {
     pkg.save(failOnError: true)
   }
 
-  /* Lookup or create a package from contentItemPackage within the passed contentItem */
+  /*
+   * Lookup or create a package from contentItemPackage
+   * within the passed contentItem. This is used for PushKB on the
+   * off chance that a PCI is attempting to be ingested when the package
+   * for that title has not been yet.
+   */
   public Pkg lookupOrCreatePackageFromTitle(ContentItemSchema pc) {
     Pkg pkg = null;
     if (pc?.contentItemPackage) {

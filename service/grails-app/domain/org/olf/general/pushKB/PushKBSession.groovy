@@ -19,8 +19,6 @@ public class PushKBSession implements MultiTenant<PushKBSession> {
   
   /* A unique identifier given to the session by the external process,
    * used for grouping.
-   * TODO ensure that if no sessionId is provided, that we assume the chunk
-   * is in its own session.
    */
   String sessionId
 

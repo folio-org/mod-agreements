@@ -23,17 +23,21 @@ class PushKBController {
   public pushPkg() {
     log.debug("PushKBController::pushPkg")
     String tenantId = ensureTenant()
-
     final bindObj = request.JSON as Map
     // Handle PushKBSession and PushKBChunk
     handleSessionAndChunk(bindObj, tenantId);
 
-    Map pushPkgResult = pushKBService.pushPackages(bindObj.records)
-    if (pushPkgResult.success == false) {
-      String messageString = pushPkgResult?.errorMessage ?: 'Something went wrong'
-      respond ([message: messageString, statusCode: 500, pushPkgResult: pushPkgResult])
-    } else {
-      respond ([message: "pushPkg successful", statusCode: 200, pushPkgResult: pushPkgResult])
+    try {
+      Map pushPkgResult = pushKBService.pushPackages(bindObj.records)
+      if (pushPkgResult.success == false) {
+        String messageString = pushPkgResult?.errorMessage ?: 'Something went wrong'
+        respond ([message: messageString, statusCode: 500, pushPkgResult: pushPkgResult])
+      } else {
+        respond ([message: "pushPkg successful", statusCode: 200, pushPkgResult: pushPkgResult])
+      }
+    } catch ( Exception e ) {
+      log.error("Error: Something went wrong with pushPkg", e);
+      respond ([message: "Something went wrong", statusCode: 500, error: e])
     }
 
     // Ensure we close chunk process to end logging on this chunk
@@ -51,12 +55,17 @@ class PushKBController {
     // Handle PushKBSession and PushKBChunk
     handleSessionAndChunk(bindObj, tenantId);
 
-    Map pushPCIResult = pushKBService.pushPCIs(bindObj.records)
-    if (pushPCIResult.success == false) {
-      String messageString = pushPCIResult?.errorMessage ?: 'Something went wrong'
-      respond ([message: messageString, statusCode: 500, pushPCIResult: pushPCIResult])
-    } else {
-      respond ([message: "pushPci successful", statusCode: 200, pushPCIResult: pushPCIResult])
+    try {
+      Map pushPCIResult = pushKBService.pushPCIs(bindObj.records)
+      if (pushPCIResult.success == false) {
+        String messageString = pushPCIResult?.errorMessage ?: 'Something went wrong'
+        respond ([message: messageString, statusCode: 500, pushPCIResult: pushPCIResult])
+      } else {
+        respond ([message: "pushPci successful", statusCode: 200, pushPCIResult: pushPCIResult])
+      }
+    } catch ( Exception e ) {
+      log.error("Error: Something went wrong with pushPci", e);
+      respond ([message: "Something went wrong", statusCode: 500, error: e])
     }
 
     // Ensure we close chunk process to end logging on this chunk
@@ -93,6 +102,7 @@ class PushKBController {
     }
 
     // Then check for passed chunkId
+    // Each incoming is a NEW chunk object, but may have the same chunkId if it is repeated
     if (bindObj.chunkId) {
       chunk = new PushKBChunk([
         chunkId: bindObj.chunkId,

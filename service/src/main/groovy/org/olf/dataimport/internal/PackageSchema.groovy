@@ -159,6 +159,19 @@ interface PackageSchema extends Validateable {
     String get_platformId()
     LocalDate getAccessStart()
     LocalDate getAccessEnd()
+
+    /*
+     * This is a *new* field utilised by pushKB to
+     * allow an external service to mark a particular
+     * PCI as removed from a package directly, instead
+     * of relying on a lookup of all non-touched PCIs per
+     * package at the end of a package ingest. This field is
+     * NOT also currently used by harvest process, but
+     * perhaps should be.
+     *
+     * TODO look into using this field for harvest process as well
+     */
+    Long getRemovedTimestamp()
   }
 
   @CompileStatic

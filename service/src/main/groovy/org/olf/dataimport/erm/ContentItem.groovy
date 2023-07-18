@@ -24,6 +24,8 @@ class ContentItem implements ContentItemSchema, Validateable {
   LocalDate accessEnd
   String embargo
 
+  Long removedTimestamp
+
   // Must NOT have items of its own
   ErmPackageImpl contentItemPackage
   
@@ -165,6 +167,11 @@ class ContentItem implements ContentItemSchema, Validateable {
   @Override
   public LocalDate getAccessEnd() {
     accessEnd
+  }
+
+  @Override
+  public Long getRemovedTimestamp() {
+    removedTimestamp
   }
 
   @Override

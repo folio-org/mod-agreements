@@ -44,6 +44,8 @@ class PackageContentImpl implements ContentItemSchema, Validateable {
   LocalDate accessStart
   LocalDate accessEnd
 
+  Long removedTimestamp
+
   // Must NOT have items of its own
   InternalPackageImpl contentItemPackage
 
@@ -99,5 +101,6 @@ class PackageContentImpl implements ContentItemSchema, Validateable {
     _platformId nullable: true, blank: false
     monographVolume nullable: true, blank: false
     embargo nullable: true, blank: false
+    removedTimestamp nullable: true, blank: false
   }
 }
