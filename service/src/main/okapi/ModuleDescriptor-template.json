@@ -475,6 +475,16 @@
           "methods": [ "DELETE" ],
           "pathPattern": "/erm/settings*",
           "permissionsRequired": [ "erm.settings.delete" ]
+        },
+        {
+          "methods": [ "POST" ],
+          "pathPattern": "/erm/pushKB*",
+          "permissionsRequired": [ "erm.pushkb.post" ]
+        },
+        {
+          "methods": [ "GET" ],
+          "pathPattern": "/erm/pushKB*",
+          "permissionsRequired": [ "erm.pushkb.get" ]
         }
       ]
     },
@@ -1229,6 +1239,37 @@
       "subPermissions": [
         "erm.settings.write",
         "erm.settings.delete"
+      ]
+    },
+    {
+      "permissionName": "erm.pushkb.get",
+      "displayName": "pushKB get",
+      "description": "GET from pushKB endpoints",
+      "visible": false
+    },
+    {
+      "permissionName": "erm.pushkb.post",
+      "displayName": "pushKB post",
+      "description": "POST to pushKB endpoints",
+      "visible": false
+    },
+    {
+      "permissionName": "erm.pushkb.view",
+      "displayName": "PushKB view",
+      "description": "View pushKB objects and configurations",
+      "visible": true,
+      "subPermissions": [
+        "erm.pushkb.get"
+      ]
+    },
+    {
+      "permissionName": "erm.pushkb.manage",
+      "displayName": "PushKB manage",
+      "description": "Post to pushKB endpoints, and view pushKB objects and configurations",
+      "visible": true,
+      "subPermissions": [
+        "erm.pushkb.view",
+        "erm.pushkb.post"
       ]
     }
   ],
