@@ -150,41 +150,8 @@ class PushKBService implements DataBinder {
                   )
 
                   PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
+                  packageIngestService.hierarchyResultMapLogic(hierarchyResult, result, pci)
 
-                  // FIXME DRY with PackageIngestService
-                  // Handle MDC stuffs
-                  // TODO perhaps break some of this out so pushKB can use the same code but in a different way
-                  switch (hierarchyResult.pciStatus) {
-                    case 'updated':
-                      // This means we have changes to an existing PCI and not a new one.
-                      result.updatedTitles++
-
-                      // Grab the dirty properties
-                      def modifiedFieldNames = pci.getDirtyPropertyNames()
-                      for (fieldName in modifiedFieldNames) {
-                        if (fieldName == "accessStart") {
-                          result.updatedAccessStart++
-                        }
-                        if (fieldName == "accessEnd") {
-                          result.updatedAccessEnd++
-                        }
-                        if (countChanges.contains(fieldName)) {
-                          def currentValue = pci."$fieldName"
-                          def originalValue = pci.getPersistentValue(fieldName)
-                          if (currentValue != originalValue) {
-                            result["${fieldName}"] = (result["${fieldName}"] ?: 0)++
-                          }
-                        }
-                      }
-                      break;
-                    case 'new':
-                      // New item.
-                      result.newTitles++
-                      break;
-                    case 'none':
-                    default:
-                      break;
-                  }
                   /* TODO figure out if use of removedTimestamp
                    * should be something harvest also needs to do directly
                    * And whether we should be doing it after all the above

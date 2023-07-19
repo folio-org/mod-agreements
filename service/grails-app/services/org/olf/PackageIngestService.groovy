@@ -148,40 +148,7 @@ class PackageIngestService implements DataBinder {
             )
 
             PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
-    
-            // Handle MDC stuffs
-            // TODO perhaps break some of this out so pushKB can use the same code but in a different way
-            switch (hierarchyResult.pciStatus) {
-              case 'updated':
-                // This means we have changes to an existing PCI and not a new one.
-                result.updatedTitles++
-
-                // Grab the dirty properties
-                def modifiedFieldNames = pci.getDirtyPropertyNames()
-                for (fieldName in modifiedFieldNames) {
-                  if (fieldName == "accessStart") {
-                    result.updatedAccessStart++
-                  }
-                  if (fieldName == "accessEnd") {
-                    result.updatedAccessEnd++
-                  }
-                  if (countChanges.contains(fieldName)) {
-                    def currentValue = pci."$fieldName"
-                    def originalValue = pci.getPersistentValue(fieldName)
-                    if (currentValue != originalValue) {
-                      result["${fieldName}"] = (result["${fieldName}"] ?: 0)++
-                    }
-                  }
-                }
-                break;
-              case 'new':
-                // New item.
-                result.newTitles++
-                break;
-              case 'none':
-              default:
-                break;
-            }
+            hierarchyResultMapLogic(hierarchyResult, result, pci)
           }
           else {
             String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
@@ -650,5 +617,48 @@ class PackageIngestService implements DataBinder {
     }
 
     result
+  }
+
+
+  /* FIXME this is here only to remove some repetition of code
+   * between pushKB and harvest. Once we tweak how logging works
+   * wholesale we should look into removing this method.
+   *
+   * Equivalent to moving this code within hierarchy method
+   * but kept separate for easier removal down the line.
+   */
+  void hierarchyResultMapLogic(Map hierarchyResult, Map result, PackageContentItem pci) {
+    // This method changes some fields on the passed result map -- not ideal
+    switch (hierarchyResult.pciStatus) {
+      case 'updated':
+        // This means we have changes to an existing PCI and not a new one.
+        result.updatedTitles++
+
+        // Grab the dirty properties
+        def modifiedFieldNames = pci.getDirtyPropertyNames()
+        for (fieldName in modifiedFieldNames) {
+          if (fieldName == "accessStart") {
+            result.updatedAccessStart++
+          }
+          if (fieldName == "accessEnd") {
+            result.updatedAccessEnd++
+          }
+          if (countChanges.contains(fieldName)) {
+            def currentValue = pci."$fieldName"
+            def originalValue = pci.getPersistentValue(fieldName)
+            if (currentValue != originalValue) {
+              result["${fieldName}"] = (result["${fieldName}"] ?: 0)++
+            }
+          }
+        }
+        break;
+      case 'new':
+        // New item.
+        result.newTitles++
+        break;
+      case 'none':
+      default:
+        break;
+    }
   }
 }
