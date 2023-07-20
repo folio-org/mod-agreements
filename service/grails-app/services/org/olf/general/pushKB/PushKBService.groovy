@@ -34,7 +34,6 @@ import org.slf4j.MDC
 import org.olf.kb.RemoteKB
 import org.olf.kb.Pkg
 import org.olf.kb.PackageContentItem
-// FIXME may not need this longer term
 import org.olf.kb.TitleInstance
 
 import com.opencsv.CSVReader
@@ -112,14 +111,8 @@ class PushKBService implements DataBinder {
       try {
         pcis.each { Map record ->
 
-          // FIXME check for deleted/retired here, before potentially creating a PKG for a deleted/retired TIPP
-
-
           // Handle MDC directly? Might not be the right approach
-          // FIXME this needs coordinating between pushKB and harvest
           MDC.put('title', StringUtils.truncate(record.title.toString()))
-
-          log.debug("LOGGING PCI: ${record}")
 
           // Not entirely sure why we would need this and startTime... left for consistency with upsertPackage
           result.updateTime = System.currentTimeMillis()

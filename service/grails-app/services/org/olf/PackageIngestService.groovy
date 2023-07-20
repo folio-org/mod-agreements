@@ -167,8 +167,7 @@ class PackageIngestService implements DataBinder {
     }
     def finishedTime = (System.currentTimeMillis()-result.startTime)/1000
 
-    // FIXME this removed logic is WRONG under pushKB because it's chunked
-    // NEEDS removing in pushKB case
+    // This removed logic is WRONG under pushKB because it's chunked -- ensure pushKB does not call full upsertPackage method
     // At the end - Any PCIs that are currently live (Don't have a removedTimestamp) but whos lastSeenTimestamp is < result.updateTime
     // were not found on this run, and have been removed. We *may* introduce some extra checks here - like 3 times or a time delay, but for now,
     // this is how we detect deletions in the package file.
@@ -266,7 +265,7 @@ class PackageIngestService implements DataBinder {
         sourceDataCreated: package_data.header.sourceDataCreated,
         sourceDataUpdated: package_data.header.sourceDataUpdated,
         availabilityScope: ( package_data.header.availabilityScope != null ? Pkg.lookupOrCreateAvailabilityScope(package_data.header.availabilityScope) : null ),
-          lifecycleStatus: (package_data.header.lifecycleStatus != null ? Pkg.lookupOrCreateLifecycleStatus(package_data.header.lifecycleStatus) : Pkg.lookupOrCreateLifecycleStatus('Unknown')), // FIXME this is def not concise enough
+          lifecycleStatus: Pkg.lookupOrCreateLifecycleStatus(package_data.header.lifecycleStatus != null ? package_data.header.lifecycleStatus : 'Unknown'),
                     vendor: vendor,
       ).save(flush:true, failOnError:true)
 
