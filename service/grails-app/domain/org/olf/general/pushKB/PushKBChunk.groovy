@@ -30,10 +30,6 @@ public class PushKBChunk implements MultiTenant<PushKBChunk> {
   Instant dateCreated
   Instant lastUpdated
 
-  // TODO we may want the idea of a "status" per chunk so we can track what is failing and when
-  // Potentially also the idea of a "retry" counter to make clear when multiple chunkIds match
-  // what order those came in.
-
   static belongsTo = [session: PushKBSession]
 
   static mapping = {
