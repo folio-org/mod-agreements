@@ -168,6 +168,7 @@ class PackageIngestService implements DataBinder {
     def finishedTime = (System.currentTimeMillis()-result.startTime)/1000
 
     // FIXME this removed logic is WRONG under pushKB because it's chunked
+    // NEEDS removing in pushKB case
     // At the end - Any PCIs that are currently live (Don't have a removedTimestamp) but whos lastSeenTimestamp is < result.updateTime
     // were not found on this run, and have been removed. We *may* introduce some extra checks here - like 3 times or a time delay, but for now,
     // this is how we detect deletions in the package file.

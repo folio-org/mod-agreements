@@ -27,6 +27,7 @@ import org.olf.UtilityService
 import org.olf.PackageIngestService
 import org.olf.TitleIngestService
 import org.olf.MatchKeyService
+import org.olf.IdentifierService
 
 import org.slf4j.MDC
 
@@ -50,6 +51,7 @@ class PushKBService implements DataBinder {
   UtilityService utilityService
   PackageIngestService packageIngestService
   TitleIngestService titleIngestService
+  IdentifierService identifierService
   MatchKeyService matchKeyService
 
   KBManagementBean kbManagementBean
@@ -66,13 +68,17 @@ class PushKBService implements DataBinder {
     if (ingressType == KBIngressType.PushKB) {
       try {
         packages.each { Map record ->
-          final PackageSchema pkg = InternalPackageImpl.newInstance();
-          bindData(pkg, record)
-          if (utilityService.checkValidBinding(pkg)) {
+          final PackageSchema package_data = InternalPackageImpl.newInstance();
+          bindData(package_data, record)
+          if (utilityService.checkValidBinding(package_data)) {
 
             // Start a transaction -- method in packageIngestService needs this
             Pkg.withNewTransaction { status ->
-              packageIngestService.upsertPackage(pkg)
+              // Farm out package lookup and creation to a separate method
+              Pkg pkg = packageIngestService.lookupOrCreatePkg(package_data);
+
+              // Update identifiers from citation
+              identifierService.updatePackageIdentifiers(pkg, package_data.identifiers)
             }
 
           }
