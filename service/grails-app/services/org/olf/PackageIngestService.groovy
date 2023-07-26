@@ -137,7 +137,6 @@ class PackageIngestService implements DataBinder {
             TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
 
             // Pass off to new hierarchy method (?)
-            // FIXME some steps of the MDC and stuff still feel like packageUpsert territory, not needed for pushKB?
             Map hierarchyResult = lookupOrCreateTitleHierarchy(
               title,
               pkg,
@@ -175,7 +174,7 @@ class PackageIngestService implements DataBinder {
     int removal_counter = 0
 
     PackageContentItem.withNewTransaction { status ->
-      // FIXME we're querying on pkg itself here
+      // FIXME we're querying on pkg itself here not pkg.id
       PackageContentItem.executeQuery('select pci from PackageContentItem as pci where pci.pkg = :pkg and pci.lastSeenTimestamp < :updateTime and pci.removedTimestamp is null',
                                       [pkg:pkg, updateTime:result.updateTime]).each { removal_candidate ->
         try {
