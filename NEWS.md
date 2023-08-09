@@ -2,6 +2,8 @@
   * ERM-2888 Do not load Agreement lines as part of agreement when viewing the agreement
   * ERM-2885 Reduce number of internal contact role defaults in Agreements
   * ERM-2925 Add backend support for retrieving list of source values
+  * ERM-2966 Error when match and filter contain the same path root
+    * update to 'com.k_int.grails:web-toolkit-ce:8.1.0'
 
 ## 5.5.0 2023-02-20
   * ERM-2638 No name of linked agreement in license
@@ -138,7 +140,7 @@
  * ERM-1651 Agreements simple search widget definition
  * ERM-1650 Add unique indexes for refdata tables
  * The package resourceCount incorrectly includes PCIs with a removedTimestamp
- * ERM-1643 Implemented dashboard interface 
+ * ERM-1643 Implemented dashboard interface
  * ERM-1632 Remote KB "LOCAL" should be created as read only
  * FOLIO-3131: Use https for maven.k-int.com
  * FOLIO-3106 Use https for maven.indexdata.com
@@ -175,7 +177,7 @@
 ## 3.0.0 2020-10-14
  * ERM-1180 Add @ EnableScheduling annotation in mod-agreements
  * ERM-1163 Remove default values from publicationType
- * ERM-1154 change name of an agreement with local resource AL fails 
+ * ERM-1154 change name of an agreement with local resource AL fails
  * ERM-1147 Incorrect values displaying in "Acquisition method" column in "Agreements for this e-resource" MCL
  * ERM-1131 GOKb record numbers in info/error log
  * ERM-1117 Adding PCI to basket from /erm/eresources/<pci UUID> view results in different JSON shape added to basket
@@ -241,7 +243,7 @@
  * ERM-681 Fetch enhanced metadata for books from GOKb after harvesting
  * ERM-547 Interpret GOKb Package Status, Edit Status and List Status
  * ERM-427 No way of fetching agreement entitlements sorted by name
- * ERM-193 Deleting a License (and possibly Agreement) with a Tag isn't possible 
+ * ERM-193 Deleting a License (and possibly Agreement) with a Tag isn't possible
 
 ## 2.2.2 2020-04-29
  * ERM-858 Postgres sequences out of sync when existing agreement data is upgraded
@@ -321,13 +323,13 @@
  * ERM-315 Linking PO Line to an agreement line for an eHolding resource fails
  * ERM-297 File attachment over 10MB causes out of memory errors
  * ERM-285 Entitlement Options endpoint throws a 500 Error
- * ERM-182 On sync with remote KB, keep TIPPs where coverage data is incompatible 
+ * ERM-182 On sync with remote KB, keep TIPPs where coverage data is incompatible
 
 ## 1.8.0 2019-09-11
  * ERM-440 KB Local Admin | Titles not searchable/viewable after file upload
  * ERM-349 Create New Local KB Import - backend work
  * ERM-338 Log import/sync errors on package import
- * ERM-182 On sync with remote KB, keep TIPPs where coverage data is incompatible 
+ * ERM-182 On sync with remote KB, keep TIPPs where coverage data is incompatible
 
 ## 1.8.0 2019-08-12
  * ERM-290 Set up Job Management for Local KB Admin
@@ -342,7 +344,7 @@
  * ERM-273 Manage usage data providers on agreements
    * ERM-291 Add usage data provider to subscription agreement
  * ERM-262 Agreement start and end date display with a time offset in some environments
- * ERM-189 Custom coverage dates display with a time offset in some environments 
+ * ERM-189 Custom coverage dates display with a time offset in some environments
 
 ## 1.7.0 2019-06-11
  * ERM-259 Set supplementary information for an Agreement
@@ -389,7 +391,7 @@
  * ERM-129 Cannot edit custom coverage dates once they have been added
  * ERM-65 Manage custom entitlement coverage for titles
  * ERM-91 Indicate the coverage for a title within an Agreement
- * ERM-63 View linked agreement details in a license 
+ * ERM-63 View linked agreement details in a license
 
 ## 1.1.0 2019-03-12
  * ERM-59 Manage licenses linked to agreements
@@ -401,7 +403,7 @@
  * ERM-44 Remove an external license from an Agreement
  * ERM-43 Edit external license details
  * ERM-42 Add external license for an Agreement
- * ERM-7 Add an Organisation to a License 
+ * ERM-7 Add an Organisation to a License
 
 ## 1.0.3 2019-02-23
 
