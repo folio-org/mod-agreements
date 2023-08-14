@@ -276,6 +276,7 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
     }
   )
   String reference
+  Set<Tag> tags = []
 
   static belongsTo = [
     owner:SubscriptionAgreement
