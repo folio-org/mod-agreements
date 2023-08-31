@@ -29,4 +29,7 @@ json g.render(titleInstance, [expand: ['type', 'publicationType', 'subType', 'co
       }
     }
   }
+
+  // FIXME REMOVE THIS SOURCE IDENTIFIER FROM VIEW AFTER TESTING
+  workIdentifier titleInstance.work.sourceIdentifier
 }

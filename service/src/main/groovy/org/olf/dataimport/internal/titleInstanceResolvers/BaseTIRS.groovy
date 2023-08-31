@@ -2,6 +2,7 @@ package org.olf.dataimport.internal.titleInstanceResolvers
 
 import org.olf.IdentifierService
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
+import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierNamespace
 import org.olf.kb.TitleInstance
@@ -9,6 +10,9 @@ import org.olf.kb.Work
 
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
+
+// FIXME remove unnecessary import
+import java.time.Instant
 
 /**
  * This is a base TIRS class to give any implementing classes some shared tools to use 
@@ -212,7 +216,22 @@ class BaseTIRS {
     if ( title_is_valid.count { k,v -> v == false} == 0 ) {
 
       if ( work == null ) {
-        work = new Work(title:citation.title).save(flush:true, failOnError:true)
+        // FIXME REMOVE THIS TEMPORARY IDENTIFIER STUFF AFTER TESTING WE CAN ADD TO WORK LIKE THIS
+        IdentifierNamespace ns = IdentifierNamespace.findByValue('work_identifier_namespace_test') ?: new IdentifierNamespace([value: 'work_identifier_namespace_test']).save(flush: true, failOnError: true)
+        Identifier identifier = Identifier.findByNsAndValue(ns, Instant.now().toString()) ?: new Identifier([
+          ns: ns,
+          value: Instant.now().toString()
+        ]).save(flush: true, failOnError: true)
+
+        IdentifierOccurrence sourceIdentifier = new IdentifierOccurrence([
+          identifier: identifier,
+          status: IdentifierOccurrence.lookupOrCreateStatus('approved')
+        ])
+
+        work = new Work([
+          title:citation.title,
+          sourceIdentifier: sourceIdentifier
+        ]).save(flush:true, failOnError:true)
       }
 
       // Print or Electronic

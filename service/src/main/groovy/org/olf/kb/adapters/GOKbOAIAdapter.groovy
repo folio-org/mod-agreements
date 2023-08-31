@@ -671,6 +671,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     List instance_identifiers = [] // [ "namespace": "issn", "value": "0278-7393" ]
     List sibling_identifiers = []
 
+    // Assuming electronic record -- store GoKB uuid as identifier so we can match on that later
+    instance_identifiers.add(["namespace": "gokb_uuid", "value": title?.@uuid?.toString() ])
+
     // If we're processing an electronic record then issn is a sibling identifier
     // Ensure issn, pissn, pisbn end up in siblingInstanceIdentifiers
     title.identifiers.identifier.each { ti_id ->
