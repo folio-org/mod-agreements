@@ -14,7 +14,7 @@ beans = {
 
   // Swap between PushKB and Harvest processes to get data into internal KB
   kbManagementBean(KBManagementBean) {
-    //ingressType = KBIngressType.Harvest
-    ingressType = KBIngressType.PushKB
+    ingressType = KBIngressType.Harvest
+    //ingressType = KBIngressType.PushKB
   }
 }
