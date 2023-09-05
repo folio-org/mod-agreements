@@ -1,7 +1,11 @@
 package org.olf.dataimport.internal.titleInstanceResolvers
 
 import org.olf.IdentifierService
+
+import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
+import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
+
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierNamespace
@@ -10,6 +14,8 @@ import org.olf.kb.Work
 
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
+import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
+
 
 // FIXME remove unnecessary import
 import java.time.Instant
@@ -228,6 +234,7 @@ class BaseTIRS {
           status: IdentifierOccurrence.lookupOrCreateStatus('approved')
         ])
 
+        // Can you assign to incoming method param like this??
         work = new Work([
           title:citation.title,
           sourceIdentifier: sourceIdentifier
@@ -284,4 +291,122 @@ class BaseTIRS {
     result
   }
 
+  protected String buildIdentifierHQL(Collection<IdentifierSchema> identifiers, boolean approvedIdsOnly = true) {
+    String identifierHQL = identifiers.collect { id -> 
+      // Do we need all the namespace mapping variants?
+      String mainHQLBody = """(
+          (
+            io.identifier.ns.value = '${id.namespace.toLowerCase()}' OR
+            io.identifier.ns.value = '${namespaceMapping(id.namespace)}' OR
+            io.identifier.ns.value = '${mapNamespaceToElectronic(id.namespace)}' OR
+            io.identifier.ns.value = '${mapNamespaceToPrint(id.namespace)}'
+          ) AND
+          io.identifier.value = '${id.value}'
+      """
+
+      if (!approvedIdsOnly) {
+        return """${mainHQLBody}
+          )
+        """
+      }
+
+      return """${mainHQLBody} AND
+          io.status.value = '${APPROVED}'
+        )
+      """
+    }.join("""
+      AND
+    """)
+
+    return identifierHQL
+  }
+
+  protected int countClassOneIDs(final Iterable<IdentifierSchema> identifiers) {
+    identifiers?.findAll( { IdentifierSchema id -> class_one_namespaces?.contains( id.namespace.toLowerCase() ) })?.size() ?: 0
+  }
+
+  // On the rare chance that we have `eissn` in our db (From before Kiwi namespace flattening)
+  // We attempt to map an incoming `issn` -> `eissn` in our DB
+  protected String mapNamespaceToElectronic(final String incomingNs) {
+    String output;
+    switch (incomingNs.toLowerCase()) {
+      case 'issn':
+        output = 'eissn'
+        break;
+      case 'isbn':
+        output = 'eisbn'
+      default:
+        break;
+    }
+
+    output
+  }
+
+  // On the rare chance that we have `pissn` in our db (From before Kiwi namespace flattening)
+  // We attempt to map an incoming `issn` -> `pissn` in our DB
+  protected String mapNamespaceToPrint(final String incomingNs) {
+    String output = incomingNs.toLowerCase();
+    switch (incomingNs.toLowerCase()) {
+      case 'issn':
+        output = 'pissn'
+        break;
+      case 'isbn':
+        output = 'pisbn'
+      default:
+        break;
+    }
+
+    output
+  }
+
+  // We choose to set up a sibling citation per siblingInstanceIdentifier -- keep consistent between TIRSs
+  protected List<PackageContentImpl> getSiblingCitations(final ContentItemSchema citation) {
+    Collection<IdentifierSchema> ids = citation.siblingInstanceIdentifiers
+    log.debug("List of sibling identifiers: ${ids}")
+
+    if ( ids.size() == 0 ) {
+      return []
+    }
+
+    return ids.collect { id ->
+      PackageContentImpl sibling_citation = new PackageContentImpl()
+      bindData (sibling_citation, [
+        "title": citation.title,
+        "instanceMedium": "print",
+        "instanceMedia": (namespaceMapping(id.namespace) == 'issn') ? "serial" : "monograph",
+        "instancePublicationMedia": citation.instancePublicationMedia,
+        "instanceIdentifiers": [
+          [
+            // This should be dealt with inside the "createTitleInstance" method, 
+            // but for now we can flatten it here too
+            "namespace": namespaceMapping(id.namespace),
+            "value": id?.value
+          ]
+        ]
+      ])
+
+      // Will ONLY include dateMonographPublished if identifier is an isbn
+      if (namespaceMapping(id.namespace) == 'isbn') {
+        bindData (sibling_citation, [
+          "dateMonographPublished": citation.dateMonographPublishedPrint
+        ])
+      }
+
+      return sibling_citation
+    }
+  }
+
+  protected List<TitleInstance> listDeduplictor(List<TitleInstance> titleList) {
+    // Need to deduplicate output -- Could probably be neater code than this
+    List<TitleInstance> outputList = [];
+    titleList.each { title ->
+      // Make sure we're working with the "proper" TI
+      TitleInstance ti = GrailsHibernateUtil.unwrapIfProxy(title)
+      if (!outputList.contains(ti)) {
+        outputList << ti
+      }
+    }
+
+    outputList
+  }
 }

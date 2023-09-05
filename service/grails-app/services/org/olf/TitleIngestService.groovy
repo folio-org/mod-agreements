@@ -82,7 +82,7 @@ class TitleIngestService implements DataBinder {
     }
 
     // log.debug("Proceeed.... resolve completed ${title}");
-
+    // TODO could this not live inside the TRY clause above to avoid double error messages?
     if (title != null) {
       /* ERM-1801
         * For now this secondary enrichment step is here rather than the PackageIngestService,

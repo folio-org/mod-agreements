@@ -11,6 +11,7 @@ beans = {
   */
   titleInstanceResolverService(IdFirstTIRSImpl)
   //titleInstanceResolverService(TitleFirstTIRSImpl)
+  //titleInstanceResolverService(WorkSourceIdentifierTIRSImpl)
 
   // Swap between PushKB and Harvest processes to get data into internal KB
   kbManagementBean(KBManagementBean) {

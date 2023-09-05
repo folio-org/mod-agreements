@@ -150,6 +150,7 @@ class PackageIngestService implements DataBinder {
             hierarchyResultMapLogic(hierarchyResult, result, pci)
           }
           else {
+            // Almost the same message exists in TitleIngestService if result is null
             String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
             log.error(message)
           }
