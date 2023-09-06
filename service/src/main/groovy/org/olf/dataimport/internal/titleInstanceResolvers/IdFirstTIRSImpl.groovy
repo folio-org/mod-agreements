@@ -53,7 +53,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
                 ) AND
         ti.subType.value = 'electronic'
     """
-    log.debug("LOGDEBUG SIBMATCH OUTPUT HQL: ${outputHQL}")
+    //log.debug("LOGDEBUG SIBMATCH OUTPUT HQL: ${outputHQL}")
     return outputHQL
   }
 
@@ -76,7 +76,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
         ti.work.id = '${work.id}'
       """
     }
-    log.debug("LOGDEBUG DIRECTMATCH OUTPUT HQL: ${outputHQL}")
+    //log.debug("LOGDEBUG DIRECTMATCH OUTPUT HQL: ${outputHQL}")
     return outputHQL
   }
 
@@ -106,10 +106,6 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
   public TitleInstance resolve(ContentItemSchema citation, boolean trustedSourceTI) {
     // log.debug("TitleInstanceResolverService::resolve(${citation})");
     TitleInstance result = null;
-
-    // FIXME remove this
-    // Do sibling match here for debugging
-    siblingMatch(citation)
 
     List<TitleInstance> candidate_list = classOneMatch(citation.instanceIdentifiers);
     int num_matches = candidate_list.size()

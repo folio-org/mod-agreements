@@ -24,6 +24,7 @@ class PackageContentImpl implements ContentItemSchema, Validateable {
   String instanceMedia
   String instancePublicationMedia
   String sourceIdentifier
+  String sourceIdentifierNamespace
   String embargo
   String coverageDepth
   String coverageNote
@@ -88,6 +89,8 @@ class PackageContentImpl implements ContentItemSchema, Validateable {
       }
     }
 
+    sourceIdentifier nullable: false, blank: false
+    sourceIdentifierNamespace nullable: false, blank: false
     instanceMedia nullable: false, blank: false
     instanceMedium nullable: true, blank: false
     coverageNote nullable: true, blank: false
