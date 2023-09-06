@@ -151,7 +151,10 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
           checkForEnrichment(result, citation, trustedSourceTI)
           break;
         default:
-          throw new TIRSException("title matched ${num_matches} records with a threshold >= ${MATCH_THRESHOLD} . Unable to continue. Matching IDs: ${candidate_list.collect { it.id }}. class one identifier count: ${num_class_one_identifiers}");
+          throw new TIRSException(
+            "title matched ${num_matches} records with a threshold >= ${MATCH_THRESHOLD} . Unable to continue. Matching IDs: ${candidate_list.collect { it.id }}. class one identifier count: ${num_class_one_identifiers}",
+            TIRSException.MULTIPLE_TITLE_MATCHES,
+          );
           break;
       }
     }
@@ -279,7 +282,10 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
         )
 
         if (id_matches.size() > 1) {
-          throw new TIRSException("Multiple (${id_matches.size()}) class one matches found for identifier ${id.namespace}::${id.value}");
+          throw new TIRSException(
+            "Multiple (${id_matches.size()}) class one matches found for identifier ${id.namespace}::${id.value}",
+            TIRSException.MULTIPLE_TITLE_MATCHES,
+          );
         }
 
         // For each matched (It should only ever be 1)

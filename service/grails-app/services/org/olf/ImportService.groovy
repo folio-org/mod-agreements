@@ -314,9 +314,9 @@ class ImportService implements DataBinder {
 
           monographVolume: getFieldFromLine(currentRecord, acceptedFields, 'monographVolume'),
           monographEdition: getFieldFromLine(currentRecord, acceptedFields, 'monographEdition'),
-          firstEditor: getFieldFromLine(currentRecord, acceptedFields, 'firstEditor'),,
-          sourceIdentifier: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifier') ?? getFieldFromLine(currentRecord, acceptedFields, 'titleId'),
-          sourceIdentifierNamespace: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifierNamespace') ?? packageSource
+          firstEditor: getFieldFromLine(currentRecord, acceptedFields, 'firstEditor'),
+          sourceIdentifier: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifier') ?: getFieldFromLine(currentRecord, acceptedFields, 'titleId'),
+          sourceIdentifierNamespace: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifierNamespace') ?: packageSource
         )
         MDC.put('title', StringUtils.truncate(pkgLine.title))
 

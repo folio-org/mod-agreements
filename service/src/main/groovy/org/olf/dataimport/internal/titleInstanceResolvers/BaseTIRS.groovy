@@ -63,7 +63,10 @@ class BaseTIRS {
         result = identifier_lookup.get(0);
         break;
       default:
-        throw new RuntimeException("Matched multiple identifiers for ${id}");
+        throw new TIRSException(
+          "Matched multiple identifiers for ${id}",
+          TIRSException.MULTIPLE_IDENTIFIER_MATCHES
+        );
         break;
     }
     return result;
@@ -222,12 +225,29 @@ class BaseTIRS {
     if ( title_is_valid.count { k,v -> v == false} == 0 ) {
 
       if ( work == null ) {
-        // FIXME REMOVE THIS TEMPORARY IDENTIFIER STUFF AFTER TESTING WE CAN ADD TO WORK LIKE THIS
-        IdentifierNamespace ns = IdentifierNamespace.findByValue('work_identifier_namespace_test') ?: new IdentifierNamespace([value: 'work_identifier_namespace_test']).save(flush: true, failOnError: true)
-        Identifier identifier = Identifier.findByNsAndValue(ns, Instant.now().toString()) ?: new Identifier([
-          ns: ns,
-          value: Instant.now().toString()
-        ]).save(flush: true, failOnError: true)
+        // This is only necessary because harvest does not seem to validate package schema. We should not hit this issue for pushKB
+        if (!citation.sourceIdentifier) {
+          throw new TIRSException(
+            "Missing source identifier",
+            TIRSException.MISSING_MANDATORY_FIELD
+          )
+        } else if (!citation.sourceIdentifierNamespace) {
+          throw new TIRSException(
+            "Missing source identifier namespace",
+            TIRSException.MISSING_MANDATORY_FIELD
+          )
+        }
+
+        IdentifierNamespace ns = IdentifierNamespace.findByValue(citation.sourceIdentifierNamespace) ?:
+                                new IdentifierNamespace([
+                                  value: citation.sourceIdentifierNamespace
+                                ]).save(flush: true, failOnError: true);
+
+        Identifier identifier = Identifier.findByNsAndValue(ns, citation.sourceIdentifier) ?:
+                                new Identifier([
+                                  ns: ns,
+                                  value: citation.sourceIdentifier
+                                ]).save(flush: true, failOnError: true);
 
         IdentifierOccurrence sourceIdentifier = new IdentifierOccurrence([
           identifier: identifier,
