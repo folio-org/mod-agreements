@@ -226,29 +226,10 @@ class BaseTIRS {
 
       if ( work == null ) {
         // This is only necessary because harvest does not seem to validate package schema. We should not hit this issue for pushKB
-        if (!citation.sourceIdentifier) {
-          throw new TIRSException(
-            "Missing source identifier",
-            TIRSException.MISSING_MANDATORY_FIELD
-          )
-        } else if (!citation.sourceIdentifierNamespace) {
-          throw new TIRSException(
-            "Missing source identifier namespace",
-            TIRSException.MISSING_MANDATORY_FIELD
-          )
-        }
+        // Error out if sourceIdentifier or sourceIdentifierNamespace do not exist
+        ensureSourceIdentifierFields(citation);
 
-        IdentifierNamespace ns = IdentifierNamespace.findByValue(citation.sourceIdentifierNamespace) ?:
-                                new IdentifierNamespace([
-                                  value: citation.sourceIdentifierNamespace
-                                ]).save(flush: true, failOnError: true);
-
-        Identifier identifier = Identifier.findByNsAndValue(ns, citation.sourceIdentifier) ?:
-                                new Identifier([
-                                  ns: ns,
-                                  value: citation.sourceIdentifier
-                                ]).save(flush: true, failOnError: true);
-
+        Identifier identifier = lookupOrCreateIdentifier(citation.sourceIdentifier, citation.sourceIdentifierNamespace);
         IdentifierOccurrence sourceIdentifier = new IdentifierOccurrence([
           identifier: identifier,
           status: IdentifierOccurrence.lookupOrCreateStatus('approved')
@@ -428,5 +409,19 @@ class BaseTIRS {
     }
 
     outputList
+  }
+
+  protected void ensureSourceIdentifierFields(final ContentItemSchema citation) {
+    if (!citation.sourceIdentifier) {
+      throw new TIRSException(
+        "Missing source identifier",
+        TIRSException.MISSING_MANDATORY_FIELD
+      )
+    } else if (!citation.sourceIdentifierNamespace) {
+      throw new TIRSException(
+        "Missing source identifier namespace",
+        TIRSException.MISSING_MANDATORY_FIELD
+      )
+    }
   }
 }
