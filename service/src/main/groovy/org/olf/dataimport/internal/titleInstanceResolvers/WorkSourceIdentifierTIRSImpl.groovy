@@ -51,10 +51,10 @@ class WorkSourceIdentifierTIRSImpl extends BaseTIRS implements DataBinder, Title
       sourceIdentifier: citation.sourceIdentifier
     ])
 
-    log.debug("LOGDEBUG CANDIDATE WORKS: ${candidate_works}")
     switch (candidate_works.size()) {
       case 0:
-        TitleInstance ti = fallbackToIdFirstTIRSResolve(citation, trustedSourceTI);
+        // Zero direct matches for work, fall back to IdFirstTIRS
+        result = fallbackToIdFirstTIRSResolve(citation, trustedSourceTI);
         break;
       case 1:
         break;
@@ -106,7 +106,59 @@ class WorkSourceIdentifierTIRSImpl extends BaseTIRS implements DataBinder, Title
       /* We _do_ have a TI. Check that the attached work does not have an ID
        * If the attached work _does_ have an id, then we need a whole new work anyway
        */
-      log.debug("TI IN PLACE, FURTHER WORK NEEDED")
+      Work work = ti.work;
+      switch (work.sourceIdentifier) {
+        /* ASSUMPTION has been made here that a Work sourceIdentifier cannot have status
+         * error, since we never set it to error through any of our logic. If that changes
+         * Then this logic may need tweaks
+         */
+        case { it == null }:
+          /* This is a preexisting TI/Work
+           * We got to this TI via IdFirstTIRS resolve, so we know that there
+           * is a single electronic TI (If there had been multiple on this
+           * path we'd have created a new work after catching the TIRSException
+           * above). Hence we know that after setting the Work sourceIdentifier
+           * field, the TI we have in hand is the correct one and we can move forwards
+           */
+          Identifier identifier = lookupOrCreateIdentifier(citation.sourceIdentifier, citation.sourceIdentifierNamespace);
+          IdentifierOccurrence sourceIdentifier = new IdentifierOccurrence([
+            identifier: identifier,
+            status: IdentifierOccurrence.lookupOrCreateStatus('approved')
+          ])
+          work.setSourceIdentifier(sourceIdentifier);
+          work.save(flush: true, failOnError: true);
+
+          /*
+           * Now we need to do some identifier and sibling wrangling
+           * to ensure data is consistent with what's coming in from citation
+           */
+          updateIdentifiersAndSiblings(citation, work)
+          break;
+        case {
+          it != null &&
+          (
+            work.sourceIdentifier.identifier.value != citation.sourceIdentifier ||
+            work.sourceIdentifier.identifier.ns.value != citation.sourceIdentifierNamespace
+          )
+        }:
+          /*
+           * At this step we have a work, but it does not match the sourceIdentifier
+           * So we need to create a new Work/TI/Siblings set and return that at the end
+           */
+          ti = idFirstTIRS.createNewTitleInstanceWithSiblings(citation)
+          break;
+        default:
+          /*
+           * Only case left is sourceIdentifier is not null,
+           * and sourceIdentifier matches that of the citation
+           *
+           * The TI in hand MUST be newly created
+           * (Because otherwise we wouldn't be in this path at all,
+           * this path begins at not finding a matching work)
+           * Since TI is brand new, we can move forward with no wrangling
+           */
+          break;
+      }
     }
 
     return ti;
