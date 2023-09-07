@@ -9,7 +9,7 @@ public class TIRSException extends Exception {
   public static final Long MULTIPLE_IDENTIFIER_MATCHES = 2L;
   public static final Long MISSING_MANDATORY_FIELD = 3L
   public static final Long MULTIPLE_WORK_MATCHES = 4L;
-
+  public static final Long NO_TITLE_MATCH = 5L;
 
   final Long code;
 

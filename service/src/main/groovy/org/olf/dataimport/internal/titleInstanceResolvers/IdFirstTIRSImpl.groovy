@@ -39,6 +39,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
   '''
 
   private String getSiblingMatchHQL(Collection<IdentifierSchema> identifiers) {
+    // Do not pass "false" as second param here, we only match on identifiers which are "approved"
     String identifierHQL = buildIdentifierHQL(identifiers)
 
     String outputHQL = """
@@ -158,6 +159,11 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     return result;
   }
 
+  /* This method WILL NOT set previously ERRORed sibling identifiers back to APPROVED
+   * This won't matter for IdFirstTIRS as this method is only called for new TIs
+   * But if called externally, such as by WorkSourceIdentifierTIRS, if that behaviour is
+   * expected, it will need to be performed externally too
+   */
   private upsertSiblings(ContentItemSchema citation, Work work) {
     List<TitleInstance> candidate_list = []
 
@@ -170,7 +176,8 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     // a title if we know that it is a sibling of a print identifier.
     List<PackageContentImpl> siblingCitations = getSiblingCitations(citation);
     if ( siblingCitations.size() != 0 ) {
-      siblingCitations.each {sibling_citation ->
+      // One sibling for each citation
+      siblingCitations.each { sibling_citation ->
         // Find ALL siblings on this work who match this identifier (should only be one id because of above code)
         candidate_list = directMatch(sibling_citation.instanceIdentifiers, work, 'print', false)
 
@@ -368,9 +375,9 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
   }
 
   // Setting to public so we can reuse this in WorkSourceIdentifierTIRS
-  public TitleInstance createNewTitleInstanceWithSiblings(ContentItemSchema citation) {
+  public TitleInstance createNewTitleInstanceWithSiblings(ContentItemSchema citation, Work = null) {
     TitleInstance result;
-    result = createNewTitleInstance(citation)
+    result = createNewTitleInstance(citation, work)
     if (result != null) {
       // We assume that the incoming citation already has split ids and siblingIds
       upsertSiblings(citation, result.work)
