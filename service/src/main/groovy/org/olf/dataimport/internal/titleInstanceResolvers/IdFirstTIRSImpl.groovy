@@ -139,11 +139,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
       switch ( num_matches ) {
         case(0):
           log.debug("No title match, create new title ${citation}")
-          result = createNewTitleInstance(citation)
-          if (result != null) {
-            // We assume that the incoming citation already has split ids and siblingIds
-            upsertSiblings(citation, result.work)
-          }
+          result = createNewTitleInstanceWithSiblings(citation)
           break;
         case(1):
           log.debug("Exact match. Enrich title.")
@@ -283,8 +279,8 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
 
         if (id_matches.size() > 1) {
           throw new TIRSException(
-            "Multiple (${id_matches.size()}) class one matches found for identifier ${id.namespace}::${id.value}",
-            TIRSException.MULTIPLE_TITLE_MATCHES,
+            "Multiple (${id_matches.size()}) matches found for identifier ${id.namespace}::${id.value}",
+            TIRSException.MULTIPLE_IDENTIFIER_MATCHES,
           );
         }
 
@@ -369,5 +365,15 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
       result.refresh()
     }
     result
+  }
+
+  // Setting to public so we can reuse this in WorkSourceIdentifierTIRS
+  public TitleInstance createNewTitleInstanceWithSiblings(ContentItemSchema citation) {
+    TitleInstance result;
+    result = createNewTitleInstance(citation)
+    if (result != null) {
+      // We assume that the incoming citation already has split ids and siblingIds
+      upsertSiblings(citation, result.work)
+    }
   }
 }
