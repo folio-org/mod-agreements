@@ -14,22 +14,17 @@ import org.olf.kb.Work
 import grails.gorm.transactions.Transactional
 import grails.web.databinding.DataBinder
 
-import org.olf.dataimport.internal.TitleInstanceResolverService
 import groovy.util.logging.Slf4j
 
 import groovy.json.*
 import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
-
 
 /**
  * This service works at the module level, it's often called without a tenant context.
  */
 @Slf4j
 @Transactional
-class WorkSourceIdentifierTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResolverService {
-  // Inject IdFirstTIRS to fall back to it
-  TitleInstanceResolverService idFirstTIRS = new IdFirstTIRSImpl();
-
+class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder {
   public TitleInstance resolve(ContentItemSchema citation, boolean trustedSourceTI) {
     // log.debug("TitleInstanceResolverService::resolve(${citation})");
     TitleInstance result = null;
@@ -53,8 +48,8 @@ class WorkSourceIdentifierTIRSImpl extends BaseTIRS implements DataBinder, Title
 
     switch (candidate_works.size()) {
       case 0:
-        // Zero direct matches for work, fall back to IdFirstTIRS
-        result = fallbackToIdFirstTIRSResolve(citation, trustedSourceTI);
+        // Zero direct matches for work, fall back to baseResolve
+        result = fallbackToIdFirstResolve(citation, trustedSourceTI);
         break;
       case 1:
         Work work = GrailsHibernateUtil.unwrapIfProxy(candidate_works.get(0));
@@ -75,7 +70,7 @@ class WorkSourceIdentifierTIRSImpl extends BaseTIRS implements DataBinder, Title
     return result;
   }
 
-  private TitleInstance fallbackToIdFirstTIRSResolve(ContentItemSchema citation, boolean trustedSourceTI) {
+  private TitleInstance fallbackToIdFirstResolve(ContentItemSchema citation, boolean trustedSourceTI) {
     TitleInstance ti = null;
     /*
      * Could not find a work, fall back to resolve in idFirstTIRS
@@ -87,7 +82,7 @@ class WorkSourceIdentifierTIRSImpl extends BaseTIRS implements DataBinder, Title
      * circumstance
      */
     try {
-      ti = idFirstTIRS.resolve(citation, trustedSourceTI);
+      ti = super.resolve(citation, trustedSourceTI);
     } catch (TIRSException tirsException) {
       // We treat a multiple title match here as NBD and move onto creation
       // Any other TIRSExceptions are legitimate concerns and we should rethrow
@@ -103,12 +98,19 @@ class WorkSourceIdentifierTIRSImpl extends BaseTIRS implements DataBinder, Title
      */
     if (!ti) {
       // If we have no TI at this point, create one complete with work etc
-      ti = idFirstTIRS.createNewTitleInstanceWithSiblings(citation)
+      ti = createNewTitleInstanceWithSiblings(citation)
     } else {
       /* We _do_ have a TI. Check that the attached work does not have an ID
        * If the attached work _does_ have an id, then we need a whole new work anyway
        */
       Work work = ti.work;
+      if (!work) {
+        throw new TIRSException(
+          "No work found on TI: ${ti}",
+          TIRSException.NO_WORK_MATCH
+        )
+      }
+
       switch (work.sourceIdentifier) {
         /* ASSUMPTION has been made here that a Work sourceIdentifier cannot have status
          * error, since we never set it to error through any of our logic. If that changes
@@ -150,7 +152,7 @@ class WorkSourceIdentifierTIRSImpl extends BaseTIRS implements DataBinder, Title
            * At this step we have a work, but it does not match the sourceIdentifier
            * So we need to create a new Work/TI/Siblings set and return that at the end
            */
-          ti = idFirstTIRS.createNewTitleInstanceWithSiblings(citation)
+          ti = createNewTitleInstanceWithSiblings(citation)
           break;
         default:
           /*
@@ -193,7 +195,7 @@ class WorkSourceIdentifierTIRSImpl extends BaseTIRS implements DataBinder, Title
          * already on this work, and just creating everything from scratch. I'm not sure
          * this branch will ever get hit
          */
-         ti = idFirstTIRS.createNewTitleInstanceWithSiblings(citation, work)
+         ti = createNewTitleInstanceWithSiblings(citation, work)
         break;
       default:
         // If there are somehow multiple electronic title instances on the work at this stage, error out
@@ -236,7 +238,20 @@ class WorkSourceIdentifierTIRSImpl extends BaseTIRS implements DataBinder, Title
     updateTIIdentifiers(electronicTI, citation.instanceIdentifiers);
     
     // TODO Next for each sibling, ensure citations are up to scratch
-    //List<PackageContentImpl> siblingCitations = getSiblingCitations(citation);
+    List<PackageContentImpl> siblingCitations = getSiblingCitations(citation);
+    /*
+     * We need to first check that every siblingCitation matches to a TI
+     * on the correct work (NOTE: not necessarily with approved identifiers)
+     *
+     * Then ensure every print sibling on the work can be matched by one of the sibling_citations
+     *
+     * FINALLY ensure that each sibling/sibling_citation pair goes through updateTIIdentifiers
+     */
+
+     // FIXME CAN WE ASSUME THAT MULTIPLE APPROVED IDs ON PRINT SIBLING IS AN ERROR?
+
+
+
   }
 
   private void updateTIIdentifiers(TitleInstance ti, Collection<IdentifierSchema> identifiers) {

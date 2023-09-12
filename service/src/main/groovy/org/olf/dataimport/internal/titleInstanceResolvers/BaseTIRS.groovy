@@ -12,24 +12,26 @@ import org.olf.kb.IdentifierNamespace
 import org.olf.kb.TitleInstance
 import org.olf.kb.Work
 
+import org.olf.dataimport.internal.TitleInstanceResolverService
+
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
 import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 
 
-// FIXME remove unnecessary import
-import java.time.Instant
-
 /**
  * This is a base TIRS class to give any implementing classes some shared tools to use 
+ * IMPORTANT -- This is not a TIRS by itself, as it does not implement the TitleInstanceResolverService interface
  */
 @Slf4j
 @Transactional
-class BaseTIRS {
-    @Autowired
-    IdentifierService identifierService
-    protected static final def APPROVED = 'approved'
-    protected static final def ERROR = 'error'
+abstract class BaseTIRS implements TitleInstanceResolverService {
+  public abstract TitleInstance resolve(ContentItemSchema citation, boolean trustedSourceTI);
+
+  @Autowired
+  IdentifierService identifierService
+  protected static final def APPROVED = 'approved'
+  protected static final def ERROR = 'error'
 
   // ERM-1649. This function acts as a way to manually map incoming namespaces onto known namespaces where we believe the extra information is unhelpful.
   // This is also the place to do any normalisation (lowercasing etc).
@@ -363,13 +365,19 @@ class BaseTIRS {
   // We choose to set up a sibling citation per siblingInstanceIdentifier -- keep consistent between TIRSs
   protected List<PackageContentImpl> getSiblingCitations(final ContentItemSchema citation) {
     Collection<IdentifierSchema> ids = citation.siblingInstanceIdentifiers
-    log.debug("List of sibling identifiers: ${ids}")
 
     if ( ids.size() == 0 ) {
       return []
     }
 
-    return ids.collect { id ->
+    // Duplication check
+    Collection<IdentifierSchema> deduplicatedIds = ids.unique ( false ) { a,b -> a.namespace <=> b.namespace ?: a.value <=> b.value };
+
+    if (deduplicatedIds.size() !== ids.size()) {
+      log.warn("Duplicated sibling identifiers found: ${ids}. Continuing with deduplicated list.")
+    }
+
+    return deduplicatedIds.collect { id ->
       PackageContentImpl sibling_citation = new PackageContentImpl()
       bindData (sibling_citation, [
         "title": citation.title,

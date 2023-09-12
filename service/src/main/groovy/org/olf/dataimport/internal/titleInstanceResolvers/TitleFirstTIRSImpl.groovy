@@ -14,8 +14,6 @@ import org.olf.kb.Work
 import grails.gorm.transactions.Transactional
 import grails.web.databinding.DataBinder
 
-import org.olf.dataimport.internal.TitleInstanceResolverService
-
 import java.util.StringTokenizer
 
 
@@ -28,7 +26,7 @@ import groovy.util.logging.Slf4j
  */
 @Slf4j
 @Transactional
-class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverService {
+class TitleFirstTIRSImpl extends BaseTIRS {
   /* normalizedName is created using StringUtils.normaliseWhitespaceAndCase, as below */
   private static final String TEXT_MATCH_TITLE_HQL = '''
       SELECT ti from TitleInstance as ti
