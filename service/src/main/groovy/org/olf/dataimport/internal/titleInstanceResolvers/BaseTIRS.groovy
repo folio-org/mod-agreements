@@ -371,7 +371,10 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     }
 
     // Duplication check
-    Collection<IdentifierSchema> deduplicatedIds = ids.unique ( false ) { a,b -> a.namespace <=> b.namespace ?: a.value <=> b.value };
+    Collection<IdentifierSchema> deduplicatedIds = ids.unique(false) { a,b ->
+      namespaceMapping(a.namespace) <=> namespaceMapping(b.namespace) ?:
+      a.value <=> b.value
+    }
 
     if (deduplicatedIds.size() !== ids.size()) {
       log.warn("Duplicated sibling identifiers found: ${ids}. Continuing with deduplicated list.")

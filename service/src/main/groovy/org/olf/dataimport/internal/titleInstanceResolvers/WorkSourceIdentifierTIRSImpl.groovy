@@ -94,7 +94,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
     } //Dont catch any other exception, those are legitimate reasons to stop
 
     /* At this point we should either have a title instance from
-     * IdFirstTIRS or still null due to exceptions in TIRS
+     * IdFirstTIRS or still null due to CAUGHT exceptions in TIRS
      */
     if (!ti) {
       // If we have no TI at this point, create one complete with work etc
@@ -186,16 +186,21 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       case 1:
         ti = GrailsHibernateUtil.unwrapIfProxy(candidate_tis.get(0));
         updateIdentifiersAndSiblings(citation, work);
+
+        // Also check for enrichment here (always trustedSourceTI within this process)
+        checkForEnrichment(ti, citation, true);
+
         // Ensure we refresh TI after updateIdentifiersAndSiblings
         ti.refresh();
         break;
       case 0:
         /* There is no electronic TI for this work, create it and siblings
-         * ASSUMPTION making an assumption here that there are no print siblings
-         * already on this work, and just creating everything from scratch. I'm not sure
-         * this branch will ever get hit
+         * I'm not sure this branch will ever get hit
          */
-         ti = createNewTitleInstanceWithSiblings(citation, work)
+        ti = createNewTitleInstanceWithSiblings(citation, work)
+
+        // This should handle scenario where print siblings already existed
+        wrangleSiblings(citation, work)
         break;
       default:
         // If there are somehow multiple electronic title instances on the work at this stage, error out
@@ -236,22 +241,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
 
     // So, we now have a single electronic TI, make sure all identifiers match those from citation
     updateTIIdentifiers(electronicTI, citation.instanceIdentifiers);
-    
-    // TODO Next for each sibling, ensure citations are up to scratch
-    List<PackageContentImpl> siblingCitations = getSiblingCitations(citation);
-    /*
-     * We need to first check that every siblingCitation matches to a TI
-     * on the correct work (NOTE: not necessarily with approved identifiers)
-     *
-     * Then ensure every print sibling on the work can be matched by one of the sibling_citations
-     *
-     * FINALLY ensure that each sibling/sibling_citation pair goes through updateTIIdentifiers
-     */
-
-     // FIXME CAN WE ASSUME THAT MULTIPLE APPROVED IDs ON PRINT SIBLING IS AN ERROR?
-
-
-
+    wrangleSiblings(citation, work)
   }
 
   private void updateTIIdentifiers(TitleInstance ti, Collection<IdentifierSchema> identifiers) {
@@ -267,7 +257,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
         Identifier id = lookupOrCreateIdentifier(citation_id.value, citation_id.namespace)
         IdentifierOccurrence newIO = new IdentifierOccurrence([
           identifier: id,
-          status: IdentifierOccurrence.lookupOrCreateStatus('approved')
+          status: IdentifierOccurrence.lookupOrCreateStatus(APPROVED)
         ])
 
         ti.addToIdentifiers(sourceIdentifier);
@@ -290,6 +280,78 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
         io.setStatusFromString(ERROR)
         io.save(flush: true, failOnError: true);
       }
+    }
+  }
+
+  private void wrangleSiblings(ContentItemSchema citation, Work work) {
+    List<PackageContentImpl> siblingCitations = getSiblingCitations(citation);
+
+    /*
+     * We are making an ASSUMPTION here that getSiblingCitations
+     * will return discrete citations which do not match each other.
+     * At the moment it will return one ID per citation. If that changes
+     * then we may need to inspect this process.
+     */
+
+    // TODO do we need to sanity check that there's only one ID
+    // per incoming sibling at this stage?
+
+    // Set up list of siblings, we will remove from this as we match via citations,
+    // thus building up a list of unmatchedSiblings we can then remove.
+    List<String> unmatchedSiblings = getTISFromWork(work.id, 'print');
+    
+    siblingCitations.each {sibling_citation ->
+      // Match sibling citation to siblings already on the work (ONLY looking at approved identifiers)
+      List<TitleInstance> matchedSiblings = directMatch(sibling_citation.instanceIdentifiers, work, 'print');
+      
+      switch(matchedSiblings.size()) {
+        case 0:
+          // No sibling found, add it.
+          createNewTitleInstance(sibling_citation, work);
+          break;
+        case 1:
+          // Found single sibling citation, update identifiers and check for enrichment
+          TitleInstance sibling = GrailsHibernateUtil.unwrapIfProxy(matchedSiblings.get(0));
+          updateTIIdentidiers(sibling, sibling_citation.instanceIdentifiers);
+          checkForEnrichment(sibling, sibling_citation, true);
+
+          // We've matched this sibling, remove it from the unmatchedSiblings list.
+          unmatchedSiblings.removeIf { it.id == sibling.id }
+          break;
+        default:
+          // Found multiple siblings which would match citation.
+          // Remove each from the work and progress
+          log.warn("Matched multiple siblings from single citation. Removing from work: ${matchedSiblings}")
+          matchedSiblings.each { matchedSibling ->
+            // Mark all identifier occurrences as error
+            matchedSibling.identifiers.each {io ->
+              io.setStatusFromString(ERROR)
+              io.save(flush: true, failOnError: true);
+            }
+            // Remove Work
+            matchedSibling.work = null;
+            matchedSibling.save(flush: true, failOnError: true);
+
+            // We've matched this sibling, remove it from the unmatchedSiblings list.
+            unmatchedSiblings.removeIf { it.id == matchedSibling.id }
+          }
+          break;
+      }
+    }
+
+    /* Now all sibling_citations exist as expected on the work.
+     * Next check whether there are any siblings left on the work
+     * that cannot be matched to a citation.
+     */
+    unmatchedSiblings.each { sibling ->
+      // Mark all identifier occurrences as error
+      sibling.identifiers.each {io ->
+        io.setStatusFromString(ERROR)
+        io.save(flush: true, failOnError: true);
+      }
+      // Remove Work
+      sibling.work = null;
+      sibling.save(flush: true, failOnError: true);
     }
   }
 }

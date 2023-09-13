@@ -78,7 +78,7 @@ class TitleIngestService implements DataBinder {
     try {
       title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
     } catch (Exception e){
-      log.error("Error resolving title (${pc.title}), skipping ${e.message}")
+      log.error("Error resolving title (${pc.title}), skipping. ${e.message}")
     }
 
     // log.debug("Proceeed.... resolve completed ${title}");

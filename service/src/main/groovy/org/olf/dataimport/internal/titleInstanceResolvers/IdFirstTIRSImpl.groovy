@@ -85,7 +85,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
    * But if called externally, such as by WorkSourceIdentifierTIRS, if that behaviour is
    * expected, it will need to be performed externally too
    */
-  protected upsertSiblings(ContentItemSchema citation, Work work) {
+  protected void upsertSiblings(ContentItemSchema citation, Work work) {
     List<TitleInstance> candidate_list = []
 
     // Lets try and match based on sibling identifiers. 
@@ -156,6 +156,8 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
       // We assume that the incoming citation already has split ids and siblingIds
       upsertSiblings(citation, result.work)
     }
+
+    return result
   }
 
   /* -------- MATCHING METHODS --------*/
