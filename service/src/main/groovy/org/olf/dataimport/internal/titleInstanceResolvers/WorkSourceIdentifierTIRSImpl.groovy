@@ -42,9 +42,11 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       )
     """.toString(),
     [
-      sourceIdentifierNamespace: citation.sourceIdentifierNamespace,
+      sourceIdentifierNamespace: namespaceMapping(citation.sourceIdentifierNamespace),
       sourceIdentifier: citation.sourceIdentifier
     ])
+
+    log.debug("LOGDEBUG CANDIDATE WORKS: ${candidate_works}")
 
     switch (candidate_works.size()) {
       case 0:
@@ -312,7 +314,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
         case 1:
           // Found single sibling citation, update identifiers and check for enrichment
           TitleInstance sibling = GrailsHibernateUtil.unwrapIfProxy(matchedSiblings.get(0));
-          updateTIIdentidiers(sibling, sibling_citation.instanceIdentifiers);
+          updateTIIdentifiers(sibling, sibling_citation.instanceIdentifiers);
           checkForEnrichment(sibling, sibling_citation, true);
 
           // We've matched this sibling, remove it from the unmatchedSiblings list.
