@@ -182,8 +182,8 @@ class TitleFirstTIRSImpl extends BaseTIRS {
     return result;
   }
 
-  public TitleInstance resolve (ContentItemSchema citation, boolean trustedSourceTI) {
-    TitleInstance result = null;
+  public String resolve (ContentItemSchema citation, boolean trustedSourceTI) {
+    TitleInstance ti = null;
 
     List<TitleInstance> candidate_list = titleMatch(citation.title, citation.instanceMedium)
 
@@ -197,20 +197,20 @@ class TitleFirstTIRSImpl extends BaseTIRS {
       switch ( candidate_list.size() ) {
         case(0):
           log.debug("No title match, create new title")
-          result = createNewTitleInstance(citation)
-          if (result != null && (citation.siblingInstanceIdentifiers?.size() ?: 0) > 0) {
+          ti = createNewTitleInstance(citation)
+          if (ti != null && (citation.siblingInstanceIdentifiers?.size() ?: 0) > 0) {
             // FIXME this is completely different logic to what we have elsewhere, where we create a new sibling for each identifier
-            createPrintSibling(citation, result.work.id)
+            createPrintSibling(citation, ti.work.id)
           }
           break;
         case(1):
           log.debug("Exact match. Enrich title.")
-          result = candidate_list.get(0)
-          checkForEnrichment(result.id, citation, trustedSourceTI)
+          ti = candidate_list.get(0)
+          checkForEnrichment(ti.id, citation, trustedSourceTI)
 
           // Link any new identifiers
-          linkIdentifiers(result.id, citation)
-          List<TitleInstance> siblings = siblingMatch(result.id, result.work.id)
+          linkIdentifiers(ti.id, citation)
+          List<TitleInstance> siblings = siblingMatch(ti.id, ti.work.id)
           // TODO As above, we for now treat the first result as "THE" print sibling
           linkIdentifiers(siblings[0].id, citation, true)
 
@@ -222,7 +222,7 @@ class TitleFirstTIRSImpl extends BaseTIRS {
       }
     }
 
-    return result;
+    return ti.id;
   }
 
   private TitleInstance createPrintSibling(final ContentItemSchema citation, String workId = null) {

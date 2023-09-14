@@ -25,9 +25,9 @@ import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 @Slf4j
 @Transactional
 class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
-  public TitleInstance resolve(ContentItemSchema citation, boolean trustedSourceTI) {
+  public String resolve(ContentItemSchema citation, boolean trustedSourceTI) {
     // log.debug("TitleInstanceResolverService::resolve(${citation})");
-    TitleInstance result = null;
+    String result = null;
 
     List<TitleInstance> candidate_list = classOneMatch(citation.instanceIdentifiers);
     int num_matches = candidate_list.size()
@@ -61,10 +61,11 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
       switch ( num_matches ) {
         case(0):
           log.debug("No title match, create new title ${citation}")
-          result = createNewTitleInstanceWithSiblings(citation)
+          result = createNewTitleInstanceWithSiblings(citation).id
           break;
         case(1):
           log.debug("Exact match. Enrich title.")
+          result = candidate_list.get(0).id
           checkForEnrichment(candidate_list.get(0).id, citation, trustedSourceTI)
           break;
         default:
@@ -122,27 +123,23 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
   protected TitleInstance createNewTitleInstance(final ContentItemSchema citation, String workId = null) {
     TitleInstance result = null;
 
-    TitleInstance.withNewTransaction {
-      result = createNewTitleInstanceWithoutIdentifiers(citation, workId)
+    result = createNewTitleInstanceWithoutIdentifiers(citation, workId)
+
+    citation.instanceIdentifiers.each{ id ->
+      
+      def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
+    
+      def io_record = new IdentifierOccurrence(
+        resource: result,
+        identifier: id_lookup)
+      
+      io_record.setStatusFromString(APPROVED)
+      io_record.save(flush:true, failOnError:true)
     }
 
-    IdentifierOccurrence.withNewTransaction{
-      citation.instanceIdentifiers.each{ id ->
-        
-        def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
-      
-        def io_record = new IdentifierOccurrence(
-          resource: result,
-          identifier: id_lookup)
-        
-        io_record.setStatusFromString(APPROVED)
-        io_record.save(flush:true, failOnError:true)
-      }
-    }
-    
     if (result != null) {
       // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
-      result.refresh()
+      result = TitleInstance.get(result.id)
     }
     result
   }

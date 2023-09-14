@@ -6,5 +6,5 @@ import org.olf.kb.TitleInstance
 
 @CompileStatic
 public interface TitleInstanceResolverService {
-  public TitleInstance resolve (ContentItemSchema citation, boolean trustedSourceTI)
+  public String resolve (ContentItemSchema citation, boolean trustedSourceTI)
 }

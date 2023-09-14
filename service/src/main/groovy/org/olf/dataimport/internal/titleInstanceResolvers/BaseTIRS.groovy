@@ -26,7 +26,8 @@ import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 @Slf4j
 @Transactional
 abstract class BaseTIRS implements TitleInstanceResolverService {
-  public abstract TitleInstance resolve(ContentItemSchema citation, boolean trustedSourceTI);
+  // Resolve should find/create/update a TitleInstance from a citation, then return its ID
+  public abstract String resolve(ContentItemSchema citation, boolean trustedSourceTI);
 
   @Autowired
   IdentifierService identifierService

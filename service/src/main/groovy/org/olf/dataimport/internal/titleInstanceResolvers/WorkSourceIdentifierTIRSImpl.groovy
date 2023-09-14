@@ -26,9 +26,9 @@ import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 @Transactional
 class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder {
   // We can largely ignore passedTrustedSourceTI, and always assume that passed citations are trusted
-  public TitleInstance resolve(ContentItemSchema citation, boolean passedTrustedSourceTI) {
+  public String resolve(ContentItemSchema citation, boolean passedTrustedSourceTI) {
     // log.debug("TitleInstanceResolverService::resolve(${citation})");
-    TitleInstance result = null;
+    String result = null;
 
     // Error out if sourceIdentifier or sourceIdentifierNamespace do not exist
     ensureSourceIdentifierFields(citation);
@@ -70,14 +70,12 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
         break;
     }
 
-    // Make sure we have all up to date changes before we return
-    result = TitleInstance.read(result.id)
-
     return result;
   }
 
   // We can largely ignore passedTrustedSourceTI, and always assume that passed citations are trusted
-  private TitleInstance fallbackToIdFirstResolve(ContentItemSchema citation, boolean passedTrustedSourceTI) {
+  private String fallbackToIdFirstResolve(ContentItemSchema citation, boolean passedTrustedSourceTI) {
+    String tiId;
     TitleInstance ti = null;
     /*
      * Could not find a work, fall back to resolve in idFirstTIRS
@@ -89,7 +87,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
      * circumstance
      */
     try {
-      ti = super.resolve(citation, true);
+      tiId = super.resolve(citation, true);
     } catch (TIRSException tirsException) {
       // We treat a multiple title match here as NBD and move onto creation
       // Any other TIRSExceptions are legitimate concerns and we should rethrow
@@ -103,10 +101,11 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
     /* At this point we should either have a title instance from
      * IdFirstTIRS or still null due to CAUGHT exceptions in TIRS
      */
-    if (!ti) {
+    if (!tiId) {
       // If we have no TI at this point, create one complete with work etc
-      ti = createNewTitleInstanceWithSiblings(citation)
+      tiId = createNewTitleInstanceWithSiblings(citation).id
     } else {
+      ti = TitleInstance.get(tiId);
       /* We _do_ have a TI. Check that the attached work does not have an ID
        * If the attached work _does_ have an id, then we need a whole new work anyway
        */
@@ -157,7 +156,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
            * At this step we have a work, but it does not match the sourceIdentifier
            * So we need to create a new Work/TI/Siblings set and return that at the end
            */
-          ti = createNewTitleInstanceWithSiblings(citation)
+          tiId = createNewTitleInstanceWithSiblings(citation).id
           break;
         default:
           /*
@@ -173,7 +172,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       }
     }
 
-    return ti;
+    return tiId;
   }
 
   private List<TitleInstance> getTISFromWork(String workId, String subtype = 'electronic') {
@@ -184,14 +183,14 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
     """.toString(), [workId: workId]);
   }
 
-  private TitleInstance getTitleInstanceFromWork(ContentItemSchema citation, String workId) {
+  private String getTitleInstanceFromWork(ContentItemSchema citation, String workId) {
     Work work = Work.get(workId);
-    
-    TitleInstance ti;
+    String tiId
+  
     List<TitleInstance> candidate_tis = getTISFromWork(work.id);
     switch (candidate_tis.size()) {
       case 1:
-        ti = candidate_tis.get(0);
+        tiId = candidate_tis.get(0).id;
         updateIdentifiersAndSiblings(citation, workId);
 
         // Also check for enrichment here (always trustedSourceTI within this process)
@@ -201,7 +200,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
         /* There is no electronic TI for this work, create it and siblings
          * I'm not sure this branch will ever get hit
          */
-        ti = createNewTitleInstanceWithSiblings(citation, workId)
+        tiId = createNewTitleInstanceWithSiblings(citation, workId).id
 
         // This should handle scenario where print siblings already existed
         wrangleSiblings(citation, workId)
@@ -215,7 +214,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
         break;
     }
 
-    return ti;
+    return tiId;
   }
 
   // Method to wrangle ids and siblings after the fact

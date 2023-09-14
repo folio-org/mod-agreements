@@ -194,9 +194,11 @@ class KbManagementService {
         TitleInstance matchKeyTitleInstance
         // Direct try/catch for broken TIs
         try {
-          matchKeyTitleInstance = titleInstanceResolverService.resolve(
-            matchKeyService.matchKeysToSchema(matchKeys),
-            false
+          matchKeyTitleInstance = TitleInstance.read(
+            titleInstanceResolverService.resolve(
+              matchKeyService.matchKeysToSchema(matchKeys),
+              false
+            )
           )
         } catch (Exception e) {
           log.error("An error occurred resolving TI from matchKey information: ${matchKeys}.", e)
