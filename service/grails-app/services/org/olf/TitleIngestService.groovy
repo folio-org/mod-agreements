@@ -15,7 +15,6 @@ import grails.web.databinding.DataBinder
 import groovy.util.logging.Slf4j
 
 import org.olf.dataimport.internal.TitleInstanceResolverService
-import org.olf.kb.MatchKey
 
 /**
  * This service works at the module level, it's often called without a tenant context.
@@ -75,6 +74,7 @@ class TitleIngestService implements DataBinder {
 
     // ERM-1847 Changed assert in TIRS to an explicit exception, which we can catch here. Should stop job from hanging on bad data
     TitleInstance title;
+    // FIXME do not merge this change -- try catch needs to be here
     try {
       title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
     } catch (Exception e){

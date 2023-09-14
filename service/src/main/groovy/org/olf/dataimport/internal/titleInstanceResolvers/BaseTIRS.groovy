@@ -59,7 +59,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     switch(identifier_lookup.size() ) {
       case 0:
         IdentifierNamespace ns = lookupOrCreateIdentifierNamespace(namespace);
-        result = new Identifier(ns:ns, value:value).save(flush:true, failOnError:true);
+        result = new Identifier(ns:ns, value:value).save(failOnError:true);
         break;
       case 1:
         result = identifier_lookup.get(0);
@@ -78,7 +78,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
    * This is where we can call the namespaceMapping function to ensure consistency in our DB
    */
   protected IdentifierNamespace lookupOrCreateIdentifierNamespace(final String ns) {
-    IdentifierNamespace.findOrCreateByValue(namespaceMapping(ns)).save(flush:true, failOnError:true)
+    IdentifierNamespace.findOrCreateByValue(namespaceMapping(ns)).save(failOnError:true)
   }
 
 
@@ -88,7 +88,9 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
    * an identifier, we will need to add identifiers to that record when we see a record that
    * suggests identifiers for that title match.
    */ 
-  protected void checkForEnrichment(TitleInstance title, ContentItemSchema citation, boolean trustedSourceTI) {
+  protected void checkForEnrichment(String tiId, ContentItemSchema citation, boolean trustedSourceTI) {
+    TitleInstance title = TitleInstance.get(tiId)
+    
     log.debug("Checking for enrichment of Title Instance: ${title} :: trusted: ${trustedSourceTI}")
     def changes = 0;
     
@@ -151,7 +153,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
       }
 
       // Ensure we only save title on enrich if changes have been made
-      if (changes > 0 && !title.save(flush: true)) {
+      if (changes > 0 && !title.save(failOnError:true, flush: true)) {
         title.errors.fieldErrors.each {
           log.error("Error saving title. Field ${it.field} rejected value: \"${it.rejectedValue}\".")
         }
@@ -168,7 +170,8 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
 
   // Different TIRS implementations will have different workflows with identifiers, but the vast majority of the creation will be the same
   // We assume that the incoming citation already has split ids and siblingIds
-  protected TitleInstance createNewTitleInstanceWithoutIdentifiers(final ContentItemSchema citation, Work work = null) {
+  protected TitleInstance createNewTitleInstanceWithoutIdentifiers(final ContentItemSchema citation, String workId = null) {
+    Work work = workId ? Work.get(workId) : null;
     TitleInstance result = null
 
     // Ian: adding this - Attempt to make sense of the instanceMedia value we have been passed
@@ -241,7 +244,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
         work = new Work([
           title:citation.title,
           sourceIdentifier: sourceIdentifier
-        ]).save(flush:true, failOnError:true)
+        ]).save(failOnError:true)
       }
 
       // Print or Electronic
@@ -408,12 +411,12 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     }
   }
 
-  protected List<TitleInstance> listDeduplictor(List<TitleInstance> titleList) {
+  protected List<TitleInstance> listDeduplictor(List<String> titleListIds) {
     // Need to deduplicate output -- Could probably be neater code than this
     List<TitleInstance> outputList = [];
-    titleList.each { title ->
+    titleListIds.each { title ->
       // Make sure we're working with the "proper" TI
-      TitleInstance ti = GrailsHibernateUtil.unwrapIfProxy(title)
+      TitleInstance ti = TitleInstance.get(title)
       if (!outputList.contains(ti)) {
         outputList << ti
       }

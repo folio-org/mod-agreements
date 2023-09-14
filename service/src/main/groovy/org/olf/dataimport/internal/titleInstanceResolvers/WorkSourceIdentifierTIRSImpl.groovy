@@ -25,7 +25,8 @@ import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 @Slf4j
 @Transactional
 class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder {
-  public TitleInstance resolve(ContentItemSchema citation, boolean trustedSourceTI) {
+  // We can largely ignore passedTrustedSourceTI, and always assume that passed citations are trusted
+  public TitleInstance resolve(ContentItemSchema citation, boolean passedTrustedSourceTI) {
     // log.debug("TitleInstanceResolverService::resolve(${citation})");
     TitleInstance result = null;
 
@@ -46,16 +47,16 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       sourceIdentifier: citation.sourceIdentifier
     ])
 
-    log.debug("LOGDEBUG CANDIDATE WORKS: ${candidate_works}")
+    //log.debug("LOGDEBUG CANDIDATE WORKS: ${candidate_works}")
 
     switch (candidate_works.size()) {
       case 0:
         // Zero direct matches for work, fall back to baseResolve
-        result = fallbackToIdFirstResolve(citation, trustedSourceTI);
+        result = fallbackToIdFirstResolve(citation, true);
         break;
       case 1:
-        Work work = GrailsHibernateUtil.unwrapIfProxy(candidate_works.get(0));
-        result = getTitleInstanceFromWork(citation, work)
+        //Work work = candidate_works.get(0);
+        result = getTitleInstanceFromWork(citation, candidate_works.get(0).id)
         break;
       default:
         /*
@@ -69,10 +70,14 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
         break;
     }
 
+    // Make sure we have all up to date changes before we return
+    result = TitleInstance.read(result.id)
+
     return result;
   }
 
-  private TitleInstance fallbackToIdFirstResolve(ContentItemSchema citation, boolean trustedSourceTI) {
+  // We can largely ignore passedTrustedSourceTI, and always assume that passed citations are trusted
+  private TitleInstance fallbackToIdFirstResolve(ContentItemSchema citation, boolean passedTrustedSourceTI) {
     TitleInstance ti = null;
     /*
      * Could not find a work, fall back to resolve in idFirstTIRS
@@ -84,7 +89,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
      * circumstance
      */
     try {
-      ti = super.resolve(citation, trustedSourceTI);
+      ti = super.resolve(citation, true);
     } catch (TIRSException tirsException) {
       // We treat a multiple title match here as NBD and move onto creation
       // Any other TIRSExceptions are legitimate concerns and we should rethrow
@@ -132,7 +137,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
             status: IdentifierOccurrence.lookupOrCreateStatus('approved')
           ])
           work.setSourceIdentifier(sourceIdentifier);
-          work.save(flush: true, failOnError: true);
+          work.save(failOnError: true);
 
           /*
            * Now we need to do some identifier and sibling wrangling
@@ -140,8 +145,6 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
            */
           updateIdentifiersAndSiblings(citation, work)
 
-          // Refresh TI in hand
-          ti.refresh();
           break;
         case {
           it != null &&
@@ -181,28 +184,27 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
     """.toString(), [workId: workId]);
   }
 
-  private TitleInstance getTitleInstanceFromWork(ContentItemSchema citation, Work work) {
+  private TitleInstance getTitleInstanceFromWork(ContentItemSchema citation, String workId) {
+    Work work = Work.get(workId);
+    
     TitleInstance ti;
     List<TitleInstance> candidate_tis = getTISFromWork(work.id);
     switch (candidate_tis.size()) {
       case 1:
-        ti = GrailsHibernateUtil.unwrapIfProxy(candidate_tis.get(0));
-        updateIdentifiersAndSiblings(citation, work);
+        ti = candidate_tis.get(0);
+        updateIdentifiersAndSiblings(citation, workId);
 
         // Also check for enrichment here (always trustedSourceTI within this process)
-        checkForEnrichment(ti, citation, true);
-
-        // Ensure we refresh TI after updateIdentifiersAndSiblings
-        ti.refresh();
+        checkForEnrichment(candidate_tis.get(0).id, citation, true);
         break;
       case 0:
         /* There is no electronic TI for this work, create it and siblings
          * I'm not sure this branch will ever get hit
          */
-        ti = createNewTitleInstanceWithSiblings(citation, work)
+        ti = createNewTitleInstanceWithSiblings(citation, workId)
 
         // This should handle scenario where print siblings already existed
-        wrangleSiblings(citation, work)
+        wrangleSiblings(citation, workId)
         break;
       default:
         // If there are somehow multiple electronic title instances on the work at this stage, error out
@@ -217,14 +219,16 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
   }
 
   // Method to wrangle ids and siblings after the fact
-  private void updateIdentifiersAndSiblings(ContentItemSchema citation, Work work) {
+  private void updateIdentifiersAndSiblings(ContentItemSchema citation, String workId) {
+    Work work = Work.get(workId);
+
     // First up, wrangle IDs on single electronic title instance.
     // Shouldn't be in a situation where there are multiple, but can't hurt to check again
     List<TitleInstance> candidate_tis = getTISFromWork(work.id);
     TitleInstance electronicTI;
     switch (candidate_tis.size()) {
       case 1:
-        electronicTI = GrailsHibernateUtil.unwrapIfProxy(candidate_tis.get(0));
+        electronicTI = candidate_tis.get(0);
         break;
       case 0:
         throw new TIRSException(
@@ -242,11 +246,13 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
     }
 
     // So, we now have a single electronic TI, make sure all identifiers match those from citation
-    updateTIIdentifiers(electronicTI, citation.instanceIdentifiers);
-    wrangleSiblings(citation, work)
+    updateTIIdentifiers(electronicTI.id, citation.instanceIdentifiers);
+    wrangleSiblings(citation, workId)
   }
 
-  private void updateTIIdentifiers(TitleInstance ti, Collection<IdentifierSchema> identifiers) {
+  private void updateTIIdentifiers(String tiId, Collection<IdentifierSchema> identifiers) {
+    TitleInstance ti = TitleInstance.get(tiId)
+
     // First ensure all identifiers from citation are on TI
     identifiers.each {IdentifierSchema citation_id ->
       IdentifierOccurrence io = ti.identifiers.find { IdentifierOccurrence ti_id ->
@@ -262,11 +268,11 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
           status: IdentifierOccurrence.lookupOrCreateStatus(APPROVED)
         ])
 
-        ti.addToIdentifiers(sourceIdentifier);
-        ti.save(flush: true, failOnError: true);
+        ti.addToIdentifiers(newIO);
+        ti.save(failOnError: true);
       } else if (io.status.value != APPROVED) {
         io.setStatusFromString(APPROVED)
-        io.save(flush: true, failOnError: true);
+        io.save(failOnError: true);
       }
     }
 
@@ -280,12 +286,12 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       if (!ids) {
         // Set status to ERROR
         io.setStatusFromString(ERROR)
-        io.save(flush: true, failOnError: true);
+        io.save(failOnError: true);
       }
     }
   }
 
-  private void wrangleSiblings(ContentItemSchema citation, Work work) {
+  private void wrangleSiblings(ContentItemSchema citation, String workId) {
     List<PackageContentImpl> siblingCitations = getSiblingCitations(citation);
 
     /*
@@ -300,25 +306,25 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
 
     // Set up list of siblings, we will remove from this as we match via citations,
     // thus building up a list of unmatchedSiblings we can then remove.
-    List<String> unmatchedSiblings = getTISFromWork(work.id, 'print');
+    List<TitleInstance> unmatchedSiblings = getTISFromWork(workId, 'print');
     
     siblingCitations.each {sibling_citation ->
       // Match sibling citation to siblings already on the work (ONLY looking at approved identifiers)
-      List<TitleInstance> matchedSiblings = directMatch(sibling_citation.instanceIdentifiers, work, 'print');
+      List<TitleInstance> matchedSiblings = directMatch(sibling_citation.instanceIdentifiers, workId, 'print');
       
       switch(matchedSiblings.size()) {
         case 0:
           // No sibling found, add it.
-          createNewTitleInstance(sibling_citation, work);
+          createNewTitleInstance(sibling_citation, workId);
           break;
         case 1:
           // Found single sibling citation, update identifiers and check for enrichment
-          TitleInstance sibling = GrailsHibernateUtil.unwrapIfProxy(matchedSiblings.get(0));
-          updateTIIdentifiers(sibling, sibling_citation.instanceIdentifiers);
-          checkForEnrichment(sibling, sibling_citation, true);
+          String siblingId = matchedSiblings.get(0).id;
+          updateTIIdentifiers(siblingId, sibling_citation.instanceIdentifiers);
+          checkForEnrichment(siblingId , sibling_citation, true);
 
           // We've matched this sibling, remove it from the unmatchedSiblings list.
-          unmatchedSiblings.removeIf { it.id == sibling.id }
+          unmatchedSiblings.removeIf { it.id == siblingId }
           break;
         default:
           // Found multiple siblings which would match citation.
@@ -328,11 +334,11 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
             // Mark all identifier occurrences as error
             matchedSibling.identifiers.each {io ->
               io.setStatusFromString(ERROR)
-              io.save(flush: true, failOnError: true);
+              io.save(failOnError: true);
             }
             // Remove Work
             matchedSibling.work = null;
-            matchedSibling.save(flush: true, failOnError: true);
+            matchedSibling.save(failOnError: true);
 
             // We've matched this sibling, remove it from the unmatchedSiblings list.
             unmatchedSiblings.removeIf { it.id == matchedSibling.id }
@@ -349,11 +355,11 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       // Mark all identifier occurrences as error
       sibling.identifiers.each {io ->
         io.setStatusFromString(ERROR)
-        io.save(flush: true, failOnError: true);
+        io.save(failOnError: true);
       }
       // Remove Work
       sibling.work = null;
-      sibling.save(flush: true, failOnError: true);
+      sibling.save(failOnError: true);
     }
   }
 }

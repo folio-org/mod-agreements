@@ -65,8 +65,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
           break;
         case(1):
           log.debug("Exact match. Enrich title.")
-          result = GrailsHibernateUtil.unwrapIfProxy(candidate_list.get(0))
-          checkForEnrichment(result, citation, trustedSourceTI)
+          checkForEnrichment(candidate_list.get(0).id, citation, trustedSourceTI)
           break;
         default:
           throw new TIRSException(
@@ -85,7 +84,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
    * But if called externally, such as by WorkSourceIdentifierTIRS, if that behaviour is
    * expected, it will need to be performed externally too
    */
-  protected void upsertSiblings(ContentItemSchema citation, Work work) {
+  protected void upsertSiblings(ContentItemSchema citation, String workId) {
     List<TitleInstance> candidate_list = []
 
     // Lets try and match based on sibling identifiers. 
@@ -100,16 +99,16 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
       // One sibling for each citation
       siblingCitations.each { sibling_citation ->
         // Find ALL siblings on this work who match this identifier (should only be one id because of above code)
-        candidate_list = directMatch(sibling_citation.instanceIdentifiers, work, 'print', false)
+        candidate_list = directMatch(sibling_citation.instanceIdentifiers, workId, 'print', false)
 
         switch ( candidate_list.size() ) {
           case 0:
             log.debug("Create sibling print instance for citation ${sibling_citation}")
-            createNewTitleInstance(sibling_citation, work)
+            createNewTitleInstance(sibling_citation, workId)
             break
           case 1:
             // Already exists somehow -- should not be possible on IdFirstTIRS as we create sibling along with work
-            log.warn("Sibling already exists for identifiers: ${sibling_citation.instanceIdentifiers} on Work ${work}.")
+            log.warn("Sibling already exists for identifiers: ${sibling_citation.instanceIdentifiers} on Work ${workId}.")
             break;
           default:
             // Problem -- DEFINITELY should not see this one
@@ -120,11 +119,11 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
     }
   }
 
-  protected TitleInstance createNewTitleInstance(final ContentItemSchema citation, Work work = null) {
+  protected TitleInstance createNewTitleInstance(final ContentItemSchema citation, String workId = null) {
     TitleInstance result = null;
 
     TitleInstance.withNewTransaction {
-      result = createNewTitleInstanceWithoutIdentifiers(citation, work)
+      result = createNewTitleInstanceWithoutIdentifiers(citation, workId)
     }
 
     IdentifierOccurrence.withNewTransaction{
@@ -149,12 +148,12 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
   }
 
   // Setting to public so we can reuse this in WorkSourceIdentifierTIRS
-  protected TitleInstance createNewTitleInstanceWithSiblings(ContentItemSchema citation, Work work = null) {
+  protected TitleInstance createNewTitleInstanceWithSiblings(ContentItemSchema citation, String workId = null) {
     TitleInstance result;
-    result = createNewTitleInstance(citation, work)
+    result = createNewTitleInstance(citation, workId)
     if (result != null) {
       // We assume that the incoming citation already has split ids and siblingIds
-      upsertSiblings(citation, result.work)
+      upsertSiblings(citation, result.work.id)
     }
 
     return result
@@ -194,7 +193,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
     return outputHQL
   }
 
-  protected String getDirectMatchHQL(Collection<IdentifierSchema> identifiers, Work work = null, boolean approvedIdsOnly = true) {
+  protected String getDirectMatchHQL(Collection<IdentifierSchema> identifiers, String workId = null, boolean approvedIdsOnly = true) {
     String identifierHQL = buildIdentifierHQL(identifiers, approvedIdsOnly)
 
     String outputHQL = """
@@ -208,9 +207,9 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
           ti.subType.value = :subtype
     """
 
-    if (work !== null) {
+    if (workId !== null) {
       outputHQL += """ AND
-        ti.work.id = '${work.id}'
+        ti.work.id = '${workId}'
       """
     }
     //log.debug("LOGDEBUG DIRECTMATCH OUTPUT HQL: ${outputHQL}")
@@ -338,11 +337,11 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
 
   // Direct match will find ALL title instances which match ANY of the instanceIdentifiers passed. Is extremely naive.
   // Allow for non-approved identifiers if we wish
-  protected List<TitleInstance> directMatch(final Iterable<IdentifierSchema> identifiers, Work work = null, String subtype = 'electronic', boolean approvedIdsOnly = true) {
+  protected List<TitleInstance> directMatch(final Iterable<IdentifierSchema> identifiers, String workId = null, String subtype = 'electronic', boolean approvedIdsOnly = true) {
     if (identifiers.size() <= 0) {
       return []
     }
-    List<TitleInstance> titleList = TitleInstance.executeQuery(getDirectMatchHQL(identifiers, work, approvedIdsOnly),[subtype: subtype]);
+    List<String> titleList = TitleInstance.executeQuery(getDirectMatchHQL(identifiers, workId, approvedIdsOnly),[subtype: subtype]).collect { it.id };
     return listDeduplictor(titleList)
   }
 
@@ -358,7 +357,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
       return []
     }
 
-    List<TitleInstance> titleList = TitleInstance.executeQuery(getSiblingMatchHQL(classOneIds));
+    List<String> titleList = TitleInstance.executeQuery(getSiblingMatchHQL(classOneIds)).collect { it.id };
     return listDeduplictor(titleList)
   }
 }
