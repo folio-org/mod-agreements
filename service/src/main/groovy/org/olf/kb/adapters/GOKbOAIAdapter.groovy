@@ -55,7 +55,16 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
     if ( current_cursor != null ) {
       cursor = current_cursor
-      query_params.from=cursor
+      if ( current_cursor.startsWith('resumption:') ){
+        query_params.resumptionToken = cursor.substring(11);
+      }
+      else if ( current_cursor.startsWith('cursor:') ){
+        query_params.from=cursor.substring(7);
+      }
+      else {
+        cursor = current_cursor
+        query_params.from=cursor
+      }
     }
     else {
       cursor = ''
@@ -84,25 +93,27 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         log.debug("processPackagePage returned, processed ${page_result.count} packages, cursor will be ${page_result.new_cursor}")
 
         // Extract some info from the page.
-        final String new_cursor = page_result.new_cursor as String
-        final int result_count = (page_result.count ?: 0) as int
-
-        // Store the cursor so we know where we are up to.
-        cache.updateCursor(source_name, new_cursor)
+        String new_cursor = null; 
+        int result_count = (page_result.count ?: 0) as int
 
         if ( result_count > 0 ) {
           // If we processed records, and we have a resumption token, carry on.
           if ( page_result.resumptionToken ) {
             query_params.resumptionToken = page_result.resumptionToken
+            new_cursor = 'resumption:'+(query_params.resumptionToken);
           }
           else {
             // Reached the end of the data
             found_records = false
+            new_cursor = 'cursor:'+(page_result.new_cursor)
           }
         }
         else {
           found_records = false
         }
+
+        // Store the cursor so we know where we are up to.
+        cache.updateCursor(source_name, new_cursor)
       }
       else {
         log.warn("HTTP Get did not return a GPathResult... skipping");
