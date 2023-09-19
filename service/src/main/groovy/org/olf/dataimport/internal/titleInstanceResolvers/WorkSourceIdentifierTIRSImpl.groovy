@@ -149,7 +149,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
           it != null &&
           (
             work.sourceIdentifier.identifier.value != citation.sourceIdentifier ||
-            work.sourceIdentifier.identifier.ns.value != citation.sourceIdentifierNamespace
+            work.sourceIdentifier.identifier.ns.value != namespaceMapping(citation.sourceIdentifierNamespace)
           )
         }:
           /*
