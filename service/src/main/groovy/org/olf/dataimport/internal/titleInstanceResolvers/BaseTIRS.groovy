@@ -368,7 +368,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
 
   // We choose to set up a sibling citation per siblingInstanceIdentifier -- keep consistent between TIRSs
   protected List<PackageContentImpl> getSiblingCitations(final ContentItemSchema citation) {
-    Collection<IdentifierSchema> ids = citation.siblingInstanceIdentifiers
+    Collection<IdentifierSchema> ids = citation.siblingInstanceIdentifiers ?: []
 
     if ( ids.size() == 0 ) {
       return []
