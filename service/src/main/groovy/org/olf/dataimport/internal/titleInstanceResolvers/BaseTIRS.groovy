@@ -112,15 +112,24 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
        * replace the authortiative value with the one sent?
        */
       if (title.publicationType?.value != citation.instancePublicationMedia) {
-       
-        title.publicationTypeFromString = citation.instancePublicationMedia
+        if (citation.instancePublicationMedia) {
+          title.publicationTypeFromString = citation.instancePublicationMedia
+        } else {
+          title.publicationType = null;
+        }
+
         title.markDirty()
         changes++
       }
 
       if (validateCitationType(citation?.instanceMedia)) {
         if ((title.type == null) || (title.type.value != citation.instanceMedia)) {
-          title.typeFromString = citation.instanceMedia
+          if (citation.instanceMedia) {
+            title.typeFromString = citation.instanceMedia
+          } else {
+            title.type = null;
+          }
+
           title.markDirty()
           changes++
         }
@@ -129,27 +138,27 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
       }
 
       if (title.dateMonographPublished != citation.dateMonographPublished) {
-        title.dateMonographPublished = citation.dateMonographPublished
+        title.dateMonographPublished = citation.dateMonographPublished ?: ''
         changes++
       }
 
       if (title.firstAuthor != citation.firstAuthor) {
-        title.firstAuthor = citation.firstAuthor
+        title.firstAuthor = citation.firstAuthor ?: ''
         changes++
       }
       
       if (title.firstEditor != citation.firstEditor) {
-        title.firstEditor = citation.firstEditor
+        title.firstEditor = citation.firstEditor ?: ''
         changes++
       }
 
       if (title.monographEdition != citation.monographEdition) {
-        title.monographEdition = citation.monographEdition
+        title.monographEdition = citation.monographEdition ?: ''
         changes++
       }
 
       if (title.monographVolume != citation.monographVolume) {
-        title.monographVolume = citation.monographVolume
+        title.monographVolume = citation.monographVolume ?: ''
         changes++
       }
 
