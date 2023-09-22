@@ -25,6 +25,7 @@ class TitleController extends OkapiTenantAwareController<TitleInstance>  {
   DetachedCriteria pciSubQuery = PackageContentItem.where({
     eqProperty('pti.id', 'platformTitleInstance.id')
     setAlias 'packageContentItem'
+    isNull 'removedTimestamp'
 
     projections {
       property 'id'
