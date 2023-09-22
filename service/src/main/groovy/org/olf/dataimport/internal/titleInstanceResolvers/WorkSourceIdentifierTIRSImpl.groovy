@@ -142,7 +142,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
            * Now we need to do some identifier and sibling wrangling
            * to ensure data is consistent with what's coming in from citation
            */
-          updateIdentifiersAndSiblings(citation, work)
+          updateIdentifiersAndSiblings(citation, work.id)
 
           break;
         case {
