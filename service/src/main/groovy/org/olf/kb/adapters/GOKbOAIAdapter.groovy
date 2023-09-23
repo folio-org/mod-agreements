@@ -109,7 +109,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         found_records = false
       }
 
-      log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken}\"")
+      log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken?:'NULL'}\" found=${found_records}")
     }
 
     log.info("OKbOAIAdapter::freshenPackageData completed url=${packagesUrl} params=${query_params} elapsed=${System.currentTimeMillis()-package_sync_start_time}")
