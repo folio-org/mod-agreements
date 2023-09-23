@@ -739,6 +739,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   // here in the future.
   Date parseDate(String s) {
     SimpleDateFormat ISO_DATE = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX")
+    // ISO_DATE.setTimeZone(TimeZone.getTimeZone("UTC"))
     ISO_DATE.parse(s)
   }
 }
