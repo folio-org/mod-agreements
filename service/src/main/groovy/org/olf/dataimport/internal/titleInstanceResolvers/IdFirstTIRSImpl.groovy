@@ -124,22 +124,19 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
     TitleInstance result = null;
 
     result = createNewTitleInstanceWithoutIdentifiers(citation, workId)
-
-    citation.instanceIdentifiers.each{ id ->
-      
-      def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
-    
+    citation.instanceIdentifiers.each { id ->
+      Identifier id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
       def io_record = new IdentifierOccurrence(
-        resource: result,
-        identifier: id_lookup)
-      
-      io_record.setStatusFromString(APPROVED)
-      io_record.save(flush:true, failOnError:true)
+        status: IdentifierOccurrence.lookupOrCreateStatus('approved'),
+        identifier: id_lookup
+      ).save(failOnError: true)
+
+      result.addToIdentifiers(io_record)
     }
 
     if (result != null) {
       // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
-      result = TitleInstance.get(result.id)
+      result.save(failOnError: true, flush: true)
     }
     result
   }

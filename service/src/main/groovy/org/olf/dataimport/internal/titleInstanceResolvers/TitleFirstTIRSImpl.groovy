@@ -281,7 +281,7 @@ class TitleFirstTIRSImpl extends BaseTIRS {
   private void linkIdentifier(IdentifierSchema id, String titleId, ContentItemSchema citation) {
     TitleInstance title = TitleInstance.get(titleId);
     // Lookup or create identifier. If not already on an approved IdentifierOccurrence we'll need to create it anyway
-    def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace);
+    Identifier id_lookup = lookupOrCreateIdentifier(id.value, id.namespace);
 
     ArrayList<IdentifierOccurrence> io_lookup = IdentifierOccurrence.executeQuery(
       ID_OCCURENCE_MATCH_HQL,

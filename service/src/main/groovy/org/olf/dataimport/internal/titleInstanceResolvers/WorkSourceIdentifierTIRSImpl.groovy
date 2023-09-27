@@ -300,49 +300,58 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
      * then we may need to inspect this process.
      */
 
-    // TODO do we need to sanity check that there's only one ID
-    // per incoming sibling at this stage?
-
     // Set up list of siblings, we will remove from this as we match via citations,
     // thus building up a list of unmatchedSiblings we can then remove.
     List<TitleInstance> unmatchedSiblings = getTISFromWork(workId, 'print');
     
     siblingCitations.each {sibling_citation ->
-      // Match sibling citation to siblings already on the work (ONLY looking at approved identifiers)
-      List<TitleInstance> matchedSiblings = directMatch(sibling_citation.instanceIdentifiers, workId, 'print');
-      
-      switch(matchedSiblings.size()) {
-        case 0:
-          // No sibling found, add it.
-          createNewTitleInstance(sibling_citation, workId);
-          break;
-        case 1:
-          // Found single sibling citation, update identifiers and check for enrichment
-          String siblingId = matchedSiblings.get(0).id;
-          updateTIIdentifiers(siblingId, sibling_citation.instanceIdentifiers);
-          checkForEnrichment(siblingId , sibling_citation, true);
+      // We need previous sibling work to have _taken_
+      // in the DB by the time we hit the next sibling citation
 
-          // We've matched this sibling, remove it from the unmatchedSiblings list.
-          unmatchedSiblings.removeIf { it.id == siblingId }
-          break;
-        default:
-          // Found multiple siblings which would match citation.
-          // Remove each from the work and progress
-          log.warn("Matched multiple siblings from single citation. Removing from work: ${matchedSiblings}")
-          matchedSiblings.each { matchedSibling ->
-            // Mark all identifier occurrences as error
-            matchedSibling.identifiers.each {io ->
-              io.setStatusFromString(ERROR)
-              io.save(failOnError: true);
-            }
-            // Remove Work
-            matchedSibling.work = null;
-            matchedSibling.save(failOnError: true);
+      // Force withNewSession, but NOT withNewTransaction
+      // Not really sure on the nuance here, but prevents HibernateAccessException whilst
+      // Still ensuring that each directMatch has the DB changes from the previous citation
+      // in place?
+      TitleInstance.withNewSession {
+        // Match sibling citation to siblings already on the work (ONLY looking at approved identifiers)
+        List<TitleInstance> matchedSiblings = directMatch(sibling_citation.instanceIdentifiers, workId, 'print');
+
+        switch(matchedSiblings.size()) {
+          case 0:
+            // No sibling found, add it.
+            createNewTitleInstance(sibling_citation, workId);
+            break;
+          case 1:
+            // Found single sibling citation, update identifiers and check for enrichment
+            String siblingId = matchedSiblings.get(0).id;
+            updateTIIdentifiers(siblingId, sibling_citation.instanceIdentifiers);
+            checkForEnrichment(siblingId , sibling_citation, true);
 
             // We've matched this sibling, remove it from the unmatchedSiblings list.
-            unmatchedSiblings.removeIf { it.id == matchedSibling.id }
-          }
-          break;
+            unmatchedSiblings.removeIf { it.id == siblingId }
+
+            // Force save+flush
+            TitleInstance.get(siblingId).save(flush: true, failOnError: true);
+            break;
+          default:
+            // Found multiple siblings which would match citation.
+            // Remove each from the work and progress
+            log.warn("Matched multiple siblings from single citation. Removing from work: ${matchedSiblings}")
+            matchedSiblings.each { matchedSibling ->
+              // Mark all identifier occurrences as error
+              matchedSibling.identifiers.each {io ->
+                io.setStatusFromString(ERROR)
+                io.save(failOnError: true);
+              }
+              // Remove Work
+              matchedSibling.work = null;
+              matchedSibling.save(flush:true, failOnError: true);
+
+              // We've matched this sibling, remove it from the unmatchedSiblings list.
+              unmatchedSiblings.removeIf { it.id == matchedSibling.id }
+            }
+            break;
+        }
       }
     }
 

@@ -48,6 +48,15 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     'doi'
   ];
 
+  private ArrayList<String> lookupIdentifier(final String value, final String namespace) {
+    return Identifier.executeQuery("""
+      SELECT iden.id from Identifier as iden
+        where iden.value = :value and iden.ns.value = :ns
+      """.toString(),
+      [value:value, ns:namespaceMapping(namespace)]
+    );
+  }
+
   /*
    * Given an identifier in a citation { value:'1234-5678', namespace:'isbn' } lookup or create an identifier in the DB to represent that info
    */
@@ -55,15 +64,15 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     Identifier result = null;
 
     // Ensure we are looking up properly mapped namespace (pisbn -> isbn, etc)
-    def identifier_lookup = Identifier.executeQuery('select id from Identifier as id where id.value = :value and id.ns.value = :ns',[value:value, ns:namespaceMapping(namespace)]);
+    def identifier_lookup = lookupIdentifier(value, namespace);
 
     switch(identifier_lookup.size() ) {
       case 0:
         IdentifierNamespace ns = lookupOrCreateIdentifierNamespace(namespace);
-        result = new Identifier(ns:ns, value:value).save(failOnError:true);
+        result = new Identifier(ns:ns, value:value).save(failOnError:true, flush: true);
         break;
       case 1:
-        result = identifier_lookup.get(0);
+        result = Identifier.get(identifier_lookup[0]);
         break;
       default:
         throw new TIRSException(
@@ -168,6 +177,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
           log.error("Error saving title. Field ${it.field} rejected value: \"${it.rejectedValue}\".")
         }
       }
+      
     } else {
       log.debug("Not a trusted source for TI enrichment--skipping")
     }
