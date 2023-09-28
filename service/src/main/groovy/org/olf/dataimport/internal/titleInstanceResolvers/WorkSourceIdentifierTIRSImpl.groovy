@@ -330,7 +330,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
             // We've matched this sibling, remove it from the unmatchedSiblings list.
             unmatchedSiblings.removeIf { it.id == siblingId }
 
-            // Force save+flush
+            // Force save + flush -- necessary
             TitleInstance.get(siblingId).save(flush: true, failOnError: true);
             break;
           default:
