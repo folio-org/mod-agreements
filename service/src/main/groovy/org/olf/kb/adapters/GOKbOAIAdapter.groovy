@@ -30,7 +30,6 @@ import org.slf4j.MDC
 @Slf4j
 @CompileStatic
 public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, DataBinder {
-  private final SimpleDateFormat ISO_DATE = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX")
 
   private static final String PATH_PACKAGES = '/packages'
   private static final String PATH_TITLES = '/titles'
@@ -109,7 +108,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         found_records = false
       }
 
-      log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken}\"")
+      log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken?:'NULL'}\" found=${found_records}")
     }
 
     log.info("OKbOAIAdapter::freshenPackageData completed url=${packagesUrl} params=${query_params} elapsed=${System.currentTimeMillis()-package_sync_start_time}")
@@ -743,6 +742,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   // Move date parsing here - we might want to do something more sophistocated with different fallback formats
   // here in the future.
   Date parseDate(String s) {
+    SimpleDateFormat ISO_DATE = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX")
     ISO_DATE.parse(s)
   }
 }
