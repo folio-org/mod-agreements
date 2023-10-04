@@ -94,6 +94,8 @@ class PackageIngestService implements DataBinder {
 						Pkg pkg = null;
 						// Remove MDC title at top of upsert package
 						MDC.remove('title')
+            MDC.remove('packageSource')
+						MDC.remove('packageReference')
 						final def result = [
 							startTime: System.currentTimeMillis(),
 							titleCount: 0,

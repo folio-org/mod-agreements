@@ -64,6 +64,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     long package_sync_start_time = System.currentTimeMillis();
 
     while ( found_records ) {
+      // Clear MDC package source and reference, they'll be set lower in the code
+      MDC.remove('packageSource')
+      MDC.remove('packageReference')
 
       log.info("OAI/HTTP GET url=${packagesUrl} params=${query_params} elapsed=${System.currentTimeMillis()-package_sync_start_time}")
 
