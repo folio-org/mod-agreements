@@ -1,4 +1,5 @@
 /* configurations.all {
+
   // Check for updates every build
   resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
 } */
@@ -59,7 +60,7 @@ bootJar {
 }
 
 repositories {
-	//mavenLocal()
+//	mavenLocal()
 	mavenCentral()
 	maven { url "https://repo.grails.org/grails/core" }
 	maven { url "https://repo.grails.org/grails/plugins" }
@@ -118,7 +119,7 @@ dependencies {
   /*  ---- Manually installed dependencies ---- */
   implementation 'org.grails.plugins:spring-security-core:5.2.1'
 
-	implementation 'com.k_int.grails:web-toolkit-ce:8.1.0'
+	implementation 'com.k_int.grails:web-toolkit-ce:8.1.1'
 	implementation 'com.k_int.okapi:grails-okapi:6.0.0-rc.4'
 
 	implementation 'io.github.http-builder-ng:http-builder-ng-core:1.0.4'
