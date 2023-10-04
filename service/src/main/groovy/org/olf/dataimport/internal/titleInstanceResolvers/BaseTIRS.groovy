@@ -146,29 +146,19 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
         log.error("Type (${citation.instanceMedia}) does not match 'serial' or 'monograph' for title \"${citation.title}\", skipping field enrichment.")
       }
 
-      if (title.dateMonographPublished != citation.dateMonographPublished) {
-        title.dateMonographPublished = citation.dateMonographPublished ?: ''
-        changes++
-      }
+      def enrichmentFields = [
+        'dateMonographPublished',
+        'firstAuthor',
+        'firstEditor',
+        'monographEdition',
+        'monographVolume'
+      ];
 
-      if (title.firstAuthor != citation.firstAuthor) {
-        title.firstAuthor = citation.firstAuthor ?: ''
-        changes++
-      }
-      
-      if (title.firstEditor != citation.firstEditor) {
-        title.firstEditor = citation.firstEditor ?: ''
-        changes++
-      }
-
-      if (title.monographEdition != citation.monographEdition) {
-        title.monographEdition = citation.monographEdition ?: ''
-        changes++
-      }
-
-      if (title.monographVolume != citation.monographVolume) {
-        title.monographVolume = citation.monographVolume ?: ''
-        changes++
+      enrichmentFields.each { field -> 
+        if (title[field] != citation[field]) {
+          title[field] = citation[field] ?: null
+          changes++
+        }
       }
 
       // Ensure we only save title on enrich if changes have been made
