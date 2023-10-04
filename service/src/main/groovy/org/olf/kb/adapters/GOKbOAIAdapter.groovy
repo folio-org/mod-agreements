@@ -30,7 +30,6 @@ import org.slf4j.MDC
 @Slf4j
 @CompileStatic
 public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, DataBinder {
-  private final SimpleDateFormat ISO_DATE = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX")
 
   private static final String PATH_PACKAGES = '/packages'
   private static final String PATH_TITLES = '/titles'
@@ -109,7 +108,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         found_records = false
       }
 
-      log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken}\"")
+      log.debug("GOKbOAIAdapter::freshenPackageData - exiting URI: ${base_url} with cursor \"${cursor}\" resumption \"${query_params?.resumptionToken?:'NULL'}\" found=${found_records}")
     }
 
     log.info("OKbOAIAdapter::freshenPackageData completed url=${packagesUrl} params=${query_params} elapsed=${System.currentTimeMillis()-package_sync_start_time}")
@@ -513,7 +512,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           //Retired TIPPs are no longer in the package and should have an access_end, if not then make a guess at it
           if(access_end.length()==0 && tipp_status == "Retired") {
             access_end = tipp_entry.lastUpdated?.text().toString()
-            log.info( "accessEnd date guessed for retired title: ${tipp_entry?.title?.name?.text()} in package: ${package_name}. TIPP ID: ${tipp_id}" )
+            // This used to appear in the job log, relegating to module logs only
+            log.debug( "accessEnd date guessed for retired title: ${tipp_entry?.title?.name?.text()} in package: ${package_name}. TIPP ID: ${tipp_id}" )
           }
 
           Map packageContent = parseTitleInformation(tipp_entry?.title, tipp_coverage)
@@ -671,6 +671,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     List instance_identifiers = [] // [ "namespace": "issn", "value": "0278-7393" ]
     List sibling_identifiers = []
 
+    // Assuming electronic record -- store GoKB uuid as identifier so we can match on that later
+    instance_identifiers.add(["namespace": "gokb_uuid", "value": title?.@uuid?.toString() ])
+
     // If we're processing an electronic record then issn is a sibling identifier
     // Ensure issn, pissn, pisbn end up in siblingInstanceIdentifiers
     title.identifiers.identifier.each { ti_id ->
@@ -715,6 +718,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       "title": titleText,
       "instanceMedia": media,
       "instancePublicationMedia": pub_media,
+      "sourceIdentifierNamespace": "GoKB",
       "sourceIdentifier": source_identifier,
       "instanceIdentifiers": instance_identifiers,
       "siblingInstanceIdentifiers": sibling_identifiers,
@@ -739,6 +743,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   // Move date parsing here - we might want to do something more sophistocated with different fallback formats
   // here in the future.
   Date parseDate(String s) {
+    SimpleDateFormat ISO_DATE = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX")
     ISO_DATE.parse(s)
   }
 }

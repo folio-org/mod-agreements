@@ -5,7 +5,6 @@ import groovy.util.logging.Slf4j
 
 import org.olf.kb.ErmResource
 import org.olf.kb.IdentifierOccurrence
-import org.olf.kb.MatchKey
 import org.olf.kb.TitleInstance
 import org.olf.kb.CoverageStatement
 

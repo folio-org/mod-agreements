@@ -19,6 +19,7 @@ class ContentItem implements ContentItemSchema, Validateable {
   
   String note
   String sourceIdentifier
+  String sourceIdentifierNamespace
   String depth
   LocalDate accessStart
   LocalDate accessEnd
@@ -48,6 +49,8 @@ class ContentItem implements ContentItemSchema, Validateable {
     * turn on validate for this schema in future.
    */
   static constraints = {
+    sourceIdentifier nullable: false, blank: false
+    sourceIdentifierNamespace nullable: false, blank: false
     note          nullable: true, blank: false
     depth         nullable: true, blank: false
     accessStart nullable:true, validator: { LocalDate startDate, ContentItemSchema item ->
@@ -147,6 +150,11 @@ class ContentItem implements ContentItemSchema, Validateable {
   @Override
   public String getSourceIdentifier() {
     sourceIdentifier
+  }
+
+  @Override
+  public String getSourceIdentifierNamespace() {
+    sourceIdentifierNamespace
   }
   
   @Override

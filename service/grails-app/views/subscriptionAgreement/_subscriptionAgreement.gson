@@ -51,9 +51,11 @@ if ( controllerName != 'usageDataProvider' ) {
   should_expand << 'usageDataProviders'
 }
 
+def expandItems = params.expandItems ?: false
+
 if ( ( controllerName == 'subscriptionAgreement' ) &&
  ( ['save', 'show', 'edit', 'update'].contains(actionName) ) &&
- ( params.expandItems != 'false' ) ) {
+ ( expandItems == 'true') ) {
     should_expand << 'items'
 }
 

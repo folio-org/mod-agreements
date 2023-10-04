@@ -69,6 +69,7 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
              matchKeys cascade: 'all-delete-orphan'
                   tags cascade: 'save-update'
 alternateResourceNames cascade: 'all-delete-orphan'
+           identifiers cascade: 'all-delete-orphan'
   }
 
   static constraints = {

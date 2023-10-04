@@ -14,83 +14,30 @@ import org.olf.kb.Work
 import grails.gorm.transactions.Transactional
 import grails.web.databinding.DataBinder
 
-import org.olf.dataimport.internal.TitleInstanceResolverService
 import groovy.util.logging.Slf4j
 
 import groovy.json.*
 import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
-
 
 /**
  * This service works at the module level, it's often called without a tenant context.
  */
 @Slf4j
 @Transactional
-class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResolverService {
-
-  private static final float MATCH_THRESHOLD = 0.775f
-  private static final String TEXT_MATCH_TITLE_HQL = '''
-   SELECT ti from TitleInstance as ti
-    WHERE 
-      trgm_match(ti.name, :qrytitle) = true
-      AND similarity(ti.name, :qrytitle) > :threshold
-      AND ti.subType.value like :subtype
-    ORDER BY similarity(ti.name, :qrytitle) desc
-  '''
-
-  private static final String SIBLING_MATCH_HQL = '''
-    from TitleInstance as ti
-      WHERE 
-        exists ( SELECT sibling FROM TitleInstance as sibling 
-                   JOIN sibling.identifiers as io
-                 WHERE 
-                   sibling.work = ti.work
-                     AND
-                   io.identifier.ns.value = :ns
-                     AND
-                   io.identifier.value = :value
-        )
-          AND
-        ti.subType.value = :electronic
-  '''
-
-  
-  /**
-   * Given a -valid- title citation with the minimum properties below, attempt to resolve the citation
-   * into a local instance record. If no instance record is located, create one, and perform the necessary
-   * cross-matching to create Inventory Instance records. The map contains a representation that is
-   * the same as the attached JSON.
-   *
-   * {
-   *   "title": "Nordic Psychology",
-   *   "instanceMedium": "electronic",
-   *   "instanceMedia": "journal",
-   *   "instancePublicationMedia": "journal",  -- I don't know what this is or how it's supposed to work
-   *   "instanceIdentifiers": [ 
-   *     {
-   *       "namespace": "issn",
-   *       "value": "1234-5678"
-   *     } ],
-   *   "siblingInstanceIdentifiers": [ 
-   *     {
-   *       "namespace": "issn",
-   *       "value": "1901-2276"
-   *     } ]
-   *   }
-   */
-  public TitleInstance resolve(ContentItemSchema citation, boolean trustedSourceTI) {
+class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
+  public String resolve(ContentItemSchema citation, boolean trustedSourceTI) {
     // log.debug("TitleInstanceResolverService::resolve(${citation})");
-    TitleInstance result = null;
+    String result = null;
 
     List<TitleInstance> candidate_list = classOneMatch(citation.instanceIdentifiers);
     int num_matches = candidate_list.size()
+    int num_class_one_identifiers = countClassOneIDs(citation.instanceIdentifiers);
     if ( num_matches > 1 ) {
       log.debug("Class one match found multiple titles:: ${candidate_list}");
     }
 
     // We weren't able to match directly on an identifier for this instance - see if we have an identifier
     // for a sibling instance we can use to narrow down the list.
-    int num_class_one_identifiers = countClassOneIDs(citation.instanceIdentifiers);
     if ( num_matches == 0 ) {
       candidate_list = siblingMatch(citation)
       num_matches = candidate_list.size()
@@ -114,19 +61,18 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
       switch ( num_matches ) {
         case(0):
           log.debug("No title match, create new title ${citation}")
-          result = createNewTitleInstance(citation)
-          if (result != null) {
-            // We assume that the incoming citation already has split ids and siblingIds
-            createOrLinkSiblings(citation, result.work)
-          }
+          result = createNewTitleInstanceWithSiblings(citation).id
           break;
         case(1):
           log.debug("Exact match. Enrich title.")
-          result = GrailsHibernateUtil.unwrapIfProxy(candidate_list.get(0))
-          checkForEnrichment(result, citation, trustedSourceTI)
+          result = candidate_list.get(0).id
+          checkForEnrichment(candidate_list.get(0).id, citation, trustedSourceTI)
           break;
         default:
-          throw new RuntimeException("title matched ${num_matches} records with a threshold >= ${MATCH_THRESHOLD} . Unable to continue. Matching IDs: ${candidate_list.collect { it.id }}. class one identifier count: ${num_class_one_identifiers}");
+          throw new TIRSException(
+            "title matched ${num_matches} records with a threshold >= ${MATCH_THRESHOLD} . Unable to continue. Matching IDs: ${candidate_list.collect { it.id }}. class one identifier count: ${num_class_one_identifiers}",
+            TIRSException.MULTIPLE_TITLE_MATCHES,
+          );
           break;
       }
     }
@@ -134,18 +80,12 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     return result;
   }
 
-  /**
-   * Return a list of the siblings for this instance. Sometimes vendors identify a title by citing the issn of the print edition.
-   * we model the print and electronic as 2 different title instances, linked by a common work. This method looks up/creates any sibling instances
-   * by matching the print instance, then looking for a sibling with type "electronic"
+  /* This method WILL NOT set previously ERRORed sibling identifiers back to APPROVED
+   * This won't matter for IdFirstTIRS as this method is only called for new TIs
+   * But if called externally, such as by WorkSourceIdentifierTIRS, if that behaviour is
+   * expected, it will need to be performed externally too
    */
-  private List<TitleInstance> siblingMatch(ContentItemSchema citation) {
-    IdentifierSchema issn_id = citation.siblingInstanceIdentifiers.find { namespaceMapping(it.namespace) == 'issn' } ;
-    String issn = issn_id?.value;
-    return TitleInstance.executeQuery(SIBLING_MATCH_HQL,[ns:'issn',value:issn,electronic:'electronic']);
-  }
-
-  private createOrLinkSiblings(ContentItemSchema citation, Work work) {
+  protected void upsertSiblings(ContentItemSchema citation, String workId) {
     List<TitleInstance> candidate_list = []
 
     // Lets try and match based on sibling identifiers. 
@@ -155,58 +95,24 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     // In the bibframe nomenclature, the print and electronic items are two separate instances. Therefore, creating an electronic
     // identifier with the ID of the print item does not seem sensible. HOWEVER, we would still like to be able to be able to match
     // a title if we know that it is a sibling of a print identifier.
+    List<PackageContentImpl> siblingCitations = getSiblingCitations(citation);
+    if ( siblingCitations.size() != 0 ) {
+      // One sibling for each citation
+      siblingCitations.each { sibling_citation ->
+        // Find ALL siblings on this work who match this identifier (should only be one id because of above code)
+        candidate_list = directMatch(sibling_citation.instanceIdentifiers, workId, 'print', false)
 
-    Collection<IdentifierSchema> issn_or_isbn_ids = citation.siblingInstanceIdentifiers.findAll { namespaceMapping(it.namespace) == 'issn' || namespaceMapping(it.namespace) == 'isbn' }
-    log.debug("Found list of sibling identifiers: ${issn_or_isbn_ids}")
-
-
-    if ( issn_or_isbn_ids.size() != 0 ) {
-      
-      issn_or_isbn_ids.each { id ->
-        PackageContentImpl sibling_citation = new PackageContentImpl()
-        bindData (sibling_citation, [
-          "title": citation.title,
-          "instanceMedium": "print",
-          "instanceMedia": (namespaceMapping(id.namespace) == 'issn') ? "serial" : "monograph",
-          "instancePublicationMedia": citation.instancePublicationMedia,
-          "instanceIdentifiers": [
-            [
-              // This should be dealt with inside the "createTitleInstance" method, 
-              // but for now we can flatten it here too
-              "namespace": namespaceMapping(id.namespace),
-              "value": id?.value
-            ]
-          ]
-        ])
-
-        if (namespaceMapping(id.namespace) == 'isbn') {
-          bindData (sibling_citation, [
-            "dateMonographPublished": citation.dateMonographPublishedPrint
-          ])
-        }
-
-        candidate_list = classOneMatch(sibling_citation.instanceIdentifiers)
         switch ( candidate_list.size() ) {
           case 0:
-            log.debug("Create sibling print instance for identifier ${id.value}")
-            createNewTitleInstance(sibling_citation, work)
+            log.debug("Create sibling print instance for citation ${sibling_citation}")
+            createNewTitleInstance(sibling_citation, workId)
             break
           case 1:
-            TitleInstance ti = GrailsHibernateUtil.unwrapIfProxy(candidate_list.get(0))
-            if ( ti.work == null ) {
-              log.debug("Located existing print instance for identifier ${id.value} that was not linked. Linking it to work ${work.id}");
-              // Link the located title instance to the work
-              ti.work = work
-              ti.save(flush:true, failOnError:true)
-            }
-            else {
-              log.debug("We found an existing print instance that has a linked work already. Need to check ${ti.work} is equal to ${work}.")
-              // Validate that the work we detected is the same as the one we have - otherwise there is bad
-              // data flying around.
-            }
+            // Already exists somehow -- should not be possible on IdFirstTIRS as we create sibling along with work
+            log.warn("Sibling already exists for identifiers: ${sibling_citation.instanceIdentifiers} on Work ${workId}.")
             break;
           default:
-            // Problem
+            // Problem -- DEFINITELY should not see this one
             log.warn("Detected multiple records for sibling instance match")
             break;
         }
@@ -214,68 +120,100 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     }
   }
 
-  /**
-   * Attempt a fuzzy match on the title
-   */
-  private List<TitleInstance> titleMatch(String title, float threshold) {
-    return titleMatch(title, threshold, 'electronic');
+  protected TitleInstance createNewTitleInstance(final ContentItemSchema citation, String workId = null) {
+    TitleInstance result = null;
+
+    result = createNewTitleInstanceWithoutIdentifiers(citation, workId)
+    citation.instanceIdentifiers.each { id ->
+      Identifier id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
+      def io_record = new IdentifierOccurrence(
+        status: IdentifierOccurrence.lookupOrCreateStatus('approved'),
+        identifier: id_lookup
+      ).save(failOnError: true)
+
+      result.addToIdentifiers(io_record)
+    }
+
+    if (result != null) {
+      // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
+      result.save(failOnError: true, flush: true)
+    }
+    result
   }
 
-  private List<TitleInstance> titleMatch(final String title, final float threshold, final String subtype) {
-    String matchTitle = StringUtils.truncate(title);
-
-    List<TitleInstance> result = new ArrayList<TitleInstance>()
-    TitleInstance.withSession { session ->
-      try {
-        result = TitleInstance.executeQuery(TEXT_MATCH_TITLE_HQL,[qrytitle: (matchTitle),threshold: (threshold), subtype:subtype], [max:20])
-      }
-      catch ( Exception e ) {
-        log.debug("Problem attempting to run HQL Query ${TEXT_MATCH_TITLE_HQL} on string ${matchTitle} with threshold ${threshold}",e)
-      }
+  // Setting to public so we can reuse this in WorkSourceIdentifierTIRS
+  protected TitleInstance createNewTitleInstanceWithSiblings(ContentItemSchema citation, String workId = null) {
+    TitleInstance result;
+    result = createNewTitleInstance(citation, workId)
+    if (result != null) {
+      // We assume that the incoming citation already has split ids and siblingIds
+      upsertSiblings(citation, result.work.id)
     }
- 
+
     return result
   }
 
-  private int countClassOneIDs(final Iterable<IdentifierSchema> identifiers) {
-    identifiers?.findAll( { IdentifierSchema id -> class_one_namespaces?.contains( id.namespace.toLowerCase() ) })?.size() ?: 0
+  /* -------- MATCHING METHODS --------*/
+
+  protected static final float MATCH_THRESHOLD = 0.775f
+  protected static final String TEXT_MATCH_TITLE_HQL = '''
+   SELECT ti from TitleInstance as ti
+    WHERE 
+      trgm_match(ti.name, :qrytitle) = true
+      AND similarity(ti.name, :qrytitle) > :threshold
+      AND ti.subType.value like :subtype
+    ORDER BY similarity(ti.name, :qrytitle) desc
+  '''
+
+  protected String getSiblingMatchHQL(Collection<IdentifierSchema> identifiers) {
+    // Do not pass "false" as second param here, we only match on identifiers which are "approved"
+    String identifierHQL = buildIdentifierHQL(identifiers)
+
+    // Ensure we are only checking title instances where work is set (?)
+    String outputHQL = """
+      from TitleInstance as ti
+      WHERE 
+        ti.work IS NOT NULL AND
+        exists ( SELECT sibling FROM TitleInstance as sibling 
+                   JOIN sibling.identifiers as io
+                 WHERE 
+                   sibling.work IS NOT NULL AND
+                   sibling.work = ti.work AND
+                    ${identifierHQL}
+                ) AND
+        ti.subType.value = 'electronic'
+    """
+    //log.debug("LOGDEBUG SIBMATCH OUTPUT HQL: ${outputHQL}")
+    return outputHQL
   }
 
+  protected String getDirectMatchHQL(Collection<IdentifierSchema> identifiers, String workId = null, boolean approvedIdsOnly = true) {
+    String identifierHQL = buildIdentifierHQL(identifiers, approvedIdsOnly)
 
-  // On the rare chance that we have `eissn` in our db (From before Kiwi namespace flattening)
-  // We attempt to map an incoming `issn` -> `eissn` in our DB
-  private String mapNamespaceToElectronic(final String incomingNs) {
-    String ouput;
-    switch (incomingNs.toLowerCase()) {
-      case 'issn':
-        ouput = 'eissn'
-        break;
-      case 'isbn':
-        ouput = 'eisbn'
-      default:
-        break;
+    String outputHQL = """
+      from TitleInstance as ti
+        WHERE 
+          exists ( SELECT io FROM IdentifierOccurrence as io 
+                  WHERE
+                    io.resource.id = ti.id AND
+                    ${identifierHQL}
+                  ) AND
+          ti.subType.value = :subtype
+    """
+
+    if (workId !== null) {
+      outputHQL += """ AND
+        ti.work.id = '${workId}'
+      """
     }
+    //log.debug("LOGDEBUG DIRECTMATCH OUTPUT HQL: ${outputHQL}")
+    return outputHQL
   }
 
-  // On the rare chance that we have `pissn` in our db (From before Kiwi namespace flattening)
-  // We attempt to map an incoming `issn` -> `pissn` in our DB
-  private String mapNamespaceToPrint(final String incomingNs) {
-    String ouput;
-    switch (incomingNs.toLowerCase()) {
-      case 'issn':
-        ouput = 'pissn'
-        break;
-      case 'isbn':
-        ouput = 'pisbn'
-      default:
-        break;
-    }
-  }
-
-  /**
+  /*
    * Being passed a map of namespace, value pair maps, attempt to locate any title instances with class 1 identifiers (ISSN, ISBN, DOI)
    */
-  private List<TitleInstance> classOneMatch(final Iterable<IdentifierSchema> identifiers) {
+  protected List<TitleInstance> classOneMatch(final Iterable<IdentifierSchema> identifiers) {
     // We want to build a list of all the title instance records in the system that match the identifiers. Hopefully this will return 0 or 1 records.
     // If it returns more than 1 then we are in a sticky situation, and cleverness is needed.
     final List<TitleInstance> result = new ArrayList<TitleInstance>()
@@ -333,7 +271,10 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
         )
 
         if (id_matches.size() > 1) {
-          throw new RuntimeException("Multiple (${id_matches.size()}) class one matches found for identifier ${id.namespace}::${id.value}");
+          throw new TIRSException(
+            "Multiple (${id_matches.size()}) matches found for identifier ${id.namespace}::${id.value}",
+            TIRSException.MULTIPLE_IDENTIFIER_MATCHES,
+          );
         }
 
         // For each matched (It should only ever be 1)
@@ -365,31 +306,52 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder, TitleInstanceResol
     return result;
   }
 
-  private TitleInstance createNewTitleInstance(final ContentItemSchema citation, Work work = null) {
-    TitleInstance result = null;
+  /**
+   * Attempt a fuzzy match on the title
+   */
+  protected List<TitleInstance> titleMatch(String title, float threshold) {
+    return titleMatch(title, threshold, 'electronic');
+  }
 
-    TitleInstance.withNewTransaction {
-      result = createNewTitleInstanceWithoutIdentifiers(citation, work)
-    }
+  protected List<TitleInstance> titleMatch(final String title, final float threshold, final String subtype) {
+    String matchTitle = StringUtils.truncate(title);
 
-    IdentifierOccurrence.withNewTransaction{
-      citation.instanceIdentifiers.each{ id ->
-        
-        def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
-      
-        def io_record = new IdentifierOccurrence(
-          resource: result,
-          identifier: id_lookup)
-        
-        io_record.setStatusFromString(APPROVED)
-        io_record.save(flush:true, failOnError:true)
+    List<TitleInstance> result = new ArrayList<TitleInstance>()
+    TitleInstance.withSession { session ->
+      try {
+        result = TitleInstance.executeQuery(TEXT_MATCH_TITLE_HQL,[qrytitle: (matchTitle),threshold: (threshold), subtype:subtype], [max:20])
+      }
+      catch ( Exception e ) {
+        log.debug("Problem attempting to run HQL Query ${TEXT_MATCH_TITLE_HQL} on string ${matchTitle} with threshold ${threshold}",e)
       }
     }
-    
-    if (result != null) {
-      // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
-      result.refresh()
+ 
+    return result
+  }
+
+  // Direct match will find ALL title instances which match ANY of the instanceIdentifiers passed. Is extremely naive.
+  // Allow for non-approved identifiers if we wish
+  protected List<TitleInstance> directMatch(final Iterable<IdentifierSchema> identifiers, String workId = null, String subtype = 'electronic', boolean approvedIdsOnly = true) {
+    if (identifiers.size() <= 0) {
+      return []
     }
-    result
+    List<String> titleList = TitleInstance.executeQuery(getDirectMatchHQL(identifiers, workId, approvedIdsOnly),[subtype: subtype]).collect { it.id };
+    return listDeduplictor(titleList)
+  }
+
+  /**
+   * Return a list of the siblings for this instance. Sometimes vendors identify a title by citing the issn of the print edition.
+   * we model the print and electronic as 2 different title instances, linked by a common work. This method looks up/creates any sibling instances
+   * by matching the print instance, then looking for a sibling with type "electronic"
+   */
+  protected List<TitleInstance> siblingMatch(ContentItemSchema citation) {
+    Collection<IdentifierSchema> classOneIds = citation.siblingInstanceIdentifiers.findAll { class_one_namespaces?.contains(it.namespace.toLowerCase()) };
+    // Break out if no sibling instance ids
+    if (classOneIds.size() <= 0) {
+      return []
+    }
+
+    List<String> titleList = TitleInstance.executeQuery(getSiblingMatchHQL(classOneIds)).collect { it.id };
+    return listDeduplictor(titleList)
   }
 }

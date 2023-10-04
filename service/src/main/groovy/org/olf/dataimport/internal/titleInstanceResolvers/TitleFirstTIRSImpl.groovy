@@ -14,8 +14,6 @@ import org.olf.kb.Work
 import grails.gorm.transactions.Transactional
 import grails.web.databinding.DataBinder
 
-import org.olf.dataimport.internal.TitleInstanceResolverService
-
 import java.util.StringTokenizer
 
 
@@ -28,7 +26,7 @@ import groovy.util.logging.Slf4j
  */
 @Slf4j
 @Transactional
-class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverService {
+class TitleFirstTIRSImpl extends BaseTIRS {
   /* normalizedName is created using StringUtils.normaliseWhitespaceAndCase, as below */
   private static final String TEXT_MATCH_TITLE_HQL = '''
       SELECT ti from TitleInstance as ti
@@ -184,8 +182,8 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
     return result;
   }
 
-  public TitleInstance resolve (ContentItemSchema citation, boolean trustedSourceTI) {
-    TitleInstance result = null;
+  public String resolve (ContentItemSchema citation, boolean trustedSourceTI) {
+    TitleInstance ti = null;
 
     List<TitleInstance> candidate_list = titleMatch(citation.title, citation.instanceMedium)
 
@@ -199,24 +197,22 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
       switch ( candidate_list.size() ) {
         case(0):
           log.debug("No title match, create new title")
-          result = createNewTitleInstance(citation)
-          if (result != null && (citation.siblingInstanceIdentifiers?.size() ?: 0) > 0) {
-            createPrintSibling(citation, result.work)
+          ti = createNewTitleInstance(citation)
+          if (ti != null && (citation.siblingInstanceIdentifiers?.size() ?: 0) > 0) {
+            // FIXME this is completely different logic to what we have elsewhere, where we create a new sibling for each identifier
+            createPrintSibling(citation, ti.work.id)
           }
           break;
         case(1):
           log.debug("Exact match. Enrich title.")
-          result = candidate_list.get(0)
-          checkForEnrichment(result, citation, trustedSourceTI)
+          ti = candidate_list.get(0)
+          checkForEnrichment(ti.id, citation, trustedSourceTI)
 
           // Link any new identifiers
-          linkIdentifiers(result, citation)
-          List<TitleInstance> siblings = siblingMatch(result.id, result.work.id)
+          linkIdentifiers(ti.id, citation)
+          List<TitleInstance> siblings = siblingMatch(ti.id, ti.work.id)
           // TODO As above, we for now treat the first result as "THE" print sibling
-          linkIdentifiers(siblings[0], citation, true)
-
-
-
+          linkIdentifiers(siblings[0].id, citation, true)
 
           break;
         default:
@@ -226,10 +222,10 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
       }
     }
 
-    return result;
+    return ti.id;
   }
 
-  private TitleInstance createPrintSibling(final ContentItemSchema citation, Work work = null) {
+  private TitleInstance createPrintSibling(final ContentItemSchema citation, String workId = null) {
     TitleInstance result = null;
 
     /* We can ignore the instance identifiers for now as we create the TI without them initially */
@@ -241,11 +237,11 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
     ])
 
     TitleInstance.withNewTransaction {
-      result = createNewTitleInstanceWithoutIdentifiers(sibling_citation, work)
+      result = createNewTitleInstanceWithoutIdentifiers(sibling_citation, workId)
     }
 
     // This will assign the siblingInstanceIds to the sibling TI
-    linkIdentifiers(result, citation, true)
+    linkIdentifiers(result.id, citation, true)
     
     if (result != null) {
       // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
@@ -254,15 +250,15 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
     result
   }
 
-  private TitleInstance createNewTitleInstance(final ContentItemSchema citation, Work work = null) {
+  private TitleInstance createNewTitleInstance(final ContentItemSchema citation, String workId = null) {
     TitleInstance result = null;
 
     TitleInstance.withNewTransaction {
-      result = createNewTitleInstanceWithoutIdentifiers(citation, work)
+      result = createNewTitleInstanceWithoutIdentifiers(citation, workId)
     }
 
     // This will assign the instanceIds to the TI and 'createOrLinkSiblings' will create a sibling for each sibling id
-    linkIdentifiers(result, citation)
+    linkIdentifiers(result.id, citation)
 
     if (result != null) {
       // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
@@ -272,19 +268,20 @@ class TitleFirstTIRSImpl extends BaseTIRS implements TitleInstanceResolverServic
   }
 
   // When method passed with sibling = true, link Sibling identifiers, else link identifiers
-  private void linkIdentifiers(TitleInstance title, ContentItemSchema citation, boolean sibling = false) {
+  private void linkIdentifiers(String tiId, ContentItemSchema citation, boolean sibling = false) {
     IdentifierOccurrence.withNewTransaction {
       if (sibling) {
-        citation.siblingInstanceIdentifiers.each { id -> linkIdentifier(id, title, citation) }
+        citation.siblingInstanceIdentifiers.each { id -> linkIdentifier(id, tiId, citation) }
       } else {
-        citation.instanceIdentifiers.each { id -> linkIdentifier(id, title, citation) }
+        citation.instanceIdentifiers.each { id -> linkIdentifier(id, tiId, citation) }
       }
     }
   }
 
-  private void linkIdentifier(IdentifierSchema id, TitleInstance title, ContentItemSchema citation) {
+  private void linkIdentifier(IdentifierSchema id, String titleId, ContentItemSchema citation) {
+    TitleInstance title = TitleInstance.get(titleId);
     // Lookup or create identifier. If not already on an approved IdentifierOccurrence we'll need to create it anyway
-    def id_lookup = lookupOrCreateIdentifier(id.value, id.namespace);
+    Identifier id_lookup = lookupOrCreateIdentifier(id.value, id.namespace);
 
     ArrayList<IdentifierOccurrence> io_lookup = IdentifierOccurrence.executeQuery(
       ID_OCCURENCE_MATCH_HQL,

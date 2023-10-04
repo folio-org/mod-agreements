@@ -5,7 +5,7 @@ import groovy.transform.*
 @Field
 TitleInstance titleInstance
 
-json g.render(titleInstance, [expand: ['type', 'publicationType', 'subType', 'coverage', 'tags'], excludes: ['identifiers', 'entitlements', 'relatedTitles']]) {
+json g.render(titleInstance, [expand: ['type', 'publicationType', 'subType', 'coverage', 'tags', 'work'], excludes: ['identifiers', 'entitlements', 'relatedTitles']]) {
   'class' TitleInstance.name
   longName titleInstance.longName
   

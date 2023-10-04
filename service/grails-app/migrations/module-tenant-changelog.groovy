@@ -28,4 +28,5 @@ databaseChangeLog = {
   include file: 'update-mod-agreements-5-3.groovy'
   include file: 'wtk/hidden-appsetting.feat.groovy'
   include file: 'update-mod-agreements-5-5.groovy'
+  include file: 'update-mod-agreements-6-0.groovy'
 }

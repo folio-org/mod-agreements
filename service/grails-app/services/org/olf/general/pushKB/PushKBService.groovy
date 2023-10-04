@@ -143,11 +143,9 @@ class PushKBService implements DataBinder {
                 log.debug("LOGGING titleIngestResult: ${titleIngestResult}")
 
                 if ( titleIngestResult.titleInstanceId != null ) {
-                  TitleInstance title = TitleInstance.get(titleIngestResult.titleInstanceId)
-                  log.debug("LOGDEBUG TITLE: ${title}")
                   Map hierarchyResult = packageIngestService.lookupOrCreateTitleHierarchy(
-                    title,
-                    pkg,
+                    titleIngestResult.titleInstanceId,
+                    pkg.id,
                     true,
                     pc,
                     result.updateTime,

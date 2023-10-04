@@ -1,25 +1,38 @@
 package org.olf.dataimport.internal.titleInstanceResolvers
 
 import org.olf.IdentifierService
+
+import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
+import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
+
+import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierNamespace
 import org.olf.kb.TitleInstance
 import org.olf.kb.Work
 
+import org.olf.dataimport.internal.TitleInstanceResolverService
+
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
+import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
+
 
 /**
  * This is a base TIRS class to give any implementing classes some shared tools to use 
+ * IMPORTANT -- This is not a TIRS by itself, as it does not implement the TitleInstanceResolverService interface
  */
 @Slf4j
 @Transactional
-class BaseTIRS {
-    @Autowired
-    IdentifierService identifierService
-    protected static final def APPROVED = 'approved'
-    protected static final def ERROR = 'error'
+abstract class BaseTIRS implements TitleInstanceResolverService {
+  // Resolve should find/create/update a TitleInstance from a citation, then return its ID
+  public abstract String resolve(ContentItemSchema citation, boolean trustedSourceTI);
+
+  @Autowired
+  IdentifierService identifierService
+  protected static final def APPROVED = 'approved'
+  protected static final def ERROR = 'error'
 
   // ERM-1649. This function acts as a way to manually map incoming namespaces onto known namespaces where we believe the extra information is unhelpful.
   // This is also the place to do any normalisation (lowercasing etc).
@@ -35,6 +48,15 @@ class BaseTIRS {
     'doi'
   ];
 
+  private ArrayList<String> lookupIdentifier(final String value, final String namespace) {
+    return Identifier.executeQuery("""
+      SELECT iden.id from Identifier as iden
+        where iden.value = :value and iden.ns.value = :ns
+      """.toString(),
+      [value:value, ns:namespaceMapping(namespace)]
+    );
+  }
+
   /*
    * Given an identifier in a citation { value:'1234-5678', namespace:'isbn' } lookup or create an identifier in the DB to represent that info
    */
@@ -42,18 +64,21 @@ class BaseTIRS {
     Identifier result = null;
 
     // Ensure we are looking up properly mapped namespace (pisbn -> isbn, etc)
-    def identifier_lookup = Identifier.executeQuery('select id from Identifier as id where id.value = :value and id.ns.value = :ns',[value:value, ns:namespaceMapping(namespace)]);
+    def identifier_lookup = lookupIdentifier(value, namespace);
 
     switch(identifier_lookup.size() ) {
       case 0:
         IdentifierNamespace ns = lookupOrCreateIdentifierNamespace(namespace);
-        result = new Identifier(ns:ns, value:value).save(flush:true, failOnError:true);
+        result = new Identifier(ns:ns, value:value).save(failOnError:true, flush: true);
         break;
       case 1:
-        result = identifier_lookup.get(0);
+        result = Identifier.get(identifier_lookup[0]);
         break;
       default:
-        throw new RuntimeException("Matched multiple identifiers for ${id}");
+        throw new TIRSException(
+          "Matched multiple identifiers for ${id}",
+          TIRSException.MULTIPLE_IDENTIFIER_MATCHES
+        );
         break;
     }
     return result;
@@ -63,7 +88,7 @@ class BaseTIRS {
    * This is where we can call the namespaceMapping function to ensure consistency in our DB
    */
   protected IdentifierNamespace lookupOrCreateIdentifierNamespace(final String ns) {
-    IdentifierNamespace.findOrCreateByValue(namespaceMapping(ns)).save(flush:true, failOnError:true)
+    IdentifierNamespace.findOrCreateByValue(namespaceMapping(ns)).save(failOnError:true)
   }
 
 
@@ -73,7 +98,9 @@ class BaseTIRS {
    * an identifier, we will need to add identifiers to that record when we see a record that
    * suggests identifiers for that title match.
    */ 
-  protected void checkForEnrichment(TitleInstance title, ContentItemSchema citation, boolean trustedSourceTI) {
+  protected void checkForEnrichment(String tiId, ContentItemSchema citation, boolean trustedSourceTI) {
+    TitleInstance title = TitleInstance.get(tiId)
+    
     log.debug("Checking for enrichment of Title Instance: ${title} :: trusted: ${trustedSourceTI}")
     def changes = 0;
     
@@ -94,15 +121,24 @@ class BaseTIRS {
        * replace the authortiative value with the one sent?
        */
       if (title.publicationType?.value != citation.instancePublicationMedia) {
-       
-        title.publicationTypeFromString = citation.instancePublicationMedia
+        if (citation.instancePublicationMedia) {
+          title.publicationTypeFromString = citation.instancePublicationMedia
+        } else {
+          title.publicationType = null;
+        }
+
         title.markDirty()
         changes++
       }
 
       if (validateCitationType(citation?.instanceMedia)) {
         if ((title.type == null) || (title.type.value != citation.instanceMedia)) {
-          title.typeFromString = citation.instanceMedia
+          if (citation.instanceMedia) {
+            title.typeFromString = citation.instanceMedia
+          } else {
+            title.type = null;
+          }
+
           title.markDirty()
           changes++
         }
@@ -111,36 +147,37 @@ class BaseTIRS {
       }
 
       if (title.dateMonographPublished != citation.dateMonographPublished) {
-        title.dateMonographPublished = citation.dateMonographPublished
+        title.dateMonographPublished = citation.dateMonographPublished ?: ''
         changes++
       }
 
       if (title.firstAuthor != citation.firstAuthor) {
-        title.firstAuthor = citation.firstAuthor
+        title.firstAuthor = citation.firstAuthor ?: ''
         changes++
       }
       
       if (title.firstEditor != citation.firstEditor) {
-        title.firstEditor = citation.firstEditor
+        title.firstEditor = citation.firstEditor ?: ''
         changes++
       }
 
       if (title.monographEdition != citation.monographEdition) {
-        title.monographEdition = citation.monographEdition
+        title.monographEdition = citation.monographEdition ?: ''
         changes++
       }
 
       if (title.monographVolume != citation.monographVolume) {
-        title.monographVolume = citation.monographVolume
+        title.monographVolume = citation.monographVolume ?: ''
         changes++
       }
 
       // Ensure we only save title on enrich if changes have been made
-      if (changes > 0 && !title.save(flush: true)) {
+      if (changes > 0 && !title.save(failOnError:true, flush: true)) {
         title.errors.fieldErrors.each {
           log.error("Error saving title. Field ${it.field} rejected value: \"${it.rejectedValue}\".")
         }
       }
+      
     } else {
       log.debug("Not a trusted source for TI enrichment--skipping")
     }
@@ -153,7 +190,8 @@ class BaseTIRS {
 
   // Different TIRS implementations will have different workflows with identifiers, but the vast majority of the creation will be the same
   // We assume that the incoming citation already has split ids and siblingIds
-  protected TitleInstance createNewTitleInstanceWithoutIdentifiers(final ContentItemSchema citation, Work work = null) {
+  protected TitleInstance createNewTitleInstanceWithoutIdentifiers(final ContentItemSchema citation, String workId = null) {
+    Work work = workId ? Work.get(workId) : null;
     TitleInstance result = null
 
     // Ian: adding this - Attempt to make sense of the instanceMedia value we have been passed
@@ -212,7 +250,21 @@ class BaseTIRS {
     if ( title_is_valid.count { k,v -> v == false} == 0 ) {
 
       if ( work == null ) {
-        work = new Work(title:citation.title).save(flush:true, failOnError:true)
+        // This is only necessary because harvest does not seem to validate package schema. We should not hit this issue for pushKB
+        // Error out if sourceIdentifier or sourceIdentifierNamespace do not exist
+        ensureSourceIdentifierFields(citation);
+
+        Identifier identifier = lookupOrCreateIdentifier(citation.sourceIdentifier, citation.sourceIdentifierNamespace);
+        IdentifierOccurrence sourceIdentifier = new IdentifierOccurrence([
+          identifier: identifier,
+          status: IdentifierOccurrence.lookupOrCreateStatus('approved')
+        ])
+
+        // Can you assign to incoming method param like this??
+        work = new Work([
+          title:citation.title,
+          sourceIdentifier: sourceIdentifier
+        ]).save(failOnError:true)
       }
 
       // Print or Electronic
@@ -265,4 +317,145 @@ class BaseTIRS {
     result
   }
 
+  protected String buildIdentifierHQL(Collection<IdentifierSchema> identifiers, boolean approvedIdsOnly = true) {
+    String identifierHQL = identifiers.collect { id -> 
+      // Do we need all the namespace mapping variants?
+      String mainHQLBody = """(
+          (
+            io.identifier.ns.value = '${id.namespace.toLowerCase()}' OR
+            io.identifier.ns.value = '${namespaceMapping(id.namespace)}' OR
+            io.identifier.ns.value = '${mapNamespaceToElectronic(id.namespace)}' OR
+            io.identifier.ns.value = '${mapNamespaceToPrint(id.namespace)}'
+          ) AND
+          io.identifier.value = '${id.value}'
+      """
+
+      if (!approvedIdsOnly) {
+        return """${mainHQLBody}
+          )
+        """
+      }
+
+      return """${mainHQLBody} AND
+          io.status.value = '${APPROVED}'
+        )
+      """
+    }.join("""
+      AND
+    """)
+
+    return identifierHQL
+  }
+
+  protected int countClassOneIDs(final Iterable<IdentifierSchema> identifiers) {
+    identifiers?.findAll( { IdentifierSchema id -> class_one_namespaces?.contains( id.namespace.toLowerCase() ) })?.size() ?: 0
+  }
+
+  // On the rare chance that we have `eissn` in our db (From before Kiwi namespace flattening)
+  // We attempt to map an incoming `issn` -> `eissn` in our DB
+  protected String mapNamespaceToElectronic(final String incomingNs) {
+    String output;
+    switch (incomingNs.toLowerCase()) {
+      case 'issn':
+        output = 'eissn'
+        break;
+      case 'isbn':
+        output = 'eisbn'
+      default:
+        break;
+    }
+
+    output
+  }
+
+  // On the rare chance that we have `pissn` in our db (From before Kiwi namespace flattening)
+  // We attempt to map an incoming `issn` -> `pissn` in our DB
+  protected String mapNamespaceToPrint(final String incomingNs) {
+    String output = incomingNs.toLowerCase();
+    switch (incomingNs.toLowerCase()) {
+      case 'issn':
+        output = 'pissn'
+        break;
+      case 'isbn':
+        output = 'pisbn'
+      default:
+        break;
+    }
+
+    output
+  }
+
+  // We choose to set up a sibling citation per siblingInstanceIdentifier -- keep consistent between TIRSs
+  protected List<PackageContentImpl> getSiblingCitations(final ContentItemSchema citation) {
+    Collection<IdentifierSchema> ids = citation.siblingInstanceIdentifiers ?: []
+
+    if ( ids.size() == 0 ) {
+      return []
+    }
+
+    // Duplication check
+    Collection<IdentifierSchema> deduplicatedIds = ids.unique(false) { a,b ->
+      namespaceMapping(a.namespace) <=> namespaceMapping(b.namespace) ?:
+      a.value <=> b.value
+    }
+
+    if (deduplicatedIds.size() !== ids.size()) {
+      log.warn("Duplicated sibling identifiers found: ${ids}. Continuing with deduplicated list.")
+    }
+
+    return deduplicatedIds.collect { id ->
+      PackageContentImpl sibling_citation = new PackageContentImpl()
+      bindData (sibling_citation, [
+        "title": citation.title,
+        "instanceMedium": "print",
+        "instanceMedia": (namespaceMapping(id.namespace) == 'issn') ? "serial" : "monograph",
+        "instancePublicationMedia": citation.instancePublicationMedia,
+        "instanceIdentifiers": [
+          [
+            // This should be dealt with inside the "createTitleInstance" method, 
+            // but for now we can flatten it here too
+            "namespace": namespaceMapping(id.namespace),
+            "value": id?.value
+          ]
+        ]
+      ])
+
+      // Will ONLY include dateMonographPublished if identifier is an isbn
+      if (namespaceMapping(id.namespace) == 'isbn') {
+        bindData (sibling_citation, [
+          "dateMonographPublished": citation.dateMonographPublishedPrint
+        ])
+      }
+
+      return sibling_citation
+    }
+  }
+
+  protected List<TitleInstance> listDeduplictor(List<String> titleListIds) {
+    // Need to deduplicate output -- Could probably be neater code than this
+    List<TitleInstance> outputList = [];
+    titleListIds.each { title ->
+      // Make sure we're working with the "proper" TI
+      TitleInstance ti = TitleInstance.get(title)
+      if (!outputList.contains(ti)) {
+        outputList << ti
+      }
+    }
+
+    outputList
+  }
+
+  protected void ensureSourceIdentifierFields(final ContentItemSchema citation) {
+    if (!citation.sourceIdentifier) {
+      throw new TIRSException(
+        "Missing source identifier",
+        TIRSException.MISSING_MANDATORY_FIELD
+      )
+    } else if (!citation.sourceIdentifierNamespace) {
+      throw new TIRSException(
+        "Missing source identifier namespace",
+        TIRSException.MISSING_MANDATORY_FIELD
+      )
+    }
+  }
 }
