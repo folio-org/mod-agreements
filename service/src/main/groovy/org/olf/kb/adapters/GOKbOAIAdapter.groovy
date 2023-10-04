@@ -512,7 +512,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           //Retired TIPPs are no longer in the package and should have an access_end, if not then make a guess at it
           if(access_end.length()==0 && tipp_status == "Retired") {
             access_end = tipp_entry.lastUpdated?.text().toString()
-            log.info( "accessEnd date guessed for retired title: ${tipp_entry?.title?.name?.text()} in package: ${package_name}. TIPP ID: ${tipp_id}" )
+            // This used to appear in the job log, relegating to module logs only
+            log.debug( "accessEnd date guessed for retired title: ${tipp_entry?.title?.name?.text()} in package: ${package_name}. TIPP ID: ${tipp_id}" )
           }
 
           Map packageContent = parseTitleInformation(tipp_entry?.title, tipp_coverage)
