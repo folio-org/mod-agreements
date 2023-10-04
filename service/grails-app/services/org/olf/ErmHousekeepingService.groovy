@@ -108,7 +108,7 @@ public class ErmHousekeepingService {
             ],
             [
               "ctx" : "OpenAccess",
-              "name" : "Eligible authors",
+              "name" : "SupportPublishing",
               "type" : "Text",
               "label" : "Does this agreement support publishing",
               "description" : "Does this agreement support publishing",
