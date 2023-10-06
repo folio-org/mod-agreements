@@ -9,9 +9,9 @@ beans = {
     Behaviour pre-Lotus: IdFirstTIRSImpl
     Behaviour post-Lotus: TitleFirstTIRSImpl
   */
-  //titleInstanceResolverService(IdFirstTIRSImpl)
+  titleInstanceResolverService(IdFirstTIRSImpl)
   //titleInstanceResolverService(TitleFirstTIRSImpl)
-  titleInstanceResolverService(WorkSourceIdentifierTIRSImpl)
+  //titleInstanceResolverService(WorkSourceIdentifierTIRSImpl)
 
   /*
     Diagram of the structure of the TIRSs
