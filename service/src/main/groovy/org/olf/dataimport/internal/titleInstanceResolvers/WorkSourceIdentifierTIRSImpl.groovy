@@ -87,7 +87,9 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
      * circumstance
      */
     try {
-      tiId = super.resolve(citation, true);
+      // If falling back to IdFirstTIRS, do not trust to update TI metadata,
+      // as we may match but decide later to create new for this citation
+      tiId = super.resolve(citation, false);
     } catch (TIRSException tirsException) {
       // We treat a multiple title match here as NBD and move onto creation
       // Any other TIRSExceptions are legitimate concerns and we should rethrow
@@ -137,6 +139,9 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
           ])
           work.setSourceIdentifier(sourceIdentifier);
           work.save(failOnError: true);
+
+          // At this point we are assuming this TI is the right one, allow metadata updates
+          checkForEnrichment(tiId, citation, true);
 
           /*
            * Now we need to do some identifier and sibling wrangling
