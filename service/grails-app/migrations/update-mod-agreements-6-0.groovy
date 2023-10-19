@@ -35,7 +35,7 @@ databaseChangeLog = {
   }
 
 	changeSet(author: "efreestone (manual)", id: "20231006-001") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'alternate_resource_name', columnNames: 'arn_name')
 			}
@@ -50,7 +50,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-002") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'refdata_category', columnNames: 'rdc_description')
 			}
@@ -65,7 +65,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-003") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'identifier', columnNames: 'id_value')
 			}
@@ -80,7 +80,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-004") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'erm_resource', columnNames: 'res_description')
 			}
@@ -95,7 +95,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-005") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'alternate_resource_name', columnNames: 'arn_owner_fk')
 			}
@@ -106,7 +106,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-006") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'identifier_occurrence', columnNames: 'io_res_fk,io_identifier_fk')
 			}
@@ -118,7 +118,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-007") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'package', columnNames: 'pkg_availability_scope_fk')
 			}
@@ -129,7 +129,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-008") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'package', columnNames: 'pkg_lifecycle_status_fk')
 			}
@@ -140,7 +140,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-009") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'erm_resource', columnNames: 'res_normalized_name')
 			}
@@ -151,7 +151,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-010") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'erm_resource', columnNames: 'res_publication_type_fk')
 			}
@@ -162,7 +162,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-011") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'erm_resource', columnNames: 'res_sub_type_fk')
 			}
@@ -173,7 +173,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-012") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'erm_resource', columnNames: 'res_type_fk')
 			}
@@ -184,7 +184,7 @@ databaseChangeLog = {
 	}
 
 	changeSet(author: "efreestone (manual)", id: "20231006-013") {
-		preConditions {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
 			not {
 				indexExists(tableName: 'title_instance', columnNames: 'ti_work_fk')
 			}
