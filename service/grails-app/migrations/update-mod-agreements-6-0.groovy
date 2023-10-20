@@ -193,4 +193,31 @@ databaseChangeLog = {
 			column(name: "ti_work_fk")
 		}
 	}
+
+	changeSet(author: "efreestone (manual)", id: "20231019-001") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'identifier_namespace', columnNames: 'idns_value')
+			}
+		}
+		// Gin indexes need to be done via scripting.
+		grailsChange {
+			change {
+				def cmd = "CREATE INDEX identifier_namespace_value_idx ON ${database.defaultSchemaName}.identifier_namespace USING gin (idns_value);".toString()
+				sql.execute(cmd);
+			}
+		}
+	}
+
+	changeSet(author: "efreestone (manual)", id: "20231019-002") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'identifier', columnNames: 'id_ns_fk,id_value')
+			}
+		}
+		createIndex(indexName: "identifier_id_ns_fk_id_value_idx", tableName: "identifier") {
+			column(name: "id_ns_fk")
+			column(name: "id_value")
+		}
+	}
 }
