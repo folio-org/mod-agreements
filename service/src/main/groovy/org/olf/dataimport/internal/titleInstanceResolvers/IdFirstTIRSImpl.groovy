@@ -253,13 +253,13 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
         final List<Identifier> id_matches = Identifier.executeQuery("""
           SELECT id FROM Identifier AS id
           WHERE
-            id.value = :value AND
             (
               id.ns.value = :nsm OR
               id.ns.value = :ns OR
               id.ns.value = :ens OR
               id.ns.value = :pns
-            )""".toString(),
+            ) AND
+            id.value = :value""".toString(),
           [
             value:id.value,
             ns:id.namespace.toLowerCase(),
