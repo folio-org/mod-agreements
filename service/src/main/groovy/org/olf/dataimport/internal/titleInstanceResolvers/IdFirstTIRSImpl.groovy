@@ -26,7 +26,7 @@ import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 @Transactional
 class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
   public String resolve(ContentItemSchema citation, boolean trustedSourceTI) {
-    // log.debug("TitleInstanceResolverService::resolve(${citation})");
+    log.debug("IdFirstTIRS::resolve(${citation})");
     String result = null;
 
     List<TitleInstance> candidate_list = classOneMatch(citation.instanceIdentifiers);
