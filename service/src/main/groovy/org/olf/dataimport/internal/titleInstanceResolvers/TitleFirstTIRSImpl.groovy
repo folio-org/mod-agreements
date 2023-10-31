@@ -183,6 +183,8 @@ class TitleFirstTIRSImpl extends BaseTIRS {
   }
 
   public String resolve (ContentItemSchema citation, boolean trustedSourceTI) {
+    log.debug("TitleFirstTIRS::resolve(${citation})");
+
     TitleInstance ti = null;
 
     List<TitleInstance> candidate_list = titleMatch(citation.title, citation.instanceMedium)
