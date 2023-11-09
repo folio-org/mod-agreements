@@ -27,7 +27,7 @@ import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder {
   // We can largely ignore passedTrustedSourceTI, and always assume that passed citations are trusted
   public String resolve(ContentItemSchema citation, boolean passedTrustedSourceTI) {
-    // log.debug("TitleInstanceResolverService::resolve(${citation})");
+    log.debug("WorkSourceIdentifierTIRS::resolve(${citation})");
     String result = null;
 
     // Error out if sourceIdentifier or sourceIdentifierNamespace do not exist
@@ -89,6 +89,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
     try {
       // If falling back to IdFirstTIRS, do not trust to update TI metadata,
       // as we may match but decide later to create new for this citation
+      log.debug("Falling back to IdFirstTIRS")
       tiId = super.resolve(citation, false);
     } catch (TIRSException tirsException) {
       // We treat a multiple title match here as NBD and move onto creation

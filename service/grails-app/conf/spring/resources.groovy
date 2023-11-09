@@ -4,13 +4,22 @@ import org.olf.dataimport.internal.KBManagementBean.KBIngressType
 
 // Place your Spring DSL code here
 beans = {
-  /* 
-    --- Swapping these will change the way mod-agreements handles resolution of TitleInstances --- 
-    Behaviour pre-Lotus: IdFirstTIRSImpl
-    Behaviour post-Lotus: TitleFirstTIRSImpl
-  */
-  titleInstanceResolverService(IdFirstTIRSImpl)
-  //titleInstanceResolverService(TitleFirstTIRSImpl)
+  /* --- Swapping these will change the way mod-agreements handles resolution of TitleInstances --- */
+  String TIRS = System.getenv("TIRS")
+  switch (TIRS) {
+    case 'TitleFirst':
+      titleInstanceResolverService(TitleFirstTIRSImpl)
+      break;
+    case 'WorkSourceIdentifier':
+      titleInstanceResolverService(WorkSourceIdentifierTIRSImpl)
+      break;
+    case 'IdFirst':
+    default:
+      titleInstanceResolverService(IdFirstTIRSImpl)
+      break;
+  }
+  
+  //
   //titleInstanceResolverService(WorkSourceIdentifierTIRSImpl)
 
   /*
@@ -25,8 +34,16 @@ beans = {
   */
 
   // Swap between PushKB and Harvest processes to get data into internal KB
+  String INGRESS_TYPE = System.getenv("INGRESS_TYPE")
   kbManagementBean(KBManagementBean) {
-    ingressType = KBIngressType.Harvest
-    //ingressType = KBIngressType.PushKB
+    switch (INGRESS_TYPE) {
+      case 'PushKB':
+        ingressType = KBIngressType.PushKB
+        break;
+      case 'Harvest':
+      default:
+        ingressType = KBIngressType.Harvest
+        break;
+    }
   }
 }

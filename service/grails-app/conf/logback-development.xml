@@ -27,6 +27,10 @@
     <level value="DEBUG" />
   </logger>
 
+  <logger name="org.olf.dataimport.internal.titleInstanceResolvers">
+    <level value="DEBUG" />
+  </logger>
+
   <!-- For dev increase org.olf to debug -->
   <logger name="org.olf">
     <level value="DEBUG" />
@@ -123,7 +127,7 @@
     <appender-ref ref="JOB" />
   </logger>
 
-  <logger name="org.olf.TitleInstanceResolverService">
+  <logger name="org.olf.dataimport.internal.titleInstanceResolvers">
     <level value="DEBUG" />
     <appender-ref ref="JOB" />
   </logger>

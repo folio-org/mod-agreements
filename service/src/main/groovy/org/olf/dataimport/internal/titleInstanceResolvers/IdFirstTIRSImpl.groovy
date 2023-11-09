@@ -26,7 +26,7 @@ import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 @Transactional
 class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
   public String resolve(ContentItemSchema citation, boolean trustedSourceTI) {
-    // log.debug("TitleInstanceResolverService::resolve(${citation})");
+    log.debug("IdFirstTIRS::resolve(${citation})");
     String result = null;
 
     List<TitleInstance> candidate_list = classOneMatch(citation.instanceIdentifiers);
@@ -253,13 +253,13 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
         final List<Identifier> id_matches = Identifier.executeQuery("""
           SELECT id FROM Identifier AS id
           WHERE
-            id.value = :value AND
             (
               id.ns.value = :nsm OR
               id.ns.value = :ns OR
               id.ns.value = :ens OR
               id.ns.value = :pns
-            )""".toString(),
+            ) AND
+            id.value = :value""".toString(),
           [
             value:id.value,
             ns:id.namespace.toLowerCase(),
