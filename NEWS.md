@@ -1,5 +1,15 @@
 ## 6.1.0 In progress
 
+## 6.0.1 2023-11-09
+  * ERM-3087 Add debug message to indicate ingest mode
+  * ERM-3064 Add preconditions to index creation
+  * ERM-3061 On setting document filter spaces are stripped from filter value
+  * Some service choices can now be selected via ENV_VAR at run time.
+    * `TIRS` can be chosen from: `TitleFirst`, `WorkSourceIdentifier` and `IdFirst` (default)
+    * `INGRESS_TYPE` can be chosen from : `PushKB` and `Harvest` (default)
+  * Extra logging enabled for aiding with TIRS debugging
+
+
 ## 6.0.0 2023-10-11
   * ERM-3050 Title instance metadata overwritten by non-matching work
   * ERM-3047 Remove "accessEnd date guessed for retired title..." from job logs
