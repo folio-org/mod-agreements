@@ -1,3 +1,6 @@
+## 6.0.2 2023-11-23
+  * ERM-3112 org.json:json:20201115 DoS/OOM
+
 ## 6.0.1 2023-11-09
   * ERM-3087 Add debug message to indicate ingest mode
   * ERM-3064 Add preconditions to index creation
