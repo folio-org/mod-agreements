@@ -220,4 +220,111 @@ databaseChangeLog = {
 			column(name: "id_value")
 		}
 	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-001") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'subscription_agreement', columnNames: 'sa_name')
+			}
+		}
+		// Gin indexes need to be done via scripting.
+		grailsChange {
+			change {
+				def cmd = "CREATE INDEX subscription_agreement_name_idx ON ${database.defaultSchemaName}.subscription_agreement USING gin (sa_name);".toString()
+				sql.execute(cmd);
+			}
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-002") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'subscription_agreement', columnNames: 'sa_description')
+			}
+		}
+		// Gin indexes need to be done via scripting.
+		grailsChange {
+			change {
+				def cmd = "CREATE INDEX subscription_agreement_description_idx ON ${database.defaultSchemaName}.subscription_agreement USING gin (sa_description);".toString()
+				sql.execute(cmd);
+			}
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-003") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'erm_resource', columnNames: 'res_name')
+			}
+		}
+		// Gin indexes need to be done via scripting.
+		grailsChange {
+			change {
+				def cmd = "CREATE INDEX erm_resource_res_name_idx ON ${database.defaultSchemaName}.erm_resource USING gin (res_name);".toString()
+				sql.execute(cmd);
+			}
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-004") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'entitlement', columnNames: 'ent_reference')
+			}
+		}
+		// Gin indexes need to be done via scripting.
+		grailsChange {
+			change {
+				def cmd = "CREATE INDEX entitlement_reference_idx ON ${database.defaultSchemaName}.entitlement USING gin (ent_reference);".toString()
+				sql.execute(cmd);
+			}
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-005") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'entitlement', columnNames: 'ent_description')
+			}
+		}
+		// Gin indexes need to be done via scripting.
+		grailsChange {
+			change {
+				def cmd = "CREATE INDEX entitlement_description_idx ON ${database.defaultSchemaName}.entitlement USING gin (ent_description);".toString()
+				sql.execute(cmd);
+			}
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-006") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'entitlement', columnNames: 'ent_note')
+			}
+		}
+		// Gin indexes need to be done via scripting.
+		grailsChange {
+			change {
+				def cmd = "CREATE INDEX entitlement_note_idx ON ${database.defaultSchemaName}.entitlement USING gin (ent_note);".toString()
+				sql.execute(cmd);
+			}
+		}
+	}
+	//platforms
+	//name
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-007") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'platform', columnNames: 'pt_name')
+			}
+		}
+		// Gin indexes need to be done via scripting.
+		grailsChange {
+			change {
+				def cmd = "CREATE INDEX platform_name_idx ON ${database.defaultSchemaName}.platform USING gin (pt_name);".toString()
+				sql.execute(cmd);
+			}
+		}
+	}
+	
 }
