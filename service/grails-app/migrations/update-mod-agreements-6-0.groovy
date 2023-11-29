@@ -589,5 +589,192 @@ databaseChangeLog = {
 			column(name: "car_target_kb_fk")
 		}
 	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-034") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'content_type', columnNames: 'ct_content_type_fk')
+			}
+		}
+		createIndex(indexName: "content_type_content_type_fk_idx", tableName: "content_type") {
+			column(name: "ct_content_type_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-035") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'content_type', columnNames: 'ct_owner_fk')
+			}
+		}
+		createIndex(indexName: "content_type_owner_fk_idx", tableName: "content_type") {
+			column(name: "ct_owner_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-036") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'coverage_statement', columnNames: 'cs_resource_fk')
+			}
+		}
+		createIndex(indexName: "coverage_statement_resource_fk_idx", tableName: "coverage_statement") {
+			column(name: "cs_resource_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-037") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'embargo', columnNames: 'emb_start_fk')
+			}
+		}
+		createIndex(indexName: "embargo_start_fk_idx", tableName: "embargo") {
+			column(name: "emb_start_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-038") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'embargo', columnNames: 'emb_end_fk')
+			}
+		}
+		createIndex(indexName: "embargo_end_fk_idx", tableName: "embargo") {
+			column(name: "emb_end_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-039") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'erm_resource', columnNames: 'res_publication_type_fk')
+			}
+		}
+		createIndex(indexName: "res_publication_type_fk_idx", tableName: "erm_resource") {
+			column(name: "res_publication_type_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-040") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'identifier_occurrence', columnNames: 'io_status_fk')
+			}
+		}
+		createIndex(indexName: "identifier_occurrence_status_fk_idx", tableName: "identifier_occurrence") {
+			column(name: "io_status_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-041") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'match_key', columnNames: 'mk_resource_fk')
+			}
+		}
+		createIndex(indexName: "match_key_mk_resource_fk_idx", tableName: "match_key") {
+			column(name: "mk_resource_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-042") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'package_content_item', columnNames: 'pci_pkg_fk')
+			}
+		}
+		createIndex(indexName: "package_content_item_pci_pkg_fk_idx", tableName: "package_content_item") {
+			column(name: "pci_pkg_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-043") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'package_content_item', columnNames: 'pci_pti_fk')
+			}
+		}
+		createIndex(indexName: "package_content_item_pci_pti_fk_idx", tableName: "package_content_item") {
+			column(name: "pci_pti_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-044") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'package_content_item', columnNames: 'pci_embargo_fk')
+			}
+		}
+		createIndex(indexName: "package_content_item_pci_embargo_fk_idx", tableName: "package_content_item") {
+			column(name: "pci_embargo_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-045") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'package_description_url', columnNames: 'pdu_owner_fk')
+			}
+		}
+		createIndex(indexName: "package_description_url_pdu_owner_fk_id", tableName: "package_description_url") {
+			column(name: "pdu_owner_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-046") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'package', columnNames: 'pkg_vendor_fk')
+			}
+		}
+		createIndex(indexName: "pkg_vendor_fk_idx", tableName: "package") {
+			column(name: "pkg_vendor_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-047") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'package', columnNames: 'pkg_nominal_platform_fk')
+			}
+		}
+		createIndex(indexName: "pkg_nominal_platform_fk_idx", tableName: "package") {
+			column(name: "pkg_nominal_platform_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-048") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'platform_locator', columnNames: 'pl_owner_fk')
+			}
+		}
+		createIndex(indexName: "platform_locator_pl_owner_fk_idx", tableName: "platform_locator") {
+			column(name: "pl_owner_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-052") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'platform_title_instance', columnNames: 'pti_ti_fk')
+			}
+		}
+		createIndex(indexName: "platform_title_instance_pti_ti_fk_idx", tableName: "platform_title_instance") {
+			column(name: "pti_ti_fk")
+		}
+	}
+
+	changeSet(author: "Jack_Golding (manual)", id: "20231127-053") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'platform_title_instance', columnNames: 'pti_pt_fk')
+			}
+		}
+		createIndex(indexName: "platform_title_instance_pti_pt_fk_idx", tableName: "platform_title_instance") {
+			column(name: "pti_pt_fk")
+		}
+	}
 	
 }
