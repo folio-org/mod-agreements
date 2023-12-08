@@ -3,9 +3,7 @@ package org.olf.general
 import com.github.jknack.handlebars.EscapingStrategy
 import com.github.jknack.handlebars.Handlebars
 import com.github.jknack.handlebars.helper.StringHelpers
-
 import com.k_int.web.toolkit.databinding.BindImmutably
-import com.k_int.web.toolkit.refdata.CategoryId
 import com.k_int.web.toolkit.refdata.Defaults
 import com.k_int.web.toolkit.refdata.RefdataValue
 
@@ -29,7 +27,6 @@ class StringTemplate implements MultiTenant<StringTemplate> {
   Date dateCreated
   Date lastUpdated
 
-  @CategoryId(defaultInternal=true)
   @Defaults(['urlProxier', 'urlCustomiser'])
   RefdataValue context
   
@@ -58,7 +55,7 @@ class StringTemplate implements MultiTenant<StringTemplate> {
     id column:'strt_id', generator: 'uuid2', length:36
     name column:'strt_name'
     rule column:'strt_rule'
-    context column:'strt_context_fk'
+    context column:'strt_context'
     dateCreated column: 'strt_date_created'
     lastUpdated column: 'strt_last_updated'
     idScopes cascade: 'all-delete-orphan', joinTable: [name: 'string_template_scopes', key: 'string_template_id', column: 'id_scope']
