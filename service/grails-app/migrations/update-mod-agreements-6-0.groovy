@@ -778,34 +778,6 @@ databaseChangeLog = {
 	}
 	
 	changeSet(author: "Jack_golding (manual)", id: "20231128-1115-001") {
-		grailsChange {
-			change {
-				sql.eachRow("""
-					SELECT DISTINCT strt_context FROM ${database.defaultSchemaName}.string_template
-					INNER JOIN ${database.defaultSchemaName}.refdata_value
-						ON string_template.strt_context = refdata_value.rdv_id
-					WHERE NOT EXISTS (
-						SELECT rdv_id FROM ${database.defaultSchemaName}.refdata_value WHERE rdv_id = strt_context
-					)""".toString()
-				) { def row ->
-					sql.execute("""
-						INSERT INTO ${database.defaultSchemaName}.refdata_value
-						(rdv_id, rdv_version, rdv_value, rdv_owner, rdv_label)
-						${row.strt_context} as id,
-						0 as version,
-						'missing_context_${row.strt_context}' as value,
-						(
-							SELECT rdc_id FROM  ${database.defaultSchemaName}.refdata_category
-							WHERE rdc_description='StringTemplate.Context'
-						) as owner,
-						'Missing context ${row.strt_context}' as label
-					""".toString())
-				}
-			}
-		}
-	}
-
-	changeSet(author: "Jack_golding (manual)", id: "20231128-1115-002") {
     grailsChange {
       change {
         sql.execute("""
@@ -816,9 +788,39 @@ databaseChangeLog = {
     }
   }
 
+	changeSet(author: "Jack_golding (manual)", id: "20231128-1115-002") {
+		grailsChange {
+			change {
+				sql.eachRow("""
+					SELECT DISTINCT strt_context
+          FROM ${database.defaultSchemaName}.string_template
+					WHERE NOT EXISTS (
+						SELECT rdv_id FROM ${database.defaultSchemaName}.refdata_value
+            WHERE rdv_id = strt_context
+					)""".toString()
+				) { def row ->
+					sql.execute("""
+						INSERT INTO ${database.defaultSchemaName}.refdata_value
+						(rdv_id, rdv_version, rdv_value, rdv_owner, rdv_label) VALUES
+						('${row.strt_context}',
+						0,
+						'missing_context_${row.strt_context}',
+						(
+							SELECT rdc_id FROM  ${database.defaultSchemaName}.refdata_category
+							WHERE rdc_description='StringTemplate.Context'
+						),
+						'Missing context ${row.strt_context}'
+					)""".toString())
+				}
+			}
+		}
+	}
+
 	changeSet(author: "Jack_Golding (manual)", id: "20231128-1115-003") {
     renameColumn(tableName: "string_template", oldColumnName: "strt_context", newColumnName: "strt_context_fk")
+  }
 
+	changeSet(author: "Jack_Golding (manual)", id: "20231128-1115-004") {
     addForeignKeyConstraint(baseColumnNames: "strt_context_fk",
         baseTableName: "string_template",
         constraintName: "string_template_context_fk",
