@@ -15,7 +15,6 @@ import grails.web.databinding.DataBinder
 import groovy.util.logging.Slf4j
 
 import org.olf.dataimport.internal.TitleInstanceResolverService
-import org.olf.kb.MatchKey
 
 /**
  * This service works at the module level, it's often called without a tenant context.
@@ -74,28 +73,28 @@ class TitleIngestService implements DataBinder {
     // discussion to work out best way to handle.
 
     // ERM-1847 Changed assert in TIRS to an explicit exception, which we can catch here. Should stop job from hanging on bad data
-    TitleInstance title;
+    String titleId;
     try {
-      title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
+      titleId = titleInstanceResolverService.resolve(pc, trustedSourceTI)
     } catch (Exception e){
-      log.error("Error resolving title (${pc.title}), skipping ${e.message}")
+      log.error("Error resolving title (${pc.title}), skipping. ${e.message}")
     }
 
     // log.debug("Proceeed.... resolve completed ${title}");
-
-    if (title != null) {
+    // TODO could this not live inside the TRY clause above to avoid double error messages?
+    if (titleId != null) {
       /* ERM-1801
         * For now this secondary enrichment step is here rather than the PackageIngestService,
         * as it uses information about electronic vs print which the resolver service might have to separate out first.
         * So even when ingesting a title stream we want to resolve, sort into print vs electronic, then get the TI and enrich based on subType
         */
       String sourceIdentifier = pc?.sourceIdentifier
-      titleEnricherService.secondaryEnrichment(kb, sourceIdentifier, title.id);
+      titleEnricherService.secondaryEnrichment(kb, sourceIdentifier, titleId);
 
       // ERM-1799 Do we need to go and find all existing match_key information for this TI and update it here too?
 
       // Append titleInstanceId to resultList, so we can use it elsewhere to look up titles ingested with this method
-      result.titleInstanceId = title.id
+      result.titleInstanceId = titleId
       result.finishTime = System.currentTimeMillis()
     } else {
       String message = "Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
@@ -116,16 +115,16 @@ class TitleIngestService implements DataBinder {
     def result = [
       startTime: System.currentTimeMillis(),
     ];
-    TitleInstance title;
+    String titleId;
     try {
-      title = titleInstanceResolverService.resolve(pc, trustedSourceTI)
+      titleId = titleInstanceResolverService.resolve(pc, trustedSourceTI)
     } catch (Exception e){
       log.error("Error resolving title (${pc.title}), skipping ${e.message}")
     }
 
-    if (title != null) {
+    if (titleId != null) {
       // Append titleInstanceId to resultList, so we can use it elsewhere to look up titles ingested with this method
-      result.titleInstanceId = title.id
+      result.titleInstanceId = titleId
       result.finishTime = System.currentTimeMillis()
     } else {
       String message = "Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"

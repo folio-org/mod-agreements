@@ -33,6 +33,8 @@ class ImportService implements DataBinder {
     
     final def header = envelope.header
     final def dataSchemaName = header?.getAt('dataSchema')?.getAt('name')
+    final def dataSchemaVersion = header?.getAt('dataSchema')?.getAt('version')
+
     if (dataSchemaName) {
       
       log.info "dataSchema specified"
@@ -41,8 +43,31 @@ class ImportService implements DataBinder {
       switch (dataSchemaName) {
         case 'mod-agreements-package':
           log.debug "ERM schema"          
-          log.info "${importPackageUsingErmSchema (envelope)} package(s) imported successfully"
-          break
+          
+          // Now do version check
+          // You can use closures in switch statements... TIL
+          switch (dataSchemaVersion) {
+            case {
+              it instanceof String &&
+              utilityService.compatibleVersion(dataSchemaVersion as String, "1.0")
+            }:
+              log.error "As of mod-agreements v6.0.0, mod-agreements-package schema v1 is no longer supported"
+              break;
+            case {
+              it instanceof String &&
+              utilityService.compatibleVersion(dataSchemaVersion as String, "2.0")
+            }:
+              log.info "${importPackageUsingErmSchema (envelope)} package(s) imported successfully"
+              break;
+            // Error cases
+            case {!(it instanceof String)}:
+              log.error "As of mod-agreements v6.0.0, mod-agreements-package schema version must be a string of the form \"x.y\""
+              break;
+            default:
+              log.error "mod-agreements-package version ${dataSchemaVersion} is invalid."
+              break;
+          }
+          break;
           
           // Successfully
         default: 
@@ -139,6 +164,8 @@ class ImportService implements DataBinder {
     String[] header = file.readNext()
 
     // Create an object containing fields we can accept and their mappings in our domain structure, as well as indices in the imported file, with -1 if not found
+    // The actual field name does not appear to matter, it is only used in this file to help us find the correct field later
+    // TODO perhaps refactor to avoid mapping the KBART field names to this in between value?
     Map<String, LinkedHashMap<String, ?>> acceptedFields = [
       publication_title: [field: 'title', index: -1],
       print_identifier: [field: 'siblingInstanceIdentifiers', index: -1],
@@ -151,7 +178,7 @@ class ImportService implements DataBinder {
       num_last_issue_online: [field: 'CoverageStatement.endIssue', index: -1],
       title_url: [field: 'url', index: -1],
       first_author: [field: 'firstAuthor', index: -1],
-      title_id: [field: null, index: -1],
+      title_id: [field: 'titleId', index: -1],
       embargo_info: [field: 'embargo', index: -1],
       coverage_depth: [field: 'coverageDepth', index: -1],
       notes: [field: 'coverageNote', index: -1],
@@ -164,7 +191,9 @@ class ImportService implements DataBinder {
       first_editor: [field: 'firstEditor', index: -1],
       parent_publication_title_id: [field: null, index: -1],
       preceding_publication_title_id: [field: null, index: -1],
-      access_type : [field: null, index: -1]
+      access_type : [field: null, index: -1],
+      source_identifier : [field: 'sourceIdentifier', index: -1], // NOT standard KBART
+      source_identifier_namespace : [field: 'sourceIdentifierNamespace', index: -1] // NOT standard KBART
     ]
 
     // Map each key to its location in the header
@@ -285,7 +314,9 @@ class ImportService implements DataBinder {
 
           monographVolume: getFieldFromLine(currentRecord, acceptedFields, 'monographVolume'),
           monographEdition: getFieldFromLine(currentRecord, acceptedFields, 'monographEdition'),
-          firstEditor: getFieldFromLine(currentRecord, acceptedFields, 'firstEditor')
+          firstEditor: getFieldFromLine(currentRecord, acceptedFields, 'firstEditor'),
+          sourceIdentifier: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifier') ?: getFieldFromLine(currentRecord, acceptedFields, 'titleId'),
+          sourceIdentifierNamespace: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifierNamespace') ?: packageSource
         )
         MDC.put('title', StringUtils.truncate(pkgLine.title))
 

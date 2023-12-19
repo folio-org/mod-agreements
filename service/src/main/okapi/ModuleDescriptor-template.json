@@ -1277,7 +1277,7 @@
     "dockerImage": "${info.app.name}:${info.app.version}",
     "dockerArgs": {
       "HostConfig": {
-        "Memory": 1073741824,
+        "Memory": 1610612736,
         "PortBindings": {
           "8080/tcp":  [{ "HostPort": "%p" }]
         }
@@ -1285,7 +1285,7 @@
     },
     "dockerPull" : false,
     "env": [
-      { "name": "JAVA_OPTIONS", "value": "-server -XX:+UseContainerSupport -XX:MaxRAMPercentage=55.0 -XX:+PrintFlagsFinal" },
+      { "name": "JAVA_OPTIONS", "value": "-server -XX:+UseContainerSupport -XX:MaxRAMPercentage=67.0 -XX:+PrintFlagsFinal" },
       { "name": "DB_HOST", "value": "postgres" },
       { "name": "DB_PORT", "value": "5432" },
       { "name": "DB_USERNAME", "value": "folio_admin" },

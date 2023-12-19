@@ -1,9 +1,39 @@
-## 5.6.0 In progress
-  * ERM-2888 Do not load Agreement lines as part of agreement when viewing the agreement
-  * ERM-2885 Reduce number of internal contact role defaults in Agreements
-  * ERM-2925 Add backend support for retrieving list of source values
+## 6.1.0 In progress
+
+## 6.0.1 2023-11-09
+  * ERM-3087 Add debug message to indicate ingest mode
+  * ERM-3064 Add preconditions to index creation
+  * ERM-3061 On setting document filter spaces are stripped from filter value
+  * Some service choices can now be selected via ENV_VAR at run time.
+    * `TIRS` can be chosen from: `TitleFirst`, `WorkSourceIdentifier` and `IdFirst` (default)
+    * `INGRESS_TYPE` can be chosen from : `PushKB` and `Harvest` (default)
+  * Extra logging enabled for aiding with TIRS debugging
+
+
+## 6.0.0 2023-10-11
+  * ERM-3050 Title instance metadata overwritten by non-matching work
+  * ERM-3047 Remove "accessEnd date guessed for retired title..." from job logs
+  * ERM-3044 Open Access custom property has space in property name
+  * ERM-3022 Error on attempting to download job error or info logs
+  * ERM-3020 IsNotSet not working for custom properties
+  * ERM-3018 Implement GOKb Title UUID as primary match ID where available
+  * ERM-2992 Switch default behaviour for Agreements to not expand items
   * ERM-2966 Error when match and filter contain the same path root
     * update to 'com.k_int.grails:web-toolkit-ce:8.1.0'
+  * ERM-2961 Extend length of document URL to 2048 chars
+  * ERM-2956 Investigate issues on deploying agreements/licenses/service-interaction/serials-management
+  * ERM-2940 spring-webmvc 5.3.25 security bypass vulnerability
+  * ERM-2934 Agreement lines simple search widget definition
+  * ERM-2925 Add backend support for retrieving list of source values
+  * ERM-2923 Add created/updated metadata for Resources in local KB
+  * ERM-2919 Gracefully handle ingesting PCIs with long notes into the Local KB
+  * ERM-2910 JSON package import fails
+  * ERM-2909 Gracefully handle ingesting resources with long names into the Local KB
+  * ERM-2885 Reduce number of internal contact role defaults in Agreements
+  * ERM-2641 Upgrade to Grails 5 (including Hibernate 5.6.x) for Poppy
+  * ERM-2630 Add new endpoint for external KB "push" process
+  * ERM-2628 Add Alternative Name filter to Agreements dashboard widget
+  * ERM-2624 Add view only permissions for Agreement settings
 
 ## 5.5.0 2023-02-20
   * ERM-2638 No name of linked agreement in license

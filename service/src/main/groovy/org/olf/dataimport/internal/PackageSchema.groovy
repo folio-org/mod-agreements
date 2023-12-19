@@ -144,7 +144,10 @@ interface PackageSchema extends Validateable {
     Collection<CoverageStatementSchema> getCoverage()
 
     String getDateMonographPublished()
-    String getSourceIdentifier()
+    
+    String getSourceIdentifier() // We treat this as a work level property, so UUID from source of the work NOT a PCI
+    String getSourceIdentifierNamespace() // We treat this as a work level property, adapter should set this -- can default in JSON/KBART case
+
     String getFirstAuthor()
     String getFirstEditor()
     String getMonographEdition()

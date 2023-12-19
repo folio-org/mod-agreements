@@ -1,6 +1,9 @@
 package org.olf
 
 import org.slf4j.MDC
+
+import java.util.regex.Matcher
+
 import org.springframework.context.MessageSource
 import org.springframework.context.i18n.LocaleContextHolder
 import org.springframework.validation.ObjectError
@@ -76,5 +79,41 @@ class UtilityService {
     }
 
     validBinding
+  }
+
+  // TODO do we want to allow just "1" as a version?
+  // Attempt to match versions of the form "x.y", not full semver
+  public Matcher versionMatcher (String version) {
+    return version =~ /(?<MAJOR>0|(?:[1-9]\d*))\.(?<MINOR>0|(?:[1-9]\d*))/
+  }
+
+  // Will return true if incomingVersion is compatible with comparisonVersion
+  public boolean compatibleVersion (String incomingVersion, String comparisonVersion) {
+
+    def incomingMatcher = versionMatcher(incomingVersion)
+    def comparisonMatcher = versionMatcher(comparisonVersion)
+
+    def result = false;
+    if (incomingMatcher.matches() && comparisonMatcher.matches()) {
+      // If both matches succeed we have valid versioning. Else return false
+      def incomingMajor = incomingMatcher.group('MAJOR')
+      def comparisonMajor = comparisonMatcher.group('MAJOR')
+
+      if (incomingMajor == comparisonMajor) {
+        // If majors are equal, continue, else we can discard this as being compatible
+
+        // Should be able to parse these to ints because the regex has already matched them as digits
+        def incomingMinor = incomingMatcher.group('MINOR') as Integer
+        def comparisonMinor = comparisonMatcher.group('MINOR') as Integer
+
+        if (incomingMinor >= comparisonMinor) {
+          result = true;
+        }
+      }
+    } else {
+      log.warn("Semver version match error for ${incomingVersion} and/or ${comparisonVersion}")
+    }
+
+    return result;
   }
 }

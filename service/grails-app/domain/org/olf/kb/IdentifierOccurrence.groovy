@@ -23,7 +23,9 @@ public class IdentifierOccurrence implements MultiTenant<IdentifierOccurrence> {
 
   String id
   Identifier identifier
-  ErmResource resource
+  // This can now be a SubscriptionAgreement or Work etc,
+  // but is still accessed by name "resource"
+  ErmTitleList resource
   @CategoryId(defaultInternal=true)
   RefdataValue status
 

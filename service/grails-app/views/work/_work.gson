@@ -1,0 +1,10 @@
+import org.olf.kb.Work
+
+import groovy.transform.*
+
+@Field
+Work work
+
+json g.render(work, [excludes: ['sourceIdentifier']]) {
+  sourceIdentifier g.render(work.sourceIdentifier, [excludes: ['resource', 'id'], expand: ['identifier', 'status']])
+}
