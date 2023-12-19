@@ -40,6 +40,8 @@ import services.k_int.core.FederationLockDataService
 import services.k_int.core.FolioLockService
 
 import com.k_int.web.toolkit.files.FileUploadService
+import grails.core.GrailsApplication
+
 
 @Slf4j
 class JobRunnerService implements EventPublisher {
@@ -56,226 +58,46 @@ class JobRunnerService implements EventPublisher {
   IdentifierService identifierService
   MatchKeyService matchKeyService
   SessionFactory sessionFactory
+  GrailsApplication grailsApplication
 
   // Access to the inputStream of FileObjects is now via this service instead of directly
   // to the LOB attached to the FileObject. Inject this here so it is available to the work
   // closure in ./grails-app/domain/org/olf/general/jobs/KbartImportJob.groovy and ./grails-app/domain/org/olf/general/jobs/PackageImportJob.groovy
   FileUploadService fileUploadService
+
+  private static final ZOMBIE_JOB_QUERY='''select pj
+from PersistentJob as pj
+where pj.status <> :ended
+and pj.runnerId not in ( :runners )
+order by pj.dateCreated
+'''
   
-  final int CONCURRENT_JOBS_GLOBAL = 2 // We need to be careful to not completely tie up all our resource
-//  final int CONCURRENT_JOBS_TENANT = 1
+  private int CONCURRENT_JOBS_GLOBAL = 2 // We need to be careful to not completely tie up all our resource
   private ThreadPoolExecutor executorSvc
   
   @PostConstruct
   void init() {
     // Set up the Executor
+    if ( grailsApplication.config.concurrentJobsGlobal != null )
+      CONCURRENT_JOBS_GLOBAL = grailsApplication.config.concurrentJobsGlobal;
     
     // SO: This is not ideal. We don't want to limit jobs globally to 1 ideally. It should be 
     // 1 per tenant, but that will involve implementing custom handling for the queue and executor.
     // While we only have 1 tenant, this will suffice.
     executorSvc = new ThreadPoolExecutor(
       CONCURRENT_JOBS_GLOBAL, // Core pool Idle threads.
-      CONCURRENT_JOBS_GLOBAL, // Treads max.
+      CONCURRENT_JOBS_GLOBAL, // Threads max.
       1000, // Millisecond wait.
       TimeUnit.MILLISECONDS, // Makes the above wait time in 'seconds'
       new LinkedBlockingQueue<Runnable>() // Blocking queue
     )
-//    executorSvc = Executors.newFixedThreadPool(1)
-    
-    // Get the list of jobs from all tenants that were interrupted by app termination and
-    // set their states appropriately.
-    
+
     // Raise an event to say we are ready.
     notify('jobs:job_runner_ready')
   }
   
-//  void setInterruptedJobsState() {
-//    log.debug "Checking for interrupted jobs"
-//    RefdataValue inProgress = PersistentJob.lookupStatus('In progress')
-//    PersistentJob.findAllByStatus(inProgress).each { PersistentJob j ->
-//      j.interrupted()
-//    }
-//  }
-  
-//  private Map<Instant, List<String>> initializeTenantJobs( final String tenant_schema_id ) {
-//    
-//    log.debug "initializeTenantJobs for ${tenant_schema_id}"
-//    final Map<Instant, List<String>> queue_order = new TreeMap<Instant, List<String>>()  
-//    Tenants.withId(tenant_schema_id) {
-//      setInterruptedJobsState()
-//      
-//      // Now load all queued jobs.
-//      RefdataValue queued = PersistentJob.lookupStatus('Queued')
-//      PersistentJob.findAllByStatus(queued).each { PersistentJob j ->
-//        queue_order.put(j.dateCreated, [j.id, tenant_schema_id])
-//      }
-//    }
-//    
-//    queue_order
-//  }
-  
-//  private final CopyOnWriteArrayList<String> deferredTenants = new CopyOnWriteArrayList<String>()
-//  
-//  private void enqueueJobMap (final Map<Instant, List<String>> queue_order) {
-//    
-//    // Enqueue each job.
-//    (queue_order.keySet() as List).reverse().each { Instant created ->
-//      List<String> ids = queue_order[created]
-//      enqueueJob(ids[0], ids[1])
-//    }
-//  }
-  
-//  void populateJobQueue() {
-//    log.debug "Populating intial job queue"
-//    final Map<Instant, List<String>> queue_order = new TreeMap<Instant, List<String>>()
-//        
-//    okapiTenantAdminService.allConfiguredTenantSchemaNames().each { tenant_schema_id ->
-//      
-//      try {
-//        queue_order.putAll( initializeTenantJobs( tenant_schema_id ) )
-//      } catch (Exception e) {
-//        // TODO: We should rework how "enabled" tenants are tracked.
-//        // We should not fail just because of an exception at startup as this could run before
-//        // migrations have completed.
-//        log.warn "Unable to fetch jobs for schema ${tenant_schema_id}."
-//        // add to a deferred loading list.
-//        deferredTenants << tenant_schema_id
-//      }
-//    }
-//    enqueueJobMap(queue_order)
-//  }
-  
-//  public void enqueueJob(final String jobId, final String tenantId) {
-//    
-//    final long WAIT_MAX = 3000 // 3 seconds should be enough.
-//    final long WAIT_INCREMENT = 200
-//    
-//    log.info "Enqueueing job ${jobId} for ${tenantId}"
-//    // Use me within nested closures to ensure we are talking about this service.
-//    final def me = this
-//    
-//    Tenants.withId(tenantId) {
-//      /**
-//       * While this is UGLY. We can should retry here as this method should only be called once the event has been committed.
-//       * As with everything though limit the amount of wait time and then rasie an error.
-//       */
-//      long totalTime = 0
-//      PersistentJob job = PersistentJob.read(jobId)
-//      while (job == null) {
-//        Thread.sleep(WAIT_INCREMENT) // Recheck every 200 millis.
-//        totalTime += WAIT_INCREMENT
-//        job = PersistentJob.read(jobId)
-//        if (totalTime > WAIT_MAX) throw new IllegalStateException("Failed to read job ${jobId} for ${tenantId} after ${WAIT_MAX} milliseconds")
-//      }
-//      Runnable work = job.getWork()
-//      if (Closure.isAssignableFrom(work.class)) {
-//        // Change the delegate to this class so we can control access to beans.
-//        Closure workC = work as Closure
-//        workC.setDelegate(me)
-//        workC.setResolveStrategy(Closure.DELEGATE_FIRST)
-//        
-//        // Also pass in the current tenant id.
-//        work = workC.curry(tenantId)
-//      }
-//      
-//      // We should wrap the work in a closure so we can ensure tenant id is set
-//      // as well as setting the job status on execution
-//      final Runnable currentWork = work
-//      work = { final String tid, final String jid, final Runnable wrk ->
-//          final String tenantName = OkapiTenantResolver.schemaNameToTenantId(tid)
-//          Tenants.withId(tid) {
-//            try {
-//              log.debug("Starting job execution");
-//              org.slf4j.MDC.clear()
-//              org.slf4j.MDC.setContextMap( jobId: '' + jid, tenantId: '' + tid, 'tenant': '' + tenantName)
-//              JobContext.current.set(new JobContext( jobId: jid, tenantId: tid ))
-//              beginJob(jid)
-//              wrk()
-//              log.debug("Cleanly terminating job execution");
-//              endJob(jid)
-//            } catch (Exception e) {
-//              failJob(jid)
-//              log.error (e.message)
-//              log.error ("Job execution failed", e)
-//              notify ('jobs:log_info', JobContext.current.get().tenantId, JobContext.current.get().jobId,  "Job execution failed: ${e.message}")
-//            } finally {
-//              JobContext.current.remove()
-//              org.slf4j.MDC.clear()
-//              jobEnded(tid, jid)
-//            }
-//          }
-//      }.curry(tenantId, jobId, currentWork)
-//      
-//      // Execute the work asynchronously.
-//      enqueueTenantJob(tenantId, work)
-//    }
-//  }
-  
-//  private void enqueueTenantJob (final String tid, final Runnable work) {
-//    // Always add to the holding area.
-//    holdingArea.add([ tid, work ])
-//    
-//    // And immediately executeNext()
-//    executeNext()
-//  }
-  
-//  private CopyOnWriteArrayList<List> holdingArea = new CopyOnWriteArrayList<List>()
-//  private synchronized void executeNext() {
-//    for (int i=0; i<holdingArea.size(); i++) {
-//      List tuple = holdingArea[i]
-//      // Tenant id in index 0
-//      final String tenantId = tuple[0]
-//      if (canAddTenantJob(tenantId)) {
-//        
-//        log.debug "Can add job to global queue."
-//        
-//        try {
-//          // We can queue it. Index 1 is the work.
-//          executorSvc.execute(tuple[1] as Runnable)
-//        
-//          // Increment the count
-//          tenantCounts.get(tenantId).incrementAndGet()
-//          
-//          // Remove this element, and reset the counter, so as to always add in order.
-//          holdingArea.remove(i)
-//          
-//          // Not zero as we are inside the loop and this value will be incremented.
-//          i = -1
-//          
-//        } catch (RejectedExecutionException e) {
-//          // The global queue is full.
-//          log.warn("Executor couldn't accept the work.", e)
-//        }
-//      } else {
-//        log.debug "Max jobs for tenant ${tenantId} queued, keep in holding area."
-//      }
-//    }
-//  }
-  
-//  private boolean canAddTenantJob( final String tenantId ) {
-//    // Counts.
-//    AtomicInteger val = tenantCounts[tenantId]
-//    if (val == null) {
-//      val = new AtomicInteger(0)
-//      tenantCounts[tenantId] = val
-//    }
-//    int count = val.get()
-//    log.debug "Currently ${count} tasks queued for tenant ${tenantId}"
-//    
-//    count < CONCURRENT_JOBS_TENANT
-//  }
-  
-//  private ConcurrentHashMap<String,AtomicInteger> tenantCounts = new ConcurrentHashMap<String,AtomicInteger>()
   private void jobEnded(final String tid, final String jid) {
-    
-    log.debug "Finished task with jobId ${jid} and tenantId ${tid}"
-    
-    // Counts.
-//    int count = tenantCounts.get(tid).decrementAndGet()
-//    log.debug "Tasks queued for tenant ${tid} adjusted to ${count}"
-    
-    // Execute next
-//    executeNext()
+    log.info "Finished task with jobId ${jid} and tenantId ${tid}"
   }
   
   @Transactional(propagation=REQUIRES_NEW)
@@ -301,11 +123,6 @@ class JobRunnerService implements EventPublisher {
       
       // If errors then set to partial.
       pj.result = RefdataValue.lookupOrCreate(resultCat, (pj.getErrorLog() ? 'Partial success' : 'Success'))
-//      if (getErrorLog()) {
-//        this.resultFromString = 'Partial success'
-//      } else {
-//        this.resultFromString = 'Success'
-//      }
     }
     pj.save( failOnError: true, flush:true )
   }
@@ -328,7 +145,6 @@ class JobRunnerService implements EventPublisher {
   public void interruptJob(final String tenantId, final String jid) {
     
     Tenants.withId(tenantId) {
-    
       PersistentJob pj = PersistentJob.get(jid ?: JobContext.current.get().jobId)
       final String resultCat = pj.getResultCategory()
       
@@ -378,11 +194,13 @@ class JobRunnerService implements EventPublisher {
         final RefdataValue ended = PersistentJob.lookupStatus('Ended')
 
         // Find every job that was allocated to the runner.
-        for (PersistentJob job : PersistentJob.findAllByStatusNotAndRunnerIdNotInList( ended, viableRunnerIds, [ sort: 'dateCreated' ])) {
-          log.debug "Found job ${job.id} that was allocated to a runner that has died"
+				List <PersistentJob> zombie_jobs = PersistentJob.executeQuery(ZOMBIE_JOB_QUERY,[ended:ended, runners:viableRunnerIds]);
+
+        zombie_jobs.each { job ->
+          log.info "Found job ${job.id} that was allocated to a runner that has died"
           if (job.status.value == 'queued') {
           
-            log.debug "Job ${job.id} was only queued, clear the allocation"
+            log.info "Job ${job.id} was only queued, clear the allocation"
             
             // If this job was queued, then we can just clear the runner ID
             job.runnerId = null
@@ -390,7 +208,7 @@ class JobRunnerService implements EventPublisher {
             
           } else {
             // This job was interrupted.
-            log.debug "Setting job status to interrupted for ${job.id}"
+            log.info "Setting job status to interrupted for ${job.id}"
             interruptJob( tenant_schema_id, job.id )
           }
         }
@@ -427,7 +245,7 @@ class JobRunnerService implements EventPublisher {
     // Check if the executor has space.
     final int activeCount = executorSvc.getActiveCount()
     if ((CONCURRENT_JOBS_GLOBAL - activeCount) < 1) {
-      log.debug "No free task runners, active workers currently at ${activeCount}. Skipping"
+      log.info "No free task runners, active workers currently at ${activeCount}. Skipping"
       return
     }
     
@@ -443,6 +261,7 @@ class JobRunnerService implements EventPublisher {
             // Find a queued job with no runner assigned.
             final RefdataValue queued = PersistentJob.lookupStatus('Queued')
             PersistentJob.findAllByStatusAndRunnerIdIsNull(queued, [ sort: 'dateCreated', order: 'asc', max: 3] ).each { PersistentJob j ->
+              log.info("Scheduling potential job ${j} for ${tenant_schema_id}");
               potentialJobs.put(j.dateCreated, [j.id, tenant_schema_id] as String[])
             }
           }
@@ -484,7 +303,7 @@ class JobRunnerService implements EventPublisher {
                 
                 // Safeguard against jobs that were removed for whatever reason.
                 if (job == null) { 
-                  log.debug "Job ${jobId} has been deleted. Simply remove from queue"
+                  log.warn "Job ${jobId} has been deleted. Simply remove from queue"
                   
                   // Remove from the queue.
                   potentialJobs.remove( key )
@@ -492,7 +311,7 @@ class JobRunnerService implements EventPublisher {
   			  
   			  final RefdataValue queued = PersistentJob.lookupStatus('Queued')
                 if (job.status.id != queued.id || job.runnerId != null) {
-                  log.debug "Job ${jobId} is either no longer queued or already allocated to a different runner"
+                  log.info "Job ${jobId} is either no longer queued or already allocated to a different runner"
                   
                   // Remove from the queue.
                   potentialJobs.remove( key )
@@ -510,8 +329,8 @@ class JobRunnerService implements EventPublisher {
         } catch ( Exception ex ) {
           // Make sure we remove the queue item on error. If this was an intermittent 
           // failure it will be re-added to a queue in a subsequent execution
-          potentialJobs.remove( key )
           log.error("Exception when attempting to run job ID: '${jobAndTenant[0]}' for tenant: '${jobAndTenant[1]}'. Removing from queue for now", ex)
+          potentialJobs.remove( key )
         }
       }
     }
@@ -568,12 +387,11 @@ class JobRunnerService implements EventPublisher {
           endJob(jid)
         }
       } catch (Exception e) {
-
+        log.error (e.message)
+        log.error ("Job execution failed", e)
         Tenants.withId(tid) {
           failJob(jid)
         }
-        log.error (e.message)
-        log.error ("Job execution failed", e)
         notify ('jobs:log_info', JobContext.current.get().tenantId, JobContext.current.get().jobId,  "Job execution failed: ${e.message}")
       } finally {
         JobContext.current.remove()
