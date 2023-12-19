@@ -275,6 +275,13 @@ tasks.withType(GroovyCompile) {
 	}
 }
 
+tasks.named('bootJarMainClassName') { it.mustRunAfter(tasks.named('compileGsonViews')) }
+tasks.named('compileIntegrationTestGroovy') { it.mustRunAfter(tasks.named('compileGsonViews')) }
+tasks.named('test') { it.mustRunAfter(tasks.named('compileGsonViews')) }
+tasks.named('integrationTest') { it.mustRunAfter(tasks.named('compileGsonViews')) }
+tasks.named('mergeTestReports') { it.mustRunAfter(tasks.named('test')) }
+tasks.named('compileTestGroovy') { it.mustRunAfter(tasks.named('compileGsonViews')) }
+
 tasks.withType(Test) {
 	useJUnitPlatform()
   systemProperty "geb.env", System.getProperty('geb.env')
