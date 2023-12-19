@@ -8,13 +8,17 @@ import groovyx.net.http.HttpException
 import spock.lang.Stepwise
 import spock.util.concurrent.PollingConditions
 
+import groovy.util.logging.Slf4j
+
+@Slf4j
 @Stepwise
 abstract class BaseSpec extends HttpSpec {
+
   def setupSpec() {
     httpClientConfig = {
       client.clientCustomizer { HttpURLConnection conn ->
-        conn.connectTimeout = 3000
-        conn.readTimeout = 20000
+        conn.connectTimeout = 120000
+        conn.readTimeout = 60000
       }
     }
     addDefaultHeaders(
@@ -33,6 +37,10 @@ abstract class BaseSpec extends HttpSpec {
   
   void 'Pre purge tenant' () {
     boolean resp = false
+
+    println("test");
+    log.debug("Pre purge tenant");
+
     when: 'Purge the tenant'
       try {
         resp = doDelete('/_/tenant', null)
@@ -44,6 +52,8 @@ abstract class BaseSpec extends HttpSpec {
   }
   
   void 'Ensure test tenant' () {
+
+		log.debug("Ensure test tenant ${baseUrl}");
     
     when: 'Create the tenant'
       def resp = doPost('/_/tenant', {

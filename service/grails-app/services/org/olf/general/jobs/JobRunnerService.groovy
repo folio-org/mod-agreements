@@ -66,7 +66,7 @@ class JobRunnerService implements EventPublisher {
   FileUploadService fileUploadService
 
   private static final ZOMBIE_JOB_QUERY='''select pj
-from PersistenJob as pj
+from PersistentJob as pj
 where pj.status <> :ended
 and pj.runnerId not in ( :runners )
 order by pj.dateCreated
@@ -194,7 +194,7 @@ order by pj.dateCreated
         final RefdataValue ended = PersistentJob.lookupStatus('Ended')
 
         // Find every job that was allocated to the runner.
-				List <PersistentJob> problem_jobs = PersistentJob.executeQuery(ZOMBIE_JOB_QUERY,[e:ended, runners:viableRunnerIds]);
+				List <PersistentJob> zombie_jobs = PersistentJob.executeQuery(ZOMBIE_JOB_QUERY,[ended:ended, runners:viableRunnerIds]);
 
         zombie_jobs.each { job ->
           log.info "Found job ${job.id} that was allocated to a runner that has died"
