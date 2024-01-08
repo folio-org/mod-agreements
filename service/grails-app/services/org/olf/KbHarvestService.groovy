@@ -93,7 +93,7 @@ where rkb.type is not null
           titleJob.setStatusFromString('Queued')
           titleJob.save(failOnError: true, flush: true)
         } else {
-          log.info('Title harvester already running or scheduled. Ignore.')
+          log.info("Title harvester already running or scheduled. Ignore. tenant=${tenant_schema_id}, job=${titleJob}")
         }
 
         if (!packageJob) {
@@ -101,7 +101,7 @@ where rkb.type is not null
           packageJob.setStatusFromString('Queued')
           packageJob.save(failOnError: true, flush: true)
         } else {
-          log.info('Package harvester already running or scheduled. Ignore.')
+          log.info("Package harvester already running or scheduled. Ignore. tenant=${tenant_schema_id}, job=${packageJob}")
         }
       }
     } else {

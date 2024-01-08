@@ -10,7 +10,8 @@ echo Start mod-agreements in external-register mode
 
 # curl --header "X-Okapi-Tenant: diku" http://localhost:9130/content -X GET
 
-the_jar_file=`ls build/libs/mod-agreements*.jar | tail -n 1`
+
+the_jar_file=`ls -S build/libs/mod-agreements*.jar | head -n 1`
 
 echo Attempting to start jar $the_jar_file
 
