@@ -78,7 +78,7 @@ order by pj.dateCreated
   @PostConstruct
   void init() {
     // Set up the Executor
-    if ( grailsApplication.config.concurrentJobsGlobal != null )
+    if ( grailsApplication.config.concurrentJobsGlobal instanceof Integer && grailsApplication.config.concurrentJobsGlobal > 0 )
       CONCURRENT_JOBS_GLOBAL = grailsApplication.config.concurrentJobsGlobal;
     
     // SO: This is not ideal. We don't want to limit jobs globally to 1 ideally. It should be 
