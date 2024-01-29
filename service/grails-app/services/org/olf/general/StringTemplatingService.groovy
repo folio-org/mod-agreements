@@ -41,7 +41,6 @@ import grails.gorm.multitenancy.Tenants
 import grails.orm.HibernateCriteriaBuilder
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import net.sf.ehcache.util.NamedThreadFactory
 import services.k_int.core.FolioLockService
 
 /**
