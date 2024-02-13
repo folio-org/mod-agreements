@@ -170,6 +170,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
     String identifierHQL = buildIdentifierHQL(identifiers)
 
     // Ensure we are only checking title instances where work is set (?)
+		/*
     String outputHQL = """
       from TitleInstance as ti
       WHERE 
@@ -182,6 +183,15 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
                     ${identifierHQL}
                 ) AND
         ti.subType.value = 'electronic'
+    """
+		*/
+
+    String outputHQL = """
+      FROM TitleInstance as ti
+      WHERE ti.subType.value = 'electronic' 
+				AND ti.work IN (SELECT sibling.work FROM TitleInstance as sibling 
+                   JOIN sibling.identifiers as io WHERE 
+                    ${identifierHQL})
     """
     //log.debug("LOGDEBUG SIBMATCH OUTPUT HQL: ${outputHQL}")
     return outputHQL
