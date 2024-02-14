@@ -100,20 +100,16 @@
   </if>
 
   <!--LOG SQL - VERBOSE!!!!!!-->
-  <!--
-  <logger name="org.hibernate.SQL">
+  <!-- <logger name="org.hibernate.SQL">
     <level value="TRACE" />
     <appender-ref ref="STDOUT" />
-  </logger>
-  -->
+  </logger> -->
 
   <!--This one for SQL bind parameters-->
-  <!--
-  <logger name="org.hibernate.type.descriptor.sql.BasicBinder">
+  <!-- <logger name="org.hibernate.type.descriptor.sql.BasicBinder">
     <level value="TRACE" />
     <appender-ref ref="STDOUT" />
-  </logger>
-  -->
+  </logger> -->
 
   <appender name="JOB" class="org.olf.general.jobs.JobAwareAppender"/>
 
