@@ -165,41 +165,9 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
     ORDER BY similarity(ti.name, :qrytitle) desc
   '''
 
-  protected String getSiblingMatchHQL(Collection<IdentifierSchema> identifiers) {
-    // Do not pass "false" as second param here, we only match on identifiers which are "approved"
-    String identifierHQL = buildIdentifierHQL(identifiers)
-
-    // Ensure we are only checking title instances where work is set (?)
-		/*
-    String outputHQL = """
-      from TitleInstance as ti
-      WHERE 
-        ti.work IS NOT NULL AND
-        exists ( SELECT sibling FROM TitleInstance as sibling 
-                   JOIN sibling.identifiers as io
-                 WHERE 
-                   sibling.work IS NOT NULL AND
-                   sibling.work = ti.work AND
-                    ${identifierHQL}
-                ) AND
-        ti.subType.value = 'electronic'
-    """
-		*/
-
-    String outputHQL = """
-      FROM TitleInstance as ti
-      WHERE ti.subType.value = 'electronic' 
-				AND ti.work IN (SELECT sibling.work FROM TitleInstance as sibling 
-                   JOIN sibling.identifiers as io WHERE 
-                    ${identifierHQL})
-    """
-    //log.debug("LOGDEBUG SIBMATCH OUTPUT HQL: ${outputHQL}")
-    return outputHQL
-  }
-
   protected String getDirectMatchHQL(Collection<IdentifierSchema> identifiers, String workId = null, boolean approvedIdsOnly = true) {
     String identifierHQL = buildIdentifierHQL(identifiers, approvedIdsOnly)
-
+ 
     String outputHQL = """
       from TitleInstance as ti
         WHERE 
@@ -361,7 +329,23 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
       return []
     }
 
-    List<String> titleList = TitleInstance.executeQuery(getSiblingMatchHQL(classOneIds)).collect { it.id };
+    String siblingIdentifierHQL = buildIdentifierHQL(classOneIds);
+    String siblingsHQL = """
+      SELECT sibling.work.id FROM TitleInstance as sibling 
+        JOIN sibling.identifiers as io
+      WHERE 
+        ${siblingIdentifierHQL}
+    """
+
+    List<String> siblingWorks = TitleInstance.executeQuery(siblingsHQL);
+
+    String titlesHQL = """
+      SELECT ti.id FROM TitleInstance as ti
+      WHERE ti.subType.value = 'electronic' AND
+      ti.work.id IN :works
+    """
+        
+    List<String> titleList = TitleInstance.executeQuery(titlesHQL, [works: siblingWorks]);
     return listDeduplictor(titleList)
   }
 }
