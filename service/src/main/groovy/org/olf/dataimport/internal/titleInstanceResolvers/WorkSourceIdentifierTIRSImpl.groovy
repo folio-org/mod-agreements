@@ -33,14 +33,14 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
     // Error out if sourceIdentifier or sourceIdentifierNamespace do not exist
     ensureSourceIdentifierFields(citation);
 
+    // TODO we can probably fix this.
+
     List<Work> candidate_works = Work.executeQuery("""
-      from Work as w WHERE EXISTS (
-        SELECT io FROM IdentifierOccurrence as io WHERE
-          io.resource.id = w.id AND
-          io.identifier.ns.value = :sourceIdentifierNamespace AND
-          io.identifier.value = :sourceIdentifier AND
-          io.status.value = '${APPROVED}'
-      )
+      FROM Work as w
+      WHERE
+        w.sourceIdentifier.identifier.ns.value = :sourceIdentifierNamespace AND
+        w.sourceIdentifier.identifier.value = :sourceIdentifier AND
+        w.sourceIdentifier.status.value = '${APPROVED}'
     """.toString(),
     [
       sourceIdentifierNamespace: namespaceMapping(citation.sourceIdentifierNamespace),
