@@ -776,7 +776,7 @@ databaseChangeLog = {
 			column(name: "pti_pt_fk")
 		}
 	}
-	
+
 	changeSet(author: "Jack_golding (manual)", id: "20231128-1115-001") {
     grailsChange {
       change {
@@ -829,4 +829,117 @@ databaseChangeLog = {
         referencedColumnNames: "rdv_id",
         referencedTableName: "refdata_value")
   }
+
+	// POST GOTTINGEN INDICES
+	changeSet(author: "Ethan_Freestone (manual)", id: "2024-02-15-001") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'erm_resource', columnNames: 'id,res_sub_type_fk')
+			}
+		}
+		createIndex(indexName: "res_id_sub_type_idx", tableName: "erm_resource") {
+			column(name: "id")
+			column(name: "res_sub_type_fk")
+		}
+	}
+
+	changeSet(author: "Ethan_Freestone (manual)", id: "2024-02-15-002") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'erm_resource', columnNames: 'id,res_type_fk')
+			}
+		}
+		createIndex(indexName: "res_id_type_idx", tableName: "erm_resource") {
+			column(name: "id")
+			column(name: "res_type_fk")
+		}
+	}
+
+	changeSet(author: "efreestone (manual)", id: "2024-02-15-003") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'identifier_occurrence', columnNames: 'io_id,io_res_fk')
+			}
+		}
+		createIndex(indexName: "io_id_res", tableName: "identifier_occurrence") {
+			column(name: "io_id")
+			column(name: "io_res_fk")
+		}
+	}
+
+	changeSet(author: "efreestone (manual)", id: "2024-02-15-004") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'identifier_occurrence', columnNames: 'io_id,io_status_fk')
+			}
+		}
+		createIndex(indexName: "io_id_status", tableName: "identifier_occurrence") {
+			column(name: "io_id")
+			column(name: "io_status_fk")
+		}
+	}
+
+	changeSet(author: "efreestone (manual)", id: "2024-02-15-005") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'identifier_occurrence', columnNames: 'io_id,io_res_fk,io_status_fk')
+			}
+		}
+		createIndex(indexName: "io_id_res_status", tableName: "identifier_occurrence") {
+			column(name: "io_id")
+			column(name: "io_res_fk")
+			column(name: "io_status_fk")
+		}
+	}
+
+	changeSet(author: "efreestone (manual)", id: "2024-02-15-006") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'entitlement', columnNames: 'ent_owner_fk,ent_active_from,ent_active_to')
+			}
+		}
+		createIndex(indexName: "ent_owner_dates_idx", tableName: "entitlement") {
+			column(name: "ent_owner_fk")
+			column(name: "ent_active_from")
+			column(name: "ent_active_to")
+		}
+	}
+
+	changeSet(author: "efreestone (manual)", id: "2024-02-15-007") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'package_content_item', columnNames: 'id,pci_access_start,pci_access_end,pci_removed_ts')
+			}
+		}
+		createIndex(indexName: "pci_id_dates_idx", tableName: "package_content_item") {
+			column(name: "id")
+			column(name: "pci_access_start")
+			column(name: "pci_access_end")
+			column(name: "pci_removed_ts")
+		}
+	}
+
+	changeSet(author: "efreestone (manual)", id: "2024-02-15-008") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'identifier', columnNames: 'id_value,id_ns_fk')
+			}
+		}
+		createIndex(indexName: "identifier_id_value_id_ns_fk_idx", tableName: "identifier") {
+			column(name: "id_value")
+			column(name: "id_ns_fk")
+		}
+	}
+
+	changeSet(author: "efreestone (manual)", id: "2024-02-15-009") {
+		preConditions (onFail: 'MARK_RAN', onError: 'WARN') {
+			not {
+				indexExists(tableName: 'identifier_occurrence', columnNames: 'io_identifier_fk,io_res_fk')
+			}
+		}
+		createIndex(indexName: "identifier_occurrence_io_identifier_fk_io_res_fk_idx", tableName: "identifier_occurrence") {
+			column(name: "io_identifier_fk")
+			column(name: "io_res_fk")
+		}
+	}
 }
