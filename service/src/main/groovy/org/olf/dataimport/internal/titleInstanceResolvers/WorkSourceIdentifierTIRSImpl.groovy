@@ -46,6 +46,13 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       sourceIdentifier: citation.sourceIdentifier
     ])
 
+    /*
+     * TODO perhaps add a percentage check, if no works OR some % 
+     * (100%?) of works have a work source identifier, then don't bother
+     * falling back to IDFirstTIRS. We shouldn't query that here though,
+     * cos that will be per title :/ (Or query it once a day maybe?)
+     */
+
     //log.debug("LOGDEBUG CANDIDATE WORKS: ${candidate_works}")
 
     switch (candidate_works.size()) {
