@@ -7,15 +7,15 @@ beans = {
   /* --- Swapping these will change the way mod-agreements handles resolution of TitleInstances --- */
   String TIRS = System.getenv("TIRS")
   switch (TIRS) {
+    case 'IdFirst':
+      titleInstanceResolverService(IdFirstTIRSImpl)
+      break;
     case 'TitleFirst':
       titleInstanceResolverService(TitleFirstTIRSImpl)
       break;
     case 'WorkSourceIdentifier':
-      titleInstanceResolverService(WorkSourceIdentifierTIRSImpl)
-      break;
-    case 'IdFirst':
     default:
-      titleInstanceResolverService(IdFirstTIRSImpl)
+      titleInstanceResolverService(WorkSourceIdentifierTIRSImpl)
       break;
   }
   
