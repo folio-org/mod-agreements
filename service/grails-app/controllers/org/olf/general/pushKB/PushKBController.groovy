@@ -1,5 +1,6 @@
 package org.olf.general.pushKB
 
+import org.springframework.http.HttpStatus
 import java.time.Instant
 
 import org.olf.general.pushKB.PushKBService
@@ -26,18 +27,17 @@ class PushKBController {
     final bindObj = request.JSON as Map
     // Handle PushKBSession and PushKBChunk
     handleSessionAndChunk(bindObj, tenantId);
-
     try {
       Map pushPkgResult = pushKBService.pushPackages(bindObj.records)
       if (pushPkgResult.success == false) {
         String messageString = pushPkgResult?.errorMessage ?: 'Something went wrong'
-        respond ([message: messageString, statusCode: 500, pushPkgResult: pushPkgResult])
+        respond ([message: messageString, statusCode: HttpStatus.INTERNAL_SERVER_ERROR.value(), pushPkgResult: pushPkgResult], status: HttpStatus.INTERNAL_SERVER_ERROR.value())
       } else {
-        respond ([message: "pushPkg successful", statusCode: 200, pushPkgResult: pushPkgResult])
+        respond ([message: "pushPkg successful", statusCode: HttpStatus.OK.value(), pushPkgResult: pushPkgResult], status: HttpStatus.OK.value())
       }
     } catch ( Exception e ) {
       log.error("Error: Something went wrong with pushPkg", e);
-      respond ([message: "Something went wrong", statusCode: 500, error: e])
+      respond ([message: "Something went wrong", statusCode: HttpStatus.INTERNAL_SERVER_ERROR.value(), error: e], status: HttpStatus.INTERNAL_SERVER_ERROR.value())
     }
 
     // Ensure we close chunk process to end logging on this chunk
@@ -55,13 +55,13 @@ class PushKBController {
       Map pushPCIResult = pushKBService.pushPCIs(bindObj.records)
       if (pushPCIResult.success == false) {
         String messageString = pushPCIResult?.errorMessage ?: 'Something went wrong'
-        respond ([message: messageString, statusCode: 500, pushPCIResult: pushPCIResult])
+        respond ([message: messageString, statusCode: HttpStatus.INTERNAL_SERVER_ERROR.value(), pushPCIResult: pushPCIResult], status: HttpStatus.INTERNAL_SERVER_ERROR.value())
       } else {
-        respond ([message: "pushPci successful", statusCode: 200, pushPCIResult: pushPCIResult])
+        respond ([message: "pushPci successful", statusCode: HttpStatus.OK.value(), pushPCIResult: pushPCIResult], status: HttpStatus.OK.value())
       }
     } catch ( Exception e ) {
       log.error("Error: Something went wrong with pushPci", e);
-      respond ([message: "Something went wrong", statusCode: 500, error: e])
+      respond ([message: "Something went wrong", statusCode: HttpStatus.INTERNAL_SERVER_ERROR.value(), error: e], status: HttpStatus.INTERNAL_SERVER_ERROR.value())
     }
 
     // Ensure we close chunk process to end logging on this chunk

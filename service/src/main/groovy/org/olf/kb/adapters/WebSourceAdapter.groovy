@@ -1,5 +1,6 @@
 package org.olf.kb.adapters
 
+import grails.gorm.multitenancy.Tenants
 import groovy.transform.CompileStatic
 import groovyx.net.http.HttpBuilder
 import groovyx.net.http.HttpConfig
@@ -72,9 +73,11 @@ public abstract class WebSourceAdapter {
   }
 
   protected final def getSync (final String url, final Map params, @DelegatesTo(HttpConfig.class) final Closure expand = null) {
+    def header = "Folio mod-agreements / ${Tenants.currentId()}"
     httpClient.get({
       request.uri = url
       request.uri.query = params
+      request.headers['User-Agent'] = header
       
       if (expand) {
         expand.rehydrate(delegate, expand.owner, thisObject)()
