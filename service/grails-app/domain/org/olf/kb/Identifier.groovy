@@ -29,7 +29,7 @@ public class Identifier implements MultiTenant<Identifier> {
 
   static constraints = {
           value(nullable:false, blank:false)
-             ns(nullable:false, blank:false)
+             ns(nullable:false)
   }
 
 
