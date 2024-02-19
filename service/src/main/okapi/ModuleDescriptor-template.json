@@ -541,13 +541,6 @@
           "unit": "hour",
           "delay": "24"
         },
-        {
-          "permissionsRequired" : [],
-          "methods": [ "GET" ],
-          "pathPattern": "/erm/admin/triggerRematch",
-          "unit": "minute",
-          "delay": "5"
-        }
       ]
     }
   ],

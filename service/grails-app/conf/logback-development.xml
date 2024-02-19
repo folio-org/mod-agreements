@@ -138,11 +138,6 @@
     <appender-ref ref="JOB" />
   </logger>
 
-  <logger name="org.olf.MatchKeyService">
-    <level value="DEBUG" />
-    <appender-ref ref="JOB" />
-  </logger>
-
   <logger name="org.olf.kb.adapters.GOKbOAIAdapter">
     <level value="DEBUG" />
     <appender-ref ref="JOB" />

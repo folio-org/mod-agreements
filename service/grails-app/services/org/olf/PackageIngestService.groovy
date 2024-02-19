@@ -20,7 +20,6 @@ import org.olf.kb.Platform
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.RemoteKB
 import org.olf.kb.TitleInstance
-import org.olf.kb.MatchKey
 import org.slf4j.MDC
 
 import com.k_int.web.toolkit.utils.GormUtils
@@ -47,7 +46,6 @@ class PackageIngestService implements DataBinder {
   TitleIngestService titleIngestService
   IdentifierService identifierService
   CoverageService coverageService
-  MatchKeyService matchKeyService
 
   // dependentModuleProxyService is a service which hides the fact that we might be dependent upon other
   // services for our reference data. In this class - vendors are erm Org entries, but in folio these are
@@ -158,8 +156,8 @@ class PackageIngestService implements DataBinder {
 									}
 									else {
 										// Almost the same message exists in TitleIngestService if result is null
-										String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
-										log.error(message)
+										//String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
+										//log.error(message)
 									}
 								}
 							} catch ( Exception e ) {
@@ -509,9 +507,6 @@ class PackageIngestService implements DataBinder {
       pciStatus: 'none' // This should be 'none', 'updated' or 'new'
     ]
 
-    // ERM-1799 TI has been created, harvest matchKey information at this point to apply to any PTI/PCIs
-    List<Map> matchKeys = matchKeyService.collectMatchKeyInformation(pc)
-
     // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
 
     // lets try and work out the platform for the item
@@ -521,8 +516,6 @@ class PackageIngestService implements DataBinder {
 
       // See if we already have a title platform record for the presence of this title on this platform
       PlatformTitleInstance pti = lookupOrCreatePTI(title, platform, trustedSourceTI, pc)
-      matchKeyService.updateMatchKeys(pti, matchKeys)
-
 
       // ADD PTI AND PCI ID TO RESULT
       result.ptiId = pti.id;
@@ -545,22 +538,12 @@ class PackageIngestService implements DataBinder {
           addedTimestamp:updateTime,
         )
 
-        // ERM-1799, match keys need adding to PCI
-        // We're passing an UNSAVED PCI here... so can't pass id and lookup in method
-        matchKeyService.updateMatchKeys(pci, matchKeys, false)
         isNew = true
       }
       else {
         // Note that we have seen the package content item now - so we don't delete it at the end.
         log.debug("Record ${titleCount} - Update package content item (${pci.id})")
         isUpdate = true
-        if (trustedSourceTI) {
-          /*
-          * We may need to update the match key information
-          * from the incoming package for existing PCIs
-          */
-          matchKeyService.updateMatchKeys(pci, matchKeys, false)
-        }
       }
 
       String embStr = pc.embargo?.trim()

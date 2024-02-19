@@ -79,11 +79,6 @@
     <appender-ref ref="JOB" />
   </logger>
 
-  <logger name="org.olf.MatchKeyService">
-    <level value="DEBUG" />
-    <appender-ref ref="JOB" />
-  </logger>
-
   <logger name="org.olf.kb.adapters.GOKbOAIAdapter">
     <level value="DEBUG" />
     <appender-ref ref="JOB" />
@@ -233,7 +228,6 @@ logger ('org.olf.TitleIngestService', DEBUG, ['JOB'])
 logger ('org.olf.TitleInstanceResolverService', DEBUG, ['JOB'])
 logger ('org.olf.TitleEnricherService', DEBUG, ['JOB'])
 logger ('org.olf.IdentifierService', DEBUG, ['JOB'])
-logger ('org.olf.MatchKeyService', DEBUG, ['JOB'])
 logger ('org.olf.kb.adapters.GOKbOAIAdapter', DEBUG, ['JOB'])
 logger ('org.olf.CoverageService', DEBUG, ['JOB'])
 logger ('org.olf.ImportService', DEBUG, ['JOB'])

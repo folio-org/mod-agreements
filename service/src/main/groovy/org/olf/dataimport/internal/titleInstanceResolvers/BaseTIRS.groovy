@@ -332,6 +332,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
           io.status.value = '${APPROVED}'
         )
       """
+      // TODO This doesn't look right
     }.join("""
       AND
     """)

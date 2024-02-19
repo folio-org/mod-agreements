@@ -167,16 +167,14 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
 
   protected String getDirectMatchHQL(Collection<IdentifierSchema> identifiers, String workId = null, boolean approvedIdsOnly = true) {
     String identifierHQL = buildIdentifierHQL(identifiers, approvedIdsOnly)
- 
+
+    // TODO Direct match (via identifierHQL) assumes single identfier I think... not sure this is right
     String outputHQL = """
-      from TitleInstance as ti
-        WHERE 
-          exists ( SELECT io FROM IdentifierOccurrence as io 
-                  WHERE
-                    io.resource.id = ti.id AND
-                    ${identifierHQL}
-                  ) AND
-          ti.subType.value = :subtype
+      SELECT ti.id FROM TitleInstance as ti
+      JOIN ti.identifiers as io
+      WHERE
+        ${identifierHQL} AND
+        ti.subType.value = :subtype
     """
 
     if (workId !== null) {
@@ -184,7 +182,6 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
         ti.work.id = '${workId}'
       """
     }
-    //log.debug("LOGDEBUG DIRECTMATCH OUTPUT HQL: ${outputHQL}")
     return outputHQL
   }
 
@@ -313,7 +310,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
     if (identifiers.size() <= 0) {
       return []
     }
-    List<String> titleList = TitleInstance.executeQuery(getDirectMatchHQL(identifiers, workId, approvedIdsOnly),[subtype: subtype]).collect { it.id };
+    List<String> titleList = TitleInstance.executeQuery(getDirectMatchHQL(identifiers, workId, approvedIdsOnly),[subtype: subtype]);
     return listDeduplictor(titleList)
   }
 

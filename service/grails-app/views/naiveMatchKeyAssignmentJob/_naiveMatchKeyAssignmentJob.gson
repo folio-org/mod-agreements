@@ -1,8 +1,0 @@
-import org.olf.general.jobs.NaiveMatchKeyAssignmentJob
-
-import groovy.transform.Field
-
-@Field
-NaiveMatchKeyAssignmentJob naiveMatchKeyAssignmentJob
-
-json tmpl."/persistentJob/persistentJob" (persistentJob: naiveMatchKeyAssignmentJob)

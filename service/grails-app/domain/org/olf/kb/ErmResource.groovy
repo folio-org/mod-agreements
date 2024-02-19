@@ -39,7 +39,6 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
     entitlements: Entitlement,
     tags: Tag,
     templatedUrls: TemplatedUrl,
-    matchKeys: MatchKey,
     alternateResourceNames: AlternateResourceName,
     identifiers: IdentifierOccurrence,
   ]
@@ -48,7 +47,6 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
     coverage: 'resource',
     entitlements: 'resource',
     templatedUrls: 'resource',
-    matchKeys: 'resource',
     alternateResourceNames:  'owner',
     identifiers: 'resource',
   ]
@@ -66,7 +64,6 @@ public class ErmResource extends ErmTitleList implements MultiTenant<ErmResource
   suppressFromDiscovery column: 'res_suppress_discovery'
               coverage cascade: 'all-delete-orphan'
          templatedUrls cascade: 'all-delete-orphan'
-             matchKeys cascade: 'all-delete-orphan'
                   tags cascade: 'save-update'
 alternateResourceNames cascade: 'all-delete-orphan'
            identifiers cascade: 'all-delete-orphan'
