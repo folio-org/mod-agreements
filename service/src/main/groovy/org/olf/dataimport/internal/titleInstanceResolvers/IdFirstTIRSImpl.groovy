@@ -170,7 +170,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
 
     // TODO Direct match (via identifierHQL) assumes single identfier I think... not sure this is right
     String outputHQL = """
-      FROM TitleInstance as ti
+      SELECT ti.id FROM TitleInstance as ti
       JOIN ti.identifiers as io
       WHERE
         ${identifierHQL} AND
@@ -182,7 +182,6 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
         ti.work.id = '${workId}'
       """
     }
-    //log.debug("LOGDEBUG DIRECTMATCH OUTPUT HQL: ${outputHQL}")
     return outputHQL
   }
 
@@ -311,7 +310,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
     if (identifiers.size() <= 0) {
       return []
     }
-    List<String> titleList = TitleInstance.executeQuery(getDirectMatchHQL(identifiers, workId, approvedIdsOnly),[subtype: subtype]).collect { it.id };
+    List<String> titleList = TitleInstance.executeQuery(getDirectMatchHQL(identifiers, workId, approvedIdsOnly),[subtype: subtype]);
     return listDeduplictor(titleList)
   }
 
