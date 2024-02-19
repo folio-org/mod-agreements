@@ -2,6 +2,9 @@ package org.olf.dataimport.internal.titleInstanceResolvers
 
 import org.olf.general.StringUtils
 
+import java.time.temporal.ChronoUnit
+import java.time.Instant
+
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
@@ -25,6 +28,44 @@ import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 @Slf4j
 @Transactional
 class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder {
+  boolean fallbackToIdFirstTIRSCache = true;
+  Instant fallbackToIdFirstTIRSTimestamp = Instant.EPOCH;
+
+  public boolean fallbackToIdFirstTIRS() {
+    if (
+      fallbackToIdFirstTIRSTimestamp == Instant.EPOCH ||
+      Instant.now() > fallbackToIdFirstTIRSTimestamp.plus(1, ChronoUnit.DAYS)
+    ) {
+      fallbackToIdFirstTIRSTimestamp = Instant.now();
+
+      boolean isWork = Work.list(max: 1).size() > 0;
+
+      if (!isWork) {
+        fallbackToIdFirstTIRSCache = false;
+        return false;
+      }
+
+      long noSICount = Work.executeQuery("""
+        SELECT COUNT(w) FROM Work w WHERE w.sourceIdentifier = null
+      """.toString())?.get(0);
+
+      long workCount = Work.executeQuery("""
+        SELECT COUNT(w) FROM Work w
+      """.toString())?.get(0);
+
+      // For now keep the fallback unless there are NO Works in the system without SI
+      if (noSICount == 0) {
+        fallbackToIdFirstTIRSCache = false;
+        return false;
+      }
+
+      fallbackToIdFirstTIRSCache = true;
+      return true; 
+    }
+
+    return fallbackToIdFirstTIRSCache;
+  }
+
   // We can largely ignore passedTrustedSourceTI, and always assume that passed citations are trusted
   public String resolve(ContentItemSchema citation, boolean passedTrustedSourceTI) {
     log.debug("WorkSourceIdentifierTIRS::resolve(${citation})");
@@ -45,20 +86,17 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       sourceIdentifierNamespace: namespaceMapping(citation.sourceIdentifierNamespace),
       sourceIdentifier: citation.sourceIdentifier
     ])
-
-    /*
-     * TODO perhaps add a percentage check, if no works OR some % 
-     * (100%?) of works have a work source identifier, then don't bother
-     * falling back to IDFirstTIRS. We shouldn't query that here though,
-     * cos that will be per title :/ (Or query it once a day maybe?)
-     */
-
-    //log.debug("LOGDEBUG CANDIDATE WORKS: ${candidate_works}")
+    boolean fallback = fallbackToIdFirstTIRS();
 
     switch (candidate_works.size()) {
       case 0:
         // Zero direct matches for work, fall back to baseResolve
-        result = fallbackToIdFirstResolve(citation, true);
+        if (fallback) {
+          result = fallbackToIdFirstResolve(citation, true);
+        } else {
+          // Don't fallback in this case
+          result = createNewTitleInstanceWithSiblings(citation).id
+        }
         break;
       case 1:
         //Work work = candidate_works.get(0);
