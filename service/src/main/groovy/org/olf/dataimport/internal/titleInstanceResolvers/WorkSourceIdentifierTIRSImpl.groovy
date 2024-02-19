@@ -33,25 +33,19 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
     // Error out if sourceIdentifier or sourceIdentifierNamespace do not exist
     ensureSourceIdentifierFields(citation);
 
-    // TODO Check this works with the switch to grabbing only id
-    List<String> candidate_works = Work.executeQuery("""
-      SELECT w.id FROM Work as w
-      WHERE
-        w.sourceIdentifier.identifier.ns.value = :sourceIdentifierNamespace AND
-        w.sourceIdentifier.identifier.value = :sourceIdentifier AND
-        w.sourceIdentifier.status.value = '${APPROVED}'
+    List<Work> candidate_works = Work.executeQuery("""
+      from Work as w WHERE EXISTS (
+        SELECT io FROM IdentifierOccurrence as io WHERE
+          io.resource.id = w.id AND
+          io.identifier.ns.value = :sourceIdentifierNamespace AND
+          io.identifier.value = :sourceIdentifier AND
+          io.status.value = '${APPROVED}'
+      )
     """.toString(),
     [
       sourceIdentifierNamespace: namespaceMapping(citation.sourceIdentifierNamespace),
       sourceIdentifier: citation.sourceIdentifier
     ])
-
-    /*
-     * TODO perhaps add a percentage check, if no works OR some % 
-     * (100%?) of works have a work source identifier, then don't bother
-     * falling back to IDFirstTIRS. We shouldn't query that here though,
-     * cos that will be per title :/ (Or query it once a day maybe?)
-     */
 
     //log.debug("LOGDEBUG CANDIDATE WORKS: ${candidate_works}")
 
@@ -62,7 +56,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
         break;
       case 1:
         //Work work = candidate_works.get(0);
-        result = getTitleInstanceFromWork(citation, candidate_works.get(0))
+        result = getTitleInstanceFromWork(citation, candidate_works.get(0).id)
         break;
       default:
         /*
@@ -187,10 +181,9 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
     return tiId;
   }
 
-  // TODO We need to check this change to id only works as expected
-  private List<String> getTISFromWork(String workId, String subtype = 'electronic') {
+  private List<TitleInstance> getTISFromWork(String workId, String subtype = 'electronic') {
     return TitleInstance.executeQuery("""
-      SELECT ti.id FROM TitleInstance as ti WHERE
+      from TitleInstance as ti WHERE
         ti.work.id = :workId AND
         ti.subType.value = '${subtype}'
     """.toString(), [workId: workId]);
@@ -203,11 +196,11 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
     List<TitleInstance> candidate_tis = getTISFromWork(work.id);
     switch (candidate_tis.size()) {
       case 1:
-        tiId = candidate_tis.get(0);
+        tiId = candidate_tis.get(0).id;
         updateIdentifiersAndSiblings(citation, workId);
 
         // Also check for enrichment here (always trustedSourceTI within this process)
-        checkForEnrichment(candidate_tis.get(0), citation, true);
+        checkForEnrichment(candidate_tis.get(0).id, citation, true);
         break;
       case 0:
         /* There is no electronic TI for this work, create it and siblings
@@ -236,11 +229,11 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
 
     // First up, wrangle IDs on single electronic title instance.
     // Shouldn't be in a situation where there are multiple, but can't hurt to check again
-    List<String> candidate_tis = getTISFromWork(work.id);
+    List<TitleInstance> candidate_tis = getTISFromWork(work.id);
     TitleInstance electronicTI;
     switch (candidate_tis.size()) {
       case 1:
-        electronicTI = TitleInstance.get(candidate_tis.get(0));
+        electronicTI = candidate_tis.get(0);
         break;
       case 0:
         throw new TIRSException(
@@ -315,7 +308,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
 
     // Set up list of siblings, we will remove from this as we match via citations,
     // thus building up a list of unmatchedSiblings we can then remove.
-    List<String> unmatchedSiblings = getTISFromWork(workId, 'print');
+    List<TitleInstance> unmatchedSiblings = getTISFromWork(workId, 'print');
     
     siblingCitations.each {sibling_citation ->
       // We need previous sibling work to have _taken_
@@ -341,7 +334,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
             checkForEnrichment(siblingId , sibling_citation, true);
 
             // We've matched this sibling, remove it from the unmatchedSiblings list.
-            unmatchedSiblings.removeIf { it == siblingId }
+            unmatchedSiblings.removeIf { it.id == siblingId }
 
             // Force save + flush -- necessary
             TitleInstance.get(siblingId).save(flush: true, failOnError: true);
@@ -361,7 +354,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
               matchedSibling.save(flush:true, failOnError: true);
 
               // We've matched this sibling, remove it from the unmatchedSiblings list.
-              unmatchedSiblings.removeIf { it == matchedSibling.id }
+              unmatchedSiblings.removeIf { it.id == matchedSibling.id }
             }
             break;
         }
@@ -372,8 +365,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
      * Next check whether there are any siblings left on the work
      * that cannot be matched to a citation.
      */
-    unmatchedSiblings.each { siblingId ->
-      TitleInstance sibling = TitleIntsance.get(siblingId);
+    unmatchedSiblings.each { sibling ->
       // Mark all identifier occurrences as error
       sibling.identifiers.each {io ->
         io.setStatusFromString(ERROR)

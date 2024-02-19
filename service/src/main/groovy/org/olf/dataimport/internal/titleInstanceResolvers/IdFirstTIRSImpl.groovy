@@ -167,14 +167,16 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
 
   protected String getDirectMatchHQL(Collection<IdentifierSchema> identifiers, String workId = null, boolean approvedIdsOnly = true) {
     String identifierHQL = buildIdentifierHQL(identifiers, approvedIdsOnly)
-
-    // TODO Direct match (via identifierHQL) assumes single identfier I think... not sure this is right
+ 
     String outputHQL = """
-      FROM TitleInstance as ti
-      JOIN ti.identifiers as io
-      WHERE
-        ${identifierHQL} AND
-        ti.subType.value = :subtype
+      from TitleInstance as ti
+        WHERE 
+          exists ( SELECT io FROM IdentifierOccurrence as io 
+                  WHERE
+                    io.resource.id = ti.id AND
+                    ${identifierHQL}
+                  ) AND
+          ti.subType.value = :subtype
     """
 
     if (workId !== null) {
