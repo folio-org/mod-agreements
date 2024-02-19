@@ -109,6 +109,8 @@ where rkb.type is not null
     }
   }
 
+	/*
+	This task is pre-jobs so no longer used
   @Scheduled(fixedDelay = 3600000L, initialDelay = 60000L) // Run task every hour, wait 1 minute.
   void triggerSync() {
     log.debug "Running scheduled KB sync for all tenants :{}", Instant.now()
@@ -123,6 +125,7 @@ where rkb.type is not null
       }
     }
   }
+	*/
 
   // Want this closure to be accessible by each of the triggerCacheUpdate methods below, but compileStatic can't seem to SKIP a Closure declaration, so declare as return from a method instead
   @CompileStatic(SKIP)
@@ -245,4 +248,17 @@ where rkb.type is not null
 
     log.debug("KbHarvestService::triggerCacheUpdate() completed")
   }
+
+	public void handleInterruptedJob() {
+		log.debug("It seems that the harvest job was interrupted. We should set all remote KBs to idle");
+		try {
+		RemoteKB.executeUpdate('update RemoteKB set syncStatus = :idle',[idle:'idle']);
+		}
+		catch ( Exception e ) {
+			e.printStackTrace();
+		}
+		finally {
+			log.warn("handleInterruptedJob completed");
+		}
+	}
 }

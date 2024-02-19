@@ -112,4 +112,11 @@ abstract class PersistentJob extends SingleFileAttachment implements EventBusAwa
   String toString() {
     "${name}"
   }
+
+	/**
+	 * If the job was interrupted, this method is called by the framework to do any job specific handling of an interrupted
+	 * scenario. Jobs needing this handling should @Override this method.
+	 */
+	public void handleInterruptedJob() {
+	}
 }
