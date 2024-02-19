@@ -93,8 +93,6 @@ class TitleIngestService implements DataBinder {
       String sourceIdentifier = pc?.sourceIdentifier
       titleEnricherService.secondaryEnrichment(kb, sourceIdentifier, titleId);
 
-      // ERM-1799 Do we need to go and find all existing match_key information for this TI and update it here too?
-
       // Append titleInstanceId to resultList, so we can use it elsewhere to look up titles ingested with this method
       result.titleInstanceId = titleId
       result.finishTime = System.currentTimeMillis()

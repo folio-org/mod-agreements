@@ -26,7 +26,6 @@ import org.olf.dataimport.internal.KBManagementBean.KBIngressType
 import org.olf.UtilityService
 import org.olf.PackageIngestService
 import org.olf.TitleIngestService
-import org.olf.MatchKeyService
 import org.olf.IdentifierService
 
 import org.slf4j.MDC
@@ -51,7 +50,6 @@ class PushKBService implements DataBinder {
   PackageIngestService packageIngestService
   TitleIngestService titleIngestService
   IdentifierService identifierService
-  MatchKeyService matchKeyService
 
   KBManagementBean kbManagementBean
 

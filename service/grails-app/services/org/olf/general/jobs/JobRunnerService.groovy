@@ -20,7 +20,6 @@ import org.olf.CoverageService
 import org.olf.DocumentAttachmentService
 import org.olf.ImportService
 import org.olf.IdentifierService
-import org.olf.MatchKeyService
 import org.olf.KbHarvestService
 import org.olf.KbManagementService
 
@@ -56,7 +55,6 @@ class JobRunnerService implements EventPublisher {
   ImportService importService
   ComparisonService comparisonService
   IdentifierService identifierService
-  MatchKeyService matchKeyService
   SessionFactory sessionFactory
   GrailsApplication grailsApplication
 
