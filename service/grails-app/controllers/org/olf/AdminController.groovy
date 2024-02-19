@@ -136,15 +136,5 @@ class AdminController implements DataBinder{
     result.status = 'OK'
     render result as JSON
   }
-
-  // TODO do we need to remove this?
-  public triggerRematch() {
-    def result = [:]
-    log.debug("AdminController::triggerRematch");
-    kbManagementService.triggerRematch()
-
-    result.status = 'OK'
-    render result as JSON
-  }
 }
 
