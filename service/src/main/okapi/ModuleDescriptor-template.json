@@ -540,7 +540,7 @@
           "pathPattern": "/erm/admin/triggerHousekeeping",
           "unit": "hour",
           "delay": "24"
-        },
+        }
       ]
     }
   ],
