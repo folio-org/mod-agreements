@@ -154,25 +154,23 @@ order by pj.dateCreated
       pj.status = RefdataValue.lookupOrCreate(statusCat, 'Ended')
       
       
-      Runnable handleInterruptedJob = pj.getHandleInterruptedJob();
+      Runnable onInterrupted = pj.getOnInterrupted();
 
       // Call any job-specific handling
-      if (Closure.isAssignableFrom(handleInterruptedJob.class)) {
+      if (Closure.isAssignableFrom(onInterrupted.class)) {
         // Change the delegate to this class so we can control access to beans.
-        Closure handleInterruptedJobC = handleInterruptedJob as Closure
+        Closure onInterruptedC = onInterrupted as Closure
   //      final JobRunnerService me = this
-        handleInterruptedJobC.setDelegate(this)
-        handleInterruptedJobC.setResolveStrategy(Closure.DELEGATE_FIRST)
+        onInterruptedC.setDelegate(this)
+        onInterruptedC.setResolveStrategy(Closure.DELEGATE_FIRST)
 
         // Also pass in the current tenant id and job id
-        handleInterruptedJob = handleInterruptedJobC.curry(tenantId, jid)
+        onInterrupted = onInterruptedC.curry(tenantId, jid)
       }
 
-      handleInterruptedJob.run()
+      onInterrupted.run()
       // I don't think we want to use the special thread pool here
-      //executorSvc.execute(handleInterruptedJob)
-
-      //pj.handleInterruptedJob(tenantId, jid);
+      //executorSvc.execute(onInterrupted)
       pj.save( failOnError: true, flush:true )
     }
   }
