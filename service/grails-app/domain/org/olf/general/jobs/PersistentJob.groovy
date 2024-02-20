@@ -115,8 +115,13 @@ abstract class PersistentJob extends SingleFileAttachment implements EventBusAwa
 
 	/**
 	 * If the job was interrupted, this method is called by the framework to do any job specific handling of an interrupted
-	 * scenario. Jobs needing this handling should @Override this method.
+	 * scenario.
+
+    * This needs overwriting in implementing classes that want special logic
 	 */
-	public void handleInterruptedJob() {
-	}
+  Runnable getOnInterrupted() {
+    return { String tenantId, String jobId ->
+      log.debug("No onInterrupted implemented, default implementation called as fallback")
+    }
+  }
 }

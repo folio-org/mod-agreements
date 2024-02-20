@@ -138,7 +138,7 @@ order by pj.dateCreated
     pj.status = RefdataValue.lookupOrCreate(statusCat, 'Ended')
     pj.save( failOnError: true, flush:true )
   }
-  
+
   @Transactional(propagation=REQUIRES_NEW)
   public void interruptJob(final String tenantId, final String jid) {
     
@@ -152,6 +152,27 @@ order by pj.dateCreated
       
       pj.ended = Instant.now()
       pj.status = RefdataValue.lookupOrCreate(statusCat, 'Ended')
+      
+      
+      Runnable handleInterruptedJob = pj.getHandleInterruptedJob();
+
+      // Call any job-specific handling
+      if (Closure.isAssignableFrom(handleInterruptedJob.class)) {
+        // Change the delegate to this class so we can control access to beans.
+        Closure handleInterruptedJobC = handleInterruptedJob as Closure
+  //      final JobRunnerService me = this
+        handleInterruptedJobC.setDelegate(this)
+        handleInterruptedJobC.setResolveStrategy(Closure.DELEGATE_FIRST)
+
+        // Also pass in the current tenant id and job id
+        handleInterruptedJob = handleInterruptedJobC.curry(tenantId, jid)
+      }
+
+      handleInterruptedJob.run()
+      // I don't think we want to use the special thread pool here
+      //executorSvc.execute(handleInterruptedJob)
+
+      //pj.handleInterruptedJob(tenantId, jid);
       pj.save( failOnError: true, flush:true )
     }
   }

@@ -10,12 +10,11 @@ class PackageIngestJob extends PersistentJob implements MultiTenant<PackageInges
     kbHarvestService.triggerPackageCacheUpdate()
   }
 
-	@Override
-  public void handleInterruptedJob() {
+  final Closure onInterrupted = {String tenantId, String jobId ->
 		// We need to update the harvest job and set syncStatus to something other than in-process
 		// Probably we should just update all rkb.syncStatus = 'idle'
-    log.info "Requesting that kbHarvestService resets syncStatus to idle on any interrupted KB connections"
+    // This work is handled in kbHarvestService
+    log.info("onInterrupted called for job(${jobId}) in tenant(${tenantId}).")
     kbHarvestService.handleInterruptedJob()
   }
-
 }
