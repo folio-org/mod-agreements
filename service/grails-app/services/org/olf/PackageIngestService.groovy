@@ -5,6 +5,7 @@ import static org.springframework.transaction.annotation.Propagation.REQUIRES_NE
 import java.util.concurrent.TimeUnit
 
 import org.olf.general.StringUtils
+import org.olf.general.FolioIngestException
 
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
@@ -20,7 +21,6 @@ import org.olf.kb.Platform
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.RemoteKB
 import org.olf.kb.TitleInstance
-import org.olf.general.IngestException
 import org.slf4j.MDC
 
 import com.k_int.web.toolkit.utils.GormUtils
@@ -161,13 +161,13 @@ class PackageIngestService implements DataBinder {
 										//log.error(message)
 									}
 								}
-							} catch ( IngestException e ) {
+							} catch ( FolioIngestException ie ) {
                 // When we've caught an ingest exception, should have helpful error log message
-                String message = "Skipping \"${pc.title}\": ${e.message}"
-                log.error(message,e)
+                String message = "Skipping \"${pc.title}\": ${ie.message}"
+                log.error(message, ie)
 							} catch ( Exception e ) {
 								String message = "Skipping \"${pc.title}\". System error: ${e.message}"
-								log.error(message,e)
+								log.error(message, e)
 							}
 							result.titleCount++
 							result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/result.titleCount
@@ -586,7 +586,7 @@ class PackageIngestService implements DataBinder {
       // ensure that accessStart is earlier than accessEnd, otherwise stop processing the current item
       if (pci.accessStart != null && pci.accessEnd != null) {
         if (pci.accessStart > pci.accessEnd ) {
-          throw new IngestException("accessStart date cannot be after accessEnd date for title: ${title} in package: ${pkg.name}")
+          throw new FolioIngestException("accessStart date cannot be after accessEnd date for title: ${title} in package: ${pkg.name}");
         }
       }
 
@@ -614,7 +614,7 @@ class PackageIngestService implements DataBinder {
       }
     }
     else {
-      throw new IngestException("Unable to identify platform from ${platform_url_to_use} and ${pc.platformName}")
+      throw new FolioIngestException("Unable to identify platform from ${platform_url_to_use} and ${pc.platformName}");
     }
 
     result

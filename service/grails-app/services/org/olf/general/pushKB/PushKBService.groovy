@@ -173,7 +173,11 @@ class PushKBService implements DataBinder {
                   log.error(message)
                 }
               }
-            }  catch ( Exception e ) {
+            } catch ( FolioIngestException ie ) {
+                // When we've caught an ingest exception, should have helpful error log message
+                String message = "Skipping \"${pc.title}\": ${ie.message}"
+                log.error(message, ie)
+            } catch ( Exception e ) {
               String message = "Skipping \"${pc.title}\". System error: ${e.message}"
               log.error(message,e)
             }
