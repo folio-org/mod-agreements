@@ -20,6 +20,7 @@ import org.olf.kb.Platform
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.RemoteKB
 import org.olf.kb.TitleInstance
+import org.olf.general.IngestException
 import org.slf4j.MDC
 
 import com.k_int.web.toolkit.utils.GormUtils
@@ -160,6 +161,10 @@ class PackageIngestService implements DataBinder {
 										//log.error(message)
 									}
 								}
+							} catch ( IngestException e ) {
+                // When we've caught an ingest exception, should have helpful error log message
+                String message = "Skipping \"${pc.title}\": ${e.message}"
+                log.error(message,e)
 							} catch ( Exception e ) {
 								String message = "Skipping \"${pc.title}\". System error: ${e.message}"
 								log.error(message,e)
@@ -581,8 +586,7 @@ class PackageIngestService implements DataBinder {
       // ensure that accessStart is earlier than accessEnd, otherwise stop processing the current item
       if (pci.accessStart != null && pci.accessEnd != null) {
         if (pci.accessStart > pci.accessEnd ) {
-          log.error("accessStart date cannot be after accessEnd date for title: ${title} in package: ${pkg.name}")
-          return
+          throw new IngestException("accessStart date cannot be after accessEnd date for title: ${title} in package: ${pkg.name}")
         }
       }
 
@@ -610,8 +614,7 @@ class PackageIngestService implements DataBinder {
       }
     }
     else {
-      String message = "Skipping \"${pc.title}\". Unable to identify platform from ${platform_url_to_use} and ${pc.platformName}"
-      log.error(message)
+      throw new IngestException("Unable to identify platform from ${platform_url_to_use} and ${pc.platformName}")
     }
 
     result
