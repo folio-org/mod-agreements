@@ -85,7 +85,10 @@ dataSource:
   password: "${db.password:folio}"
   driverClassName: org.postgresql.Driver
   dialect: com.k_int.hibernate.dialects.postgres.KIPostgres94Dialect
-  url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olfdev}"
+  url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olfdev}?ApplicationName=mod-agreements"
+  hikari:
+    data-source-properties:
+      ApplicationName: mod-agreements
   schemaHandler: com.k_int.okapi.OkapiSchemaHandler
 
   properties:
@@ -220,7 +223,10 @@ webtoolkit:
 environments:
   test:
     dataSource:
-      url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olftest}"
+      url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olftest}?ApplicationName=mod-agreements"
+      hikari:
+        data-source-properties:
+          ApplicationName: mod-agreements
     kiwt:
       # Filestore values from the minio config defined in the docker-compose file at ../tools/testing
       filestore:
@@ -245,7 +251,10 @@ environments:
 
   production:
     dataSource:
-      url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olf}"
+      url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olf}?ApplicationName=mod-agreements"
+      hikari:
+        data-source-properties:
+          ApplicationName: mod-agreements
     kiwt:
       filestore:
         aws_region: "${aws.region:us-east-1}"
