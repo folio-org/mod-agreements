@@ -170,12 +170,14 @@ class PackageIngestService implements DataBinder {
 								log.error(message, e)
 							}
 							result.titleCount++
-							result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/result.titleCount
-							if ( result.titleCount % 100 == 0 ) {
-								log.debug ("Processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}")
-							}
+
+              // Do we really need a running average?
+              /* if ( result.titleCount % 100 == 0 ) {
+                result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/(result.titleCount * 1000)
+								log.debug ("(Package in progress) processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}s")
+							} */
 						}
-						def finishedTime = (System.currentTimeMillis()-result.startTime)/1000
+						long finishedTime = (System.currentTimeMillis()-result.startTime)/1000
 				
 						// This removed logic is WRONG under pushKB because it's chunked -- ensure pushKB does not call full upsertPackage method
 						// At the end - Any PCIs that are currently live (Don't have a removedTimestamp) but whos lastSeenTimestamp is < result.updateTime
@@ -198,35 +200,11 @@ class PackageIngestService implements DataBinder {
 								result.removedTitles++
 							}
 						}
-				
+
+            // Not sure if MDC logic can go in shared method
 						MDC.remove('recordNumber')
 						MDC.remove('title')
-						// Need to pause long enough so that the timestamps are different
-						TimeUnit.MILLISECONDS.sleep(1)
-						if (result.titleCount > 0) {
-							log.info ("Processed ${result.titleCount} titles in ${finishedTime} seconds (${finishedTime/result.titleCount} average)")
-							TimeUnit.MILLISECONDS.sleep(1)
-							log.info ("Added ${result.newTitles} titles")
-							TimeUnit.MILLISECONDS.sleep(1)
-							log.info ("Updated ${result.updatedTitles} titles")
-							TimeUnit.MILLISECONDS.sleep(1)
-							log.info ("Removed ${result.removedTitles} titles")
-							log.info ("Updated accessStart on ${result.updatedAccessStart} title(s)")
-							log.info ("Updated accessEnd on ${result.updatedAccessEnd} title(s)")
-				
-							// Log the counts too.
-							for (final String change : countChanges) {
-								if (result[change]) {
-									TimeUnit.MILLISECONDS.sleep(1)
-									log.info ("Changed ${GrailsNameUtils.getNaturalName(change).toLowerCase()} on ${result[change]} titles")
-								}
-							}
-						} else {
-							if (result.titleCount > 0) {
-								log.info ("No titles to process")
-							}
-						}
-				
+            logPackageResults(result, finishedTime);
 				//    MDC.clear()
 				
 						return result
@@ -234,6 +212,28 @@ class PackageIngestService implements DataBinder {
 				}
 			}
 		}
+  }
+
+  // Pass in finished time so we're not waiting for package content cleanup
+  public void logPackageResults(Map result, long finishedTime) {
+    // Need to pause long enough so that the timestamps are different
+    TimeUnit.MILLISECONDS.sleep(1)
+    if (result.titleCount > 0) {
+      log.debug ("Processed ${result.titleCount} titles in ${finishedTime} seconds (${finishedTime/result.titleCount}s average)")
+      log.info("Package titles summary::Processed/${result.titleCount}, Added/${result.newTitles}, Updated/${result.updatedTitles}, Removed/${result.removedTitles}, AccessStart/${result.updatedAccessStart}, AccessEnd/${result.updatedAccessEnd}")
+
+      // Log the counts too.
+      for (final String change : countChanges) {
+        if (result[change]) {
+          TimeUnit.MILLISECONDS.sleep(1)
+          log.info ("Changed ${GrailsNameUtils.getNaturalName(change).toLowerCase()} on ${result[change]} titles")
+        }
+      }
+    } else {
+      if (result.titleCount > 0) {
+        log.info ("No titles to process")
+      }
+    }
   }
 
   /* 
