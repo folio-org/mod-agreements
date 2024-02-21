@@ -1,5 +1,6 @@
 package org.olf.general.pushKB
 
+import org.olf.general.IngestException
 import org.olf.general.StringUtils
 
 import java.util.concurrent.TimeUnit
@@ -173,7 +174,7 @@ class PushKBService implements DataBinder {
                   log.error(message)
                 }
               }
-            } catch ( FolioIngestException ie ) {
+            } catch ( IngestException ie ) {
                 // When we've caught an ingest exception, should have helpful error log message
                 String message = "Skipping \"${pc.title}\": ${ie.message}"
                 log.error(message, ie)
