@@ -411,7 +411,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
      * that cannot be matched to a citation.
      */
     unmatchedSiblings.each { siblingId ->
-      TitleInstance sibling = TitleIntsance.get(siblingId);
+      TitleInstance sibling = TitleInstance.get(siblingId);
       // Mark all identifier occurrences as error
       sibling.identifiers.each {io ->
         io.setStatusFromString(ERROR)

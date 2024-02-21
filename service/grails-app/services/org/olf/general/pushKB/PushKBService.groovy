@@ -1,5 +1,6 @@
 package org.olf.general.pushKB
 
+import org.olf.general.IngestException
 import org.olf.general.StringUtils
 
 import java.util.concurrent.TimeUnit
@@ -173,7 +174,11 @@ class PushKBService implements DataBinder {
                   log.error(message)
                 }
               }
-            }  catch ( Exception e ) {
+            } catch ( IngestException ie ) {
+                // When we've caught an ingest exception, should have helpful error log message
+                String message = "Skipping \"${pc.title}\": ${ie.message}"
+                log.error(message, ie)
+            } catch ( Exception e ) {
               String message = "Skipping \"${pc.title}\". System error: ${e.message}"
               log.error(message,e)
             }
@@ -183,46 +188,22 @@ class PushKBService implements DataBinder {
           } else {
             // We could log an ending error message here, but the error log messages from checkValidBinding may well suffice
           }
+
+          // Do we really need a running average?
+          /* if ( result.titleCount % 100 == 0 ) {
+            result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/(result.titleCount * 1000)
+            log.debug ("(Package in progress) processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}s")
+          } */
         }
 
-        // FIXME logging repeated here again
-        result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/result.titleCount
-        if ( result.titleCount % 100 == 0 ) {
-          log.debug ("Processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}")
-        }
-
-        def finishedTime = (System.currentTimeMillis()-result.startTime)/1000
+        long finishedTime = (System.currentTimeMillis()-result.startTime)/1000
         result.success = true
 
-        // FIXME same as above, logging may need tweaking between pushKB and harvest
-        // Currently this is copied from packageIngestService
+        // TODO Logging may need tweaking between pushKB and harvest
+        // Currently this is used directly from packageIngestService
         MDC.remove('recordNumber')
         MDC.remove('title')
-        // Need to pause long enough so that the timestamps are different
-        TimeUnit.MILLISECONDS.sleep(1)
-        if (result.titleCount > 0) {
-          log.info ("Processed ${result.titleCount} titles in ${finishedTime} seconds (${finishedTime/result.titleCount} average)")
-          TimeUnit.MILLISECONDS.sleep(1)
-          log.info ("Added ${result.newTitles} titles")
-          TimeUnit.MILLISECONDS.sleep(1)
-          log.info ("Updated ${result.updatedTitles} titles")
-          TimeUnit.MILLISECONDS.sleep(1)
-          log.info ("Removed ${result.removedTitles} titles")
-          log.info ("Updated accessStart on ${result.updatedAccessStart} title(s)")
-          log.info ("Updated accessEnd on ${result.updatedAccessEnd} title(s)")
-
-          // Log the counts too.
-          for (final String change : countChanges) {
-            if (result[change]) {
-              TimeUnit.MILLISECONDS.sleep(1)
-              log.info ("Changed ${GrailsNameUtils.getNaturalName(change).toLowerCase()} on ${result[change]} titles")
-            }
-          }
-        } else {
-          if (result.titleCount > 0) {
-            log.info ("No titles to process")
-          }
-        }
+        packageIngestService.logPackageResults(result, finishedTime);
       } catch (Exception e) {
         log.error("Something went wrong", e);
         result.errorMessage = "Something went wrong: ${e}"
