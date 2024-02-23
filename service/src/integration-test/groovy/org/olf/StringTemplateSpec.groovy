@@ -52,21 +52,14 @@ class StringTemplateSpec extends BaseSpec {
   
   void "Load Packages" (test_package_file) {
     when: 'File loaded'
-
-      def jsonSlurper = new JsonSlurper()
-      def package_data = jsonSlurper.parse(new File(test_package_file))
-      int result = 0
-      final String tenantid = currentTenant.toLowerCase()
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
-        result = importService.importPackageUsingInternalSchema( package_data )
-      }
+      Map result = importPackageFromFileViaService(test_package_file, 'src/integration-test/resources/packages/stringTemplating')
 
     then: 'Package imported'
-      result > 0
+      result.packageImported == true
 
     where:
       test_package_file | _
-      'src/integration-test/resources/packages/stringTemplating/simple_pkg.json' | _
+      'simple_pkg.json' | _
   }
 
 

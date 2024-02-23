@@ -31,6 +31,7 @@ package org.olf
 //  
 //  void "Load Packages" (test_package_file) {
 //    when: 'File loaded'
+//      // FIXME if we turn this back on it should use the new importPackageFromFileViaService method
 //
 //      def jsonSlurper = new JsonSlurper()
 //      def package_data = jsonSlurper.parse(new File(test_package_file))

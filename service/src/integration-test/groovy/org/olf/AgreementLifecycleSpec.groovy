@@ -38,7 +38,7 @@ class AgreementLifecycleSpec extends BaseSpec {
   Map expectedBeanResult = [
     (TITLE_TIRS): 140,
     (ID_TIRS): 376,
-    (WORK_SOURCE_TIRS): 376
+    (WORK_SOURCE_TIRS): 378
   ]
 
   def fileUploadService
@@ -52,7 +52,7 @@ class AgreementLifecycleSpec extends BaseSpec {
     log.debug("test load packages - server running on port $serverPort");
 
     when: 'File loaded'
-      Map result = importPackageViaService(test_package_file_name)
+      Map result = importPackageFromFileViaService(test_package_file_name)
 
     then: 'Package imported'
       // Difference in internal vs erm schema shapes
@@ -60,7 +60,7 @@ class AgreementLifecycleSpec extends BaseSpec {
 
     where:
       test_package_file_name << [
-        'ALPSP_Jisc-Collections_Archaeology-and-History_2019_v1_short.json',
+        'brill-eg.json',
         'jstor-eg.json'
       ]
 
@@ -208,7 +208,7 @@ class AgreementLifecycleSpec extends BaseSpec {
   }
   
   @Unroll
-  void "Add #resourceType for title #titleName to the Agreement named #agreement_name" (agreement_name, resourceEndpoint, titleName, filterKey) {
+  void "Add #resourceType for title #titleName to the Agreement named #agreement_name" (agreement_name, resourceType, resourceEndpoint, titleName, filterKey) {
     
     def entitledResourceCount = 0
     when:"We ask the titles controller to list the titles we can access"
@@ -267,11 +267,11 @@ class AgreementLifecycleSpec extends BaseSpec {
       // content responds with a JSON object containing a count and a list called subscribedTitles
       respMap.totalRecords == (entitledResourceCount + 1)
       
-    // Titles from _other_ package?
+    // Titles from _other_ package to add individual extra TIs
     where:
-      agreement_name        | resourceEndpoint    | titleName                             | filterKey
-      'My first agreement'  | 'erm/pci'           | "Archaeological and Environmental Forensic Science"       | "pti.titleInstance.name"
-      'My first agreement'  | 'erm/pti'           | "Proceedings and Transactions of the Kilkenny and South-East of Ireland Archaeological Society" | "titleInstance.name"
+      agreement_name        | resourceType                      | resourceEndpoint      | titleName                                | filterKey
+      'My first agreement'  | PackageContentItem.class.name     | '/erm/pci'            | "African yearbook of international law"  | "pti.titleInstance.name"
+      'My first agreement'  | PlatformTitleInstance.class.name  | '/erm/pti'            | "Journal of reformed theology"           | "titleInstance.name"
   }
   
   void "Check closure reason behaviour" () {

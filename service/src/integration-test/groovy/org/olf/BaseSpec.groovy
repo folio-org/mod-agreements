@@ -88,23 +88,31 @@ abstract class BaseSpec extends HttpSpec {
       }
   }
 
-
+  // Setup shared JsonSlurper
+  def jsonSlurper = new JsonSlurper()
 
   // TIRS gets injected as a spring bean, this can help figure out which is being used
   // Used to work out which TIRS we're using
   TitleInstanceResolverService titleInstanceResolverService
   @Ignore
   def injectedTIRS() {
+    log.debug("LOGDEBUG INJECTED TIRS CALLED: ${titleInstanceResolverService?.class?.name}")
     titleInstanceResolverService?.class?.name
   }
 
-  // Set up helper method to import test packages so we don't repeat that code throughout tests
+  // Set up helper methods to import test packages so we don't repeat that code throughout tests
   @Ignore
-  def importPackageViaService(String test_package_file_name) {
-    String test_package_file = "src/integration-test/resources/packages/${test_package_file_name}";
+  def importPackageFromFileViaService(String test_package_file_name, String path = "src/integration-test/resources/packages") {
+    String test_package_file = "${path}/${test_package_file_name}";
 
-    def jsonSlurper = new JsonSlurper()
     def package_data = jsonSlurper.parse(new File(test_package_file))
+    Map result = importPackageFromMapViaService(package_data)
+
+    return result;
+  }
+
+  @Ignore
+  def importPackageFromMapViaService(Map package_data) {
     Map result = [:]
     final String tenantid = currentTenant.toLowerCase()
     log.debug("Create new package with tenant ${tenantid}");
