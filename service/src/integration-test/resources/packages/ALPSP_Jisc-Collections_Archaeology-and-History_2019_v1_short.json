@@ -1,0 +1,329 @@
+{
+  "header": {
+    "dataSchema": {
+      "name": "mod-agreements-package",
+      "version": "2.0"
+    }
+  },
+  "records": [
+    {
+      "source": "Jisc Collections",
+      "reference": "2151",
+      "name": "ALPSP Archaeology and History",
+      "packageProvider": {
+        "name": "ALPSP"
+      },
+      "contentItems": [
+        {
+          "depth": "fulltext",
+          "coverage": [
+            {
+              "startDate": "2018-04-01",
+              "startVolume": "1",
+              "startIssue": "1"
+            }
+          ],
+          "sourceIdentifier": "1",
+          "sourceIdentifierNamespace": "Ethan",
+          "platformTitleInstance": {
+            "platform": "EUP Publishing",
+            "platform_url": "https://www.euppublishing.com",
+            "url": "https://www.euppublishing.com/loi/afg",
+            "titleInstance": {
+              "name": "Afghanistan",
+              "identifiers": [
+                {
+                  "value": "2399-357X",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "2399-3588",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          }
+        },
+        {
+          "depth": "fulltext",
+          "coverage": [
+            {
+              "startDate": "2017-01-01",
+              "startVolume": "1",
+              "startIssue": "1"
+            }
+          ],
+          "sourceIdentifier": "2",
+          "sourceIdentifierNamespace": "Ethan",
+          "platformTitleInstance": {
+            "platform": "Equinox Journals",
+            "platform_url": "http://www.equinoxjournals.com",
+            "url": "http://www.equinoxjournals.com/AEFS/",
+            "titleInstance": {
+              "name": "Archaeological and Environmental Forensic Science",
+              "identifiers": [
+                {
+                  "value": "2052-3378",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "2052-3386",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          }
+        },
+        {
+          "depth": "fulltext",
+          "coverage": [
+            {
+              "startDate": "2000-02-01",
+              "startVolume": "27",
+              "startIssue": "1"
+            }
+          ],
+          "sourceIdentifier": "3",
+          "sourceIdentifierNamespace": "Ethan",
+          "platformTitleInstance": {
+            "platform": "EUP Publishing",
+            "platform_url": "https://www.euppublishing.com",
+            "url": "https://www.euppublishing.com/loi/anh",
+            "titleInstance": {
+              "name": "Archives of Natural History",
+              "identifiers": [
+                {
+                  "value": "0260-9541",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "1755-6260",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          }
+        },
+        {
+          "depth": "fulltext",
+          "note": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam vulputate urna vitae massa cursus, quis consectetur ante posuere. Morbi aliquam metus pharetra, tempor est eu, porttitor risus. Sed leo diam, vehicula vitae mauris sed, dapibus pharetra velit. Nunc mattis ultrices libero, ac fermentum turpis molestie non. Vestibulum luctus lacinia nibh. Aliquam feugiat nec tortor vitae sodales. Etiam dapibus semper ligula, sit amet scelerisque ligula vulputate sed. Integer cursus pharetra tellus, vitae ultrices nunc mattis eget. Sed lacinia tellus a felis viverra tincidunt. Suspendisse scelerisque condimentum purus id laoreet. Donec vitae tristique erat. Nulla mi urna, facilisis vitae elit pharetra, tincidunt rutrum sapien. Nullam a magna ut purus pharetra cursus. Vestibulum faucibus felis sit amet ligula accumsan, eu faucibus nulla porta.",
+          "coverage": [
+            {
+              "startDate": "2015-01-01",
+              "startVolume": "33"
+            }
+          ],
+          "sourceIdentifier": "4",
+          "sourceIdentifierNamespace": "Ethan",
+          "platformTitleInstance": {
+            "platform": "JSTOR",
+            "platform_url": "https://www.jstor.org",
+            "url": "https://www.jstor.org/journal/bethunivj",
+            "titleInstance": {
+              "name": "Bethlehem University Journal",
+              "identifiers": [
+                {
+                  "value": "2521-3695",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "2410-5449",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          }
+        },
+        {
+          "depth": "fulltext",
+          "coverage": [
+            {
+              "startDate": "2011-03-01",
+              "startVolume": "4",
+              "startIssue": "1"
+            }
+          ],
+          "sourceIdentifier": "5",
+          "sourceIdentifierNamespace": "Ethan",
+          "platformTitleInstance": {
+            "platform": "EUP Publishing",
+            "platform_url": "https://www.euppublishing.com",
+            "url": "https://www.euppublishing.com/loi/brw",
+            "titleInstance": {
+              "name": "Britain and the World",
+              "identifiers": [
+                {
+                  "value": "2043-8567",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "2043-8575",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          }
+        },
+        {
+          "depth": "fulltext",
+          "coverage": [
+            {
+              "startDate": "2008-09-01",
+              "startVolume": "1",
+              "startIssue": "1",
+              "endDate": "2010-09-01",
+              "endVolume": "3",
+              "endIssue": "2"
+            }
+          ],
+          "sourceIdentifier": "6",
+          "sourceIdentifierNamespace": "Ethan",
+          "platformTitleInstance": {
+            "platform": "EUP Publishing",
+            "platform_url": "https://www.euppublishing.com",
+            "url": "https://www.euppublishing.com/loi/brs",
+            "titleInstance": {
+              "name": "British Scholar",
+              "identifiers": [
+                {
+                  "value": "1941-6105",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "1941-6113",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          }
+        },
+        {
+          "depth": "fulltext",
+          "coverage": [
+            {
+              "startDate": "2013-01-01",
+              "startVolume": "23",
+              "startIssue": "1"
+            }
+          ],
+          "sourceIdentifier": "7",
+          "sourceIdentifierNamespace": "Ethan",
+          "platformTitleInstance": {
+            "platform": "JSTOR",
+            "platform_url": "https://www.jstor.org",
+            "url": "https://www.jstor.org/journal/bullbiblrese",
+            "titleInstance": {
+              "name": "Bulletin for Biblical Research",
+              "identifiers": [
+                {
+                  "value": "1065-223X",
+                  "namespace": "issn"
+                }
+              ],
+              "type": "serial"
+            }
+          }
+        },
+        {
+          "depth": "fulltext",
+          "coverage": [
+            {
+              "startDate": "2014-01-01",
+              "startVolume": "5",
+              "startIssue": "1"
+            }
+          ],
+          "sourceIdentifier": "8",
+          "sourceIdentifierNamespace": "Ethan",
+          "platformTitleInstance": {
+            "platform": "JSTOR",
+            "platform_url": "https://www.jstor.org",
+            "url": "http://www.jstor.org/journal/bustan",
+            "titleInstance": {
+              "name": "Bustan: The Middle East Book Review",
+              "identifiers": [
+                {
+                  "value": "1878-5301",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "1878-5328",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          }
+        },
+        {
+          "depth": "fulltext",
+          "coverage": [
+            {
+              "startDate": "2000-01-01",
+              "startVolume": "34",
+              "startIssue": "1"
+            }
+          ],
+          "sourceIdentifier": "9",
+          "sourceIdentifierNamespace": "Ethan",
+          "platformTitleInstance": {
+            "platform": "EUP Publishing",
+            "platform_url": "https://www.euppublishing.com",
+            "url": "https://www.euppublishing.com/loi/cost",
+            "titleInstance": {
+              "name": "Costume: Journal of the Costume Society",
+              "identifiers": [
+                {
+                  "value": "0590-8876",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "1749-6306",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          }
+        },
+        {
+          "depth": "fulltext",
+          "coverage": [
+            {
+              "startDate": "2012-04-01",
+              "startVolume": "1",
+              "startIssue": "1"
+            }
+          ],
+          "sourceIdentifier": "10",
+          "sourceIdentifierNamespace": "Ethan",
+          "platformTitleInstance": {
+            "platform": "EUP Publishing",
+            "platform_url": "https://www.euppublishing.com",
+            "url": "https://www.euppublishing.com/loi/cult",
+            "titleInstance": {
+              "name": "Cultural History",
+              "identifiers": [
+                {
+                  "value": "2045-290X",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "2045-2918",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

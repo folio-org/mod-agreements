@@ -74,6 +74,8 @@ class AgreementViewsSpec extends BaseSpec {
                     type "serial"
                   }
                 }
+                sourceIdentifierNamespace "test"
+                sourceIdentifier "1234"
               },
               {
                 depth "fulltext"
@@ -104,6 +106,8 @@ class AgreementViewsSpec extends BaseSpec {
                     type "serial"
                   }
                 }
+                sourceIdentifierNamespace "test"
+                sourceIdentifier "2345"
               },
               {
                 depth "fulltext"
@@ -134,6 +138,8 @@ class AgreementViewsSpec extends BaseSpec {
                     type "serial"
                   }
                 }
+                sourceIdentifierNamespace "test"
+                sourceIdentifier "3456"
               },
               {
                 depth "fulltext"
@@ -163,6 +169,8 @@ class AgreementViewsSpec extends BaseSpec {
                     type "serial"
                   }
                 }
+                sourceIdentifierNamespace "test"
+                sourceIdentifier "4567"
               }
             ])
           }

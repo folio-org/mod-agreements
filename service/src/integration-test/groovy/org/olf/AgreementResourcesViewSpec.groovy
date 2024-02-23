@@ -87,6 +87,8 @@ class AgreementResourcesViewSpec extends BaseSpec {
                     type "serial"
                   }
                 }
+                sourceIdentifierNamespace "test"
+                sourceIdentifier "1234"
               },
               {
                 depth "fulltext"
@@ -117,6 +119,8 @@ class AgreementResourcesViewSpec extends BaseSpec {
                     type "serial"
                   }
                 }
+                sourceIdentifierNamespace "test"
+                sourceIdentifier "2345"
               },
               {
                 depth "fulltext"
@@ -147,6 +151,8 @@ class AgreementResourcesViewSpec extends BaseSpec {
                     type "serial"
                   }
                 }
+                sourceIdentifierNamespace "test"
+                sourceIdentifier "3456"
               },
               {
                 depth "fulltext"
@@ -176,6 +182,8 @@ class AgreementResourcesViewSpec extends BaseSpec {
                     type "serial"
                   }
                 }
+                sourceIdentifierNamespace "test"
+                sourceIdentifier "4567"
               }
             ])
           }
@@ -216,6 +224,7 @@ class AgreementResourcesViewSpec extends BaseSpec {
       Map httpResult = doGet("/erm/sas/${agg_id}", [expand: 'items'])
     and: 'Find package by name'
       List pci_resp = doGet("/erm/pci", [filters: ["pkg.id==${pkg_id}", "pti.titleInstance.name==${name}"]])
+      log.debug("LOGDEBUG WTF IS THIS: ${pci_resp}")
       pci_id = pci_resp[0]?.id
     then: 'PCI exists'
       assert pci_id != null

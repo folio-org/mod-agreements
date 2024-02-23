@@ -42,6 +42,8 @@
     "coverageNote": "This is a made up package for string templating tests",
     "url": "http://link.springer.com/10.1007/978-3-319-55227-9",
     "platformName": "SpringerLink",
-    "_platformId": 932
+    "_platformId": 932,
+    "sourceIdentifierNamespace": "K-Int",
+    "sourceIdentifier": "123456789"
   }]
 }
