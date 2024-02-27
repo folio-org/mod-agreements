@@ -6,7 +6,8 @@
 
 buildscript {
   repositories {
-    //mavenLocal()
+    // FIXME Comment this
+		mavenLocal()
 		mavenCentral()
     maven { url "https://plugins.gradle.org/m2/" }
 		maven { url "https://repo.grails.org/grails/core" }
@@ -35,6 +36,7 @@ else {
   calculated_version = "${appVersion}".toString()
 }
 
+
 version "${calculated_version}"
 group 'org.olf'
 
@@ -60,7 +62,8 @@ bootJar {
 }
 
 repositories {
-//	mavenLocal()
+  // FIXME Comment this
+  mavenLocal()
 	mavenCentral()
 	maven { url "https://repo.grails.org/grails/core" }
 	maven { url "https://repo.grails.org/grails/plugins" }
@@ -69,77 +72,83 @@ repositories {
 	maven { url "https://maven.k-int.com/repository/releases" }
 }
 
-configurations {
-	developmentOnly
-	runtimeClasspath {
-		extendsFrom developmentOnly
-	}
-}
-
 dependencies {
-  /* ---- Grails 5 ---- */
-	//developmentOnly("org.springframework.boot:spring-boot-devtools")
-	compileOnly "io.micronaut:micronaut-inject-groovy"
-	console "org.grails:grails-console"
-	implementation "org.springframework.boot:spring-boot-starter-logging"
-	//implementation "org.springframework.boot:spring-boot-starter-validation"
-	implementation "org.springframework.boot:spring-boot-autoconfigure"
-	implementation "org.grails:grails-core"
-	implementation "org.springframework.boot:spring-boot-starter-actuator"
-	//implementation "org.springframework.boot:spring-boot-starter-tomcat"
-	implementation "org.grails:grails-plugin-url-mappings"
-	implementation "org.grails:grails-plugin-rest"
-	implementation "org.grails:grails-plugin-codecs"
-	implementation "org.grails:grails-plugin-interceptors"
-	implementation "org.grails:grails-plugin-services"
-	implementation "org.grails:grails-plugin-datasource"
-	implementation "org.grails:grails-plugin-databinding"
-	implementation "org.grails:grails-web-boot"
-	implementation "org.grails:grails-logging"
-	//implementation "org.grails.plugins:cache"
-	implementation "org.grails.plugins:async"
-	implementation "org.grails.plugins:hibernate5"
-	implementation "org.hibernate:hibernate-core:5.6.11.Final"
-	implementation "org.grails.plugins:events"
-	implementation "org.grails.plugins:views-json"
-	implementation "org.grails.plugins:views-json-templates"
-	profile "org.grails.profiles:rest-api"
-	//runtimeOnly "org.glassfish.web:el-impl:2.2.1-b05"
-	//runtimeOnly "com.h2database:h2"
-	//runtimeOnly "org.apache.tomcat:tomcat-jdbc"
-	runtimeOnly "javax.xml.bind:jaxb-api:2.3.1"
-	testImplementation "io.micronaut:micronaut-inject-groovy"
-	testImplementation "org.grails:grails-gorm-testing-support"
-	testImplementation "org.mockito:mockito-core"
-	//testImplementation "io.micronaut:micronaut-http-client"
+  /* Grails 6 */
+  compileOnly("io.micronaut:micronaut-inject-groovy")
+  console("org.grails:grails-console")
+  profile "org.grails.profiles:rest-api"
+
+  implementation("org.springframework.boot:spring-boot-autoconfigure")
+  implementation("org.springframework.boot:spring-boot-starter")
+  implementation("org.springframework.boot:spring-boot-starter-actuator")
+  implementation("org.springframework.boot:spring-boot-starter-logging")
+  //implementation("org.springframework.boot:spring-boot-starter-tomcat")
+  //implementation("org.springframework.boot:spring-boot-starter-validation")
+
+  implementation("org.grails:grails-core")
+  implementation("org.grails:grails-logging")
+
+  implementation("org.grails:grails-plugin-codecs")
+  implementation("org.grails:grails-plugin-databinding")
+  implementation("org.grails:grails-plugin-datasource")
+  implementation("org.grails:grails-plugin-i18n")
+  implementation("org.grails:grails-plugin-interceptors")
+  implementation("org.grails:grails-plugin-rest")
+  implementation("org.grails:grails-plugin-services")
+  implementation("org.grails:grails-plugin-url-mappings")
+
+  implementation("org.grails:grails-web-boot")
+
+	implementation("org.grails.plugins:async")
+  implementation("org.grails.plugins:events")
+  implementation("org.grails.plugins:hibernate5")
+  implementation("org.grails.plugins:spring-security-core:${grailsVersion}")
+  implementation("org.grails.plugins:views-json")
+  implementation("org.grails.plugins:views-json-templates")
+  implementation("org.hibernate:hibernate-core:5.6.15.Final")
+
+
+  //runtimeOnly("com.h2database:h2")
+  runtimeOnly("javax.xml.bind:jaxb-api:2.3.1")
+  //runtimeOnly("org.apache.tomcat:tomcat-jdbc")
+  //runtimeOnly("org.glassfish.web:el-impl:2.2.1-b05")
+
+  testImplementation("io.micronaut:micronaut-inject-groovy")
+  testImplementation("org.grails:grails-gorm-testing-support")
+  testImplementation("org.mockito:mockito-core")
 	testImplementation "org.grails:grails-web-testing-support"
-	//testImplementation "org.grails:views-json-testing-support"
-	//testImplementation "org.hibernate.validator:hibernate-validator:6.1.7.Final"
+
+  //testImplementation("org.grails:views-json-testing-support")
+  //testImplementation("org.spockframework:spock-core")
+  //testImplementation("io.micronaut:micronaut-http-client")
 
   /*  ---- Manually installed dependencies ---- */
-  implementation 'org.grails.plugins:spring-security-core:5.2.1'
-
-	implementation 'com.k_int.grails:web-toolkit-ce:8.1.4'
+/*   implementation 'com.k_int.grails:web-toolkit-ce:8.1.4'
   implementation ('com.k_int.okapi:grails-okapi:6.0.0-rc.4') {
     exclude group: 'com.vaadin.external.google', module: 'android-json'
-  }
+  } */
+    // FIXME use released version
+	implementation 'com.k_int.grails:web-toolkit-ce:8.1.5-SNAPSHOT'
+	//implementation 'com.k_int.okapi:grails-okapi:6.0.0-rc.4'
+	// FIXME Use released version
+	implementation 'com.k_int.okapi:grails-okapi:6.0.0-SNAPSHOT'
 
-	implementation 'io.github.http-builder-ng:http-builder-ng-core:1.0.4'
-	implementation 'org.codehaus.janino:janino:3.1.9'
+  implementation 'io.github.http-builder-ng:http-builder-ng-core:1.0.4'
+  implementation 'org.codehaus.janino:janino:3.1.9'
   implementation "org.springframework.boot:spring-boot-starter-undertow" // Replaces spring-boot-starter-tomcat
-	implementation "org.hibernate:hibernate-java8:5.4.28.Final"
-	runtimeOnly "com.zaxxer:HikariCP:3.4.5"                             // Replaces Tomcat JDBC pool
-	runtimeOnly "org.postgresql:postgresql:42.5.3"
-	implementation ('org.grails.plugins:database-migration:4.2.0') {
-		exclude group: 'org.liquibase', module: 'liquibase-core'
-	}
-	implementation 'org.liquibase:liquibase-core:4.17.2'
+  implementation "org.hibernate:hibernate-java8:5.4.28.Final"
+  runtimeOnly "com.zaxxer:HikariCP:3.4.5"                             // Replaces Tomcat JDBC pool
+  runtimeOnly "org.postgresql:postgresql:42.5.3"
+  implementation ('org.grails.plugins:database-migration:4.2.0') {
+      exclude group: 'org.liquibase', module: 'liquibase-core'
+  }
+  implementation 'org.liquibase:liquibase-core:4.17.2'
 
 
   implementation 'com.opencsv:opencsv:5.7.1'
-	implementation 'commons-io:commons-io:2.6'
-	implementation 'io.github.virtualdogbert:logback-groovy-config:1.14.1' // Grails 5 and up no longer supports groovy files for logback config
-	compileOnly 'ch.qos.logback:logback-classic:1.4.7'
+  implementation 'commons-io:commons-io:2.6'
+  implementation 'io.github.virtualdogbert:logback-groovy-config:1.14.1' // Grails 5 and up no longer supports groovy files for logback config
+  compileOnly 'ch.qos.logback:logback-classic:1.4.7'
 
   implementation 'uk.co.cacoethes:groovy-handlebars-engine:0.2'
   implementation 'com.github.jknack:handlebars-helpers:4.3.1'
@@ -154,8 +163,8 @@ dependencies {
   implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.10'
 
 	/*  ---- Manually installed testing dependencies ---- */
-	implementation "org.grails:grails-gorm-testing-support:2.6.1"
-	implementation "org.grails:grails-web-testing-support:2.6.1"
+	//implementation "org.grails:grails-gorm-testing-support:2.6.1"
+	//implementation "org.grails:grails-web-testing-support:2.6.1"
 	testImplementation "org.grails.plugins:geb"
 	testImplementation "org.seleniumhq.selenium:selenium-remote-driver:3.14.0"
 	testImplementation "org.seleniumhq.selenium:selenium-api:3.14.0"
@@ -172,7 +181,19 @@ dependencies {
 	}
 
 	// Bumping this manually to avoid potential security issue with spring-webmvc-5.3.25
-	implementation 'org.springframework:spring-webmvc:5.3.28'
+	//implementation 'org.springframework:spring-webmvc'
+}
+/* 
+application {
+    mainClass.set("mod.agreements.Application")
+} */
+
+/* java {
+    sourceCompatibility = JavaVersion.toVersion("11")
+} */
+
+tasks.withType(Test) {
+    useJUnitPlatform()
 }
 
 bootRun {
@@ -187,7 +208,8 @@ bootRun {
 	systemProperty springProfilesActive, System.getProperty(springProfilesActive)
 }
 
-task generateDescriptors(type: Copy) {
+
+/* task generateDescriptors(type: Copy) {
 
   dependsOn buildProperties
 
@@ -266,7 +288,7 @@ buildProperties.doLast {
     properties.store(it,null)
   }
 }
-processResources.dependsOn generateDescriptors
+processResources.dependsOn generateDescriptors */
 
 
 tasks.withType(GroovyCompile) {
