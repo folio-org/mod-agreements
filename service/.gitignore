@@ -1,0 +1,10 @@
+*.DS_Store
+/.*
+!/.gitignore
+!.editorconfig
+/bin
+/build
+/docs
+/_settings.gradle
+/mod-agreements
+*.txt
