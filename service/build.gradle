@@ -15,8 +15,8 @@ buildscript {
   }
   dependencies {
     classpath "org.grails:grails-gradle-plugin:$grailsGradlePluginVersion"
-    classpath "org.grails.plugins:hibernate5:7.3.0"
-    classpath "org.grails.plugins:views-gradle:2.3.2"
+    classpath "org.grails.plugins:hibernate5:$gormVersion"
+    classpath "org.grails.plugins:views-gradle:3.1.2"
     classpath 'com.bmuschko:gradle-docker-plugin:6.6.1'
   }
 }
@@ -98,7 +98,7 @@ dependencies {
   implementation("org.grails:grails-plugin-url-mappings")
 
   implementation("org.grails:grails-web-boot")
-
+	
 	implementation("org.grails.plugins:async")
   implementation("org.grails.plugins:events")
   implementation("org.grails.plugins:hibernate5")
@@ -106,7 +106,6 @@ dependencies {
   implementation("org.grails.plugins:views-json")
   implementation("org.grails.plugins:views-json-templates")
   implementation("org.hibernate:hibernate-core:5.6.15.Final")
-
 
   //runtimeOnly("com.h2database:h2")
   runtimeOnly("javax.xml.bind:jaxb-api:2.3.1")
@@ -131,15 +130,17 @@ dependencies {
 	implementation 'com.k_int.grails:web-toolkit-ce:8.1.5-SNAPSHOT'
 	//implementation 'com.k_int.okapi:grails-okapi:6.0.0-rc.4'
 	// FIXME Use released version
-	implementation 'com.k_int.okapi:grails-okapi:6.0.0-SNAPSHOT'
+	implementation('com.k_int.okapi:grails-okapi:6.0.0-SNAPSHOT') {
+    exclude group: 'com.vaadin.external.google', module: 'android-json'
+  }
 
   implementation 'io.github.http-builder-ng:http-builder-ng-core:1.0.4'
   implementation 'org.codehaus.janino:janino:3.1.9'
   implementation "org.springframework.boot:spring-boot-starter-undertow" // Replaces spring-boot-starter-tomcat
-  implementation "org.hibernate:hibernate-java8:5.4.28.Final"
+  implementation "org.hibernate:hibernate-java8"
   runtimeOnly "com.zaxxer:HikariCP:3.4.5"                             // Replaces Tomcat JDBC pool
   runtimeOnly "org.postgresql:postgresql:42.5.3"
-  implementation ('org.grails.plugins:database-migration:4.2.0') {
+  implementation ('org.grails.plugins:database-migration:4.2.1') {
       exclude group: 'org.liquibase', module: 'liquibase-core'
   }
   implementation 'org.liquibase:liquibase-core:4.17.2'
@@ -209,7 +210,7 @@ bootRun {
 }
 
 
-/* task generateDescriptors(type: Copy) {
+task generateDescriptors(type: Copy) {
 
   dependsOn buildProperties
 
@@ -233,7 +234,7 @@ bootRun {
 
     // Need to parse multi-dimensional keys.
     ConfigSlurper cs = new ConfigSlurper()
-		println("LOGDEBUG CS: ${cs.parse(properties)}")
+		//println("LOGDEBUG CS: ${cs.parse(properties)}")
     props.putAll(cs.parse(properties))
   }
 
@@ -288,7 +289,7 @@ buildProperties.doLast {
     properties.store(it,null)
   }
 }
-processResources.dependsOn generateDescriptors */
+processResources.dependsOn generateDescriptors
 
 
 tasks.withType(GroovyCompile) {
