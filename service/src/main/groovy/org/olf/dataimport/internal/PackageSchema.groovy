@@ -70,6 +70,7 @@ interface PackageSchema extends Validateable {
     Boolean getTrustedSourceTI()
     Date getSourceDataCreated()
     Date getSourceDataUpdated()
+    Integer getTitleCount()
     String getAvailabilityScope()
     String getLifecycleStatus()
     Collection<ContentTypeSchema> getContentTypes()

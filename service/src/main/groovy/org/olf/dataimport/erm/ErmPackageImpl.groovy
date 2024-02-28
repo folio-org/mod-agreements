@@ -25,6 +25,7 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   Boolean trustedSourceTI
   Date sourceDataCreated
   Date sourceDataUpdated
+  Integer titleCount
   String availabilityScope
   String lifecycleStatus
   String description
@@ -105,6 +106,12 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
   public Date getSourceDataUpdated() {
     sourceDataUpdated
   }
+
+  @Override
+  public Integer getTitleCount() {
+    titleCount
+  }
+
 
   @Override
   public String getAvailabilityScope() {
