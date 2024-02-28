@@ -14,7 +14,7 @@ buildscript {
 		maven { url "https://repo.grails.org/grails/plugins" }
   }
   dependencies {
-    classpath "org.grails:grails-gradle-plugin:$grailsGradlePluginVersion"
+    classpath "org.grails:grails-gradle-plugin:$grailsVersion"
     classpath "org.grails.plugins:hibernate5:$gormVersion"
     classpath "org.grails.plugins:views-gradle:3.1.2"
     classpath 'com.bmuschko:gradle-docker-plugin:6.6.1'
@@ -102,7 +102,7 @@ dependencies {
 	implementation("org.grails.plugins:async")
   implementation("org.grails.plugins:events")
   implementation("org.grails.plugins:hibernate5")
-  implementation("org.grails.plugins:spring-security-core:${grailsVersion}")
+  implementation("org.grails.plugins:spring-security-core:6.1.1") // FIXME NOT IN LINE WITH GRAILS PATCH VERSION
   implementation("org.grails.plugins:views-json")
   implementation("org.grails.plugins:views-json-templates")
   implementation("org.hibernate:hibernate-core:5.6.15.Final")
@@ -143,7 +143,7 @@ dependencies {
   implementation ('org.grails.plugins:database-migration:4.2.1') {
       exclude group: 'org.liquibase', module: 'liquibase-core'
   }
-  implementation 'org.liquibase:liquibase-core:4.17.2'
+  implementation 'org.liquibase:liquibase-core:4.19.0'
 
 
   implementation 'com.opencsv:opencsv:5.7.1'
@@ -209,87 +209,88 @@ bootRun {
 	systemProperty springProfilesActive, System.getProperty(springProfilesActive)
 }
 
+project.gradle.projectsEvaluated {
+  task generateDescriptors(type: Copy) {
 
-task generateDescriptors(type: Copy) {
+    dependsOn buildProperties
 
-  dependsOn buildProperties
+    File grailsBuildInfoFile = buildProperties.outputs.files.files.find { it.name == 'grails.build.info' }
 
-  File grailsBuildInfoFile = buildProperties.outputs.files.files.find { it.name == 'grails.build.info' }
+    final def props = [:]
 
-  final def props = [:]
+    if(!(grailsBuildInfoFile)) return // No need to continue if the file is not there
 
-  if(!(grailsBuildInfoFile)) return // No need to continue if the file is not there
+    doFirst {
 
-  doFirst {
+      // Place the loading within a do first as the info file from the buildProperties
+      // task will not be present until it is executed. This owuld cause a file not found
+      // during task configureation otherwise.
+      Properties properties = new Properties()
 
-    // Place the loading within a do first as the info file from the buildProperties
-    // task will not be present until it is executed. This owuld cause a file not found
-    // during task configureation otherwise.
-    Properties properties = new Properties()
+      // Read properties from the file
+      grailsBuildInfoFile.withInputStream {
+        properties.load(it)
+      }
+
+      // Need to parse multi-dimensional keys.
+      ConfigSlurper cs = new ConfigSlurper()
+      //println("LOGDEBUG CS: ${cs.parse(properties)}")
+      props.putAll(cs.parse(properties))
+    }
+
+    from ('./src/main/okapi') {
+      include '*-template.json'
+    }
+    into './build/resources/main/okapi'
+    filteringCharset = 'UTF-8'
+    expand(props)
+    rename { String fileName ->
+      fileName.replace('-template', '')
+    }
+  }
+
+  buildProperties.doLast {
+
+    // Find the right file
+    File grailsBuildInfoFile = it.outputs.files.files.find { it.name == 'grails.build.info' }
+
+    if(!grailsBuildInfoFile) return // No need to continue if the file is not there
+      Properties properties = new Properties()
 
     // Read properties from the file
     grailsBuildInfoFile.withInputStream {
       properties.load(it)
     }
 
-    // Need to parse multi-dimensional keys.
-    ConfigSlurper cs = new ConfigSlurper()
-		//println("LOGDEBUG CS: ${cs.parse(properties)}")
-    props.putAll(cs.parse(properties))
-  }
+    // Load the app version
+    String version = properties.getProperty('info.app.version')
+    def versionParts
+    if (version && (versionParts = version =~ version_regex)) {
+      versionParts[0].with {
+        properties.setProperty('info.app.majorVersion', it[3])
+        properties.setProperty('info.app.minorVersion', it[2])
+        properties.setProperty('info.app.patchVersion', it[1])
 
-  from ('./src/main/okapi') {
-    include '*-template.json'
-  }
-  into './build/resources/main/okapi'
-  filteringCharset = 'UTF-8'
-  expand(props)
-  rename { String fileName ->
-    fileName.replace('-template', '')
-  }
-}
-
-buildProperties.doLast {
-
-  // Find the right file
-  File grailsBuildInfoFile = it.outputs.files.files.find { it.name == 'grails.build.info' }
-
-  if(!grailsBuildInfoFile) return // No need to continue if the file is not there
-    Properties properties = new Properties()
-
-  // Read properties from the file
-  grailsBuildInfoFile.withInputStream {
-    properties.load(it)
-  }
-
-  // Load the app version
-  String version = properties.getProperty('info.app.version')
-  def versionParts
-  if (version && (versionParts = version =~ version_regex)) {
-    versionParts[0].with {
-      properties.setProperty('info.app.majorVersion', it[3])
-      properties.setProperty('info.app.minorVersion', it[2])
-      properties.setProperty('info.app.patchVersion', it[1])
-
-      if (it[5]) {
-        properties.setProperty('info.app.testVersion', it[5])
+        if (it[5]) {
+          properties.setProperty('info.app.testVersion', it[5])
+        }
       }
+      version.replaceAll(/^(((\d+)\.\d+)\.\d+)(-([\w]+))?$/ , '$1')
     }
-    version.replaceAll(/^(((\d+)\.\d+)\.\d+)(-([\w]+))?$/ , '$1')
+
+    // Add new properties from various sources
+    properties.setProperty('build.time', new Date().format("yyyy-MM-dd HH:mm:ss"))
+
+    // Get a System property
+    properties.setProperty('build.java.version', System.getProperty('java.version'))
+
+    // Write the properties back to the file
+    grailsBuildInfoFile.withOutputStream {
+      properties.store(it,null)
+    }
   }
-
-  // Add new properties from various sources
-  properties.setProperty('build.time', new Date().format("yyyy-MM-dd HH:mm:ss"))
-
-  // Get a System property
-  properties.setProperty('build.java.version', System.getProperty('java.version'))
-
-  // Write the properties back to the file
-  grailsBuildInfoFile.withOutputStream {
-    properties.store(it,null)
-  }
+  processResources.dependsOn generateDescriptors
 }
-processResources.dependsOn generateDescriptors
 
 
 tasks.withType(GroovyCompile) {
