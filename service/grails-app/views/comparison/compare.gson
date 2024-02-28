@@ -233,7 +233,5 @@ if (sources) {
     currentLowestValue = currentObject?.name
     first = false
   }
-
-  System.out.println "Queue size: ${objectQueue.size}"
 }
 out << ']'

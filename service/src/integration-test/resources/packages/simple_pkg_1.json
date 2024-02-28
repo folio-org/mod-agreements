@@ -50,6 +50,8 @@
     "coverageNote": "New for 2014. This record is a test case for split coverage",
     "url": "http://benthamscience.com/journal/index.php?journalID=ccand",
     "platformName": "Bentham Science",
-    "_platformId": 627
+    "_platformId": 627,
+    "sourceIdentifierNamespace": "K-Int",
+    "sourceIdentifier": "ccd-1234"
   }]
 }

@@ -37,45 +37,31 @@ import groovy.util.logging.Slf4j
 class AgreementLifecycleSpec extends BaseSpec {
   Map expectedBeanResult = [
     (TITLE_TIRS): 140,
-    (ID_TIRS): 137
+    (ID_TIRS): 376,
+    (WORK_SOURCE_TIRS): 378
   ]
 
-  def importService
   def fileUploadService
 
   @Value('${local.server.port}')
   Integer serverPort
 
   
-  void "Load Packages" (test_package_file) {
+  void "Load Packages" (test_package_file_name) {
 
     log.debug("test load packages - server running on port $serverPort");
 
     when: 'File loaded'
-
-      def jsonSlurper = new JsonSlurper()
-      def package_data = jsonSlurper.parse(new File(test_package_file))
-      int result = 0
-      final String tenantid = currentTenant.toLowerCase()
-      log.debug("Create new package with tenant ${tenantid}");
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
-        Pkg.withTransaction { status ->
-          result = importService.importPackageUsingInternalSchema( package_data )
-          log.debug("Package import complete - num packages: ${Pkg.executeQuery('select count(p.id) from Pkg as p')}");
-          log.debug("                            num titles: ${TitleInstance.executeQuery('select count(t.id) from TitleInstance as t')}");
-          Pkg.executeQuery('select p.id, p.name from Pkg as p').each { p ->
-            log.debug("Package: ${p}");
-          }
-        }
-      }
+      Map result = importPackageFromFileViaService(test_package_file_name)
 
     then: 'Package imported'
-      result > 0
+      // Difference in internal vs erm schema shapes
+      result.packageImported == true || result.packageCount > 0
 
     where:
-      test_package_file << [
-        'src/integration-test/resources/packages/apa_1062.json',
-        'src/integration-test/resources/packages/bentham_science_bentham_science_eduserv_complete_collection_2015_2017_1386.json'
+      test_package_file_name << [
+        'brill-eg.json',
+        'jstor-eg.json'
       ]
 
   }
@@ -218,11 +204,11 @@ class AgreementLifecycleSpec extends BaseSpec {
       
     where:
       agreement_name        | status    | packageName
-      'My first agreement'  | 'Active'  | "American Psychological Association:Master"
+      'My first agreement'  | 'Active'  | "JSTOR 1"
   }
   
   @Unroll
-  void "Add #resourceType for title #titleName to the Agreement named #agreement_name" (agreement_name, resourceType, titleName, filterKey) {
+  void "Add #resourceType for title #titleName to the Agreement named #agreement_name" (agreement_name, resourceType, resourceEndpoint, titleName, filterKey) {
     
     def entitledResourceCount = 0
     when:"We ask the titles controller to list the titles we can access"
@@ -236,9 +222,8 @@ class AgreementLifecycleSpec extends BaseSpec {
     
     when: "Fetch #resourceType for title #titleName"
       def resourceId = null
-      List resp = doGet("/erm/resource", [
+      List resp = doGet(resourceEndpoint, [
         filters:[
-          "class==${resourceType}", // Case insensitive match
           "${filterKey}=i=${titleName}" // Case insensitive match
         ]
       ])
@@ -282,10 +267,11 @@ class AgreementLifecycleSpec extends BaseSpec {
       // content responds with a JSON object containing a count and a list called subscribedTitles
       respMap.totalRecords == (entitledResourceCount + 1)
       
+    // Titles from _other_ package to add individual extra TIs
     where:
-      agreement_name        | resourceType                        | titleName                             | filterKey
-      'My first agreement'  | PackageContentItem.class.name       | "Pharmaceutical Nanotechnology"       | "pti.titleInstance.name"
-      'My first agreement'  | PlatformTitleInstance.class.name    | "Recent Patents on Corrosion Science" | "titleInstance.name"
+      agreement_name        | resourceType                      | resourceEndpoint      | titleName                                | filterKey
+      'My first agreement'  | PackageContentItem.class.name     | '/erm/pci'            | "African yearbook of international law"  | "pti.titleInstance.name"
+      'My first agreement'  | PlatformTitleInstance.class.name  | '/erm/pti'            | "Journal of reformed theology"           | "titleInstance.name"
   }
   
   void "Check closure reason behaviour" () {

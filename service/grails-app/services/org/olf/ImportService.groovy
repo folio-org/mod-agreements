@@ -29,7 +29,8 @@ class ImportService implements DataBinder {
   UtilityService utilityService
   PackageIngestService packageIngestService
   
-  void importFromFile (final Map envelope) {
+  Map importFromFile (final Map envelope) {
+    Map result = [:];
     
     final def header = envelope.header
     final def dataSchemaName = header?.getAt('dataSchema')?.getAt('name')
@@ -57,7 +58,8 @@ class ImportService implements DataBinder {
               it instanceof String &&
               utilityService.compatibleVersion(dataSchemaVersion as String, "2.0")
             }:
-              log.info "${importPackageUsingErmSchema (envelope)} package(s) imported successfully"
+              result = importPackageUsingErmSchema (envelope)
+              log.info "${result.packageCount} package(s) imported successfully"
               break;
             // Error cases
             case {!(it instanceof String)}:
@@ -79,9 +81,11 @@ class ImportService implements DataBinder {
         // Looks like it might be the internal schema.
         
         log.debug "Possibly internal schema"
-        importPackageUsingInternalSchema (envelope)
+        result = importPackageUsingInternalSchema (envelope)
       }
     }
+
+    return result
   }
   
   Map importPackageUsingErmSchema (final Map envelope) {
@@ -105,11 +109,9 @@ class ImportService implements DataBinder {
     result
   }
   
-  int importPackageUsingInternalSchema (final Map envelope) {
+  Map importPackageUsingInternalSchema (final Map envelope) {
     // The whole envelope is a single package in this format.
-    
-    Map result = importPackage (envelope, InternalPackageImplWithPackageContents)
-    result.packageImported ? 1 : 0
+    return importPackage (envelope, InternalPackageImplWithPackageContents)
   }
   
   private Map importPackage (final Map record, final Class<? extends PackageSchema> schemaClass) {

@@ -1,8 +1,0 @@
-import org.olf.general.jobs.ResourceRematchJob
-
-import groovy.transform.Field
-
-@Field
-ResourceRematchJob resourceRematchJob
-
-json tmpl."/persistentJob/persistentJob" (persistentJob: resourceRematchJob)

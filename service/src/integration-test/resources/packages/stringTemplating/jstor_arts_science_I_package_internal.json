@@ -30,7 +30,9 @@
             "monographEdition": null,
             "monographVolume": null,
             "firstEditor": null,
-            "dataMonographPublished": null
+            "dataMonographPublished": null,
+            "sourceIdentifierNamespace": "testJSTORAS1",
+            "sourceIdentifier": "1234"
         },
         {
             "title": "The Economic Bulletin",
@@ -49,7 +51,9 @@
             "monographEdition": null,
             "monographVolume": null,
             "firstEditor": null,
-            "dataMonographPublished": null
+            "dataMonographPublished": null,
+            "sourceIdentifierNamespace": "testJSTORAS1",
+            "sourceIdentifier": "2345"
         }
     ]
 }

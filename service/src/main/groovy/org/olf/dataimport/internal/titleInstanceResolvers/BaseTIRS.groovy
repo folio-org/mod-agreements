@@ -171,7 +171,9 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     } else {
       log.debug("Not a trusted source for TI enrichment--skipping")
     }
-    return null;
+
+		log.debug("Enrichment completed");
+    return;
   }
 
   private boolean validateCitationType(String tp) {
@@ -330,6 +332,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
           io.status.value = '${APPROVED}'
         )
       """
+      // TODO This doesn't look right
     }.join("""
       AND
     """)

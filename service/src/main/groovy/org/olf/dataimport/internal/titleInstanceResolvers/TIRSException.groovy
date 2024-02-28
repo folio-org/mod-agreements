@@ -22,6 +22,6 @@ public class TIRSException extends Exception {
 
   public TIRSException(String errorMessage) {
     super(errorMessage);
-    this.code = GENERIC_ERROR
+    this.code = GENERIC_ERROR;
   }
 }
