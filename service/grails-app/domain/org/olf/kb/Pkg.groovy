@@ -20,7 +20,7 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   Org vendor
   Date sourceDataCreated
   Date sourceDataUpdated
-  Integer titleCount
+  Integer sourceTitleCount
   @Defaults(['Current', 'Retired', 'Expected', 'Deleted'])
   RefdataValue lifecycleStatus
   @Defaults(['Global'])
@@ -56,7 +56,7 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
                        vendor column:'pkg_vendor_fk'
             sourceDataCreated column:'pkg_source_data_created'
             sourceDataUpdated column:'pkg_source_data_updated'
-                   titleCount column:'pkg_title_count'
+             sourceTitleCount column:'pkg_source_title_count'
               lifecycleStatus column:'pkg_lifecycle_status_fk'
             availabilityScope column:'pkg_availability_scope_fk'
        packageDescriptionUrls cascade: 'all-delete-orphan'
@@ -69,7 +69,7 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
              source(nullable:false, blank:false)
           reference(nullable:false, blank:false)
     nominalPlatform(nullable:true, blank:false)
-         titleCount(nullable:true, blank:false)
+   sourceTitleCount(nullable:true, blank:false)
              vendor(nullable:true, blank:false)
   sourceDataCreated(nullable:true, blank:false)
   sourceDataUpdated(nullable:true, blank:false)

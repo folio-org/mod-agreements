@@ -28,7 +28,7 @@ class HeaderImpl implements PackageHeaderSchema, Validateable {
   String description
   Date sourceDataCreated
   Date sourceDataUpdated
-  Integer titleCount
+  Integer sourceTitleCount
   String availabilityScope
   List<ContentType> contentTypes
   List<AlternateResourceName> alternateResourceNames
