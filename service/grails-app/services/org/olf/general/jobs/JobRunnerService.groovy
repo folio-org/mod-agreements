@@ -76,9 +76,10 @@ order by pj.dateCreated
   @PostConstruct
   void init() {
     // Set up the Executor
-    if ( grailsApplication.config.concurrentJobsGlobal != null )
-      CONCURRENT_JOBS_GLOBAL = grailsApplication.config.concurrentJobsGlobal;
-    
+    if ( grailsApplication.config.getProperty('concurrentJobsGlobal') instanceof Integer && grailsApplication.config.getProperty('concurrentJobsGlobal') > 0 ) {
+      CONCURRENT_JOBS_GLOBAL = grailsApplication.config.getProperty('concurrentJobsGlobal');
+    }
+
     // SO: This is not ideal. We don't want to limit jobs globally to 1 ideally. It should be 
     // 1 per tenant, but that will involve implementing custom handling for the queue and executor.
     // While we only have 1 tenant, this will suffice.
