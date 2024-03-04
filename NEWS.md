@@ -1,3 +1,12 @@
+## 6.1.0 2024-03-04
+  * ERM-3156 Backport GOKb harvest performance and process fixes to Poppy compatible releases
+    * ERM-3154 Consolidate package upsert summary logging in info log
+    * ERM-3153 Remove match_key processes/domain modelling
+    * ERM-3152 Ensure external data source set to idle after zombie job found
+    * ERM-3151 Implement flag to not fall back to IDFirstTIRS from WorkSourceIDTIRs if all Works have a Work Source ID
+    * ERM-3148 Query optimisation on data ingest
+    * ERM-3132 Jobs stuck "Queued" due to java.lang.IllegalStateException
+
 ## 6.0.2 2023-11-23
   * ERM-3112 org.json:json:20201115 DoS/OOM
 
