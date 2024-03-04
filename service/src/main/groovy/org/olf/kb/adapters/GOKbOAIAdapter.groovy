@@ -478,7 +478,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
         // log.info("Tipp.title is of size ${tipp_entry?.title?.name?.size()} and tipp_entry?.title?.name is ${tipp_entry?.title?.name}");
 
-        if (tipp_status != 'Current') {
+        if (tipp_status == 'Current') {
           result.header.sourceTitleCount++
         }
 
