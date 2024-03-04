@@ -120,7 +120,9 @@ dependencies {
   implementation 'org.grails.plugins:spring-security-core:5.2.1'
 
 	implementation 'com.k_int.grails:web-toolkit-ce:8.1.4'
-	implementation 'com.k_int.okapi:grails-okapi:6.0.0-rc.4'
+  implementation ('com.k_int.okapi:grails-okapi:6.0.0-rc.4') {
+    exclude group: 'com.vaadin.external.google', module: 'android-json'
+  }
 
 	implementation 'io.github.http-builder-ng:http-builder-ng-core:1.0.4'
 	implementation 'org.codehaus.janino:janino:3.1.9'
@@ -274,6 +276,13 @@ tasks.withType(GroovyCompile) {
 		forkOptions.jvmArgs = ['-Xmx1024m']
 	}
 }
+
+tasks.named('bootJarMainClassName') { it.mustRunAfter(tasks.named('compileGsonViews')) }
+tasks.named('compileIntegrationTestGroovy') { it.mustRunAfter(tasks.named('compileGsonViews')) }
+tasks.named('test') { it.mustRunAfter(tasks.named('compileGsonViews')) }
+tasks.named('integrationTest') { it.mustRunAfter(tasks.named('compileGsonViews')) }
+tasks.named('mergeTestReports') { it.mustRunAfter(tasks.named('test')) }
+tasks.named('compileTestGroovy') { it.mustRunAfter(tasks.named('compileGsonViews')) }
 
 tasks.withType(Test) {
 	useJUnitPlatform()

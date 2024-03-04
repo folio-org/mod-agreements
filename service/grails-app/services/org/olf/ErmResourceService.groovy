@@ -66,12 +66,5 @@ public class ErmResourceService {
 
     resourceList
   }
-
-
-  // FIXME do we actually want this?
-  // This method should take in an ErmResource and return a ContentItemSchema, which can then be used to create matchKeys
-  ContentItemSchema resourceToSchema(ErmResource resource) {
-
-  }
 }
 

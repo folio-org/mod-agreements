@@ -27,6 +27,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile
 import com.k_int.web.toolkit.files.FileUpload;
 import com.k_int.web.toolkit.files.S3FileObject;
+import org.springframework.beans.factory.annotation.Value;
 
 import groovy.util.logging.Slf4j
 
@@ -41,8 +42,14 @@ class AgreementLifecycleSpec extends BaseSpec {
 
   def importService
   def fileUploadService
+
+  @Value('${local.server.port}')
+  Integer serverPort
+
   
   void "Load Packages" (test_package_file) {
+
+    log.debug("test load packages - server running on port $serverPort");
 
     when: 'File loaded'
 

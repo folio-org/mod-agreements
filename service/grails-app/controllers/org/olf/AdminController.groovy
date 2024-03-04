@@ -8,13 +8,10 @@ import grails.converters.JSON
 
 import com.k_int.web.toolkit.refdata.RefdataValue
 
-import org.olf.general.jobs.ResourceRematchJob
-
 import org.olf.kb.RemoteKB
 import org.springframework.validation.BindingResult
 import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.kb.KBCacheUpdater
-import org.olf.general.jobs.NaiveMatchKeyAssignmentJob
 import org.olf.general.jobs.PersistentJob
 import grails.gorm.transactions.Transactional
 import java.time.Instant
@@ -28,7 +25,6 @@ class AdminController implements DataBinder{
   def ermHousekeepingService
   def entitlementLogService
   def fileUploadService
-  def matchKeyService
   def kbManagementService
   def kbHarvestService
 
@@ -137,53 +133,6 @@ class AdminController implements DataBinder{
     def result = [:]
     log.debug("AdminController::triggerDocMigration");
     fileUploadService.migrateAtMost(0,'LOB','S3'); // n, FROM, TO
-    result.status = 'OK'
-    render result as JSON
-  }
-
-  /*
-   * For situations where we are left with ingested PCI/PTIs without match key coverage,
-   * this will trigger an attempt to parse that information back out of the data.
-   * Obviously this match_key information will still contain any inaccuracies present,
-   * so this should ONLY be used when necessary.
-   */
-  public triggerMatchKeyGeneration() {
-    def result = [:]
-    log.debug("AdminController::triggerMatchKeyGeneration");
-    NaiveMatchKeyAssignmentJob.withNewTransaction {
-      final RefdataValue queuedStatus = PersistentJob.lookupStatus('queued')
-
-      NaiveMatchKeyAssignmentJob nmkaj = new NaiveMatchKeyAssignmentJob([
-        name: "NaiveMatchKeyAssignmentJob: ${Instant.now()}",
-      ])
-      nmkaj.status = queuedStatus
-
-      nmkaj.save(failOnError: true)
-    }
-
-    result.status = 'OK'
-    render result as JSON
-  }
-
-  public triggerRematch() {
-    def result = [:]
-    log.debug("AdminController::triggerRematch");
-    kbManagementService.triggerRematch()
-
-    result.status = 'OK'
-    render result as JSON
-  }
-
-  // Ensures resource rematch runs for all TIs in system
-  public triggerFullRematch() {
-    def result = [:]
-    log.debug("AdminController::triggerFullRematch");
-
-    String jobTitle = "Full Resource Rematch Job ${Instant.now()}"
-    ResourceRematchJob rematchJob = new ResourceRematchJob(name: jobTitle, since: Instant.EPOCH)
-    rematchJob.setStatusFromString('Queued')
-    rematchJob.save(failOnError: true, flush: true)
-
     result.status = 'OK'
     render result as JSON
   }

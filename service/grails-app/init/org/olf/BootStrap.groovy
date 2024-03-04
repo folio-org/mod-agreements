@@ -43,5 +43,6 @@ class BootStrap {
   }
 
   def destroy = {
+		log.info("mod-agreements destroy method");
   }
 }
