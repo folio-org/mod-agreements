@@ -1,0 +1,160 @@
+{
+  "header": {
+    "dataSchema": {
+      "name": "mod-agreements-package",
+      "version": "2.0"
+    }
+  },
+  "records": [
+    {
+      "source": "Folio Testing",
+      "reference": "access_start_access_end_examples",
+      "name": "access_start_access_end_tests Package",
+      "packageProvider": {
+        "name": "DIKU"
+      },
+      "availabilityScope": "Global",
+      "lifecycleStatus": "Current",
+      "sourceDataCreated": "2022-01-01",
+      "sourceDataUpdated": "2022-01-01",
+      "availabilityConstraints": [
+        {
+          "body": "Body 1"
+        },
+        {
+          "body": "Body 2"
+        }
+      ],
+      "contentItems": [
+        {
+          "depth": "fulltext",
+          "accessStart": "2011-01-01",
+          "accessEnd": "2018-12-31",
+          "coverage": [
+            {
+              "startDate": "2018-04-01",
+              "startVolume": "1",
+              "startIssue": "1"
+            }
+          ],
+          "platformTitleInstance": {
+            "platform": "EUP Publishing",
+            "platform_url": "https://www.euppublishing.com",
+            "url": "https://www.euppublishing.com/loi/afg",
+            "titleInstance": {
+              "name": "Afghanistan",
+              "identifiers": [
+                {
+                  "value": "2399-357X",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "2399-3588",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          },
+          "sourceIdentifierNamespace": "access_start_access_end_tests",
+          "sourceIdentifier": "ti1"
+        },
+        {
+          "depth": "fulltext",
+          "accessStart": "2011-01-01",
+          "coverage": [
+            {
+              "startDate": "2017-01-01",
+              "startVolume": "1",
+              "startIssue": "1"
+            }
+          ],
+          "platformTitleInstance": {
+            "platform": "Archaeological and Environmental Forensic Science",
+            "platform_url": "http://www.equinoxjournals.com",
+            "url": "http://www.equinoxjournals.com/AEFS/",
+            "titleInstance": {
+              "name": "Archaeological and Environmental Forensic Science",
+              "identifiers": [
+                {
+                  "value": "2052-3378",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "2052-3386",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          },
+          "sourceIdentifierNamespace": "access_start_access_end_tests",
+          "sourceIdentifier": "ti2"
+        },
+        {
+          "depth": "fulltext",
+          "accessEnd": "2018-12-31",
+          "coverage": [
+            {
+              "startDate": "2000-02-01",
+              "startVolume": "27",
+              "startIssue": "1"
+            }
+          ],
+          "platformTitleInstance": {
+            "platform": "EUP Publishing",
+            "platform_url": "https://www.euppublishing.com",
+            "url": "https://www.euppublishing.com/loi/anh",
+            "titleInstance": {
+              "name": "Archives of Natural History",
+              "identifiers": [
+                {
+                  "value": "0260-9541",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "1755-6260",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          },
+          "sourceIdentifierNamespace": "access_start_access_end_tests",
+          "sourceIdentifier": "ti3"
+        },
+        {
+          "depth": "fulltext",
+          "accessStart": "${nextWeek}",
+          "coverage": [
+            {
+              "startDate": "${nextWeek}",
+              "startVolume": "33"
+            }
+          ],
+          "platformTitleInstance": {
+            "platform": "JSTOR",
+            "platform_url": "https://www.jstor.org",
+            "url": "https://www.jstor.org/journal/bethunivj",
+            "titleInstance": {
+              "name": "Bethlehem University Journal",
+              "identifiers": [
+                {
+                  "value": "2521-3695",
+                  "namespace": "issn"
+                },
+                {
+                  "value": "2410-5449",
+                  "namespace": "eissn"
+                }
+              ],
+              "type": "serial"
+            }
+          },
+          "sourceIdentifierNamespace": "access_start_access_end_tests",
+          "sourceIdentifier": "ti4"
+        }
+      ]
+    }
+  ]
+}

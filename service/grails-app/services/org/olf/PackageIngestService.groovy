@@ -5,6 +5,7 @@ import static org.springframework.transaction.annotation.Propagation.REQUIRES_NE
 import java.util.concurrent.TimeUnit
 
 import org.olf.general.StringUtils
+import org.olf.general.IngestException
 
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
@@ -20,7 +21,6 @@ import org.olf.kb.Platform
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.RemoteKB
 import org.olf.kb.TitleInstance
-import org.olf.kb.MatchKey
 import org.slf4j.MDC
 
 import com.k_int.web.toolkit.utils.GormUtils
@@ -47,7 +47,6 @@ class PackageIngestService implements DataBinder {
   TitleIngestService titleIngestService
   IdentifierService identifierService
   CoverageService coverageService
-  MatchKeyService matchKeyService
 
   // dependentModuleProxyService is a service which hides the fact that we might be dependent upon other
   // services for our reference data. In this class - vendors are erm Org entries, but in folio these are
@@ -158,21 +157,27 @@ class PackageIngestService implements DataBinder {
 									}
 									else {
 										// Almost the same message exists in TitleIngestService if result is null
-										String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
-										log.error(message)
+										//String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
+										//log.error(message)
 									}
 								}
+							} catch ( IngestException ie ) {
+                // When we've caught an ingest exception, should have helpful error log message
+                String message = "Skipping \"${pc.title}\": ${ie.message}"
+                log.error(message, ie)
 							} catch ( Exception e ) {
 								String message = "Skipping \"${pc.title}\". System error: ${e.message}"
-								log.error(message,e)
+								log.error(message, e)
 							}
 							result.titleCount++
-							result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/result.titleCount
-							if ( result.titleCount % 100 == 0 ) {
-								log.debug ("Processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}")
-							}
+
+              // Do we really need a running average?
+              /* if ( result.titleCount % 100 == 0 ) {
+                result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/(result.titleCount * 1000)
+								log.debug ("(Package in progress) processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}s")
+							} */
 						}
-						def finishedTime = (System.currentTimeMillis()-result.startTime)/1000
+						long finishedTime = (System.currentTimeMillis()-result.startTime)/1000
 				
 						// This removed logic is WRONG under pushKB because it's chunked -- ensure pushKB does not call full upsertPackage method
 						// At the end - Any PCIs that are currently live (Don't have a removedTimestamp) but whos lastSeenTimestamp is < result.updateTime
@@ -195,35 +200,11 @@ class PackageIngestService implements DataBinder {
 								result.removedTitles++
 							}
 						}
-				
+
+            // Not sure if MDC logic can go in shared method
 						MDC.remove('recordNumber')
 						MDC.remove('title')
-						// Need to pause long enough so that the timestamps are different
-						TimeUnit.MILLISECONDS.sleep(1)
-						if (result.titleCount > 0) {
-							log.info ("Processed ${result.titleCount} titles in ${finishedTime} seconds (${finishedTime/result.titleCount} average)")
-							TimeUnit.MILLISECONDS.sleep(1)
-							log.info ("Added ${result.newTitles} titles")
-							TimeUnit.MILLISECONDS.sleep(1)
-							log.info ("Updated ${result.updatedTitles} titles")
-							TimeUnit.MILLISECONDS.sleep(1)
-							log.info ("Removed ${result.removedTitles} titles")
-							log.info ("Updated accessStart on ${result.updatedAccessStart} title(s)")
-							log.info ("Updated accessEnd on ${result.updatedAccessEnd} title(s)")
-				
-							// Log the counts too.
-							for (final String change : countChanges) {
-								if (result[change]) {
-									TimeUnit.MILLISECONDS.sleep(1)
-									log.info ("Changed ${GrailsNameUtils.getNaturalName(change).toLowerCase()} on ${result[change]} titles")
-								}
-							}
-						} else {
-							if (result.titleCount > 0) {
-								log.info ("No titles to process")
-							}
-						}
-				
+            logPackageResults(result, finishedTime);
 				//    MDC.clear()
 				
 						return result
@@ -231,6 +212,28 @@ class PackageIngestService implements DataBinder {
 				}
 			}
 		}
+  }
+
+  // Pass in finished time so we're not waiting for package content cleanup
+  public void logPackageResults(Map result, long finishedTime) {
+    // Need to pause long enough so that the timestamps are different
+    TimeUnit.MILLISECONDS.sleep(1)
+    if (result.titleCount > 0) {
+      log.debug ("Processed ${result.titleCount} titles in ${finishedTime} seconds (${finishedTime/result.titleCount}s average)")
+      log.info("Package titles summary::Processed/${result.titleCount}, Added/${result.newTitles}, Updated/${result.updatedTitles}, Removed/${result.removedTitles}, AccessStart/${result.updatedAccessStart}, AccessEnd/${result.updatedAccessEnd}")
+
+      // Log the counts too.
+      for (final String change : countChanges) {
+        if (result[change]) {
+          TimeUnit.MILLISECONDS.sleep(1)
+          log.info ("Changed ${GrailsNameUtils.getNaturalName(change).toLowerCase()} on ${result[change]} titles")
+        }
+      }
+    } else {
+      if (result.titleCount > 0) {
+        log.info ("No titles to process")
+      }
+    }
   }
 
   /* 
@@ -510,9 +513,6 @@ class PackageIngestService implements DataBinder {
       pciStatus: 'none' // This should be 'none', 'updated' or 'new'
     ]
 
-    // ERM-1799 TI has been created, harvest matchKey information at this point to apply to any PTI/PCIs
-    List<Map> matchKeys = matchKeyService.collectMatchKeyInformation(pc)
-
     // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
 
     // lets try and work out the platform for the item
@@ -522,8 +522,6 @@ class PackageIngestService implements DataBinder {
 
       // See if we already have a title platform record for the presence of this title on this platform
       PlatformTitleInstance pti = lookupOrCreatePTI(title, platform, trustedSourceTI, pc)
-      matchKeyService.updateMatchKeys(pti, matchKeys)
-
 
       // ADD PTI AND PCI ID TO RESULT
       result.ptiId = pti.id;
@@ -546,22 +544,12 @@ class PackageIngestService implements DataBinder {
           addedTimestamp:updateTime,
         )
 
-        // ERM-1799, match keys need adding to PCI
-        // We're passing an UNSAVED PCI here... so can't pass id and lookup in method
-        matchKeyService.updateMatchKeys(pci, matchKeys, false)
         isNew = true
       }
       else {
         // Note that we have seen the package content item now - so we don't delete it at the end.
         log.debug("Record ${titleCount} - Update package content item (${pci.id})")
         isUpdate = true
-        if (trustedSourceTI) {
-          /*
-          * We may need to update the match key information
-          * from the incoming package for existing PCIs
-          */
-          matchKeyService.updateMatchKeys(pci, matchKeys, false)
-        }
       }
 
       String embStr = pc.embargo?.trim()
@@ -599,8 +587,7 @@ class PackageIngestService implements DataBinder {
       // ensure that accessStart is earlier than accessEnd, otherwise stop processing the current item
       if (pci.accessStart != null && pci.accessEnd != null) {
         if (pci.accessStart > pci.accessEnd ) {
-          log.error("accessStart date cannot be after accessEnd date for title: ${title} in package: ${pkg.name}")
-          return
+          throw new IngestException("accessStart date cannot be after accessEnd date for title: ${title} in package: ${pkg.name}");
         }
       }
 
@@ -628,8 +615,7 @@ class PackageIngestService implements DataBinder {
       }
     }
     else {
-      String message = "Skipping \"${pc.title}\". Unable to identify platform from ${platform_url_to_use} and ${pc.platformName}"
-      log.error(message)
+      throw new IngestException("Unable to identify platform from ${platform_url_to_use} and ${pc.platformName}");
     }
 
     result

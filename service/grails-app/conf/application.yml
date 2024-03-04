@@ -220,7 +220,7 @@ webtoolkit:
 environments:
   test:
     dataSource:
-      url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olftest}"
+      url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:okapi_modules_test}"
     kiwt:
       # Filestore values from the minio config defined in the docker-compose file at ../tools/testing
       filestore:

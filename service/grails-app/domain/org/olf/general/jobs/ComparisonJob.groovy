@@ -24,6 +24,11 @@ class ComparisonJob extends PersistentJob implements MultiTenant<ComparisonJob>{
   static hasMany = [
     comparisonPoints: ComparisonPoint
   ]
+	
+	@Override
+	public Type getType() {
+		return Type.TASK
+	}
   
   final Closure getWork() {
     final Closure theWork = { final String jobId, final String tenantId ->

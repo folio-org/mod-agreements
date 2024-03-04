@@ -30,7 +30,9 @@
             "monographEdition": null,
             "monographVolume": null,
             "firstEditor": null,
-            "dataMonographPublished": null
+            "dataMonographPublished": null,
+            "sourceIdentifierNamespace": "testElsevier",
+            "sourceIdentifier": "1234"
         },
         {
             "title": "AEU - International Journal of Electronics and Communications",
@@ -49,7 +51,9 @@
             "monographEdition": null,
             "monographVolume": null,
             "firstEditor": null,
-            "dataMonographPublished": null
+            "dataMonographPublished": null,
+            "sourceIdentifierNamespace": "testElsevier",
+            "sourceIdentifier": "2345"
         },
         {
             "title": "Information Security Technical Report",
@@ -68,7 +72,9 @@
             "monographEdition": null,
             "monographVolume": null,
             "firstEditor": null,
-            "dataMonographPublished": null
+            "dataMonographPublished": null,
+            "sourceIdentifierNamespace": "testElsevier",
+            "sourceIdentifier": "3456"
         }
     ]
 }

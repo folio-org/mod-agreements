@@ -20,9 +20,9 @@ import org.olf.CoverageService
 import org.olf.DocumentAttachmentService
 import org.olf.ImportService
 import org.olf.IdentifierService
-import org.olf.MatchKeyService
 import org.olf.KbHarvestService
 import org.olf.KbManagementService
+import org.olf.general.jobs.PersistentJob.Type
 
 import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.okapi.OkapiTenantResolver
@@ -56,7 +56,6 @@ class JobRunnerService implements EventPublisher {
   ImportService importService
   ComparisonService comparisonService
   IdentifierService identifierService
-  MatchKeyService matchKeyService
   SessionFactory sessionFactory
   GrailsApplication grailsApplication
 
@@ -73,7 +72,11 @@ order by pj.dateCreated
 '''
   
   private int CONCURRENT_JOBS_GLOBAL = 2 // We need to be careful to not completely tie up all our resource
+	private int taskConcurrency
+	
   private ThreadPoolExecutor executorSvc
+	
+	private ThreadPoolExecutor taskExecutorService
   
   @PostConstruct
   void init() {
@@ -81,6 +84,9 @@ order by pj.dateCreated
     if ( grailsApplication.config.concurrentJobsGlobal instanceof Integer && grailsApplication.config.concurrentJobsGlobal > 0 )
       CONCURRENT_JOBS_GLOBAL = grailsApplication.config.concurrentJobsGlobal;
     
+		// Base the number of small jobs executable on the limit imposed on the default runner.
+		taskConcurrency = CONCURRENT_JOBS_GLOBAL * 2
+		
     // SO: This is not ideal. We don't want to limit jobs globally to 1 ideally. It should be 
     // 1 per tenant, but that will involve implementing custom handling for the queue and executor.
     // While we only have 1 tenant, this will suffice.
@@ -91,9 +97,18 @@ order by pj.dateCreated
       TimeUnit.MILLISECONDS, // Makes the above wait time in 'seconds'
       new LinkedBlockingQueue<Runnable>() // Blocking queue
     )
+		
+		taskExecutorService = new ThreadPoolExecutor(
+      1, // Core pool Idle threads.
+      taskConcurrency, // Threads max.
+      5,
+      TimeUnit.SECONDS, // Makes the above wait time in 'seconds'
+      new LinkedBlockingQueue<Runnable>() // Blocking queue
+    )		
 
     // Raise an event to say we are ready.
     notify('jobs:job_runner_ready')
+    notify('jobs:task_runner_ready')
   }
   
   private void jobEnded(final String tid, final String jid) {
@@ -140,7 +155,7 @@ order by pj.dateCreated
     pj.status = RefdataValue.lookupOrCreate(statusCat, 'Ended')
     pj.save( failOnError: true, flush:true )
   }
-  
+
   @Transactional(propagation=REQUIRES_NEW)
   public void interruptJob(final String tenantId, final String jid) {
     
@@ -154,6 +169,25 @@ order by pj.dateCreated
       
       pj.ended = Instant.now()
       pj.status = RefdataValue.lookupOrCreate(statusCat, 'Ended')
+      
+      
+      Runnable onInterrupted = pj.getOnInterrupted();
+
+      // Call any job-specific handling
+      if (Closure.isAssignableFrom(onInterrupted.class)) {
+        // Change the delegate to this class so we can control access to beans.
+        Closure onInterruptedC = onInterrupted as Closure
+  //      final JobRunnerService me = this
+        onInterruptedC.setDelegate(this)
+        onInterruptedC.setResolveStrategy(Closure.DELEGATE_FIRST)
+
+        // Also pass in the current tenant id and job id
+        onInterrupted = onInterruptedC.curry(tenantId, jid)
+      }
+
+      onInterrupted.run()
+      // I don't think we want to use the special thread pool here
+      //executorSvc.execute(onInterrupted)
       pj.save( failOnError: true, flush:true )
     }
   }
@@ -217,8 +251,6 @@ order by pj.dateCreated
     }
   }
   
-  
-  
   @Subscriber('federation:tick:leader')
   void leaderTick(final String instanceId) {
     log.debug("JobRunnerService::leaderTick")
@@ -237,99 +269,167 @@ order by pj.dateCreated
   FolioLockService folioLockService
   AppFederationService appFederationService
   
-  private final Map<Instant, String[]> potentialJobs = new TreeMap<>()
+  private final Map<Instant, JobRunnerEntry> potentialJobs = new TreeMap<>()
   
+	private boolean shouldCheckForNewJobs() {
+		
+		// Check scheduled task size...
+		int queuedJobSize = 0
+		int queuedTaskSize = 0
+		
+		for (JobRunnerEntry entry : potentialJobs.values()) {
+			if (entry.type == Type.TASK) {
+				queuedTaskSize ++
+				continue
+			}
+			queuedJobSize ++
+			
+			if ( queuedJobSize >= CONCURRENT_JOBS_GLOBAL || queuedTaskSize >= taskConcurrency ) {
+				return false
+			}
+		}
+		
+		true
+		
+	}
+	
   private synchronized void findAndRunNextJob() {
     log.debug("JobRunnerService::findAndRunNextJob")
     
-    // Check if the executor has space.
-    final int activeCount = executorSvc.getActiveCount()
-    if ((CONCURRENT_JOBS_GLOBAL - activeCount) < 1) {
-      log.info "No free task runners, active workers currently at ${activeCount}. Skipping"
-      return
-    }
+		final int jobCapacity = CONCURRENT_JOBS_GLOBAL - executorSvc.getActiveCount()
+		final int taskCapacity = taskConcurrency - taskExecutorService.getActiveCount()
+		final int activeCount = taskExecutorService.getActiveCount() + executorSvc.getActiveCount()
+		
+		if ( jobCapacity < 1 && taskCapacity < 1 ) {
+			log.info "No free runners for jobs or tasks, active workers currently at ${activeCount}. Skipping"
+			return
+		}
     
     folioLockService.federatedLockAndDo("agreements:job:queue") {
-      final int queueSize = potentialJobs.size()
-      if (queueSize < 1) {
-        log.debug "No jobs in potential jobs queue, find all queued jobs"
+
+      if (shouldCheckForNewJobs()) {
+        log.debug "We have capacity to run jobs / tasks lets check the queue."
           
         okapiTenantAdminService.allConfiguredTenantSchemaNames().each { final String tenant_schema_id ->
           
           log.debug "Finding next jobs for tenant ${tenant_schema_id}"
           Tenants.withId(tenant_schema_id) {
             // Find a queued job with no runner assigned.
+						
+						final int unallocatedJobMaxCount = 3
+						
+						int unallocatedJobCount = 0
+						int unallocatedTaskCount = 0
+						
             final RefdataValue queued = PersistentJob.lookupStatus('Queued')
-            PersistentJob.findAllByStatusAndRunnerIdIsNull(queued, [ sort: 'dateCreated', order: 'asc', max: 3] ).each { PersistentJob j ->
-              log.info("Scheduling potential job ${j} for ${tenant_schema_id}");
-              potentialJobs.put(j.dateCreated, [j.id, tenant_schema_id] as String[])
-            }
+						for (PersistentJob j : PersistentJob.findAllByStatusAndRunnerIdIsNull(queued, [ sort: 'dateCreated', order: 'asc'] )) {
+							final Type type = j.type
+							
+							if ( type == Type.JOB ) {
+								if (unallocatedJobCount < unallocatedJobMaxCount) {
+									unallocatedJobCount ++
+								} else {
+									if (unallocatedTaskCount >= taskCapacity) {
+										break // Stop looking if we have all we need.
+									}
+									continue // Skip.
+								}
+							}
+
+							// Else TASK
+							else if ( type == Type.TASK ) {
+								if (unallocatedTaskCount < taskCapacity) {
+									unallocatedTaskCount ++
+								} else {
+									if (unallocatedJobCount >= unallocatedJobMaxCount) {
+										break // Stop looking if we have all we need.
+									}
+									continue // Skip.
+								}
+							}
+							
+							// If we get this far we can add the potential job
+							log.info("Scheduling potential ${j.type} [${j}] for tenant: [${tenant_schema_id}]")
+							potentialJobs.put(j.dateCreated, JobRunnerEntry.of( j.type, j.id, tenant_schema_id) )
+						}
           }
         }
       }
       
-      log.debug "Potential jobs queue size currently ${queueSize}"
+      log.debug "Potential jobs queue size currently ${potentialJobs.size()}"
       
       // Go through each one and check if each job is runnable.
       // Runnnable is no other tenant job with a RUNNING status
       final List<Instant> jobStamps = potentialJobs.keySet() as List
       
       final Set<String> busyTenants = []
-      boolean added = false
-      for (int i=0; !added && i<jobStamps.size(); i++) {
+      int totalSpace = jobCapacity + taskCapacity
+      for (int i=0; (totalSpace > 0) && i<jobStamps.size(); i++) {
         final Instant key = jobStamps.get(i)
-        final String[] jobAndTenant = potentialJobs.get( key )
-        final String tenantId = jobAndTenant[1]
+        final JobRunnerEntry entry = potentialJobs.get( key )
+        final String tenantId = entry.tenantId
+        final Type type = entry.type
         
         try {
-          if (busyTenants.contains(tenantId)) {
-            log.debug "Already determined tenant ${tenantId} was busy. Try next job entry"
-          } else {
+					
+          if (type == Type.JOB && busyTenants.contains(tenantId)) {
+            log.debug "Already determined tenant ${tenantId} was busy. Cannot schedule job type, try the next entry."
+						continue
+          }
           
-            Tenants.withId(tenantId) {
-              // Find a queued job with no runner assigned.
-              final RefdataValue inProgress = PersistentJob.lookupStatus('In progress')
+          Tenants.withId(tenantId) {
+						
+						if (type == Type.JOB) {
+							// Jobs should be limited to 1 per tenant.
+							
+							// Check if we already have a "job" running.
+	            final RefdataValue inProgress = PersistentJob.lookupStatus('In progress')
+							final boolean tenantRunningJob = PersistentJob.findAllByStatus(inProgress)?.find { PersistentJob j ->
+								j.type == Type.JOB
+							}
+							
+							if (tenantRunningJob) {
+								log.debug "Tenant ${tenantId} has at least one JOB type already in progess. Next entry"
+								busyTenants << tenantId
+								
+								return // From the closure.
+							}
+						}
+						
+						// Either tenant not running job already, or this is a task. 
+            
+            // Attempt to schedule and run
+            final String jobId = entry.jobId
+						
+            PersistentJob job = PersistentJob.read(jobId)
+            
+            // Safeguard against jobs that were removed for whatever reason.
+            if (job == null) { 
+              log.warn "Job ${jobId} has been deleted. Simply remove from queue"
               
-              final boolean tenantRunningJob = PersistentJob.findByStatus(inProgress)
+              // Remove from the queue.
+              potentialJobs.remove( key )
+            }
+		  
+						final RefdataValue queued = PersistentJob.lookupStatus('Queued')
+            if (job.status.id != queued.id || job.runnerId != null) {
+              log.info "Job ${jobId} is either no longer queued or already allocated to a different runner"
               
-              if (tenantRunningJob) {
-                log.debug "Tenant ${tenantId} has at least one job in progess. Next job"
-                busyTenants << tenantId
-                
-              } else {
-                // Tenant can have Job run
-                final String jobId = jobAndTenant[0]
-                PersistentJob job = PersistentJob.read(jobId)
-                
-                // Safeguard against jobs that were removed for whatever reason.
-                if (job == null) { 
-                  log.warn "Job ${jobId} has been deleted. Simply remove from queue"
-                  
-                  // Remove from the queue.
-                  potentialJobs.remove( key )
-                }
-  			  
-  			  final RefdataValue queued = PersistentJob.lookupStatus('Queued')
-                if (job.status.id != queued.id || job.runnerId != null) {
-                  log.info "Job ${jobId} is either no longer queued or already allocated to a different runner"
-                  
-                  // Remove from the queue.
-                  potentialJobs.remove( key )
-                } else {
-                  
-                  allocateJob(tenantId, job.id)
-                  if ( executeJob(tenantId, job.id, key) ) {
-                    added = true
-                    potentialJobs.remove( key )
-                  }
-                }
+              // Remove from the queue.
+              potentialJobs.remove( key )
+            } else {
+              
+              allocateJob(tenantId, job.id)
+              if ( executeJob(type, tenantId, job.id, key) ) {
+                totalSpace --
+                potentialJobs.remove( key )
               }
             }
           }
         } catch ( Exception ex ) {
           // Make sure we remove the queue item on error. If this was an intermittent 
           // failure it will be re-added to a queue in a subsequent execution
-          log.error("Exception when attempting to run job ID: '${jobAndTenant[0]}' for tenant: '${jobAndTenant[1]}'. Removing from queue for now", ex)
+          log.error("Exception when attempting to run job ID: '${entry[0]}' for tenant: '${entry[1]}'. Removing from queue for now", ex)
           potentialJobs.remove( key )
         }
       }
@@ -343,7 +443,7 @@ order by pj.dateCreated
   }
   
   @Transactional(propagation=REQUIRES_NEW, readOnly=true)
-  private boolean executeJob ( final String tenantId, final String jobId, final Instant key) {
+  private boolean executeJob ( final Type type, final String tenantId, final String jobId, final Instant key) {
     
     boolean added = false
     
@@ -402,7 +502,7 @@ order by pj.dateCreated
 
     try {
       // Execute.
-      executorSvc.execute(work)
+      getRunnerForType(type).execute(work)
 
       // Remove from the queue.
       potentialJobs.remove( key )
@@ -414,6 +514,13 @@ order by pj.dateCreated
     
     added
   }
+	
+	private ThreadPoolExecutor getRunnerForType(Type jobType) {
+		if (jobType == Type.TASK) return taskExecutorService
+
+		// Default.
+		return executorSvc
+	}
   
 //  @Subscriber('jobs:job_created')
 //  void handleNewJob(final String jobId, final String tenantId) {
