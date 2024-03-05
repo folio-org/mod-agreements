@@ -220,10 +220,4 @@ databaseChangeLog = {
 			column(name: "id_value")
 		}
 	}
-
-	changeSet(author: "Jack_Golding (manual)", id: "20240223-1010-001") {
-  	addColumn(tableName: "package") {	
-			column(name: "pkg_source_title_count", type: "BIGINT"){ constraints(nullable: "true") }
-  	}
-	}
 }
