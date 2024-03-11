@@ -1,5 +1,7 @@
 package org.olf.general.jobs
 
+import services.k_int.core.SystemDataService
+
 import static org.springframework.transaction.annotation.Propagation.REQUIRES_NEW
 
 import java.time.Instant
@@ -32,6 +34,7 @@ import grails.events.EventPublisher
 import grails.events.annotation.Subscriber
 import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.multitenancy.Tenants
+import grails.gorm.multitenancy.Tenant
 import grails.gorm.transactions.Transactional
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -44,6 +47,7 @@ import grails.core.GrailsApplication
 
 
 @Slf4j
+@CurrentTenant
 class JobRunnerService implements EventPublisher {
   
   // Any auto injected beans here can be accessed within the `work` runnable
@@ -156,10 +160,11 @@ order by pj.dateCreated
     pj.save( failOnError: true, flush:true )
   }
 
+  //@Tenant({ SystemDataService.DATASOURCE_SYSTEM })
   @Transactional(propagation=REQUIRES_NEW)
-  public void interruptJob(final String tenantId, final String jid) {
+  public void interruptJob(final String tId, final String jid) {
     
-    Tenants.withId(tenantId) {
+    Tenants.withId(tId) {
       PersistentJob pj = PersistentJob.get(jid ?: JobContext.current.get().jobId)
       final String resultCat = pj.getResultCategory()
       
@@ -182,7 +187,7 @@ order by pj.dateCreated
         onInterruptedC.setResolveStrategy(Closure.DELEGATE_FIRST)
 
         // Also pass in the current tenant id and job id
-        onInterrupted = onInterruptedC.curry(tenantId, jid)
+        onInterrupted = onInterruptedC.curry(tId, jid)
       }
 
       onInterrupted.run()
@@ -192,17 +197,18 @@ order by pj.dateCreated
     }
   }
   
+  //@Tenant({ SystemDataService.DATASOURCE_SYSTEM })
   @Transactional(propagation=REQUIRES_NEW)
-  public void allocateJob( final String tenantId, final String jid) {
-    
-    Tenants.withId(tenantId) {
-      PersistentJob pj = PersistentJob.get( jid )
-      final String _myId = appFederationService.getInstanceId()
-      pj.runnerId = _myId
-      
-      // Set the runner id.
-      pj.save(flush: true, failOnError:true)
-    }
+  public void allocateJob( final String tId, final String jid) {
+
+      Tenants.withId(tId) {
+        PersistentJob pj = PersistentJob.get( jid )
+        final String _myId = appFederationService.getInstanceId()
+        pj.runnerId = _myId
+
+        // Set the runner id.
+        pj.save(flush: true, failOnError:true)
+      }
   }
 
   public void shutdown() {
@@ -251,6 +257,7 @@ order by pj.dateCreated
     }
   }
   
+  @Tenant({ SystemDataService.DATASOURCE_SYSTEM })
   @Subscriber('federation:tick:leader')
   void leaderTick(final String instanceId) {
     log.debug("JobRunnerService::leaderTick")
@@ -260,6 +267,7 @@ order by pj.dateCreated
     findAndRunNextJob()
   }
   
+  @Tenant({ SystemDataService.DATASOURCE_SYSTEM })
   @Subscriber('federation:tick:drone')
   void droneTick(final String instanceId) {
     log.debug("JobRunnerService::droneTick")
@@ -367,18 +375,16 @@ order by pj.dateCreated
       for (int i=0; (totalSpace > 0) && i<jobStamps.size(); i++) {
         final Instant key = jobStamps.get(i)
         final JobRunnerEntry entry = potentialJobs.get( key )
-        final String tenantId = entry.tenantId
+        final String tId = entry.tenantId
         final Type type = entry.type
-        
+
         try {
-					
-          if (type == Type.JOB && busyTenants.contains(tenantId)) {
-            log.debug "Already determined tenant ${tenantId} was busy. Cannot schedule job type, try the next entry."
+          if (type == Type.JOB && busyTenants.contains(tId)) {
+            log.debug "Already determined tenant ${tId} was busy. Cannot schedule job type, try the next entry."
 						continue
           }
           
-          Tenants.withId(tenantId) {
-						
+          Tenants.withId(tId) {
 						if (type == Type.JOB) {
 							// Jobs should be limited to 1 per tenant.
 							
@@ -389,13 +395,13 @@ order by pj.dateCreated
 							}
 							
 							if (tenantRunningJob) {
-								log.debug "Tenant ${tenantId} has at least one JOB type already in progess. Next entry"
-								busyTenants << tenantId
+								log.debug "Tenant ${tId} has at least one JOB type already in progess. Next entry"
+								busyTenants << tId
 								
 								return // From the closure.
 							}
 						}
-						
+
 						// Either tenant not running job already, or this is a task. 
             
             // Attempt to schedule and run
@@ -418,9 +424,8 @@ order by pj.dateCreated
               // Remove from the queue.
               potentialJobs.remove( key )
             } else {
-              
-              allocateJob(tenantId, job.id)
-              if ( executeJob(type, tenantId, job.id, key) ) {
+              allocateJob(tId, job.id)
+              if ( executeJob(type, tId, job.id, key) ) {
                 totalSpace --
                 potentialJobs.remove( key )
               }
@@ -429,7 +434,7 @@ order by pj.dateCreated
         } catch ( Exception ex ) {
           // Make sure we remove the queue item on error. If this was an intermittent 
           // failure it will be re-added to a queue in a subsequent execution
-          log.error("Exception when attempting to run job ID: '${entry[0]}' for tenant: '${entry[1]}'. Removing from queue for now", ex)
+          log.error("Exception when attempting to run job ID: '${entry.jobId}' for tenant: '${entry.tenantId}'. Removing from queue for now", ex)
           potentialJobs.remove( key )
         }
       }
@@ -437,19 +442,21 @@ order by pj.dateCreated
     log.debug("exiting JobRunnerService::findAndRunNextJob")
   }
   
-  @Transactional(propagation=REQUIRES_NEW, readOnly=true)
-  private Runnable getJobWork(final String tenantId, final String jobId) {
-    Tenants.withId(tenantId) { PersistentJob.read( jobId )?.getWork() }
-  }
+  // FIXME Don't do this in a separate transaction?
+/*   @Transactional(propagation=REQUIRES_NEW, readOnly=true)
+  private Runnable getJobWork(final String tId, final String jobId) {
+    Tenants.withId(tId) { PersistentJob.read( jobId )?.getWork() }
+  } */
   
   @Transactional(propagation=REQUIRES_NEW, readOnly=true)
-  private boolean executeJob ( final Type type, final String tenantId, final String jobId, final Instant key) {
-    
+  private boolean executeJob ( final Type type, final String tId, final String jobId, final Instant key) {
     boolean added = false
     
     // Read the work.
-    Runnable work = getJobWork(tenantId, jobId)
-    
+    Runnable work;
+    Tenants.withId(tId) { work = PersistentJob.read( jobId )?.getWork() }
+    //Runnable work = getJobWork(tId, jobId)
+
     if (work == null) {
       log.error("Couldn't fetch workload for job ${jobId}")
     }
@@ -462,7 +469,7 @@ order by pj.dateCreated
       workC.setResolveStrategy(Closure.DELEGATE_FIRST)
 
       // Also pass in the current tenant id.
-      work = workC.curry(tenantId)
+      work = workC.curry(tId)
     }
 
     // We should wrap the work in a closure so we can ensure tenant id is set
@@ -475,7 +482,7 @@ order by pj.dateCreated
         org.slf4j.MDC.clear()
         org.slf4j.MDC.setContextMap( jobId: '' + jid, tenantId: '' + tid, 'tenant': '' + tenantName)
         JobContext.current.set(new JobContext( jobId: jid, tenantId: tid ))
-
+        log.debug("LOGDEBUG TID: ${tId}")
         Tenants.withId(tid) {
           beginJob(jid)
         }
@@ -498,7 +505,7 @@ order by pj.dateCreated
         org.slf4j.MDC.clear()
         jobEnded(tid, jid)
       }
-    }.curry(tenantId, jobId, currentWork)
+    }.curry(tId, jobId, currentWork)
 
     try {
       // Execute.
