@@ -7,6 +7,7 @@ import org.olf.kb.TitleInstance
 
 import com.k_int.okapi.OkapiTenantResolver
 
+import grails.gorm.transactions.Transactional
 import grails.gorm.multitenancy.Tenants
 import grails.testing.mixin.integration.Integration
 import grails.web.databinding.DataBindingUtils
@@ -26,15 +27,15 @@ class TitleServiceSpec extends BaseSpec {
       content = new PackageContentImpl()
       DataBindingUtils.bindObjectToInstance(content, [
         'title':'Brain of the firm',
-        'instanceMedium': 'print',
+        'instanceMedium': 'electronic',
         'instanceMedia': 'monograph',
         'instanceIdentifiers': [ 
           [
-            'namespace': 'isbn',
+            'namespace': 'eisbn',
             'value': '0713902191'
           ],
           [
-            'namespace': 'isbn',
+            'namespace': 'eisbn',
             'value': '9780713902198'
           ] 
         ],
@@ -43,29 +44,34 @@ class TitleServiceSpec extends BaseSpec {
             // 2e - print
             'namespace': 'isbn',
             'value': '047194839X'
-          ] ]
-  
+          ]
+        ],
+        'sourceIdentifierNamespace': 'k-int',
+        'sourceIdentifier': 'botf-123'
       ])
-      
     
     then: 'Everything is good'
       noExceptionThrown()
   }
 
-  void 'Test Title Resolution'() {
+  void 'Test Title Resolution' () {
 
     when: 'Resolve title'
 
       def title_instance = null
       def num_identifiers = 0
       final String tenantid = currentTenant.toLowerCase()
+      def matching_titles = []
 
       // We are exercising the service directly, normally a transactional context will
       // be supplied by the HTTPRequest, but we fake it here to talk directly to the service
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
         // N.B. This is a groovy MAP, not a JSON document.
-        title_instance = TitleInstance.read(titleInstanceResolverService.resolve(content, true))
-        num_identifiers = title_instance.identifiers.size()
+        TitleInstance.withNewTransaction {
+          title_instance = TitleInstance.read(titleInstanceResolverService.resolve(content, true))
+          num_identifiers = title_instance.identifiers.size()
+          matching_titles = TitleInstance.findAllByName('Brain of the firm')
+        }
       }
 
     then: 'New title created and identifier count matches'
@@ -84,24 +90,25 @@ class TitleServiceSpec extends BaseSpec {
       def title_instance = null
       def num_titles = 0
       final String tenantid = currentTenant.toLowerCase()
+      def matching_titles = []
 
       // We are exercising the service directly, normally a transactional context will
       // be supplied by the HTTPRequest, but we fake it here to talk directly to the service
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
-        title_instance = TitleInstance.read(titleInstanceResolverService.resolve(content, true))
-        assert title_instance != null
-        def matching_titles = TitleInstance.findAllByName('Brain of the firm')
-        num_titles = matching_titles.size()
-
-        // There are 2 instances here - not 1 - first and second edition.
-        if ( num_titles != 2 ) {
-          matching_titles.each { mt ->
-            log.error("   -->TITLE : ${mt}");
-          }
+        TitleInstance.withNewTransaction {
+          title_instance = TitleInstance.read(titleInstanceResolverService.resolve(content, true))
+          assert title_instance != null
+          matching_titles = TitleInstance.findAllByName('Brain of the firm')
+          num_titles = matching_titles.size()
         }
       }
 
-    then:
+      // There are 2 instances here - not 1 - first and second edition.
+      if ( num_titles != 2 ) {
+        matching_titles.each { mt ->
+          log.error("   -->TITLE : ${mt}");
+        }
+      }
 
     then: 'Same title is returned and not duplicated'
       title_instance.name == 'Brain of the firm'

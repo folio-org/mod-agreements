@@ -37,24 +37,10 @@ class AgreementExportSpec extends BaseSpec {
   void "Load Packages"() {
 
     when: 'File loaded'
-      def jsonSlurper = new JsonSlurper()
-      def package_data = jsonSlurper.parse(new File('src/integration-test/resources/packages/simple_pkg_1.json'))
-      int result = 0
-      final String tenantid = currentTenant.toLowerCase()
-      log.debug("Create new package with tenant ${tenantid}");
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName(tenantid)) {
-        Pkg.withTransaction { status ->
-          result = importService.importPackageUsingInternalSchema(package_data)
-          log.debug("Package import complete - num packages: ${Pkg.executeQuery('select count(p.id) from Pkg as p')}");
-          log.debug("                            num titles: ${TitleInstance.executeQuery('select count(t.id) from TitleInstance as t')}");
-          Pkg.executeQuery('select p.id, p.name from Pkg as p').each { p ->
-            log.debug("Package: ${p}");
-          }
-        }
-      }
+      Map result = importPackageFromFileViaService('simple_pkg_1.json')
 
     then: 'Package imported'
-      result > 0
+      result.packageImported == true
     
     when: "Looked up package with name"
       List resp = doGet("/erm/packages", [filters: ['name==K-Int Test Package 001']])

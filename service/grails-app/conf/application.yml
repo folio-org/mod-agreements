@@ -223,7 +223,7 @@ webtoolkit:
 environments:
   test:
     dataSource:
-      url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olftest}?ApplicationName=${okapi.schema.appName}"
+      url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:okapi_modules_test}?ApplicationName=${okapi.schema.appName}"
       hikari:
         data-source-properties:
           ApplicationName: "${okapi.schema.appName}"
