@@ -5,6 +5,9 @@ import org.olf.kb.TitleInstance
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.PackageContentItem
 
+import static org.springframework.transaction.annotation.Propagation.MANDATORY
+import static org.springframework.transaction.annotation.Propagation.REQUIRES_NEW
+
 import org.olf.erm.Entitlement
 
 
@@ -34,9 +37,7 @@ public class EntitlementService {
     WHERE ent.resource.id = :resId
   """
 
-
-
-  @Transactional
+  @Transactional(propagation = MANDATORY)
   public void handleErmResourceChange(ErmResource res) {
     Date now = new Date();
 
@@ -45,18 +46,18 @@ public class EntitlementService {
     List<Entitlement> entitlements = [];
 
     // When ErmResource has changed, update contentUpdated for all entitlements for that resource
-    Entitlement.withNewTransaction {
-      resourcesToQuery.each {String resId ->
-        entitlements.addAll(
-          Entitlement.executeQuery(ENT_HQL, [resId: resId])
-        )
-      }
-
-      entitlements.each {
-        it.contentUpdated = now
-        it.save(failOnError: true)
-      }
+//    Entitlement.withNewTransaction {
+    resourcesToQuery.each {String resId ->
+      entitlements.addAll(
+        Entitlement.executeQuery(ENT_HQL, [resId: resId])
+      )
     }
+
+    entitlements.each {
+      it.contentUpdated = now
+      it.save(failOnError: true)
+      }
+//    }
 
   }
 }

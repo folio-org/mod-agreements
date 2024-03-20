@@ -2,6 +2,7 @@ package org.olf.general.jobs
 
 import services.k_int.core.SystemDataService
 
+import static org.springframework.transaction.annotation.Propagation.MANDATORY
 import static org.springframework.transaction.annotation.Propagation.REQUIRES_NEW
 
 import java.time.Instant
@@ -29,6 +30,7 @@ import org.olf.general.jobs.PersistentJob.Type
 import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.okapi.OkapiTenantResolver
 import com.k_int.web.toolkit.refdata.RefdataValue
+import com.k_int.web.toolkit.utils.GormUtils
 
 import grails.events.EventPublisher
 import grails.events.annotation.Subscriber
@@ -42,12 +44,12 @@ import services.k_int.core.AppFederationService
 import services.k_int.core.FederationLockDataService
 import services.k_int.core.FolioLockService
 
+import com.k_int.web.toolkit.async.WithPromises
 import com.k_int.web.toolkit.files.FileUploadService
 import grails.core.GrailsApplication
 
 
 @Slf4j
-@CurrentTenant
 class JobRunnerService implements EventPublisher {
   
   // Any auto injected beans here can be accessed within the `work` runnable
@@ -215,11 +217,13 @@ order by pj.dateCreated
     log.info("JobRunnerService::shutdown()");
   }
   
-  @Transactional
+  
+	@Transactional(propagation = MANDATORY)
   protected Collection<String> getViableRunners() {
     appFederationService.allHealthyInstanceIds()
   }
-
+	
+	@Transactional(propagation = MANDATORY)
   protected void cleanupAfterDeadRunners() {
     Collection<String> viableRunnerIds = getViableRunners()
     
@@ -257,21 +261,32 @@ order by pj.dateCreated
     }
   }
   
-  @Tenant({ SystemDataService.DATASOURCE_SYSTEM })
   @Subscriber('federation:tick:leader')
   void leaderTick(final String instanceId) {
-    log.debug("JobRunnerService::leaderTick")
-    
-    cleanupAfterDeadRunners()
-    
-    findAndRunNextJob()
+		
+		WithPromises.task { 
+			Tenants.withId(SystemDataService.DATASOURCE_SYSTEM) {
+				GormUtils.withTransaction {
+					log.debug("JobRunnerService::leaderTick")
+					cleanupAfterDeadRunners()
+					findAndRunNextJob()
+					log.debug("JobRunnerService::leaderTick:done")
+				}
+			}
+		}
   }
   
-  @Tenant({ SystemDataService.DATASOURCE_SYSTEM })
   @Subscriber('federation:tick:drone')
   void droneTick(final String instanceId) {
-    log.debug("JobRunnerService::droneTick")
-    findAndRunNextJob()
+		WithPromises.task {
+			Tenants.withId(SystemDataService.DATASOURCE_SYSTEM) {
+				GormUtils.withTransaction {
+					log.debug("JobRunnerService::droneTick")
+					findAndRunNextJob()
+					log.debug("JobRunnerService::droneTick:done")
+				}
+			}
+		}
   }
   
   FolioLockService folioLockService
@@ -301,7 +316,8 @@ order by pj.dateCreated
 		
 	}
 	
-  private synchronized void findAndRunNextJob() {
+	@Transactional(propagation = MANDATORY)
+  protected synchronized void findAndRunNextJob() {
     log.debug("JobRunnerService::findAndRunNextJob")
     
 		final int jobCapacity = CONCURRENT_JOBS_GLOBAL - executorSvc.getActiveCount()
