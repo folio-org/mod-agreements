@@ -456,6 +456,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           packageSlug: primary_slug,
           sourceDataCreated: source_data_created,
           sourceDataUpdated: source_data_updated,
+          sourceTitleCount: 0,
           availabilityConstraints: availability_constraints,
           availabilityScope: availability_scope,
           contentTypes: content_types,
@@ -476,6 +477,10 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
         }
 
         // log.info("Tipp.title is of size ${tipp_entry?.title?.name?.size()} and tipp_entry?.title?.name is ${tipp_entry?.title?.name}");
+
+        if (tipp_status == 'Current') {
+          result.header.sourceTitleCount++
+        }
 
         // Skip delete tipps, and skip tipps where no title has been properly idenitified yet for the KBart line
         if ( ( tipp_status != 'Deleted' ) && ( tipp_entry?.title?.name?.size() > 0 ) ) {

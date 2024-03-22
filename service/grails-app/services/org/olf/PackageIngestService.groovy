@@ -278,6 +278,7 @@ class PackageIngestService implements DataBinder {
               description: package_data.header.description,
         sourceDataCreated: package_data.header.sourceDataCreated,
         sourceDataUpdated: package_data.header.sourceDataUpdated,
+         sourceTitleCount: (package_data.header.sourceTitleCount ?: null),
         availabilityScope: ( package_data.header.availabilityScope != null ? Pkg.lookupOrCreateAvailabilityScope(package_data.header.availabilityScope) : null ),
           lifecycleStatus: Pkg.lookupOrCreateLifecycleStatus(package_data.header.lifecycleStatus != null ? package_data.header.lifecycleStatus : 'Unknown'),
                     vendor: vendor,

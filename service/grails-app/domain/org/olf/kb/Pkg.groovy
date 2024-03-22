@@ -20,6 +20,7 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   Org vendor
   Date sourceDataCreated
   Date sourceDataUpdated
+  Integer sourceTitleCount
   @Defaults(['Current', 'Retired', 'Expected', 'Deleted'])
   RefdataValue lifecycleStatus
   @Defaults(['Global'])
@@ -27,7 +28,6 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   Set<PackageDescriptionUrl> packageDescriptionUrls
   Set<ContentType> contentTypes
   Set<AvailabilityConstraint> availabilityConstraints
-
   
   // Declaring this here will provide defaults for the type defined in ErmResource but not create
   // a subclass specific column
@@ -56,6 +56,7 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
                        vendor column:'pkg_vendor_fk'
             sourceDataCreated column:'pkg_source_data_created'
             sourceDataUpdated column:'pkg_source_data_updated'
+             sourceTitleCount column:'pkg_source_title_count'
               lifecycleStatus column:'pkg_lifecycle_status_fk'
             availabilityScope column:'pkg_availability_scope_fk'
        packageDescriptionUrls cascade: 'all-delete-orphan'
@@ -68,6 +69,7 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
              source(nullable:false, blank:false)
           reference(nullable:false, blank:false)
     nominalPlatform(nullable:true, blank:false)
+   sourceTitleCount(nullable:true, blank:false)
              vendor(nullable:true, blank:false)
   sourceDataCreated(nullable:true, blank:false)
   sourceDataUpdated(nullable:true, blank:false)
