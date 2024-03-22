@@ -1,14 +1,11 @@
-configurations.all {
-
-
+/* configurations.all {
   // Check for updates every build
   resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-}
+} */
 
 buildscript {
   repositories {
-    // FIXME Comment this
-		mavenLocal()
+		//mavenLocal()
 		mavenCentral()
     maven { url "https://plugins.gradle.org/m2/" }
 		maven { url "https://repo.grails.org/grails/core" }
@@ -63,8 +60,7 @@ bootJar {
 }
 
 repositories {
-  // FIXME Comment this
-  mavenLocal()
+  //mavenLocal()
 	maven { url "https://repo.grails.org/grails/core" }
 	maven { url "https://repo.grails.org/grails/plugins" }
 	maven { url "https://jitpack.io" }
@@ -103,7 +99,7 @@ dependencies {
 	implementation("org.grails.plugins:async")
   implementation("org.grails.plugins:events")
   implementation("org.grails.plugins:hibernate5")
-  implementation("org.grails.plugins:spring-security-core:6.1.1") // FIXME NOT IN LINE WITH GRAILS PATCH VERSION
+  implementation("org.grails.plugins:spring-security-core:6.1.1") // NOT IN LINE WITH GRAILS PATCH VERSION
   implementation("org.grails.plugins:views-json")
   implementation("org.grails.plugins:views-json-templates")
   implementation("org.hibernate:hibernate-core:5.6.15.Final")
@@ -123,15 +119,8 @@ dependencies {
   //testImplementation("io.micronaut:micronaut-http-client")
 
   /*  ---- Manually installed dependencies ---- */
-/*   implementation 'com.k_int.grails:web-toolkit-ce:8.1.4'
-  implementation ('com.k_int.okapi:grails-okapi:6.0.0-rc.4') {
-    exclude group: 'com.vaadin.external.google', module: 'android-json'
-  } */
-    // FIXME use released version
-	implementation 'com.k_int.grails:web-toolkit-ce:8.1.5-SNAPSHOT'
-	//implementation 'com.k_int.okapi:grails-okapi:6.0.0-rc.4'
-	// FIXME Use released version
-	implementation('com.k_int.okapi:grails-okapi:6.0.0-SNAPSHOT') {
+	implementation 'com.k_int.grails:web-toolkit-ce:9.0.0'
+	implementation('com.k_int.okapi:grails-okapi:7.0.0') {
     exclude group: 'com.vaadin.external.google', module: 'android-json'
   }
 
@@ -181,9 +170,6 @@ dependencies {
 	testImplementation( 'com.athaydes:spock-reports:2.3.2-groovy-3.0' ) {
 		transitive = false // this avoids affecting your version of Groovy/Spock
 	}
-
-	// Bumping this manually to avoid potential security issue with spring-webmvc-5.3.25
-	//implementation 'org.springframework:spring-webmvc'
 }
 /* 
 application {

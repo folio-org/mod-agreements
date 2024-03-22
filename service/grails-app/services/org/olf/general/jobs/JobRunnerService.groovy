@@ -458,7 +458,6 @@ order by pj.dateCreated
     log.debug("exiting JobRunnerService::findAndRunNextJob")
   }
   
-  // FIXME Don't do this in a separate transaction?
 /*   @Transactional(propagation=REQUIRES_NEW, readOnly=true)
   private Runnable getJobWork(final String tId, final String jobId) {
     Tenants.withId(tId) { PersistentJob.read( jobId )?.getWork() }
