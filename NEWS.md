@@ -1,4 +1,19 @@
-## 6.1.0 In progress
+## 7.1.0 In progress
+
+## 7.0.0 2024-03-22
+  * ERM-3155 URL on PTI is limited to 255 characters
+  * ERM-3154 Consolidate package upsert summary logging in info log
+  * ERM-3153 Remove match_key porcesses/domain modelling
+  * ERM-3152 Ensure external data source set to idle after zombie job found
+  * ERM-3151 Implement flag to not fall back to IDFirstTIRS
+  * ERM-3148 Query optimisation on data ingest
+  * ERM-3141 Add remote source current title count property to data model
+  * ERM-3127 Use clearly identifiable user-agent for requests to GOkb
+  * ERM-3120 Add Content type filter to Agreements dashboard widget
+  * ERM-3111 Upgrade Grails from 5 to 6
+  * ERM-3072 Identify and implement indexes to be added
+  * ERM-3063 StringTemplate.Context refdata should be internal
+  * ERM-1796 Indicated module name in pg_stat_activity
 
 ## 6.0.1 2023-11-09
   * ERM-3087 Add debug message to indicate ingest mode

@@ -14,6 +14,9 @@ import org.olf.ErmResourceService
 import grails.gorm.transactions.Transactional
 
 import org.springframework.context.ApplicationListener
+
+import com.k_int.web.toolkit.utils.GormUtils
+
 import org.springframework.context.ApplicationEvent
 import org.grails.datastore.mapping.engine.event.AbstractPersistenceEvent
 import org.grails.datastore.mapping.engine.event.PostDeleteEvent
@@ -31,24 +34,31 @@ public class EventListenerService implements ApplicationListener<ApplicationEven
   EntitlementService entitlementService
   ErmResourceService ermResourceService
 
-  void afterUpdate(PostUpdateEvent event) {
+  void afterUpdate(final PostUpdateEvent event) {
     if (event.entityObject instanceof ErmResource) {
-      ErmResource res = (ErmResource) event.entityObject
-      entitlementService.handleErmResourceChange(res)
+			GormUtils.withTransaction {
+				ErmResource res = (ErmResource) event.entityObject
+				entitlementService.handleErmResourceChange(res)
+			}
+      
     }
   }
 
   void afterInsert(PostInsertEvent event) {
     if (event.entityObject instanceof ErmResource) {
-      ErmResource res = (ErmResource) event.entityObject
-      entitlementService.handleErmResourceChange(res)
+			GormUtils.withTransaction {
+	      ErmResource res = (ErmResource) event.entityObject
+	      entitlementService.handleErmResourceChange(res)
+			}
     }
   }
 
   void afterDelete(PostDeleteEvent event) {
     if (event.entityObject instanceof ErmResource) {
-      ErmResource res = (ErmResource) event.entityObject
-      entitlementService.handleErmResourceChange(res)
+			GormUtils.withTransaction {
+	      ErmResource res = (ErmResource) event.entityObject
+	      entitlementService.handleErmResourceChange(res)
+			}
     }
   }
 

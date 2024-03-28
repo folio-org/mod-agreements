@@ -1,9 +1,14 @@
 package org.olf
 
+import static org.springframework.transaction.annotation.Propagation.MANDATORY
+
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 
 import org.olf.kb.ErmResource
 import org.olf.kb.TitleInstance
+
+import grails.gorm.transactions.Transactional
+
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.PackageContentItem
 
@@ -36,33 +41,31 @@ public class ErmResourceService {
    * If the passed resource is a PCI then the returned list should only comprise
    * of the resource's own id
    */
+	@Transactional(propagation = MANDATORY)
   public List<String> getFullResourceList (ErmResource res) {
     List<String> resourceList = [res.id]
     List<String> ptis = []
     List<String> pcis = []
-    ErmResource.withNewTransaction {
+    //ErmResource.withNewTransaction {
       // If res is a TI, find all the associated PTIs and store them
       if (res instanceof TitleInstance) {
-        ptis.addAll(
-          PlatformTitleInstance.executeQuery(PTI_HQL, [resId: res.id])
-        )
+				PlatformTitleInstance.executeQuery(PTI_HQL, [resId: res.id]).each ( ptis.&add )
       }
 
       // If res is a PTI, find all PCIS associated and store them    
       if (res instanceof PlatformTitleInstance) {
-        pcis.addAll(
-          PackageContentItem.executeQuery(PCI_HQL, [resId: res.id])
-        )
+				PackageContentItem.executeQuery(PCI_HQL, [resId: res.id]).each ( pcis.&add )
       }
+			
       // Also store any PCIs attached to any PTIs stored earlier
-      ptis.each {String ptiId ->
-        pcis.addAll(PackageContentItem.executeQuery(PCI_HQL, [resId: ptiId]))
+      ptis.each { String ptiId ->
+        PackageContentItem.executeQuery(PCI_HQL, [resId: ptiId]).each ( pcis.&add )
       }
 
       // At this point we have a comprehensive list of resources at various levels
       resourceList.addAll(ptis)
       resourceList.addAll(pcis)
-    }
+    //}
 
     resourceList
   }
