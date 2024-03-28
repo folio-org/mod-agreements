@@ -260,7 +260,7 @@ where rkb.type is not null
       // This might ought to be in debug to bring in line with other methods in here, 
       // although it might be more useful to know it happened since the call log above is "debug" level
       // Default logback config has this service at "DEBUG" level anyway so it might not matter.
-			log.warn("KBHarvestService::handleInterruptedJob() completed");
+			log.info("KBHarvestService::handleInterruptedJob() completed");
 		}
 	}
 }
