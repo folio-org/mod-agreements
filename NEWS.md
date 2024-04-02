@@ -1,3 +1,7 @@
+## 6.1.1 2024-04-01
+  * ERM-3177 Check on `noSICount` in WorkSourceIdentifierTIRSImpl is not correct
+  * ERM-3139 Propose additional info.log messages for jobs/processes
+
 ## 6.1.0 2024-03-04
   * ERM-3156 Backport GOKb harvest performance and process fixes to Poppy compatible releases
     * ERM-3154 Consolidate package upsert summary logging in info log
