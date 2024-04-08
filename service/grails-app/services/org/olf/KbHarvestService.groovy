@@ -163,7 +163,7 @@ where rkb.type is not null
             knowledgeBaseCacheService.runSync((String)remotekb_id)
           }
           catch ( Exception e ) {
-            log.warn("problem processing remote KB link",e)
+            log.warn("Unexpected exception encountered during runSync for ${remotekb_id}", e)
           }
           finally {
             log.info("KbHarvestService.closure completed - ${System.currentTimeMillis()-gokb_sync_start_time}ms elapsed. Release sync status");
