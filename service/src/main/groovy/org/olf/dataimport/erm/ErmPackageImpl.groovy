@@ -63,6 +63,7 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
     availabilityScope  nullable: true, blank: false
     sourceDataCreated  nullable: true, blank: false
     sourceDataUpdated  nullable: true, blank: false
+    sourceTitleCount nullable: true, blank: false
     lifecycleStatus    nullable: true, blank: false
   }
 

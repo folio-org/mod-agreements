@@ -97,7 +97,7 @@ class ImportService implements DataBinder {
     envelope.records?.each { Map record ->
       // Ingest 1 package at a time.
       Map importResult = importPackage (record, ErmPackageImplWithContentItems)
-      
+                  
       if (importResult.packageImported) {
         packageCount ++
         String packageId = importResult.packageId
@@ -115,7 +115,7 @@ class ImportService implements DataBinder {
   }
   
   private Map importPackage (final Map record, final Class<? extends PackageSchema> schemaClass) {
-    boolean packageImported = true
+    boolean packageImported = false
     String packageId = ""
 
     final PackageSchema pkg = schemaClass.newInstance()
