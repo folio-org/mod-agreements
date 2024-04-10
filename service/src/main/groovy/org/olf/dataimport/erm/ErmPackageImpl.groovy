@@ -56,13 +56,14 @@ class ErmPackageImpl implements PackageHeaderSchema, PackageSchema, Validateable
     trustedSourceTI nullable: true
     description nullable: true
 
-    source    nullable: false, blank: false
-    reference nullable: false, blank: false
-    name      nullable: false, blank: false
-    packageProvider nullable: true
+    source             nullable: false, blank: false
+    reference          nullable: false, blank: false
+    name               nullable: false, blank: false
+    packageProvider    nullable: true
     availabilityScope  nullable: true, blank: false
     sourceDataCreated  nullable: true, blank: false
     sourceDataUpdated  nullable: true, blank: false
+    sourceTitleCount   nullable: true, blank: false
     lifecycleStatus    nullable: true, blank: false
   }
 
