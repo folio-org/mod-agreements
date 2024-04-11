@@ -313,7 +313,7 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
   @Override
   public void onApplicationEvent(ApplicationEvent theEvent) {
     if (!supportsEventType( theEvent.class )) {
-      log.debug '"Not valid for event type {}', theEvent.class
+      log.trace '"Not valid for event type {}', theEvent.class
       return
     }
 
@@ -321,40 +321,31 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
 
     final Object eo = event.getEntityObject()
     final Class theClass = eo.getClass()
-    log.debug("THE CLASS: ${theClass}")
+
     switch(event.getEventType()) {
       case PreUpdate:
-        if (StringTemplate.isAssignableFrom(theClass)) {
-          log.debug 'Pre-update event for StringTemplate'
-          addDeferredPlatformUpdatesFromTemplates(event, false)
-        } else if (PlatformTitleInstance.isAssignableFrom(theClass)) {
-          log.debug 'Pre-update event for PTI'
-          updatePtiFromEvent(event)
-        }
-        break;
       case PreInsert:
-        if (StringTemplate.isAssignableFrom(theClass)) {
-          log.debug 'Pre-insert event for StringTemplate'
-          addDeferredPlatformUpdatesFromTemplates(event, true)
-        } else if (PlatformTitleInstance.isAssignableFrom(theClass)) {
-          log.debug 'Pre-insert event for PTI'
+        if (PlatformTitleInstance.isAssignableFrom(theClass)) {
+          log.trace 'Pre-(Insert/Update) event for PTI'
           updatePtiFromEvent(event)
+          break
         }
-        break;
+
       case PreDelete:
         // Post Add/Delete/Update of StringTemplate
         if (StringTemplate.isAssignableFrom(theClass)) {
-          log.debug 'Pre-delete event for StringTemplate'
-          addDeferredPlatformUpdatesFromTemplates(event, false)
+          log.trace 'Pre-(Insert/Update/Delete) event for StringTemplate'
+          addDeferredPlatformUpdatesFromTemplates(event)
         }
-        break;
+        break
+
       case PostUpdate:
 
         // PostUpdate of Platform
         // We don't track Add/Delete as both will
         // be dealt with by the update/remove of the PTIs.
         if (Platform.isAssignableFrom(theClass)) {
-          log.debug 'Post-Update event for Platform'
+          log.trace 'Post-Update event for Platform'
           updatePlatformFromEvent(event)
           break
         }
@@ -364,7 +355,7 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
 
         // Post Add/Delete/Update of StringTemplate
         if (StringTemplate.isAssignableFrom(theClass)) {
-          log.debug 'Post-(Insert/Update/Delete) event for StringTemplate'
+          log.trace 'Post-(Insert/Update/Delete) event for StringTemplate'
           updatePlatformsFromTemplateEvent(event)
         }
 
@@ -462,7 +453,6 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
   }
 
   protected void executeTemplatesForSinglePlatform (final String id, final Date notSince, final Map<String, StringTemplate> includeExclude = [:], final StringTemplateBindings bindingOverrides = null) {
-    log.debug("ETFSP Called")
     // Get a chunk of PTIs and keep repeating until all have been processed
     final Map<String, List<StringTemplate>> templates = findStringTemplatesForId(id)
 
@@ -572,39 +562,32 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
     }
   }
 
-  private void addDeferredPlatformUpdatesFromTemplates (  final AbstractPersistenceEvent event, final Boolean isInsertST ) {
-    log.debug("addDeferredPlatformUpdatesFromTemplates Called")
-    // FIXME SOMEHOW CALLING THIS CAUSES PRE INSERT TO HAPPEN AGAIN
+  private void addDeferredPlatformUpdatesFromTemplates (  final AbstractPersistenceEvent event ) {
     // Multiple Platform update when String template added/removed/changed
     final StringTemplate template = event.entityObject as StringTemplate
     
-    log.debug("WHAT IS TEMPLATE?: ${template}")
-    log.debug("WHAT IS TEMPLATE ID?: ${template.id}")
-
     // Make sure we are in the context of a tenant.
     final String currentTenant = ensureTenant()
 
-    log.debug("currentTenant: ${currentTenant}")
-
-
     // Overrides include any Platforms for update explicitly.
     final Set<String> theScopes = (event.eventType != PreDelete ? template.idScopes : Collections.emptySet()) as Set<String>
-    log.debug("theScopes: ${theScopes}")
-
     // Context
     final String theContext = template.context.value
-    log.debug("theContext: ${theContext}")
 
     // Fetch the scopes from the Session to get "Previous" values
+    /* For some reason pre insert events making a query end up re-raising
+     * the pre insert event in Grails 6, causing an infinite loop.
+     * However in this case a pre-insert event means that no
+     * "previous scopes" exist for the string template in question, so
+     * assume an empty set and move on with the logic
+     */
     Set<String> previousScopes = [] as Set;
-    if (!isInsertST) {
+    if (event.eventType != PreInsert) {
       previousScopes = getScopesForStringTemplate(template.id)
     }
-    log.debug("previousScopes: ${previousScopes}")
 
     // Explicitly re-process the differences between the scope now and the previous
     final Set<String> reprocess = ( theScopes + previousScopes ) - theScopes.intersect(previousScopes)
-    log.debug("reprocess: ${reprocess}")
 
     // Even though this action is deferred until the commital of the template,
     // there is a good chance that it won't make it into the database for recall
@@ -612,7 +595,6 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
     // as it doesn't need a database session for the text processing, for explicit inclusion
     // in the decision making process.
     StringTemplate explicitTemplate = event.eventType != PreDelete ? template : null
-    log.debug("explicitTemplate: ${explicitTemplate}")
 
     // Build the work but stash it for running once we see the "post" events
     addStashForId(
@@ -653,7 +635,6 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
               }
             }
 
-            log.debug("INC/EXC: ${includeExclude}")
 
             executor.execute({ String tid, String pltf, Date before, Map<String, StringTemplate> inEx ->
 
@@ -667,11 +648,9 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
         }
       }.curry(currentTenant, theScopes, theContext, reprocess, explicitTemplate))
     )
-    log.debug("Made  it to end of addDeferredPlatformUpdatesFromTemplates")
   }
 
   private void updatePlatformsFromTemplateEvent(final AbstractPersistenceEvent event) {
-    log.debug("UPDATE PLATFORMS FROM TEMPLATE EVENT")
     // Multiple Platform update when String template added/removed/changed
     final StringTemplate template = event.entityObject as StringTemplate
 
@@ -716,18 +695,11 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
   }
 
   private Set<String> getScopesForStringTemplate ( final String templateId  ) {
-    log.debug("getScopesForStringTemplate called")
-
     final String hql = '''
       SELECT scope FROM StringTemplate tmp
       JOIN tmp.idScopes AS scope
       WHERE tmp.id = :templateId
     '''
-
-    /* final String hql = '''
-      SELECT tmp.idScopes FROM StringTemplate tmp
-      WHERE tmp.id = :templateId
-    ''' */
 
     return GormUtils.gormStaticApi(StringTemplate).executeQuery(hql.toString(), ['templateId': templateId]) as Set
   }
