@@ -323,7 +323,6 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
     final Class theClass = eo.getClass()
 
     switch(event.getEventType()) {
-
       case PreUpdate:
       case PreInsert:
         if (PlatformTitleInstance.isAssignableFrom(theClass)) {
@@ -563,18 +562,26 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
   private void addDeferredPlatformUpdatesFromTemplates (  final AbstractPersistenceEvent event ) {
     // Multiple Platform update when String template added/removed/changed
     final StringTemplate template = event.entityObject as StringTemplate
-
+    
     // Make sure we are in the context of a tenant.
     final String currentTenant = ensureTenant()
 
     // Overrides include any Platforms for update explicitly.
     final Set<String> theScopes = (event.eventType != PreDelete ? template.idScopes : Collections.emptySet()) as Set<String>
-
     // Context
     final String theContext = template.context.value
 
     // Fetch the scopes from the Session to get "Previous" values
-    final Set<String> previousScopes = getScopesForStringTemplate(template.id)
+    /* For some reason pre insert events making a query end up re-raising
+     * the pre insert event in Grails 6, causing an infinite loop.
+     * However in this case a pre-insert event means that no
+     * "previous scopes" exist for the string template in question, so
+     * assume an empty set and move on with the logic
+     */
+    Set<String> previousScopes = [] as Set;
+    if (event.eventType != PreInsert) {
+      previousScopes = getScopesForStringTemplate(template.id)
+    }
 
     // Explicitly re-process the differences between the scope now and the previous
     final Set<String> reprocess = ( theScopes + previousScopes ) - theScopes.intersect(previousScopes)
@@ -587,9 +594,9 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
     StringTemplate explicitTemplate = event.eventType != PreDelete ? template : null
 
     // Build the work but stash it for running once we see the "post" events
-    addStashForId(template.id,
+    addStashForId(
+      template.id,
       new Stash((Closure <?>) { final String tenantId, final Set<String> scopes, final String context, final Set<String> overrides, StringTemplate tmpl ->
-
         Tenants.withId(tenantId) {
           GormStaticApi<Platform> ptiApi = GormUtils.gormStaticApi(Platform)
           List<String> platformIds = getAllPlatformIdsForTemplateParams(scopes, context, overrides)
@@ -625,6 +632,7 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
               }
             }
 
+
             executor.execute({ String tid, String pltf, Date before, Map<String, StringTemplate> inEx ->
 
               Tenants.withId(tid) {
@@ -635,12 +643,11 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
             }.curry(tenantId, platformId, now, includeExclude))
           }
         }
-
-      }.curry(currentTenant, theScopes, theContext, reprocess, explicitTemplate)))
+      }.curry(currentTenant, theScopes, theContext, reprocess, explicitTemplate))
+    )
   }
 
   private void updatePlatformsFromTemplateEvent(final AbstractPersistenceEvent event) {
-
     // Multiple Platform update when String template added/removed/changed
     final StringTemplate template = event.entityObject as StringTemplate
 
@@ -685,13 +692,12 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
   }
 
   private Set<String> getScopesForStringTemplate ( final String templateId  ) {
-
     final String hql = '''
       SELECT scope FROM StringTemplate tmp
       JOIN tmp.idScopes AS scope
       WHERE tmp.id = :templateId
     '''
 
-    GormUtils.gormStaticApi(StringTemplate).executeQuery(hql, ['templateId': templateId]) as Set
+    return GormUtils.gormStaticApi(StringTemplate).executeQuery(hql.toString(), ['templateId': templateId]) as Set
   }
 }
