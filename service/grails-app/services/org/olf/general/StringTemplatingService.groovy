@@ -547,9 +547,6 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
   }
 
   private void addStashForId ( final String id, final Stash stash ) {
-    log.debug("addStashForId called with id(${id})")
-    log.debug("cache: ${cache}")
-
     cache.put( getCacheKeyForId(id), stash )
 
     // Clear any old stashes
