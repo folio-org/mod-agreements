@@ -35,6 +35,12 @@
   <logger name="org.olf">
     <level value="DEBUG" />
   </logger>
+  
+  
+  
+  <logger name="org.springframework.jdbc.support" >
+    <level value="ERROR" />
+  </logger>
 
   <!-- For dev increase root to info -->
   <root level="info">
