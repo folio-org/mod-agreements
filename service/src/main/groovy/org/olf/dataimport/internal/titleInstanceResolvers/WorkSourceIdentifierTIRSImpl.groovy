@@ -45,13 +45,19 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
         return false;
       }
 
+      // This assumes that IdentiferOccurrences can only be attached to Works as the sourceIdentifier.
+      // If this changes then rework will be needed.
       long noSICount = Work.executeQuery("""
-        SELECT COUNT(w) FROM Work w WHERE w.sourceIdentifier = null
-      """.toString())?.get(0);
+        SELECT COUNT(w) FROM Work w
+        LEFT JOIN IdentifierOccurrence io ON io.resource = w.id
+        WHERE io.id = null
+        """.toString())?.get(0);
 
+/*
       long workCount = Work.executeQuery("""
         SELECT COUNT(w) FROM Work w
       """.toString())?.get(0);
+*/
 
       // For now keep the fallback unless there are NO Works in the system without SI
       if (noSICount == 0) {
@@ -74,7 +80,6 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
     // Error out if sourceIdentifier or sourceIdentifierNamespace do not exist
     ensureSourceIdentifierFields(citation);
 
-    // TODO Check this works with the switch to grabbing only id
     List<String> candidate_works = Work.executeQuery("""
       SELECT w.id FROM Work as w
       WHERE

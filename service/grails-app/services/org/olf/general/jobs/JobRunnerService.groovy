@@ -26,6 +26,7 @@ import org.olf.IdentifierService
 import org.olf.KbHarvestService
 import org.olf.KbManagementService
 import org.olf.general.jobs.PersistentJob.Type
+import org.springframework.jdbc.support.JdbcUtils
 
 import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.okapi.OkapiTenantResolver
@@ -260,9 +261,17 @@ order by pj.dateCreated
       }
     }
   }
+	
+	private volatile boolean firstTick = true;
   
   @Subscriber('federation:tick:leader')
   void leaderTick(final String instanceId) {
+		
+		if (firstTick == true) {
+			log.info("Skipping first tick in job runner to ensure datasources are present.")
+			firstTick = false
+			return
+		}
 		
 		WithPromises.task { 
 			Tenants.withId(SystemDataService.DATASOURCE_SYSTEM) {
@@ -278,6 +287,13 @@ order by pj.dateCreated
   
   @Subscriber('federation:tick:drone')
   void droneTick(final String instanceId) {
+		
+		if (firstTick == true) {
+			log.info("Skipping first tick in job runner to ensure datasources are present.")
+			firstTick = false
+			return
+		}
+		
 		WithPromises.task {
 			Tenants.withId(SystemDataService.DATASOURCE_SYSTEM) {
 				GormUtils.withTransaction {

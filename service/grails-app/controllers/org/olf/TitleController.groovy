@@ -22,38 +22,12 @@ class TitleController extends OkapiTenantAwareController<TitleInstance>  {
     super(TitleInstance)
   }
 
-  DetachedCriteria pciSubQuery = PackageContentItem.where({
-    eqProperty('pti.id', 'platformTitleInstance.id')
-    setAlias 'packageContentItem'
-    isNull 'removedTimestamp'
-
-    projections {
-      property 'id'
-    }
-  })
-
-  DetachedCriteria ptiSubQuery = PlatformTitleInstance.where({
-    eqProperty('titleInstance.id', "${DEFAULT_ROOT_ALIAS}.id") //here "this" refers to the root alias of criteria
-    setAlias 'platformTitleInstance'
-
-    exists(pciSubQuery)
-
-    projections {
-      property 'id'
-    }
-  })
-
-  // LEFT JOIN query
   def electronic () {
     respond doTheLookup {
-      and {
         eq 'subType', TitleInstance.lookupOrCreateSubType('electronic')
-
-        exists(ptiSubQuery)
-      }
     }
   }
-  
+
   def entitled() {
     respond doTheLookup (TitleInstance.entitled)
   }
