@@ -1,5 +1,18 @@
 ## 7.1.0 In progress
 
+## 7.0.1 2024-04-17
+  * ERM-3193 Error saving proxy
+  * ERM-3191 Add logging to support issue triage for HibernateOptimisticLockingFailureException
+  * ERM-3190 DB Connections are not being released
+  * ERM-3185 Remove PTI/PCI filter from the /titles/electronic endpoint in Agreements
+  * ERM-3181 sourceTitleCount should not be required on uploading packages via JSON using mod-agreements-package schema
+  * ERM-3180 LOCAL external source should not offer delete option
+  * ERM-3177 Check on `noSICount` in WorkSourceIdentifierTIRSImpl is not correct
+  * ERM-3174 Review outdated/vulnerable dependencies in mod-agreements
+  * ERM-3157 Missed declaration of backend permissions
+  * ERM-3139 Propose additional info.log messages for jobs/processes
+  * ERM-3048 Add a package property to store remote source current title count
+
 ## 7.0.0 2024-03-22
   * ERM-3155 URL on PTI is limited to 255 characters
   * ERM-3154 Consolidate package upsert summary logging in info log
