@@ -219,12 +219,13 @@ order by pj.dateCreated
   }
   
   
-	@Transactional(propagation = MANDATORY)
+	//@Transactional(propagation = MANDATORY)
   protected Collection<String> getViableRunners() {
     appFederationService.allHealthyInstanceIds()
   }
 	
-	@Transactional(propagation = MANDATORY)
+  // Protected methods @Transactional gets ignored
+	//@Transactional(propagation = MANDATORY)
   protected void cleanupAfterDeadRunners() {
     Collection<String> viableRunnerIds = getViableRunners()
     
@@ -275,16 +276,16 @@ order by pj.dateCreated
 		
 		WithPromises.task { 
 			Tenants.withId(SystemDataService.DATASOURCE_SYSTEM) {
-				GormUtils.withTransaction {
-					log.debug("JobRunnerService::leaderTick")
-					cleanupAfterDeadRunners()
-					findAndRunNextJob()
-					log.debug("JobRunnerService::leaderTick:done")
-				}
-			}
+        GormUtils.withTransaction {
+          log.debug("JobRunnerService::leaderTick")
+          cleanupAfterDeadRunners()
+          findAndRunNextJob()
+          log.debug("JobRunnerService::leaderTick:done")
+        }
+      }
 		}
   }
-  
+
   @Subscriber('federation:tick:drone')
   void droneTick(final String instanceId) {
 		
@@ -296,12 +297,12 @@ order by pj.dateCreated
 		
 		WithPromises.task {
 			Tenants.withId(SystemDataService.DATASOURCE_SYSTEM) {
-				GormUtils.withTransaction {
-					log.debug("JobRunnerService::droneTick")
-					findAndRunNextJob()
-					log.debug("JobRunnerService::droneTick:done")
-				}
-			}
+        GormUtils.withTransaction {
+          log.debug("JobRunnerService::droneTick")
+          findAndRunNextJob()
+          log.debug("JobRunnerService::droneTick:done")
+        }
+      }
 		}
   }
   
@@ -332,7 +333,8 @@ order by pj.dateCreated
 		
 	}
 	
-	@Transactional(propagation = MANDATORY)
+  // @Transactional on protected methods get ignored
+	//@Transactional(propagation = MANDATORY)
   protected synchronized void findAndRunNextJob() {
     log.debug("JobRunnerService::findAndRunNextJob")
     
@@ -457,7 +459,14 @@ order by pj.dateCreated
               potentialJobs.remove( key )
             } else {
               allocateJob(tId, job.id)
-              if ( executeJob(type, tId, job.id, key) ) {
+              boolean added = false;
+              // Transaction needs to be explicitly wrapping this call now,
+              // since the @Transactional on that protected method is now ignored
+              GormUtils.withNewReadOnlyTransaction {
+                added = executeJob(type, tId, job.id, key)
+              }
+
+              if ( added ) {
                 totalSpace --
                 potentialJobs.remove( key )
               }
@@ -479,7 +488,8 @@ order by pj.dateCreated
     Tenants.withId(tId) { PersistentJob.read( jobId )?.getWork() }
   } */
   
-  @Transactional(propagation=REQUIRES_NEW, readOnly=true)
+  // @Transactional ignored on private methods
+  //@Transactional(propagation=REQUIRES_NEW, readOnly=true)
   private boolean executeJob ( final Type type, final String tId, final String jobId, final Instant key) {
     boolean added = false
     
