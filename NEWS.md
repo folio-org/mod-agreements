@@ -1,5 +1,9 @@
 ## 7.1.0 In progress
 
+## 7.0.2 2024-04-26
+  * ERM-3190 DB Connections are not being released
+    * Transactional annotations were being ignored, refactored JobRunnerService to properly set up necessary transactions
+
 ## 7.0.1 2024-04-17
   * ERM-3193 Error saving proxy
   * ERM-3191 Add logging to support issue triage for HibernateOptimisticLockingFailureException
