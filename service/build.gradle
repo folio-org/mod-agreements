@@ -200,7 +200,7 @@ bootRun {
     '-Dspring.output.ansi.enabled=always',
     '-noverify',
     '-XX:TieredStopAtLevel=1',
-    '-Xmx1024m')
+    '-Xmx1592m')
 	sourceResources sourceSets.main
 	String springProfilesActive = 'spring.profiles.active'
 	systemProperty springProfilesActive, System.getProperty(springProfilesActive)
