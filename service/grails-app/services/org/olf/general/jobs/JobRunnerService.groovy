@@ -163,6 +163,17 @@ order by pj.dateCreated
     pj.save( failOnError: true, flush:true )
   }
 
+  @Transactional(propagation=REQUIRES_NEW)
+  public void clearJobAllocation(final String tId, final String jid) {
+    Tenants.withId(tId) {
+      PersistentJob job = PersistentJob.get(jid ?: JobContext.current.get().jobId)
+
+      // If this job was queued, then we can just clear the runner ID
+      job.runnerId = null
+      job.save(flush: true, failOnError: true)
+    }
+  }
+
   //@Tenant({ SystemDataService.DATASOURCE_SYSTEM })
   @Transactional(propagation=REQUIRES_NEW)
   public void interruptJob(final String tId, final String jid) {
@@ -196,7 +207,7 @@ order by pj.dateCreated
       onInterrupted.run()
       // I don't think we want to use the special thread pool here
       //executorSvc.execute(onInterrupted)
-      pj.save( failOnError: true, flush:true )
+      pj.save(flush: true, failOnError: true)
     }
   }
   
@@ -233,7 +244,6 @@ order by pj.dateCreated
     // instance being cleaned up and the status was in progress or queued
     // set progress to interrupted and reschedule job
     log.debug("JobRunnerService::cleanupAfterDeadRunner")
-    
     okapiTenantAdminService.allConfiguredTenantSchemaNames().each { final String tenant_schema_id ->
       Tenants.withId(tenant_schema_id) {
         // Find all none edned jobs with the dead runner assigned
@@ -241,16 +251,12 @@ order by pj.dateCreated
 
         // Find every job that was allocated to the runner.
 				List <PersistentJob> zombie_jobs = PersistentJob.executeQuery(ZOMBIE_JOB_QUERY,[ended:ended, runners:viableRunnerIds]);
-
         zombie_jobs.each { job ->
-          log.info "Found job ${job.id} that was allocated to a runner that has died"
+          log.info "Found job ${job.id} that was allocated to a runner that has died in tenant ${tenant_schema_id}"
           if (job.status.value == 'queued') {
           
             log.info "Job ${job.id} was only queued, clear the allocation"
-            
-            // If this job was queued, then we can just clear the runner ID
-            job.runnerId = null
-            job.save(flush:true, failOnError: true)
+            clearJobAllocation( tenant_schema_id, job.id )
             
           } else {
             // This job was interrupted.
