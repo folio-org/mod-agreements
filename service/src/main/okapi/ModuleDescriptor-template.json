@@ -1254,7 +1254,7 @@
     "dockerImage": "${info.app.name}:${info.app.version}",
     "dockerArgs": {
       "HostConfig": {
-        "Memory": 1610612736,
+        "Memory": 2147483648,
         "PortBindings": {
           "8080/tcp":  [{ "HostPort": "%p" }]
         }
