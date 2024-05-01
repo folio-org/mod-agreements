@@ -261,7 +261,8 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
 
             if (
               io.status?.value == APPROVED && // Ensure APPROVED (as above)
-              !result.contains(foundTI.id) // If we've already seen this title, don't add it again
+              !result.contains(foundTI.id) && // If we've already seen this title, don't add it again
+              foundTI.subType.value == "electronic" // We restrict to electronic, so _all_ of these matching processes will return electronic titles only
             ) {
               // log.debug("Adding title ${io.resource.id} ${io.resource.title} to matches for ${matched_id}");
               result << foundTI.id
