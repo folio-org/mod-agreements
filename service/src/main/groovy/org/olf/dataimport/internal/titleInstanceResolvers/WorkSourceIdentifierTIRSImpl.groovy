@@ -157,14 +157,17 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       // If we have no TI at this point, create one complete with work etc
       tiId = createNewTitleInstanceWithSiblings(citation).id
     } else {
-      ti = TitleInstance.get(tiId);
       /* We _do_ have a TI. Check that the attached work does not have an ID
        * If the attached work _does_ have an id, then we need a whole new work anyway
        */
-      Work work = ti.work;
+      Work work = TitleInstance.executeQuery("""
+        SELECT ti.work FROM TitleInstance ti
+        WHERE ti.id = :tiId
+      """, [tiId: tiId]).get(0);
+
       if (!work) {
         throw new TIRSException(
-          "No work found on TI: ${ti}",
+          "No work found on TI: ${tiId}",
           TIRSException.NO_WORK_MATCH
         )
       }
@@ -182,7 +185,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
            * above). Hence we know that after setting the Work sourceIdentifier
            * field, the TI we have in hand is the correct one and we can move forwards
            */
-          Identifier identifier = lookupOrCreateIdentifier(citation.sourceIdentifier, citation.sourceIdentifierNamespace);
+          Identifier identifier = Identifier.get(lookupOrCreateIdentifier(citation.sourceIdentifier, citation.sourceIdentifierNamespace));
           IdentifierOccurrence sourceIdentifier = new IdentifierOccurrence([
             identifier: identifier,
             status: IdentifierOccurrence.lookupOrCreateStatus('approved')
@@ -317,14 +320,16 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
 
       if (!io) {
         // Identifier from citation not on TI, add it
-        Identifier id = lookupOrCreateIdentifier(citation_id.value, citation_id.namespace)
+        Identifier id = Identifier.get(lookupOrCreateIdentifier(citation_id.value, citation_id.namespace))
         IdentifierOccurrence newIO = new IdentifierOccurrence([
           identifier: id,
           status: IdentifierOccurrence.lookupOrCreateStatus(APPROVED)
         ])
 
         ti.addToIdentifiers(newIO);
-        ti.save(failOnError: true);
+
+        // Use saveTitleInstance method
+        saveTitleInstance(ti, true, false)
       } else if (io.status.value != APPROVED) {
         io.setStatusFromString(APPROVED)
         io.save(failOnError: true);
@@ -370,7 +375,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       // in place?
       TitleInstance.withNewSession {
         // Match sibling citation to siblings already on the work (ONLY looking at approved identifiers)
-        List<TitleInstance> matchedSiblings = directMatch(sibling_citation.instanceIdentifiers, workId, 'print');
+        List<String> matchedSiblings = directMatch(sibling_citation.instanceIdentifiers, workId, 'print');
 
         switch(matchedSiblings.size()) {
           case 0:
@@ -379,32 +384,32 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
             break;
           case 1:
             // Found single sibling citation, update identifiers and check for enrichment
-            String siblingId = matchedSiblings.get(0).id;
+            String siblingId = matchedSiblings.get(0);
             updateTIIdentifiers(siblingId, sibling_citation.instanceIdentifiers);
             checkForEnrichment(siblingId , sibling_citation, true);
-
             // We've matched this sibling, remove it from the unmatchedSiblings list.
             unmatchedSiblings.removeIf { it == siblingId }
 
             // Force save + flush -- necessary
-            TitleInstance.get(siblingId).save(flush: true, failOnError: true);
+            saveTitleInstance(TitleInstance.get(siblingId));
             break;
           default:
             // Found multiple siblings which would match citation.
             // Remove each from the work and progress
             log.warn("Matched multiple siblings from single citation. Removing from work: ${matchedSiblings}")
             matchedSiblings.each { matchedSibling ->
+              TitleInstance matchedSiblingDomainObject = TitleInstance.get(matchedSibling)
               // Mark all identifier occurrences as error
-              matchedSibling.identifiers.each {io ->
+              matchedSiblingDomainObject.identifiers.each {io ->
                 io.setStatusFromString(ERROR)
                 io.save(failOnError: true);
               }
               // Remove Work
-              matchedSibling.work = null;
-              matchedSibling.save(flush:true, failOnError: true);
+              matchedSiblingDomainObject.work = null;
+              saveTitleInstance(matchedSiblingDomainObject);
 
               // We've matched this sibling, remove it from the unmatchedSiblings list.
-              unmatchedSiblings.removeIf { it == matchedSibling.id }
+              unmatchedSiblings.removeIf { it == matchedSibling }
             }
             break;
         }
