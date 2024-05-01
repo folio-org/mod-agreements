@@ -48,7 +48,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     'doi'
   ];
 
-  private ArrayList<String> lookupIdentifier(final String value, final String namespace) {
+  protected ArrayList<String> lookupIdentifier(final String value, final String namespace) {
     return Identifier.executeQuery("""
       SELECT iden.id from Identifier as iden
         where iden.value = :value and iden.ns.value = :ns
@@ -60,8 +60,8 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
   /*
    * Given an identifier in a citation { value:'1234-5678', namespace:'isbn' } lookup or create an identifier in the DB to represent that info
    */
-  protected Identifier lookupOrCreateIdentifier(final String value, final String namespace) {
-    Identifier result = null;
+  protected String lookupOrCreateIdentifier(final String value, final String namespace) {
+    String result = null;
 
     // Ensure we are looking up properly mapped namespace (pisbn -> isbn, etc)
     def identifier_lookup = lookupIdentifier(value, namespace);
@@ -69,10 +69,10 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     switch(identifier_lookup.size() ) {
       case 0:
         IdentifierNamespace ns = lookupOrCreateIdentifierNamespace(namespace);
-        result = new Identifier(ns:ns, value:value).save(failOnError:true, flush: true);
+        result = new Identifier(ns:ns, value:value).save(failOnError:true, flush: true).id;
         break;
       case 1:
-        result = Identifier.get(identifier_lookup[0]);
+        result = identifier_lookup[0];
         break;
       default:
         throw new TIRSException(
@@ -113,13 +113,13 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
       }
 
       /*
-       * For some reason whenever a title is updated with just refdata fields it fails to properly mark as dirty.
-       * The below solution of '.markDirty()' is not ideal, but it does solve the problem for now.
-       * TODO: Ian to Review with Ethan - this makes no sense to me at the moment
-       *
-       * If the "Authoritative" publication type is not equal to whatever mad value a remote site has sent then
-       * replace the authortiative value with the one sent?
-       */
+      * For some reason whenever a title is updated with just refdata fields it fails to properly mark as dirty.
+      * The below solution of '.markDirty()' is not ideal, but it does solve the problem for now.
+      * TODO: Ian to Review with Ethan - this makes no sense to me at the moment
+      *
+      * If the "Authoritative" publication type is not equal to whatever mad value a remote site has sent then
+      * replace the authortiative value with the one sent?
+      */
       if (title.publicationType?.value != citation.instancePublicationMedia) {
         if (citation.instancePublicationMedia) {
           title.publicationTypeFromString = citation.instancePublicationMedia
@@ -162,12 +162,10 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
       }
 
       // Ensure we only save title on enrich if changes have been made
-      if (changes > 0 && !title.save(failOnError:true, flush: true)) {
-        title.errors.fieldErrors.each {
-          log.error("Error saving title. Field ${it.field} rejected value: \"${it.rejectedValue}\".")
-        }
+      if (changes > 0) {
+        saveTitleInstance(title)
       }
-      
+
     } else {
       log.debug("Not a trusted source for TI enrichment--skipping")
     }
@@ -176,8 +174,16 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     return;
   }
 
-  private boolean validateCitationType(String tp) {
+  protected boolean validateCitationType(String tp) {
     return tp != null && ( tp.toLowerCase() == 'monograph' || tp.toLowerCase() == 'serial' )
+  }
+
+  protected void saveTitleInstance(TitleInstance title, boolean failOnError = true, boolean flush = true) {
+    if (!title.save(failOnError:failOnError, flush: flush)) {
+      title.errors.fieldErrors.each {
+        log.error("Error saving title. Field ${it.field} rejected value: \"${it.rejectedValue}\".")
+      }
+    }
   }
 
   // Different TIRS implementations will have different workflows with identifiers, but the vast majority of the creation will be the same
@@ -246,7 +252,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
         // Error out if sourceIdentifier or sourceIdentifierNamespace do not exist
         ensureSourceIdentifierFields(citation);
 
-        Identifier identifier = lookupOrCreateIdentifier(citation.sourceIdentifier, citation.sourceIdentifierNamespace);
+        Identifier identifier = Identifier.get(lookupOrCreateIdentifier(citation.sourceIdentifier, citation.sourceIdentifierNamespace));
         IdentifierOccurrence sourceIdentifier = new IdentifierOccurrence([
           identifier: identifier,
           status: IdentifierOccurrence.lookupOrCreateStatus('approved')
@@ -287,8 +293,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
         result.subTypeFromString = medium
       }
       
-      result.save(flush:true, failOnError:true)
-
+      saveTitleInstance(result)
      // Leave identifier work out, as this may differ between implementations of "resolve" method
     }
     else {
@@ -424,14 +429,13 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     }
   }
 
-  protected List<TitleInstance> listDeduplictor(List<String> titleListIds) {
+  // Dedeuplicate a list of Ids
+  protected List<String> listDeduplictor(List<String> ids) {
     // Need to deduplicate output -- Could probably be neater code than this
-    List<TitleInstance> outputList = [];
-    titleListIds.each { title ->
-      // Make sure we're working with the "proper" TI
-      TitleInstance ti = TitleInstance.get(title)
-      if (!outputList.contains(ti)) {
-        outputList << ti
+    List<String> outputList = [];
+    ids.each { obj ->
+      if (!outputList.contains(obj)) {
+        outputList << obj
       }
     }
 
