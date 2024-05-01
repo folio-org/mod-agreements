@@ -1,3 +1,6 @@
+## 6.1.2 2024-05-01
+  * ERM-3138 Grails 5.3.6 fixing databinding DoS (CVE-2023-46131)
+
 ## 6.1.1 2024-04-01
   * ERM-3177 Check on `noSICount` in WorkSourceIdentifierTIRSImpl is not correct
   * ERM-3139 Propose additional info.log messages for jobs/processes
