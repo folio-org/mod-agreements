@@ -1,5 +1,9 @@
 ## 7.1.0 In progress
 
+## 7.0.4 2024-05-03
+  * ERM-3166 On encountering a GOKb title with the same ISSN assigned as both print and electronic ISSN, ingest stops
+  * Refactored some TIRS methods to use Strings instead of Domain Objects for performance/transaction stability
+
 ## 7.0.3 2024-04-26
   * ERM-3190 DB Connections are not being released
     * Refactor clearJobAllocation in JobRunnerService to properly handle instances where module shuts down
