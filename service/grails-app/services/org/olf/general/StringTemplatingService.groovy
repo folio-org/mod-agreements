@@ -82,7 +82,7 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
     context.addApplicationListener(this)
   }
 
-  private Set<TemplatedUrl> getTeplatedUrlsForRootBinding( final Map<String, List<StringTemplate>> templates, final StringTemplateBindings rootBindings ) {
+  private Set<TemplatedUrl> getTemplatedUrlsForRootBinding( final Map<String, List<StringTemplate>> templates, final StringTemplateBindings rootBindings ) {
     // Create the list of customized urls and the orginal
     final List<TemplatedUrl> noneProxiedUrls = [].with {
       add(new TemplatedUrl(
@@ -126,7 +126,8 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
       })
       .toSet()
 
-    return generatedUrls
+    // Only return those templated urls with set url Strings.
+    return generatedUrls.findAll{ gu -> gu.url != null }
   }
 
   private void touchPti (String ptiId) {
@@ -405,7 +406,7 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
         )
 
         // Generate the templates as a set of objects
-        generatedUrls = getTeplatedUrlsForRootBinding(templates, rootBindings).collect {
+        generatedUrls = getTemplatedUrlsForRootBinding(templates, rootBindings).collect {
           it.resource = pti
           it
         } as Set
@@ -510,7 +511,7 @@ public class StringTemplatingService implements ApplicationListener<ApplicationE
 
                 // Generate the templates as a set of objects
                 PlatformTitleInstance pti = ptiApi.read(ptiId)
-                final int ptiUrlTotal = getTeplatedUrlsForRootBinding(templates, rootBindings).collect {
+                final int ptiUrlTotal = getTemplatedUrlsForRootBinding(templates, rootBindings).collect {
                   it.resource = pti
                   templateInstance.save(it, [failOnError: true] as Map)
                 }?.size() ?: 0
