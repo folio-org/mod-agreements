@@ -29,7 +29,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
     log.debug("IdFirstTIRS::resolve(${citation})");
     String result = null;
 
-    List<TitleInstance> candidate_list = classOneMatch(citation.instanceIdentifiers);
+    List<String> candidate_list = classOneMatch(citation.instanceIdentifiers);
     int num_matches = candidate_list.size()
     int num_class_one_identifiers = countClassOneIDs(citation.instanceIdentifiers);
     if ( num_matches > 1 ) {
@@ -65,8 +65,8 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
           break;
         case(1):
           log.debug("Exact match. Enrich title.")
-          result = candidate_list.get(0).id
-          checkForEnrichment(candidate_list.get(0).id, citation, trustedSourceTI)
+          result = candidate_list.get(0);
+          checkForEnrichment(candidate_list.get(0), citation, trustedSourceTI);
           break;
         default:
           throw new TIRSException(
@@ -86,7 +86,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
    * expected, it will need to be performed externally too
    */
   protected void upsertSiblings(ContentItemSchema citation, String workId) {
-    List<TitleInstance> candidate_list = []
+    List<String> candidate_list = []
 
     // Lets try and match based on sibling identifiers. 
     // Our first "alternate" matching strategy. Often, KBART files contain the ISSN of the print edition of an electronic work.
@@ -125,7 +125,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
 
     result = createNewTitleInstanceWithoutIdentifiers(citation, workId)
     citation.instanceIdentifiers.each { id ->
-      Identifier id_lookup = lookupOrCreateIdentifier(id.value, id.namespace)
+      Identifier id_lookup = Identifier.get(lookupOrCreateIdentifier(id.value, id.namespace));
       def io_record = new IdentifierOccurrence(
         status: IdentifierOccurrence.lookupOrCreateStatus('approved'),
         identifier: id_lookup
@@ -136,7 +136,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
 
     if (result != null) {
       // Refresh the newly minted title so we have access to all the related objects (eg Identifiers)
-      result.save(failOnError: true, flush: true)
+      saveTitleInstance(result);
     }
     result
   }
@@ -188,10 +188,10 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
   /*
    * Being passed a map of namespace, value pair maps, attempt to locate any title instances with class 1 identifiers (ISSN, ISBN, DOI)
    */
-  protected List<TitleInstance> classOneMatch(final Iterable<IdentifierSchema> identifiers) {
+  protected List<String> classOneMatch(final Iterable<IdentifierSchema> identifiers) {
     // We want to build a list of all the title instance records in the system that match the identifiers. Hopefully this will return 0 or 1 records.
     // If it returns more than 1 then we are in a sticky situation, and cleverness is needed.
-    final List<TitleInstance> result = new ArrayList<TitleInstance>()
+    final List<String> result = new ArrayList<String>()
 
     int num_class_one_identifiers = 0;
 
@@ -256,19 +256,17 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
         id_matches.each { matched_id ->
           // For each occurrence where the STATUS is APPROVED
           matched_id.occurrences.each { io ->
-            if ( io.status?.value == APPROVED ) {
-              if ( result.contains(io.resource) ) {
-                // We have already seen this title, so don't add it again
-              }
-              else {
-                // log.debug("Adding title ${io.resource.id} ${io.resource.title} to matches for ${matched_id}");
-                result << io.resource
-              }
+            // Read in titleInstance directly
+            TitleInstance foundTI = TitleInstance.read(io.resource.id);
+
+            if (
+              io.status?.value == APPROVED && // Ensure APPROVED (as above)
+              !result.contains(foundTI.id) && // If we've already seen this title, don't add it again
+              foundTI.subType.value == "electronic" // We restrict to electronic, so _all_ of these matching processes will return electronic titles only
+            ) {
+              // log.debug("Adding title ${io.resource.id} ${io.resource.title} to matches for ${matched_id}");
+              result << foundTI.id
             }
-            // ERM-1986 Don't throw on non approved occurrence existing, just skip
-            //else {
-            //  throw new RuntimeException("Match on non-approved");
-            //}
           }
         }
       }
@@ -306,7 +304,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
 
   // Direct match will find ALL title instances which match ANY of the instanceIdentifiers passed. Is extremely naive.
   // Allow for non-approved identifiers if we wish
-  protected List<TitleInstance> directMatch(final Iterable<IdentifierSchema> identifiers, String workId = null, String subtype = 'electronic', boolean approvedIdsOnly = true) {
+  protected List<String> directMatch(final Iterable<IdentifierSchema> identifiers, String workId = null, String subtype = 'electronic', boolean approvedIdsOnly = true) {
     if (identifiers.size() <= 0) {
       return []
     }
@@ -319,7 +317,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
    * we model the print and electronic as 2 different title instances, linked by a common work. This method looks up/creates any sibling instances
    * by matching the print instance, then looking for a sibling with type "electronic"
    */
-  protected List<TitleInstance> siblingMatch(ContentItemSchema citation) {
+  protected List<String> siblingMatch(ContentItemSchema citation) {
     Collection<IdentifierSchema> classOneIds = citation.siblingInstanceIdentifiers.findAll { class_one_namespaces?.contains(it.namespace.toLowerCase()) };
     // Break out if no sibling instance ids
     if (classOneIds.size() <= 0) {
