@@ -1,3 +1,8 @@
+## 6.1.3 2024-05-08
+  * ERM-3185 Remove PTI/PCI filter from the /titles/electronic endpoint in Agreements
+  * ERM-3166 On encountering a GOKb title with the same ISSN assigned as both print and electronic ISSN, ingest stops
+  * Refactored some TIRS methods to use Strings instead of Domain Objects for performance/transaction stability
+
 ## 6.1.2 2024-05-01
   * ERM-3138 Grails 5.3.6 fixing databinding DoS (CVE-2023-46131)
 
