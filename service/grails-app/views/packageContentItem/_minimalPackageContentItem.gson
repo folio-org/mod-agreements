@@ -8,12 +8,6 @@ PackageContentItem packageContentItem
 @Field
 List customCoverageList
 
-// Borrowed from the ermResource view file
-// TODO custom view here?
-//Map customCoverageMap = request?.getAttribute("${controllerName}.${actionName}.customCoverage") as Map
-// Check for custom coverage on this resource.
-//List customCoverageList = customCoverageMap?.get("${packageContentItem.id}")
-
 json {
   'tiName' packageContentItem.pti.titleInstance.name
   'platformUrl' packageContentItem.pti.url
