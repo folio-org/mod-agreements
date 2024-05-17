@@ -23,6 +23,13 @@ class UrlMappings {
       "/resources/future"     (action: 'futureResources', method: 'GET')
       "/resources/dropped"    (action: 'droppedResources', method: 'GET')
 
+      // The "static" versions will ONLY return PCIs, not PTIs linked directly (for now)
+      "/resources/static"    (action: 'staticResources', method: 'GET')
+      "/resources/static/all"    (action: 'staticResources', method: 'GET')
+      "/resources/static/current"    (action: 'staticCurrentResources', method: 'GET')
+      "/resources/static/dropped"    (action: 'staticDroppedResources', method: 'GET')
+      "/resources/static/future"    (action: 'staticFutureResources', method: 'GET')
+
       "/resources/export/$format?"          (controller: 'export', method: 'GET')
       "/resources/export/current/$format?"  (controller: 'export', action: 'current', method: 'GET')
       "/resources/export/all/$format?"  (controller: 'export', action: 'index', method: 'GET')
