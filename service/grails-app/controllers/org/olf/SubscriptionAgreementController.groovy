@@ -8,6 +8,7 @@ import org.olf.kb.ErmResource
 import org.olf.kb.PackageContentItem
 import org.olf.kb.Pkg
 import org.olf.kb.PlatformTitleInstance
+import org.olf.erm.Entitlement
 
 import com.k_int.okapi.OkapiTenantAwareController
 
@@ -18,6 +19,8 @@ import groovy.util.logging.Slf4j
 
 import static org.springframework.http.HttpStatus.*
 
+import java.time.Duration
+import java.time.Instant
 
 /**
  * Control access to subscription agreements.
@@ -533,7 +536,206 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
       return
     }
   }
-  
+
+  // Subset can be "all", "current", "dropped" or "future"
+  // ASSUMES there is a subscription agreement
+  private String buildStaticResourceHQL(String subscriptionAgreementId, String subset, Boolean isCount = false) {
+    String topLine = """SELECT ${isCount ? 'COUNT(res.id)' : 'res'} FROM PackageContentItem as res""";
+    String bottomLine = """${isCount ? '' : 'ORDER BY res.pti.titleInstance.name'}"""
+    switch (subset) {
+      case 'current':
+        return """${topLine}
+          LEFT OUTER JOIN res.entitlements AS direct_ent
+          LEFT OUTER JOIN res.pkg.entitlements AS pkg_ent
+        WHERE
+          (
+            direct_ent.owner.id = :subscriptionAgreementId AND
+            (
+                direct_ent.activeFrom IS NULL OR
+                direct_ent.activeFrom < :today
+              ) AND
+              (
+                direct_ent.activeTo IS NULL OR
+                direct_ent.activeTo > :today
+              )
+          ) OR
+          (
+            res.removedTimestamp IS NULL AND
+            pkg_ent.owner.id = :subscriptionAgreementId AND
+            (
+              pkg_ent.activeFrom IS NULL OR
+              pkg_ent.activeFrom < :today
+            ) AND
+            (
+              pkg_ent.activeTo IS NULL OR
+              pkg_ent.activeTo > :today
+            ) AND
+            (
+              res.accessStart IS NULL OR
+              res.accessStart < :today
+            ) AND
+            (
+              res.accessEnd IS NULL OR
+              res.accessEnd > :today
+            )
+          )
+        ${bottomLine}
+        """.toString();
+      case 'dropped':
+        return """${topLine}
+          LEFT OUTER JOIN res.entitlements AS direct_ent
+          LEFT OUTER JOIN res.pkg.entitlements AS pkg_ent
+        WHERE
+          (
+            direct_ent.owner.id = :subscriptionAgreementId AND
+            direct_ent.activeTo < :today
+          ) OR
+          (
+            res.removedTimestamp IS NULL AND
+            pkg_ent.owner.id = :subscriptionAgreementId AND
+            (
+              res.accessStart IS NULL OR
+              pkg_ent.activeTo IS NULL OR
+              res.accessStart < pkg_ent.activeTo
+            ) AND
+            (
+              res.accessEnd IS NULL OR
+              pkg_ent.activeFrom IS NULL OR
+              res.accessEnd > pkg_ent.activeFrom
+            ) AND
+            (
+              pkg_ent.activeTo < :today OR
+              res.accessEnd < :today
+            )
+          )
+        ${bottomLine}
+        """.toString();
+      case 'future':
+        return """${topLine}
+          LEFT OUTER JOIN res.entitlements AS direct_ent
+          LEFT OUTER JOIN res.pkg.entitlements AS pkg_ent
+        WHERE
+          (
+            direct_ent.owner.id = :subscriptionAgreementId AND
+            direct_ent.activeFrom > :today
+          ) OR
+          (
+            res.removedTimestamp IS NULL AND
+            pkg_ent.owner.id = :subscriptionAgreementId AND
+            (
+              res.accessStart IS NULL OR
+              pkg_ent.activeTo IS NULL OR
+              res.accessStart < pkg_ent.activeTo
+            ) AND
+            (
+              res.accessEnd IS NULL OR
+              pkg_ent.activeFrom IS NULL OR
+              res.accessEnd > pkg_ent.activeFrom
+            ) AND
+            (
+              pkg_ent.activeFrom > :today OR
+              res.accessStart > :today
+            )
+          )
+        ${bottomLine}
+        """.toString();
+      case 'all':
+      default:
+        return """${topLine} WHERE
+          res.id IN (
+            SELECT ent.resource.id FROM Entitlement ent WHERE
+              ent.owner.id = :subscriptionAgreementId
+          ) OR
+          res.id IN (
+            SELECT pkg_link.id FROM PackageContentItem as pkg_link WHERE
+              pkg_link.pkg.id IN (
+                SELECT pkg.id FROM Pkg pkg WHERE
+                  pkg.id IN (
+                    SELECT ent.resource.id FROM Entitlement ent WHERE
+                    ent.owner.id = :subscriptionAgreementId
+                  )
+              ) AND
+              pkg_link.removedTimestamp IS NULL
+        ${bottomLine}
+        """.toString()
+    }
+  }
+
+  @Transactional(readOnly=true)
+  private def doStaticResourcesFetch (final String subset = 'all') {
+    final String subscriptionAgreementId = params.get("subscriptionAgreementId")
+    final Integer perPage = (params.get("perPage") ?: "10").toInteger();
+    
+    // Funky things will happen if you pass 0 or negative numbers...
+    final Integer page = (params.get("page") ?: "1").toInteger();
+
+    if (subscriptionAgreementId) {
+      // Now
+      final LocalDate today = LocalDate.now()
+      final String hql = buildStaticResourceHQL(subscriptionAgreementId, subset);  
+      final List<PackageContentItem> results = PackageContentItem.executeQuery(
+        hql,
+        [
+          subscriptionAgreementId: subscriptionAgreementId,
+          today: today
+        ],
+        [
+          max: perPage,
+          offset: (page - 1) * perPage
+          //readOnly: true -- handled in the transaction, no?
+        ]
+      );
+
+      if (params.boolean('stats')) {
+        final Integer count = PackageContentItem.executeQuery(
+          buildStaticResourceHQL(subscriptionAgreementId, subset, true),
+          [
+            subscriptionAgreementId: subscriptionAgreementId,
+            today: today
+          ]
+        )[0].toInteger();
+
+        final def resultsMap = [
+          pageSize: perPage,
+          page: page,
+          totalPages: ((int)(count / perPage) + (count % perPage == 0 ? 0 : 1)),
+          meta: [:], // Idk what this is for
+          totalRecords: count,
+          total: count,
+          results: results
+        ];
+        // This method writes to the web request if there is one (which of course there should be as we are in a controller method)
+        coverageService.lookupCoverageOverrides(resultsMap, "${subscriptionAgreementId}");
+
+        // respond with full result set
+        return resultsMap;
+      } else {
+
+        final def resultsMap = [ results: results ];
+        // This method writes to the web request if there is one (which of course there should be as we are in a controller method)
+        coverageService.lookupCoverageOverrides(resultsMap, "${subscriptionAgreementId}")
+
+        // Respond the list of items
+        return results
+      }
+    }
+  }
+
+  List<ErmResource> staticResources () {
+    respond doStaticResourcesFetch();
+  }
+
+  List<ErmResource> staticCurrentResources () {
+    respond doStaticResourcesFetch('current');
+  }
+
+  List<ErmResource> staticDroppedResources () {
+    respond doStaticResourcesFetch('dropped');
+  }
+
+  List<ErmResource> staticFutureResources () {
+    respond doStaticResourcesFetch('future');
+  }
   
   private static final Map<String, List<String>> CLONE_GROUPING = [
     'agreementInfo': ['name', 'description', 'renewalPriority' , 'isPerpetual'],
