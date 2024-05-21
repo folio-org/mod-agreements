@@ -324,7 +324,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
    *   https://gokbt.gbv.de/gokb/oai/index/packages?verb=ListRecords&metadataPrefix=gokb
    */
   @CompileStatic(SKIP)
-  private InternalPackageImplWithPackageContents gokbToERM(GPathResult xml_gokb_record, boolean trustedSourceTI) {
+  protected InternalPackageImplWithPackageContents gokbToERM(GPathResult xml_gokb_record, boolean trustedSourceTI) {
 
     def package_record = xml_gokb_record?.metadata?.gokb?.package
     def header = xml_gokb_record?.header
