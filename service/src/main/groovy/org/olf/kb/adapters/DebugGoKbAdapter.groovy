@@ -32,6 +32,21 @@ import org.slf4j.MDC
 public class DebugGoKbAdapter extends GOKbOAIAdapter {
   private static final String XML_FILE_LOCATION = "src/integration-test/resources/DebugGoKbAdapter"
 
+  private String getXMLFile() {
+    // Full override path to file eg "src/integration-test/resources/DebugGoKbAdapter/exampleXMLPage.xml"
+    String filePath = System.getenv("XML_FILE_PATH");
+
+    if (filePath) {
+      return filePath;
+    }
+
+    // Split directory/fileName envs
+    String fileDirectory = System.getenv("XML_FILE_DIRECTORY");
+    String fileName = System.getenv("XML_FILE");
+
+    return "${fileDirectory ?: XML_FILE_LOCATION}/${fileName ?: 'exampleXMLPage.xml'}";
+  }
+
   public void freshenPackageData(final String source_name,
                                  final String base_url,
                                  final String current_cursor,
@@ -40,8 +55,7 @@ public class DebugGoKbAdapter extends GOKbOAIAdapter {
 
     GPathResult xml
 
-    def pageXml = new XmlSlurper().parse(new File("${XML_FILE_LOCATION}/exampleXMLPage.xml"))
-    log.debug("LOGDEBUG PAGEXML: ${pageXml}")
+    def pageXml = new XmlSlurper().parse(new File(getXMLFile()))
 
     if (( pageXml instanceof GPathResult ) ) {
       xml = (GPathResult) pageXml;
