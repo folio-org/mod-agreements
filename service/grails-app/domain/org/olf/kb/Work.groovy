@@ -32,7 +32,10 @@ public class Work extends ErmTitleList implements MultiTenant<Work> {
   }
 
   static constraints = {
-          title(nullable:false, blank:false)
+               title(nullable:false, blank:false)
+    // Should not be nullable, but often we have to debug issues from a time before we were guaranteed this field
+    // FIXME return to nullable false
+    sourceIdentifier(nullable: true)
   }
 
   def beforeValidate() {

@@ -259,10 +259,24 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
         ])
 
         // Can you assign to incoming method param like this??
-        work = new Work([
+        //FIXME This isn't something we should allow in production -- leave as debug code for later
+        String sourceIdConfig = System.getenv("STORE_SOURCE_IDENTIFIER");
+
+        if (sourceIdConfig && sourceIdConfig == 'NO') {
+          work = new Work([
+            title:citation.title,
+          ]).save(failOnError:true)
+        } else {
+          work = new Work([
+            title:citation.title,
+            sourceIdentifier: sourceIdentifier
+          ]).save(failOnError:true)
+        }
+
+        /* work = new Work([
           title:citation.title,
           sourceIdentifier: sourceIdentifier
-        ]).save(failOnError:true)
+        ]).save(failOnError:true) */
       }
 
       // Print or Electronic

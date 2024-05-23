@@ -448,4 +448,13 @@ public class DebugGoKbAdapter extends GOKbOAIAdapter {
       "dateMonographPublished": title?.dateFirstOnline?.text()
     ])
   }
+
+  @CompileStatic(SKIP)
+  private String obtainNamespace(GPathResult record) {
+    if (record.@namespaceName?.text() != null && record.@namespaceName?.text()?.trim() != '') {
+      return record.@namespaceName?.text()?.toLowerCase()?.replaceAll(/\s+/, "_")
+    } else if (record.@namespace?.text() != null && record.@namespace?.text()?.trim() != '') {
+      return record.@namespace?.text()?.toLowerCase()?.replaceAll(/\s+/, "_")
+    }
+  }
 }
