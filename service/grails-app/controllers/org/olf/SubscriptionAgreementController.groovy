@@ -656,6 +656,7 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
                   )
               ) AND
               pkg_link.removedTimestamp IS NULL
+          )
         ${bottomLine}
         """.toString()
     }
@@ -672,13 +673,17 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
     if (subscriptionAgreementId) {
       // Now
       final LocalDate today = LocalDate.now()
-      final String hql = buildStaticResourceHQL(subscriptionAgreementId, subset);  
+      final String hql = buildStaticResourceHQL(subscriptionAgreementId, subset);
+
+      Map<String, Object> queryParams = [subscriptionAgreementId: subscriptionAgreementId]
+
+      if (subset in ['current', 'dropped', 'future']) {
+          queryParams.put('today', today)
+      }
+  
       final List<PackageContentItem> results = PackageContentItem.executeQuery(
         hql,
-        [
-          subscriptionAgreementId: subscriptionAgreementId,
-          today: today
-        ],
+        queryParams,
         [
           max: perPage,
           offset: (page - 1) * perPage
