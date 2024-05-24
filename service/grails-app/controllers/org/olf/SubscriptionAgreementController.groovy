@@ -557,15 +557,7 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
               (
                 direct_ent.activeTo IS NULL OR
                 direct_ent.activeTo > :today
-              ) AND
-            (
-              res.accessStart IS NULL OR
-              res.accessStart < :today
-            ) AND
-            (
-              res.accessEnd IS NULL OR
-              res.accessEnd > :today
-            )
+              )
           ) OR
           (
             res.removedTimestamp IS NULL AND
@@ -649,21 +641,15 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
         """.toString();
       case 'all':
       default:
-        return """${topLine} WHERE
-          res.id IN (
-            SELECT ent.resource.id FROM Entitlement ent WHERE
-              ent.owner.id = :subscriptionAgreementId
-          ) OR
-          res.id IN (
-            SELECT pkg_link.id FROM PackageContentItem as pkg_link WHERE
-              pkg_link.pkg.id IN (
-                SELECT pkg.id FROM Pkg pkg WHERE
-                  pkg.id IN (
-                    SELECT ent.resource.id FROM Entitlement ent WHERE
-                    ent.owner.id = :subscriptionAgreementId
-                  )
-              ) AND
-              pkg_link.removedTimestamp IS NULL
+        return """${topLine}
+          LEFT OUTER JOIN res.entitlements AS direct_ent
+          LEFT OUTER JOIN res.pkg.entitlements AS pkg_ent
+        WHERE
+          (
+            direct_ent.owner.id = :subscriptionAgreementId
+          ) OR (
+            res.removedTimestamp IS NULL AND
+            pkg_ent.owner.id = :subscriptionAgreementId
           )
         ${bottomLine}
         """.toString()
@@ -703,10 +689,7 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
       if (params.boolean('stats')) {
         final Integer count = PackageContentItem.executeQuery(
           buildStaticResourceHQL(subscriptionAgreementId, subset, true),
-          [
-            subscriptionAgreementId: subscriptionAgreementId,
-            today: today
-          ]
+          queryParams
         )[0].toInteger();
 
         final def resultsMap = [
