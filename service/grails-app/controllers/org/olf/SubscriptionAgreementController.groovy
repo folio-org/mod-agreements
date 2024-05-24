@@ -557,7 +557,15 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
               (
                 direct_ent.activeTo IS NULL OR
                 direct_ent.activeTo > :today
-              )
+              ) AND
+            (
+              res.accessStart IS NULL OR
+              res.accessStart < :today
+            ) AND
+            (
+              res.accessEnd IS NULL OR
+              res.accessEnd > :today
+            )
           ) OR
           (
             res.removedTimestamp IS NULL AND
