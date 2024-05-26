@@ -1,3 +1,8 @@
+## 6.1.4 2024-05-26
+  * ERM-3246 Improve performance of entitlementOptions endpoint
+  * ERM-3187 Re-write query to show "list of resources in an agreement" for improved performance
+  * Titles previously _always_ enriched, sometimes multiple times, on ingest. Fixed this behaviour where no changes occur
+
 ## 6.1.3 2024-05-08
   * ERM-3185 Remove PTI/PCI filter from the /titles/electronic endpoint in Agreements
   * ERM-3166 On encountering a GOKb title with the same ISSN assigned as both print and electronic ISSN, ingest stops
