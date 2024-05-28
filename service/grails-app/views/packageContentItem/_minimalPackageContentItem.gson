@@ -1,0 +1,36 @@
+import org.olf.kb.PackageContentItem
+
+import groovy.transform.*
+
+@Field
+PackageContentItem packageContentItem
+
+@Field
+List customCoverageList
+
+json {
+  'tiName' packageContentItem.pti.titleInstance.name
+  'platformUrl' packageContentItem.pti.url
+  'platformName' packageContentItem.pti.platform.name
+
+  identifiers (packageContentItem.pti.titleInstance.approvedIdentifierOccurrences) {IdentifierOccurrence occurrence ->
+    identifier g.render(occurrence.identifier)
+  }
+  'pkg' packageContentItem.pkg.name
+  'accessStart' packageContentItem.accessStart
+  'accessEnd' packageContentItem.accessEnd
+
+  if (customCoverageList) {
+    'coverage' g.render (customCoverageList)
+    'customCoverage' true
+
+  } else if (packageContentItem.coverage) {
+
+    'coverage' g.render (packageContentItem.coverage)
+    'customCoverage' false
+
+  } else {
+    'coverage' []
+    'customCoverage' false
+  }
+}

@@ -14,50 +14,54 @@ Map customCoverageMap = request?.getAttribute("${controllerName}.${actionName}.c
 // Check for custom coverage on this resource.
 List customCoverageList = customCoverageMap?.get("${ermResource.id}")
 
-json {
+def minimalView = params.minimalView ?: false
+if (minimalView && ermResource.class.name == 'org.olf.kb.PackageContentItem') {
+  json g.render (template: '/packageContentItem/minimalPackageContentItem', model: (binding.variables + [customCoverageList: customCoverageList]))
+} else {
+  json {
+    'id' ermResource.id
+    'class' ermResource.class.name
+    'name' ermResource.getName()
 
-  'id' ermResource.id
-  'class' GrailsHibernateUtil.unwrapIfProxy(ermResource).class.name
-  'name' ermResource.getName()
-  'suppressFromDiscovery' ermResource.suppressFromDiscovery
-  'tags' g.render(ermResource.tags)
-  'alternateResourceNames' g.render(ermResource.alternateResourceNames)
-  
-  RefdataValue rdv = ermResource.getType() 
-  
-  if (rdv) {
-    'type' g.render (rdv)
-  }
-  
-  if (ermResource.publicationType) {
-    'publicationType' g.render (ermResource.publicationType)
-  }
+    'suppressFromDiscovery' ermResource.suppressFromDiscovery
+    'tags' g.render(ermResource.tags)
+    'alternateResourceNames' g.render(ermResource.alternateResourceNames)
+    
+    RefdataValue rdv = ermResource.getType() 
+    
+    if (rdv) {
+      'type' g.render (rdv)
+    }
+    
+    if (ermResource.publicationType) {
+      'publicationType' g.render (ermResource.publicationType)
+    }
 
-  if (ermResource.subType) {
-    'subType' g.render (ermResource.subType)
-  }
-  
-  if (customCoverageList) {
+    if (ermResource.subType) {
+      'subType' g.render (ermResource.subType)
+    }
     
-    'coverage' g.render (customCoverageList)
-    'customCoverage' true
+    if (customCoverageList) {
+      
+      'coverage' g.render (customCoverageList)
+      'customCoverage' true
+      
+    } else if (ermResource.coverage) {
+      
+      'coverage' g.render (ermResource.coverage)
+      'customCoverage' false
+      
+    } else {
+      'coverage' []
+      'customCoverage' false
+    }
     
-  } else if (ermResource.coverage) {
+    if (params.controller == 'export' ) {
+      // add extra fields for export
+      
+    }
     
-    'coverage' g.render (ermResource.coverage)
-    'customCoverage' false
-     
-  } else {
-    'coverage' []
-    'customCoverage' false
+    //Render the full representation of whatever this object is.
+    '_object' g.render(ermResource)
   }
-  
-  if (params.controller == 'export' ) {
-     // add extra fields for export
-     
-  }
-  
-  // Render the full representation of whatever this object is.
-  '_object' g.render(GrailsHibernateUtil.unwrapIfProxy(ermResource))
-  
 }
