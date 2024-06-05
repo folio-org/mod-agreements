@@ -191,7 +191,9 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
             status: IdentifierOccurrence.lookupOrCreateStatus('approved')
           ])
           work.setSourceIdentifier(sourceIdentifier);
-          work.save(failOnError: true);
+          // FIXME make decision here either way
+          //work.save(failOnError: true, flush:true); // Flushing this is necessary for sibling wrangling, since they each take place in a new session
+          work.save(failOnError: true); // We removed the withNewSession -- see if it works
 
           // At this point we are assuming this TI is the right one, allow metadata updates
           checkForEnrichment(tiId, citation, true);
@@ -373,7 +375,8 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       // Not really sure on the nuance here, but prevents HibernateAccessException whilst
       // Still ensuring that each directMatch has the DB changes from the previous citation
       // in place?
-      TitleInstance.withNewSession {
+      // FIXME do we still need this withNewSession?
+      //TitleInstance.withNewSession {
         // Match sibling citation to siblings already on the work (ONLY looking at approved identifiers)
         List<String> matchedSiblings = directMatch(sibling_citation.instanceIdentifiers, workId, 'print');
 
@@ -413,7 +416,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
             }
             break;
         }
-      }
+      //}
     }
 
     /* Now all sibling_citations exist as expected on the work.
