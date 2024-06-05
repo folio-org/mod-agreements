@@ -142,10 +142,11 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       tiId = super.resolve(citation, false);
     } catch (TIRSException tirsException) {
       // We treat a multiple title match here as NBD and move onto creation
-      // Any other TIRSExceptions are legitimate concerns and we should rethrow
-      if (
-        tirsException.code != TIRSException.MULTIPLE_TITLE_MATCHES
-      ) {
+      if (tirsException.code == TIRSException.MULTIPLE_TITLE_MATCHES) {
+        // Logging out where we hit this so we can potentially make decisions from the logs
+        log.debug("MULTIPLE_TITLE_MATCHES in IdFirstTIRS. Creating new TitleInstance (${tirsException.message})")
+      } else {
+        // Any other TIRSExceptions are legitimate concerns and we should rethrow
         throw new TIRSException(tirsException.message, tirsException.code);
       }
     } //Dont catch any other exception, those are legitimate reasons to stop
