@@ -1,5 +1,7 @@
 package org.olf.dataimport.internal.titleInstanceResolvers
 
+import com.k_int.web.toolkit.refdata.RefdataValue
+
 import org.olf.IdentifierService
 
 import org.olf.dataimport.internal.PackageContentImpl
@@ -120,7 +122,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
       * If the "Authoritative" publication type is not equal to whatever mad value a remote site has sent then
       * replace the authortiative value with the one sent?
       */
-      if (title.publicationType?.value != citation.instancePublicationMedia) {
+      if (title.publicationType?.value != RefdataValue.normValue(citation.instancePublicationMedia)) {
         if (citation.instancePublicationMedia) {
           title.publicationTypeFromString = citation.instancePublicationMedia
         } else {
@@ -189,7 +191,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
   // Different TIRS implementations will have different workflows with identifiers, but the vast majority of the creation will be the same
   // We assume that the incoming citation already has split ids and siblingIds
   protected TitleInstance createNewTitleInstanceWithoutIdentifiers(final ContentItemSchema citation, String workId = null) {
-    Work work = workId ? Work.get(workId) : null;
+    Work work = workId ? Work.get(workId) as Work : null;
     TitleInstance result = null
 
     // Ian: adding this - Attempt to make sense of the instanceMedia value we have been passed

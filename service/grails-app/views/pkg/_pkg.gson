@@ -5,7 +5,25 @@ import groovy.transform.*
 @Field
 Pkg pkg
 
-json g.render(pkg, [expand: ['remoteKb','vendor', 'type', 'subType', 'lifecycleStatus', 'availabilityScope', 'packageDescriptionUrls', 'contentTypes', 'alternateResourceNames', 'availabilityConstraints'], excludes: ['contentItems', 'identifiers']]) {
+final def should_expand = [
+  'remoteKb',
+  'type',
+  'subType',
+  'lifecycleStatus',
+  'availabilityScope',
+  'packageDescriptionUrls',
+  'contentTypes',
+  'alternateResourceNames',
+  'availabilityConstraints',
+  'vendor'
+];
+
+final def should_exclude = [
+  'contentItems',
+  'identifiers'
+];
+
+json g.render(pkg, [expand: should_expand, excludes: should_exclude]) {
 
   resourceCount pkg.getResourceCount()
   'class' Pkg.name
