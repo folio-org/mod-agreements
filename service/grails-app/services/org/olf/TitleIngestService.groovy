@@ -77,7 +77,8 @@ class TitleIngestService implements DataBinder {
     try {
       titleId = titleInstanceResolverService.resolve(pc, trustedSourceTI)
     } catch (Exception e){
-      log.error("Error resolving title (${pc.title}) with identifiers ${pc.instanceIdentifiers}, skipping. ${e.message}", e)
+      log.error("Error resolving title (${pc.title}) with identifiers ${pc.instanceIdentifiers}, skipping. ${e.message}")
+      // TODO consider turning these on by default for developers, perhaps in TRACE or likewise?
       //e.printStackTrace();
       return result
     }
