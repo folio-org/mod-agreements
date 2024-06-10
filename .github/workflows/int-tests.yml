@@ -42,11 +42,10 @@ jobs:
         run: |
           cd tools/testing
           docker ps -a > ps.log
-          docker logs `docker ps -a | grep "minio_setup" | cut -d " " -f 1` > minioSetup.log
-          docker logs `docker ps | grep "minio_tests" | cut -d " " -f 1` > minio.log
-          docker logs `docker ps | grep "testing_kafka" | cut -d " " -f 1` > kafka.log
-          docker logs `docker ps | grep "testing_pg" | cut -d " " -f 1` > postgres.log
-          docker logs `docker ps | grep "testing_zookeeper" | cut -d " " -f 1` > zookeeper.log
+          docker logs minio_tests > minio.log
+          docker logs testing_kafka > kafka.log
+          docker logs testing_pg > postgres.log
+          docker logs testing_zookeeper > zookeeper.log
       - name: Stop containers
         if: always()
         run: |
