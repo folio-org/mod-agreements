@@ -288,8 +288,8 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
       // Print or Electronic
       def medium = citation.instanceMedium?.trim()
 
-      // FIXME This seems to be unused
-      def resource_coverage = citation?.coverage
+      // This seems to be unused
+      //def resource_coverage = citation?.coverage
       result = new TitleInstance(
         name: citation.title,
 
@@ -357,7 +357,6 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
           io.status.value = '${APPROVED}'
         )
       """
-      // TODO This doesn't look right
     }.join("""
       AND
     """)
