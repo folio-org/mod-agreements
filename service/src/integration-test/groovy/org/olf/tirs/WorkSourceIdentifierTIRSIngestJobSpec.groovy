@@ -20,10 +20,11 @@ import groovy.util.logging.Slf4j
 class WorkSourceIdentifierTIRSIngestJobSpec extends TIRSSpec {
   
   // EXAMPLE -- running job runner context and then cleaning up afterwards
-  // These are Ignored because they take a LONG time to run in practice. Potentially work needs doing to improve this more directly
+  // These might need to be @Ignore-ed because they take a LONG time (~2m) to run in practice.
+  // Potentially work needs doing to improve this more directly?
 
   // Test within job runner context (only run when WorkSourceIdTIRS is the chosen TIRS)
-  @Ignore
+  //@Ignore
   @Requires({ instance.isWorkSourceTIRS() })
   void 'Test in job runner context' () {
     given: 'ingest of borked_ids'
@@ -38,7 +39,7 @@ class WorkSourceIdentifierTIRSIngestJobSpec extends TIRSSpec {
   }
 
   // Test within job runner context (only run when WorkSourceIdTIRS is the chosen TIRS)
-  @Ignore
+  //@Ignore
   @Requires({ instance.isWorkSourceTIRS() })
   void 'Test cleanup worked' () {
     when: 'Fetching RemoteKBs'
