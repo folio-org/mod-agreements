@@ -133,9 +133,9 @@ where rkb.type is not null
   }
 
 	// This task is only used directly through a call to the AdminController
-  // FIXME return to 1hr/1min -- leave commented out the do not run option
-  //@Scheduled(fixedDelay = 3600000L, initialDelay = 60000L) // Run task every hour, wait 1 minute.
-  @Scheduled(fixedDelay = Long.MAX_VALUE, initialDelay = Long.MAX_VALUE) // Do not run on schedule
+  // Default 1hr/1min -- leave commented out the do not run option
+  @Scheduled(fixedDelay = 3600000L, initialDelay = 60000L) // Run task every hour, wait 1 minute.
+  //@Scheduled(fixedDelay = Long.MAX_VALUE, initialDelay = Long.MAX_VALUE) // Do not run on schedule
   void triggerSync() {
     log.debug "Running scheduled KB sync for all tenants :{}", Instant.now()
 

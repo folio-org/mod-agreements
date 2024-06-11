@@ -265,9 +265,8 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
           status: IdentifierOccurrence.lookupOrCreateStatus('approved')
         ])
 
-        // Can you assign to incoming method param like this??
-        //FIXME This isn't something we should allow in production -- leave as debug code for later
-        String sourceIdConfig = System.getenv("STORE_SOURCE_IDENTIFIER");
+        // This isn't something we should allow in production -- leave as debug code for later
+        /* String sourceIdConfig = System.getenv("STORE_SOURCE_IDENTIFIER");
 
         if (sourceIdConfig && sourceIdConfig == 'NO') {
           work = new Work([
@@ -278,12 +277,12 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
             title:citation.title,
             sourceIdentifier: sourceIdentifier
           ]).save(failOnError:true)
-        }
+        } */
 
-        /* work = new Work([
+        work = new Work([
           title:citation.title,
           sourceIdentifier: sourceIdentifier
-        ]).save(failOnError:true) */
+        ]).save(failOnError:true)
       }
 
       // Print or Electronic
