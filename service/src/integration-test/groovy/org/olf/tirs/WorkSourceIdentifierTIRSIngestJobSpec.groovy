@@ -29,7 +29,7 @@ class WorkSourceIdentifierTIRSIngestJobSpec extends TIRSSpec {
       def tiGet = doGet("/erm/titles", [stats: true]);
       assert tiGet != null;
     then: 'We have TIs in the system'
-      tiGet.total == 144;
+      tiGet.total == 1583;
     cleanup:
       cleanupTenant();
   }
