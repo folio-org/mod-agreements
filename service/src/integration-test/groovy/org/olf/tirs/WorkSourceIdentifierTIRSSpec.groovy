@@ -17,6 +17,7 @@ import org.olf.kb.TitleInstance
 import org.olf.kb.Work
 
 import com.k_int.okapi.OkapiTenantResolver
+import com.k_int.web.toolkit.utils.GormUtils
 
 import grails.gorm.transactions.Transactional
 import grails.gorm.multitenancy.Tenants
@@ -68,7 +69,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
   void 'Test title creation' () {
     when: 'WorkSourceIdentifierTIRS is passed a title citation'
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
-        String tiId = titleInstanceResolverService.resolve(brainOfTheFirm, true);
+        titleInstanceResolverService.resolve(brainOfTheFirm, true);
       }
       def tiGet = doGet("/erm/titles", [filters: ['name==Brain of the firm'], stats: true]);
     then: 'We get the expected TIs'
@@ -169,7 +170,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
     then: 'Everything saved as expected'
       noExceptionThrown()
     when: 'Looking up works for this sourceIdentifier' // There is no endpoint
-    Integer workCount;
+      Integer workCount;
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
         workCount = Work.executeQuery("""
           SELECT COUNT(work.id) from Work as work
@@ -180,7 +181,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       }
     then: 'We see two works'
       assert workCount == 2
-    when: 'WorkSourceIdentifierTIRS attempts to match on this duplciated work'
+    when: 'WorkSourceIdentifierTIRS attempts to match on this duplicated work'
       Long code
       String message
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
@@ -194,5 +195,52 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
     then: 'We get the expected error'
       assert message == 'Matched 2 with source identifier K-Int:aaa-001'
       assert code == TIRSException.MULTIPLE_WORK_MATCHES
+  }
+
+  // TODO we want a test case corresponding to each major case outlined in workflow diagram,
+  // as well as several cases relating to identifier and sibling wrangling
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'WorkSourceIdentifierTIRS behaves as expected when matching work with no electronic TIs' () {
+    when: 'We remove the title instances set up for a work'
+      Work work;
+      Integer tiCount;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        // Grab existing work
+        work = getWorkFromSourceId('aab-002')
+
+        // Delete TIs
+        deleteTIsFromWork(work.id)
+
+        tiCount = TitleInstance.executeQuery("""
+          SELECT COUNT(ti.id) from TitleInstance as ti
+            WHERE ti.work.id = :workId
+          """.toString(),
+          [workId: work.id]
+        )[0]
+      }
+    then: 'There are no TIs with works for this one.'
+      assert tiCount == 0;
+    when: 'We ingest a new electronic title for this work'
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        titleInstanceResolverService.resolve(citationFromFile('one_work_match_zero_electronic_ti_match.json'), true)
+      }
+    then: 'It ingests without error'
+      noExceptionThrown()
+    when: 'We look up titles for this work'
+      def tiGet = doGet("/erm/titles", [filters: ["work.id==${work.id}"], stats: true]);
+    then: 'We get the expected number of TIs'
+      assert tiGet.total == 2 // One print, one electronic
+    when: 'We inspect electronic and print tis'
+      def electronicTI = tiGet.results?.find {ti -> ti.subType.value == 'electronic'}
+      def printTI = tiGet.results?.find {ti -> ti.subType.value == 'print'}
+    then: 'We have an electronic and a print TI on the work with expected identifiers'
+      assert electronicTI != null;
+      assert printTI != null;
+
+      assert electronicTI.name == 'One Work Match-Zero Electronic TI Match - NEW';
+      assert printTI.name == 'One Work Match-Zero Electronic TI Match - NEW'
+
+      assert electronicTI.identifiers.any { id -> id.identifier.value == '2345-6789-x'};
+      assert printTI.identifiers.any { id -> id.identifier.value == 'bcde-fghi-x'};
   }
 }

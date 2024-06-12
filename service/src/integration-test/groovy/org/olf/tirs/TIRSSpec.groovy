@@ -7,6 +7,12 @@ import org.olf.KbHarvestService
 // Domain classes
 import org.olf.BaseSpec
 import org.olf.kb.RemoteKB
+import org.olf.kb.Work
+import org.olf.kb.TitleInstance
+import org.olf.kb.PlatformTitleInstance
+import org.olf.kb.PackageContentItem
+import org.olf.kb.IdentifierOccurrence
+import org.olf.kb.Identifier
 
 import org.olf.dataimport.internal.PackageContentImpl
 import grails.web.databinding.DataBindingUtils
@@ -105,5 +111,74 @@ abstract class TIRSSpec extends BaseSpec {
   @Ignore
   PackageContentImpl bindMapToCitationFromFile(String citation_file_name, String path) {
     return bindMapToCitation(citationFromFile(citation_file_name, path))
+  }
+
+  // Assumes unique sourceIdValue
+  @Ignore
+  Work getWorkFromSourceId(String sourceIdValue) {
+    return Work.executeQuery("""
+      SELECT work FROM Work as work
+        WHERE work.sourceIdentifier.identifier.value = :sourceId
+      """.toString(),
+      [sourceId:sourceIdValue]
+    )[0]
+  }
+
+
+  @Ignore
+  void deleteTIsFromWork(String workId) {
+    // Get list of all TIs we want to delete
+    def tiDeleteList = TitleInstance.executeQuery("""
+      Select ti.id FROM TitleInstance AS ti
+        WHERE ti.work.id = :workId
+      """.toString(),
+      [workId:workId]
+    )
+    deleteTIsFromList(tiDeleteList)
+  }
+
+  @Ignore
+  void deleteTIsFromList(Collection<String> tiDeleteList) {
+    // EXAMPLE -- Can't do implicit joins in DELETE HQL
+
+    // First delete all PCIs
+    def deleteOut = PackageContentItem.executeUpdate("""
+      DELETE FROM PackageContentItem AS pci
+        WHERE pci.id IN (
+          SELECT pci2.id FROM PackageContentItem AS pci2
+          WHERE pci2.pti.titleInstance.id IN :tiDeleteList
+        )
+      """.toString(),
+      [tiDeleteList:tiDeleteList]
+    )
+    // Then all PTIs
+    deleteOut = PlatformTitleInstance.executeUpdate("""
+      DELETE FROM PlatformTitleInstance AS pti
+        WHERE pti.id IN (
+          SELECT pti2.id FROM PlatformTitleInstance AS pti2
+          WHERE pti2.titleInstance.id IN :tiDeleteList
+        )
+      """.toString(),
+      [tiDeleteList:tiDeleteList]
+    )
+
+    // Then all IdentifierOccurrences
+    deleteOut = IdentifierOccurrence.executeUpdate("""
+      DELETE FROM IdentifierOccurrence AS io
+        WHERE io.id IN (
+          SELECT io2.id FROM IdentifierOccurrence AS io2
+          WHERE io2.resource.id IN :tiDeleteList
+        )
+      """.toString(),
+      [tiDeleteList:tiDeleteList]
+    )
+
+    // And finally all TIs
+    deleteOut = TitleInstance.executeUpdate("""
+      DELETE FROM TitleInstance AS ti
+        WHERE ti.id IN :tiDeleteList
+      """.toString(),
+      [tiDeleteList:tiDeleteList]
+    )
   }
 }
