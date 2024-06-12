@@ -8,6 +8,10 @@ import org.olf.KbHarvestService
 import org.olf.BaseSpec
 import org.olf.kb.RemoteKB
 
+import org.olf.dataimport.internal.PackageContentImpl
+import grails.web.databinding.DataBindingUtils
+
+
 import com.k_int.okapi.OkapiTenantResolver
 import grails.gorm.multitenancy.Tenants
 
@@ -80,5 +84,26 @@ abstract class TIRSSpec extends BaseSpec {
       assert jobGet?.status?.value == 'ended'
       assert jobGet?.result?.value == 'success'
     }
+  }
+
+  // Helpers to get PackageContentImpl from files and bind them
+  @Ignore
+  Map citationFromFile(String citation_file_name, String path) {
+    String citation_file = "${path}/${citation_file_name}";
+
+    return jsonSlurper.parse(new File(citation_file))
+  }
+
+  @Ignore
+  PackageContentImpl bindMapToCitation(Map citationMap) {
+    PackageContentImpl content = new PackageContentImpl()
+    DataBindingUtils.bindObjectToInstance(content, citationMap)
+
+    return content;
+  }
+
+  @Ignore
+  PackageContentImpl bindMapToCitationFromFile(String citation_file_name, String path) {
+    return bindMapToCitation(citationFromFile(citation_file_name, path))
   }
 }

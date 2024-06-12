@@ -92,7 +92,6 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       sourceIdentifier: citation.sourceIdentifier
     ])
     boolean fallback = fallbackToIdFirstTIRS();
-
     switch (candidate_works.size()) {
       case 0:
         // Zero direct matches for work, fall back to baseResolve
