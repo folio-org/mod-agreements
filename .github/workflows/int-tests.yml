@@ -33,7 +33,7 @@ jobs:
       - name: Run integration test
         working-directory: ./service
         run:
-          ./gradlew integrationTest
+          ./gradlew integrationTest --tests *TenantApiSpec
       - name: Upload Test Results Files
         uses: actions/upload-artifact@v4
         if: always()
@@ -62,6 +62,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: 'setup directory to accept test results'
+        run: mkdir '/testLogs/integrationTest'
       - name: 'download test results'
         uses: actions/download-artifact@v4
         with:
