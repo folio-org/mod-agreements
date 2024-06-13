@@ -15,7 +15,8 @@ on:
 jobs:
   reusable_integration_test_job:
     runs-on: ubuntu-latest
-    env: ${{ inputs.tirsEnvVar }}
+    env:
+      ${{ inputs.tirsEnvVar }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
