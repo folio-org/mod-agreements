@@ -14,6 +14,7 @@ import org.olf.kb.RemoteKB
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.TitleInstance
+import org.olf.kb.ErmTitleList
 import org.olf.kb.Work
 
 import com.k_int.okapi.OkapiTenantResolver
@@ -25,6 +26,8 @@ import grails.testing.mixin.integration.Integration
 import groovy.transform.CompileStatic
 
 import spock.lang.*
+
+import groovy.json.JsonOutput
 
 import groovy.util.logging.Slf4j
 
@@ -242,5 +245,38 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
 
       assert electronicTI.identifiers.any { id -> id.identifier.value == '2345-6789-x'};
       assert printTI.identifiers.any { id -> id.identifier.value == 'bcde-fghi-x'};
+  }
+
+  // For whatever reason we can't do this in a single test without the flush exploding... this one is purely setup instead
+  @Requires({ instance.isWorkSourceTIRS() })
+  @Transactional // Needed so we can save this TI as setup...
+  void 'Adding a new electronic title on a work (setup for \'WorkSourceIdentifierTIRS behaves as expected when matching work with many electronic TIs\')' () {
+    when: 'We add a new electronic title instance for a work'
+      Work work;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        work = getWorkFromSourceId('aac-003')
+        TitleInstance newTI = new TitleInstance([
+          name: 'Secondary Title Instance For Work aac-003',
+          type: TitleInstance.lookupType('Serial'),
+          subType: TitleInstance.lookupSubType('Electronic'),
+          work: work
+        ]).save(flush:true, failOnError: true);
+      }
+    then: 'All good'
+      noExceptionThrown()
+  }
+
+  // Actual test for the above case
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'WorkSourceIdentifierTIRS behaves as expected when matching work with many electronic TIs' () {
+    when: 'We fetch electronic title instances for this work'
+      def tiGet;
+      Work work;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        work = getWorkFromSourceId('aac-003')
+        tiGet = doGet("/erm/titles", [filters: ["work.id==${work.id}", "subType.value==electronic"], stats: true]);
+      }
+    then: 'We see multiple TIs'
+      assert tiGet.total > 1
   }
 }

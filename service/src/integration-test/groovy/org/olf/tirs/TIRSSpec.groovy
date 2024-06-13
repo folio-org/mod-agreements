@@ -8,6 +8,7 @@ import org.olf.KbHarvestService
 import org.olf.BaseSpec
 import org.olf.kb.RemoteKB
 import org.olf.kb.Work
+import org.olf.kb.ErmTitleList
 import org.olf.kb.TitleInstance
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.PackageContentItem
@@ -18,6 +19,7 @@ import org.olf.dataimport.internal.PackageContentImpl
 import grails.web.databinding.DataBindingUtils
 
 
+import grails.gorm.transactions.Transactional
 import com.k_int.okapi.OkapiTenantResolver
 import grails.gorm.multitenancy.Tenants
 
@@ -180,5 +182,33 @@ abstract class TIRSSpec extends BaseSpec {
       """.toString(),
       [tiDeleteList:tiDeleteList]
     )
+  }
+
+  // Debug methods to print all items currently in the system along with useful information
+  @Ignore
+  void printTIsInSystem() {
+    println("TIs IN SYSTEM: ${
+      TitleInstance.executeQuery("""
+        SELECT ti.id, ti.name, ti.subType.value FROM TitleInstance ti
+      """)
+    }")
+  }
+
+  @Ignore
+  void printWorksInSystem() {
+    println("Works IN SYSTEM: ${
+      Work.executeQuery("""
+        SELECT w.id, w.title FROM Work w
+      """)
+    }")
+  }
+
+  @Ignore
+  void printTitleListsInSystem() {
+    println("ErmTitleLists IN SYSTEM: ${
+      ErmTitleList.executeQuery("""
+        SELECT etl.id FROM ErmTitleList etl
+      """)
+    }")
   }
 }
