@@ -24,8 +24,6 @@ import groovy.util.logging.Slf4j
 @Stepwise
 class StringTemplateSpec extends BaseSpec {
 
-  ImportService importService
-
   void "Test creation of StringTemplates" (
     final String the_name,
     final String the_rule,

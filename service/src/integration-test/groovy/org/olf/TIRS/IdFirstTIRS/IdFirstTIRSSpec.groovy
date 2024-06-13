@@ -39,9 +39,20 @@ import groovy.util.logging.Slf4j
 class IdFirstTIRSSpec extends TIRSSpec {
   @Shared PackageContentImpl brainOfTheFirm
 
+  @Shared
+  String resource_path = "src/integration-test/resources/packages/idFirstTIRS"
+
+  @Shared
+  String citation_path = "${resource_path}/citations"
+
+  @Ignore
+  PackageContentImpl citationFromFile(String citation_file_name) {
+    return bindMapToCitationFromFile(citation_file_name, citation_path)
+  }
+
   void 'Bind to content' () {
     when: 'Attempt the bind'
-      brainOfTheFirm = citationFromFile('brain_of_the_firm.json')    
+      brainOfTheFirm = citationFromFile('brain_of_the_firm.json', 'src/integration-test/resources/packages/workSourceTIRS')    
     then: 'Everything is good'
       noExceptionThrown()
   }

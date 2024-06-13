@@ -18,8 +18,6 @@ import spock.lang.*
 @Integration
 class AgreementExportSpec extends BaseSpec {
 
-  def importService
-  
   @Shared
   String pkg_id
   
