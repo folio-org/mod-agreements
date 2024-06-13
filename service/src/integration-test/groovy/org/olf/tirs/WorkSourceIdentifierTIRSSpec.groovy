@@ -145,7 +145,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       // Ignore the tis from the first test
       def tiGet = doGet("/erm/titles", [filters: ['name!=Brain of the firm'], stats: true]);
     then: "We have the expected number"
-      assert tiGet.total == 18
+      assert tiGet.total == 20
   }
 
   @Requires({ instance.isWorkSourceTIRS() })
@@ -200,8 +200,6 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       assert code == TIRSException.MULTIPLE_WORK_MATCHES
   }
 
-  // TODO we want a test case corresponding to each major case outlined in workflow diagram,
-  // as well as several cases relating to identifier and sibling wrangling
   @Requires({ instance.isWorkSourceTIRS() })
   void 'WorkSourceIdentifierTIRS behaves as expected when matching work with no electronic TIs' () {
     when: 'We remove the title instances set up for a work'
@@ -250,7 +248,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
   // For whatever reason we can't do this in a single test without the flush exploding... this one is purely setup instead
   @Requires({ instance.isWorkSourceTIRS() })
   @Transactional // Needed so we can save this TI as setup...
-  void 'Adding a new electronic title on a work (setup for \'WorkSourceIdentifierTIRS behaves as expected when matching work with many electronic TIs\')' () {
+  void 'Adding a new electronic title on a work \\(setup for \'WorkSourceIdentifierTIRS behaves as expected when matching work with many electronic TIs\'\\)' () {
     when: 'We add a new electronic title instance for a work'
       Work work;
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
@@ -321,4 +319,114 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       // We will check identifier and sibling match resolves LATER
       assert theTi.name == "One Work Match-One Electronic TI Match (RENAMED)"
   }
+
+  // Set up case where a work does NOT have a sourceId, and there are multiple titles which are matchable from eissn
+  @Requires({ instance.isWorkSourceTIRS() })
+  @Transactional
+  void 'Removing a work sourceId and adding a new TitleInstance \\(Setup for WorkSourceIdentifierTIRS behaves as expected when no work is found and we match multiple TIs\\)' () {
+    when: 'We delete work sourceId'
+      String workSourceId = 'aae-005';
+      String eissn = '5678-9012'
+      Work work;
+      Work findWork;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        work = getWorkFromSourceId(workSourceId)
+        IdentifierOccurrence wsid = work.sourceIdentifier
+
+        // This would fail validation through Gorm (righly) so do directly
+        IdentifierOccurrence.executeUpdate("""
+          DELETE FROM IdentifierOccurrence WHERE id = :ioId
+        """.toString(), [ioId: wsid.id])
+
+        // Attempt to grab work again
+        findWork = getWorkFromSourceId(workSourceId)
+      }
+    then: 'Work is no longer findable from sourceId'
+      assert findWork == null
+    when: 'We set up secondary TI that IdFirst fallback will find'
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        Identifier eissnId = Identifier.executeQuery("""
+          SELECT iden FROM Identifier iden
+          WHERE iden.value = :eissn
+        """. toString(), [eissn: eissn])[0];
+
+        TitleInstance newTI = new TitleInstance([
+          name: "Secondary Title Instance with eissn ${eissn}",
+          type: TitleInstance.lookupType('Serial'),
+          subType: TitleInstance.lookupSubType('Electronic'),
+        ]);
+
+        IdentifierOccurrence newIo = new IdentifierOccurrence([
+          identifier: eissnId,
+          status: IdentifierOccurrence.lookupOrCreateStatus('approved')
+        ]).save(failOnError: true);
+
+        newTI.addToIdentifiers(newIo);
+        newTI.save(failOnError: true, flush: true)
+      }
+    then: 'All good'
+      noExceptionThrown()
+    when: "We count IdentifierOccurrences for the eissn ${eissn}"
+      Integer ioCount;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        ioCount = IdentifierOccurrence.executeQuery("""
+          SELECT COUNT(iden.id) FROM IdentifierOccurrence AS iden
+          WHERE iden.identifier.value = :eissn
+        """.toString(), [eissn: eissn])[0]
+      }
+    then: 'We see 2 IdentifierOccurrences, one for each of the TIs in the system'
+      assert ioCount == 2;
+  }
+
+  // Actually do use case from the above
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'WorkSourceIdentifierTIRS behaves as expected when no work is found and we match multiple TIs' () {
+    when: 'We fetch the existing TIs and Siblings'
+      List<String> existingTiIds;
+      List<String> existingSiblingIds;
+      String eissn = '5678-9012'
+      String issn = 'efgh-ijkl'
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        existingTiIds = IdentifierOccurrence.executeQuery("""
+          SELECT io.resource.id FROM IdentifierOccurrence io
+          WHERE io.identifier.value = :eissn
+        """.toString(), [eissn: eissn])
+
+        existingSiblingIds = IdentifierOccurrence.executeQuery("""
+          SELECT io.resource.id FROM IdentifierOccurrence io
+          WHERE io.identifier.value = :issn
+        """.toString(), [issn: issn])  
+        println("LOGDEBUG ETIID: ${existingTiIds}")
+        println("LOGDEBUG ESID: ${existingSiblingIds}")
+      }
+    then: 'We see the state we expect'
+      assert existingTiIds.size() == 2; // One from regular ingest and one multiple added in setup for this test
+      assert existingSiblingIds.size() == 1;
+    
+    when: 'We resolve a title with non-matching sourceId and there are multiple matches'
+      String resolvedTiId;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        resolvedTiId = titleInstanceResolverService.resolve(citationFromFile('zero_work_match_multiple_electronic_ti_match.json'), true)
+      }
+    then: 'There are no exceptions thrown'
+      noExceptionThrown()
+    when: 'We get the resolved TI'
+      TitleInstance resolvedTi
+      Set<TitleInstance> relatedTitles;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        resolvedTi = TitleInstance.get(resolvedTiId);
+        relatedTitles = resolvedTi.getRelatedTitles();
+      }
+    then: 'We have created whole new TI and siblings'
+      assert !existingTiIds.contains(resolvedTi.id);
+      relatedTitles.each { rt ->
+        assert !existingSiblingIds.contains(rt.id);
+      }
+
+      assert resolvedTi.name == "Brand new title with eissn 5678-9012"      
+  }
+
+  // TODO next test cases are Zero Work Match-Single TI Out A/B and C -- need to set up work with 0 sourceId (See above)
+  // Then fetch the title directly, resolve and check that the title is the same (same Id) and updated (new metadata)
+  // One case for each of direct id match, sibling match, and fuzzy title match
 }
