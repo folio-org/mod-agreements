@@ -293,4 +293,32 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       assert message == "Multiple (2) electronic title instances found on Work: ${work.id}, skipping"
       assert code == TIRSException.MULTIPLE_TITLE_MATCHES
   }
+
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'WorkSourceIdentifierTIRS behaves as expected when matching work with one electronic TI' () {
+    given: 'We have a single electronic TI in the system for a given work'
+      Work work;
+      String tiId
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        work = getWorkFromSourceId('aad-004')
+        def tisForWork = getTIsForWork(work.id, 'electronic')
+        assert tisForWork.size() == 1; // Should only be one TI for this work
+        tiId = tisForWork[0];
+      }
+    when: 'We resolve a title for this work'
+      String resolvedTiId;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        resolvedTiId = titleInstanceResolverService.resolve(citationFromFile('one_work_match_one_electronic_ti_match.json'), true)
+      }
+    then: 'We resolve to the same title'
+      assert tiId == resolvedTiId
+    when: 'We inspect the title'
+      TitleInstance theTi;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        theTi = TitleInstance.get(tiId);
+      }
+    then: 'It has been updated as part of the resolve'
+      // We will check identifier and sibling match resolves LATER
+      assert theTi.name == "One Work Match-One Electronic TI Match (RENAMED)"
+  }
 }
