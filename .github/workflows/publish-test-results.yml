@@ -15,9 +15,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: testLogfiles
+          path: /testLogs/integrationTest
       - name: Display structure of downloaded files
         run: ls -R
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1
         with:
-          files: "service/build/test-results/**/*.xml"
+          files: "testLogs/**/*.xml"
