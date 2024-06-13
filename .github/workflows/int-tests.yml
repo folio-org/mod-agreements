@@ -5,28 +5,28 @@ on:
 
 jobs:
   work-source-identifier-tirs-tests:
-    uses: ./.github/workflows/run-int-tests.yml@github-actions-parallel
+    uses: ./.github/workflows/run-int-tests.yml@github_actions_parallel
     with:
       testPath: org.olf.TIRS.WorkSourceIdentifier.*
       outputDirectory: WorkSourceIdentifierTests
   id-first-tirs-tests:
-    uses: ./.github/workflows/run-int-tests.yml@github-actions-parallel
+    uses: ./.github/workflows/run-int-tests.yml@github_actions_parallel
     with:
       testPath: org.olf.TIRS.IdFirstTIRS.*
       outputDirectory: IdFirstTests
       tirsEnvVar: IdFirst
   agreement-tests:
-    uses: ./.github/workflows/run-int-tests.yml@github-actions-parallel
+    uses: ./.github/workflows/run-int-tests.yml@github_actions_parallel
     with:
       testPath: org.olf.AgreementTests.*
       outputDirectory: AgreementTests
   string-template-tests:
-    uses: ./.github/workflows/run-int-tests.yml@github-actions-parallel
+    uses: ./.github/workflows/run-int-tests.yml@github_actions_parallel
     with:
       testPath: org.olf.StringTemplateTests.*
       outputDirectory: StringTemplateTests
   general-tests:
-    uses: ./.github/workflows/run-int-tests.yml@github-actions-parallel
+    uses: ./.github/workflows/run-int-tests.yml@github_actions_parallel
     with:
       testPath: org.olf.GeneralTests.*
       outputDirectory: GeneralTests
