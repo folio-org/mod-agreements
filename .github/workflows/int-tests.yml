@@ -6,7 +6,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -59,5 +58,6 @@ jobs:
           cd tools/testing
           docker-compose down -v
           sleep 10
-      - name: Publish test results
-        uses: ./.github/workflows/publish-test-results.yml
+  publish-test-results:
+    uses: ./.github/workflows/publish-test-results.yml
+    needs: build
