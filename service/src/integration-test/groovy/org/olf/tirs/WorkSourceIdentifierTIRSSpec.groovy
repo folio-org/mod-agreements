@@ -396,8 +396,6 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
           SELECT io.resource.id FROM IdentifierOccurrence io
           WHERE io.identifier.value = :issn
         """.toString(), [issn: issn])  
-        println("LOGDEBUG ETIID: ${existingTiIds}")
-        println("LOGDEBUG ESID: ${existingSiblingIds}")
       }
     then: 'We see the state we expect'
       assert existingTiIds.size() == 2; // One from regular ingest and one multiple added in setup for this test
@@ -423,7 +421,22 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
         assert !existingSiblingIds.contains(rt.id);
       }
 
-      assert resolvedTi.name == "Brand new title with eissn 5678-9012"      
+      assert resolvedTi.name == "Brand new title with eissn 5678-9012"
+    when: 'We double check that the numbers now line up'
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        existingTiIds = IdentifierOccurrence.executeQuery("""
+          SELECT io.resource.id FROM IdentifierOccurrence io
+          WHERE io.identifier.value = :eissn
+        """.toString(), [eissn: eissn])
+
+        existingSiblingIds = IdentifierOccurrence.executeQuery("""
+          SELECT io.resource.id FROM IdentifierOccurrence io
+          WHERE io.identifier.value = :issn
+        """.toString(), [issn: issn])  
+      }
+    then: 'We get the expected values'
+      assert existingTiIds.size() == 3; // One new TI
+      assert existingSiblingIds.size() == 2; // One new sibling
   }
 
   // TODO next test cases are Zero Work Match-Single TI Out A/B and C -- need to set up work with 0 sourceId (See above)
