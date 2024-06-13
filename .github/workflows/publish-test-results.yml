@@ -2,7 +2,7 @@ name: Publish test results
 
 on:
   workflow_run:
-    workflows: ["Integration test module"]
+    workflows: [Integration test module]
     types:
       - completed
 
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 'donwload test results'
+      - name: 'download test results'
         uses: actions/download-artifact@v4
         with:
           name: testLogfiles
