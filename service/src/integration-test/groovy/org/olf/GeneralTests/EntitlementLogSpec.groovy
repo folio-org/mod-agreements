@@ -1,4 +1,6 @@
-package org.olf
+package org.olf.GeneralTests
+
+import org.olf.BaseSpec
 
 import java.time.LocalDate
 

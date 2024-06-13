@@ -1,6 +1,8 @@
-package org.olf
+package org.olf.AgreementTests
 
 import java.time.LocalDate
+
+import org.olf.BaseSpec
 
 import org.olf.kb.Pkg
 import org.olf.kb.TitleInstance

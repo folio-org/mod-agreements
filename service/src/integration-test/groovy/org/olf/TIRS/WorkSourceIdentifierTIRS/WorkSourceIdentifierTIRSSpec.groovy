@@ -1,4 +1,6 @@
-package org.olf.tirs
+package org.olf.TIRS.WorkSourceIdentifier
+
+import org.olf.TIRS.TIRSSpec
 
 import org.olf.dataimport.internal.TitleInstanceResolverService
 import org.olf.dataimport.internal.titleInstanceResolvers.WorkSourceIdentifierTIRSImpl

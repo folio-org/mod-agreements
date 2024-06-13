@@ -1,4 +1,6 @@
-package org.olf
+package org.olf.StringTemplate
+
+import org.olf.BaseSpec
 
 import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertTrue

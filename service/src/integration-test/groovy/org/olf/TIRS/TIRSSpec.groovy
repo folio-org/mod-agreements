@@ -1,4 +1,4 @@
-package org.olf.tirs
+package org.olf.TIRS
 
 // Services
 import org.olf.general.jobs.JobRunnerService
