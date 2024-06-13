@@ -35,6 +35,15 @@ jobs:
         working-directory: ./service
         run:
           ./gradlew integrationTest
+      - name: Upload Test Results Files
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: testLogfiles
+          path: |
+            service/build/test-results/**/*.xml
+            tools/testing/*.log
+          retention-days: 1
       - name: Capture container output
         if: always()
         run: |
