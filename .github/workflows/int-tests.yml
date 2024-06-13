@@ -33,7 +33,7 @@ jobs:
       - name: Run integration test
         working-directory: ./service
         run:
-          ./gradlew integrationTest --tests *TenantApiSpec
+          ./gradlew integrationTest --tests TenantApiSpec*
       - name: Upload Test Results Files
         uses: actions/upload-artifact@v4
         if: always()
