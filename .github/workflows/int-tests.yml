@@ -61,3 +61,5 @@ jobs:
   publish-test-results:
     uses: ./.github/workflows/publish-test-results.yml
     needs: build
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN}}
