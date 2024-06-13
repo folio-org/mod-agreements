@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 'setup directory to accept test results'
-        run: mkdir '/testLogs/integrationTest'
+        run: mkdir -p testLogs/integrationTest
       - name: 'download test results'
         uses: actions/download-artifact@v4
         with:
