@@ -1,4 +1,4 @@
-package org.olf.GeneralTests
+package org.olf.General
 
 import org.olf.BaseSpec
 

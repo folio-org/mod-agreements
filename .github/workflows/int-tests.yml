@@ -18,18 +18,18 @@ jobs:
   agreement-tests:
     uses: ./.github/workflows/run-int-tests.yml
     with:
-      testPath: org.olf.AgreementTests.*
-      outputDirectory: AgreementTests
+      testPath: org.olf.Agreements.*
+      outputDirectory: Agreements
   string-template-tests:
     uses: ./.github/workflows/run-int-tests.yml
     with:
-      testPath: org.olf.StringTemplateTests.*
-      outputDirectory: StringTemplateTests
+      testPath: org.olf.StringTemplate.*
+      outputDirectory: StringTemplate
   general-tests:
     uses: ./.github/workflows/run-int-tests.yml
     with:
-      testPath: org.olf.GeneralTests.*
-      outputDirectory: GeneralTests
+      testPath: org.olf.General.*
+      outputDirectory: General
   publish-test-results:
     needs: [work-source-identifier-tirs-tests, id-first-tirs-tests, agreement-tests, string-template-tests, general-tests]
     runs-on: ubuntu-latest
@@ -38,9 +38,9 @@ jobs:
         run: |
           mkdir -p testLogs/WorkSourceIdentifierTests
           mkdir -p testLogs/IdFirstTests
-          mkdir -p testLogs/AgreementTests
-          mkdir -p testLogs/StringTemplateTests
-          mkdir -p testLogs/GeneralTests
+          mkdir -p testLogs/Agreements
+          mkdir -p testLogs/StringTemplate
+          mkdir -p testLogs/General
       - name: 'download WorkSourceIdentifier test results'
         uses: actions/download-artifact@v4
         with:
@@ -51,21 +51,21 @@ jobs:
         with:
           name: IdFirstTests
           path: testLogs/IdFirstTests
-      - name: 'download AgreementTests test results'
+      - name: 'download Agreements test results'
         uses: actions/download-artifact@v4
         with:
-          name: AgreementTests
-          path: testLogs/AgreementTests
-      - name: 'download StringTemplateTests test results'
+          name: Agreements
+          path: testLogs/Agreements
+      - name: 'download StringTemplate test results'
         uses: actions/download-artifact@v4
         with:
-          name: StringTemplateTests
-          path: testLogs/StringTemplateTests
-      - name: 'download GeneralTests test results'
+          name: StringTemplate
+          path: testLogs/StringTemplate
+      - name: 'download General test results'
         uses: actions/download-artifact@v4
         with:
-          name: GeneralTests
-          path: testLogs/GeneralTests
+          name: General
+          path: testLogs/General
       - name: Display structure of downloaded files
         run: ls -R
       - name: Publish Test Results

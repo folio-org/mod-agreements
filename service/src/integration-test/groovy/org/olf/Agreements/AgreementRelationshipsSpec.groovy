@@ -1,4 +1,4 @@
-package org.olf.AgreementTests
+package org.olf.Agreements
 
 import java.time.LocalDate
 

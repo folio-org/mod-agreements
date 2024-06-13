@@ -1,4 +1,4 @@
-package org.olf.AgreementTests
+package org.olf.Agreements
 
 import static groovyx.net.http.ContentTypes.*
 import static groovyx.net.http.HttpBuilder.configure

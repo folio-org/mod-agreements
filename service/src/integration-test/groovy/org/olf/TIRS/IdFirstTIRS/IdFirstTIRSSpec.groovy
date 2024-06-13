@@ -40,7 +40,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
   @Shared PackageContentImpl brainOfTheFirm
 
   @Shared
-  String resource_path = "src/integration-test/resources/packages/idFirstTIRS"
+  String resource_path = "${base_resource_path}/idFirstTIRS"
 
   @Shared
   String citation_path = "${resource_path}/citations"
@@ -52,7 +52,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
 
   void 'Bind to content' () {
     when: 'Attempt the bind'
-      brainOfTheFirm = citationFromFile('brain_of_the_firm.json', 'src/integration-test/resources/packages/workSourceTIRS')    
+      brainOfTheFirm = citationFromFile('brain_of_the_firm.json', "${base_resource_path}/workSourceTIRS/citations")    
     then: 'Everything is good'
       noExceptionThrown()
   }

@@ -43,7 +43,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
   String pkg_id
 
   @Shared
-  String resource_path = "src/integration-test/resources/packages/workSourceTIRS"
+  String resource_path = "${base_resource_path}/workSourceTIRS"
 
   @Shared
   String citation_path = "${resource_path}/citations"
