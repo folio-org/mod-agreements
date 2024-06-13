@@ -278,5 +278,19 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       }
     then: 'We see multiple TIs'
       assert tiGet.total > 1
+    when: 'WorkSourceIdentifierTIRS attempts to match on this work'
+      Long code
+      String message
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        try {
+          titleInstanceResolverService.resolve(citationFromFile('one_work_match_many_electronic_ti_match.json'), true)
+        } catch (TIRSException e) {
+          code = e.code;
+          message = e.message
+        }
+      }
+    then: 'We get the expected error'
+      assert message == "Multiple (2) electronic title instances found on Work: ${work.id}, skipping"
+      assert code == TIRSException.MULTIPLE_TITLE_MATCHES
   }
 }

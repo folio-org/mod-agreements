@@ -267,7 +267,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       default:
         // If there are somehow multiple electronic title instances on the work at this stage, error out
         throw new TIRSException(
-          "Multiple (${candidate_tis.size()}) electronic title instances found on Work: ${work}, skipping",
+          "Multiple (${candidate_tis.size()}) electronic title instances found on Work: ${work.id}, skipping",
           TIRSException.MULTIPLE_TITLE_MATCHES
         )
         break;
