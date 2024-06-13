@@ -2,20 +2,23 @@ name: Publish test results
 
 on:
   workflow_call:
+    secrets:
+      token:
+        required: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: 'download test results'
         uses: actions/download-artifact@v4
         with:
           name: testLogfiles
+          github-token: ${{ secrets.GH_PAT }} # token with actions:read permissions on target repo
           path: /testLogs/integrationTest
       - name: Display structure of downloaded files
         run: ls -R
       - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1
+        uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: "testLogs/**/*.xml"
