@@ -5,33 +5,33 @@ on:
 
 jobs:
   work-source-identifier-tirs-tests:
-    uses: ./.github/workflows/run-int-tests.yml@github_actions_parallel
+    uses: ./.github/workflows/run-int-tests.yml
     with:
       testPath: org.olf.TIRS.WorkSourceIdentifier.*
       outputDirectory: WorkSourceIdentifierTests
   id-first-tirs-tests:
-    uses: ./.github/workflows/run-int-tests.yml@github_actions_parallel
+    uses: ./.github/workflows/run-int-tests.yml
     with:
       testPath: org.olf.TIRS.IdFirstTIRS.*
       outputDirectory: IdFirstTests
       tirsEnvVar: IdFirst
   agreement-tests:
-    uses: ./.github/workflows/run-int-tests.yml@github_actions_parallel
+    uses: ./.github/workflows/run-int-tests.yml
     with:
       testPath: org.olf.AgreementTests.*
       outputDirectory: AgreementTests
   string-template-tests:
-    uses: ./.github/workflows/run-int-tests.yml@github_actions_parallel
+    uses: ./.github/workflows/run-int-tests.yml
     with:
       testPath: org.olf.StringTemplateTests.*
       outputDirectory: StringTemplateTests
   general-tests:
-    uses: ./.github/workflows/run-int-tests.yml@github_actions_parallel
+    uses: ./.github/workflows/run-int-tests.yml
     with:
       testPath: org.olf.GeneralTests.*
       outputDirectory: GeneralTests
   publish-test-results:
-    needs: [work-source-identifier-tests, id-first-tirs-tests, agreement-tests, string-template-tests, general-tests]
+    needs: [work-source-identifier-tirs-tests, id-first-tirs-tests, agreement-tests, string-template-tests, general-tests]
     runs-on: ubuntu-latest
     steps:
       - name: 'setup directories to accept test results'
