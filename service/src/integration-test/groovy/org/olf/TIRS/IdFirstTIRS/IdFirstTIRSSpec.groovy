@@ -37,7 +37,8 @@ import groovy.util.logging.Slf4j
 @Integration
 @Stepwise
 class IdFirstTIRSSpec extends TIRSSpec {
-  @Shared PackageContentImpl brainOfTheFirm
+  @Shared
+  PackageContentImpl brainOfTheFirm
 
   @Shared
   String resource_path = "${base_resource_path}/idFirstTIRS"
@@ -52,7 +53,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
 
   void 'Bind to content' () {
     when: 'Attempt the bind'
-      brainOfTheFirm = citationFromFile('brain_of_the_firm.json', "${base_resource_path}/workSourceTIRS/citations")    
+      brainOfTheFirm = bindMapToCitationFromFile('brain_of_the_firm.json', "${base_resource_path}/workSourceTIRS/citations")    
     then: 'Everything is good'
       noExceptionThrown()
   }
