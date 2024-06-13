@@ -59,7 +59,17 @@ jobs:
           docker-compose down -v
           sleep 10
   publish-test-results:
-    uses: ./.github/workflows/publish-test-results.yml
     needs: build
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'download test results'
+        uses: actions/download-artifact@v4
+        with:
+          name: testLogfiles
+          path: /testLogs/integrationTest
+      - name: Display structure of downloaded files
+        run: ls -R
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: "testLogs/**/*.xml"
