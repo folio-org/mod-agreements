@@ -68,7 +68,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: testLogfiles
-          path: /testLogs/integrationTest
+          path: testLogs/integrationTest
       - name: Display structure of downloaded files
         run: ls -R
       - name: Publish Test Results
