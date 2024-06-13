@@ -31,6 +31,7 @@ jobs:
       testPath: org.olf.General.*
       outputDirectory: General
   publish-test-results:
+    if: always()
     needs: [work-source-identifier-tirs-tests, id-first-tirs-tests, agreement-tests, string-template-tests, general-tests]
     runs-on: ubuntu-latest
     steps:
