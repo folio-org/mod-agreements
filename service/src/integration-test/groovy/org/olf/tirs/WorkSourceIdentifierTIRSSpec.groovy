@@ -442,4 +442,6 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
   // TODO next test cases are Zero Work Match-Single TI Out A/B and C -- need to set up work with 0 sourceId (See above)
   // Then fetch the title directly, resolve and check that the title is the same (same Id) and updated (new metadata)
   // One case for each of direct id match, sibling match, and fuzzy title match
+  // Technically should probably test IdFirstTIRS as WELL, but can't do that as easily in the same github actions...
+  // Potentially add a step which runs the IdFirst tests with env var set
 }
