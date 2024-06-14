@@ -1,3 +1,7 @@
+## 6.1.5 2024-06-14
+  * ERM-3274 If a citation gets passed to BaseTIRS without an instancePublicationMedia field it will crash
+  * ERM-3254 With WorkSourceIDTIRS for GOKb we see "Field error in object" errors 
+
 ## 6.1.4 2024-05-26
   * ERM-3246 Improve performance of entitlementOptions endpoint
   * ERM-3187 Re-write query to show "list of resources in an agreement" for improved performance

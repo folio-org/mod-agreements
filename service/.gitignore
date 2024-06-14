@@ -7,4 +7,4 @@
 /docs
 /_settings.gradle
 /mod-agreements
-ConsoleOutput.txt
+*.txt
