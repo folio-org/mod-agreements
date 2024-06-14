@@ -37,36 +37,11 @@ jobs:
     steps:
       - name: 'setup directories to accept test results'
         run: |
-          mkdir -p testLogs/WorkSourceIdentifierTests
-          mkdir -p testLogs/IdFirstTests
-          mkdir -p testLogs/Agreements
-          mkdir -p testLogs/StringTemplate
-          mkdir -p testLogs/General
-      - name: 'download WorkSourceIdentifier test results'
+          mkdir -p testLogs
+      - name: 'download test results'
         uses: actions/download-artifact@v4
         with:
-          name: WorkSourceIdentifierTests
-          path: testLogs/WorkSourceIdentifierTests
-      - name: 'download IdFirst test results'
-        uses: actions/download-artifact@v4
-        with:
-          name: IdFirstTests
-          path: testLogs/IdFirstTests
-      - name: 'download Agreements test results'
-        uses: actions/download-artifact@v4
-        with:
-          name: Agreements
-          path: testLogs/Agreements
-      - name: 'download StringTemplate test results'
-        uses: actions/download-artifact@v4
-        with:
-          name: StringTemplate
-          path: testLogs/StringTemplate
-      - name: 'download General test results'
-        uses: actions/download-artifact@v4
-        with:
-          name: General
-          path: testLogs/General
+          path: testLogs
       - name: Display structure of downloaded files
         run: ls -R
       - name: Publish Test Results
