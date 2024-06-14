@@ -20,11 +20,6 @@ jobs:
     with:
       testPath: org.olf.Agreements.*
       outputDirectory: Agreements
-  string-template-tests:
-    uses: ./.github/workflows/run-int-tests.yml
-    with:
-      testPath: org.olf.StringTemplate.*
-      outputDirectory: StringTemplate
   general-tests:
     uses: ./.github/workflows/run-int-tests.yml
     with:
