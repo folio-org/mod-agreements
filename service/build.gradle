@@ -206,9 +206,7 @@ bootRun {
 }
 
 integrationTest {
-  println("LOGDEBUG AVAILABLE PROCESSORS: ${Runtime.runtime.availableProcessors()}")
-  //maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
-  maxParallelForks = 4
+  maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
 	jvmArgs(
     '-Xmx1592m',
     '-XX:ReservedCodeCacheSize=256m'
