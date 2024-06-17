@@ -1,0 +1,15 @@
+{
+  "title": "NEW TITLE FOR Zero Work Match-Single TI Out-No Source Id",
+  "instanceMedium": "electronic",
+  "instanceMedia": "serial",
+  "instanceIdentifiers": [{
+    "namespace": "eissn",
+    "value": "6789-0123"
+  }],
+  "siblingInstanceIdentifiers": [{
+    "namespace": "issn",
+    "value": "fghi-jklm"
+  }],
+  "sourceIdentifierNamespace": "K-Int",
+  "sourceIdentifier": "aba-010"
+}

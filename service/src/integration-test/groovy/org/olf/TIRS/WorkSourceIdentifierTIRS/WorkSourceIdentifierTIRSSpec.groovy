@@ -85,17 +85,15 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
     """.toString(), [ioId: io.id])
   }
 
-  // Helper function for removing sourceIdentifier and getting original data for later comparison
-  @Ignore
-  Map deleteWorkSourceIdentifierAndReturnOriginalData(String sourceIdentifierValue) {
+  // Helper function forgetting original data for later comparison
+@Ignore
+  Map getOriginalData(String sourceIdentifierValue) {
     List<TitleInstance> tis = getFullTIsForWork(getWorkFromSourceId(sourceIdentifierValue).id);
     TitleInstance electronicTi = tis.find(ti -> ti.subType.value == 'electronic');
     TitleInstance printTi = tis.find(ti -> ti.subType.value == 'print');
 
     Set<IdentifierOccurrence> originalIdentifiers = electronicTi.identifiers;
     Set<IdentifierOccurrence> originalPrintIdentifiers = printTi?.identifiers ?: [];
-
-    deleteWorkSourceIdentifier(sourceIdentifierValue);
 
     return (
       [
@@ -565,7 +563,8 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       String workSourceId = 'aaf-006'; // Making sure this is the same throughout the test
       Map originalData = [:];
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
-        originalData = deleteWorkSourceIdentifierAndReturnOriginalData(workSourceId);
+        originalData = getOriginalData(workSourceId);
+        deleteWorkSourceIdentifier(workSourceId);
       }
     then: 'We have the expected TIs and an originalTiId'
       assert originalData.tis.size() == 1
@@ -600,7 +599,8 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
 
       Map originalData = [:];
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
-        originalData = deleteWorkSourceIdentifierAndReturnOriginalData(workSourceId);
+        originalData = getOriginalData(workSourceId);
+        deleteWorkSourceIdentifier(workSourceId);
       }
     then: 'We have the expected TIs and an originalTiId'
       assert originalData.tis.size() == 2
@@ -641,7 +641,8 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       String workSourceId = 'aah-008'; // Making sure this is the same throughout the test
       Map originalData = [:];
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
-        originalData = deleteWorkSourceIdentifierAndReturnOriginalData(workSourceId);
+        originalData = getOriginalData(workSourceId);
+        deleteWorkSourceIdentifier(workSourceId);
       }
     then: 'We have the expected TIs and an originalTiId'
       assert originalData.tis.size() == 1
@@ -688,10 +689,50 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       String workSourceId = 'aba-010'; // Making sure this is the same throughout the test
       Map originalData = [:];
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
-        originalData = deleteWorkSourceIdentifierAndReturnOriginalData(workSourceId);
+        originalData = getOriginalData(workSourceId);
+        deleteWorkSourceIdentifier(workSourceId);
       }
     then: 'We have the expected TIs'
       assert originalData.tis.size() == 2
       assert originalData.electronicTi.name == 'Zero Work Match-Single TI Out-No Source Id'
+    when: 'We attempt to lookup the work by sourceId'
+      Work work
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        work = getWorkFromSourceId(workSourceId)
+      }
+    then: 'We cannot find it'
+      assert work == null;
+     when: 'We resolve what should match on identifier'
+      Map resolvedData = [:];
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        resolvedData = resolveTIAndReturnNewData('zero_work_match_single_ti_match_no_source_id.json');
+      }
+    then: 'We have matched to the expected title and it has set the work source id'
+      assert originalData.electronicTi.id == resolvedData.resolvedTi.id
+      assert resolvedData.resolvedTi.name == 'NEW TITLE FOR Zero Work Match-Single TI Out-No Source Id'
+      assert resolvedData.resolvedWorkSourceId == workSourceId
+  }
+
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'Zero work match, single TI match on fallback with mismatched sourceId attached' () {
+    when: 'We grab the original data from the system'
+      String workSourceId = 'aca-020'; // Making sure this is the same throughout the test
+      Map originalData = [:];
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        originalData = getOriginalData(workSourceId);
+      }
+    then: 'We have the expected TIs'
+      assert originalData.tis.size() == 2
+      assert originalData.electronicTi.name == 'Zero Work Match-Single TI Out-Mismatch Source Id'
+     when: 'We resolve what should match on identifier'
+      Map resolvedData = [:];
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        resolvedData = resolveTIAndReturnNewData('zero_work_match_single_ti_match_mismatched_source_id copy.json');
+      }
+    then: 'We have matched to the expected title, but since work source id was mismatched we have created a new title instance'
+      assert originalData.electronicTi.id != resolvedData.resolvedTi.id
+      assert resolvedData.resolvedTi.name == 'NEWLY UPDATED TITLE FOR Zero Work Match-Single TI Out-Mismatch Source Id'
+
+      assert resolvedData.resolvedWorkSourceId == 'aca-020-XX'
   }
 }
