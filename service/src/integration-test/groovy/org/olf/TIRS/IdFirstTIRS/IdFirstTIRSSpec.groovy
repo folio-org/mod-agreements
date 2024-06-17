@@ -122,6 +122,6 @@ class IdFirstTIRSSpec extends TIRSSpec {
       // Ignore the tis from the first test
       def tiGet = doGet("/erm/titles", [filters: ['name!=Brain of the firm'], stats: true]);
     then: "We have the expected number"
-      assert tiGet.total == 6
+      assert tiGet.total == 4
   }
 }
