@@ -16,7 +16,7 @@
   },
   "packageContents": [
     {
-      "title": "Zero Work Match-Single TI Out (A -- Match on identifiers)",
+      "title": "Example title (A -- Match on identifiers)",
       "instanceMedium": "electronic",
       "instanceMedia": "journal",
       "instanceIdentifiers": [{
@@ -31,7 +31,7 @@
       "sourceIdentifier": "aaf-006"
     },
     {
-      "title": "Zero Work Match-Single TI Out (B -- Match on sibling)",
+      "title": "Example title (B -- Match on sibling)",
       "instanceMedium": "electronic",
       "instanceMedia": "journal",
       "siblingInstanceIdentifiers": [{
@@ -49,6 +49,10 @@
       "title": "Totally unique title (C -- Match on title)",
       "instanceMedium": "electronic",
       "instanceMedia": "journal",
+      "instanceIdentifiers": [{
+        "namespace": "non-class-one-ns",
+        "value": "6789-0123-C-1"
+      }],
       "coverage": [],
       "embargo": null,
       "url": "http://testpackage.com/journal/index.php?journalID=aah-008",

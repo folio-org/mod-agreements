@@ -546,7 +546,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
 
         resolvedWorkSourceId = resolvedTi.work.sourceIdentifier.identifier.value
       }
-    then: 'We have matched to the new title and it has updated basic metadata'
+    then: 'We have matched to the expected title and it has updated basic metadata'
       // SAVE wibling/id wrangling for later
       assert originalTiId == resolvedTiId;
       assert resolvedTi.name == 'TITLE MATCH on identifier eissn:6789-0123-A'
@@ -604,7 +604,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
 
         resolvedWorkSourceId = resolvedTi.work.sourceIdentifier.identifier.value
       }
-    then: 'We have matched to the new title and it has updated basic metadata'
+    then: 'We have matched to the expected title and it has updated basic metadata'
       // SAVE wibling/id wrangling for later (although we can check it's the same sibling)
       assert originalElectronicTiId == resolvedTiId;
       assert resolvedSiblings.size() == 1;
@@ -670,7 +670,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
 
         resolvedWorkSourceId = resolvedTi.work.sourceIdentifier.identifier.value
       }
-    then: 'We have matched to the new title and it has updated basic metadata'
+    then: 'We have matched to the expected title and it has updated basic metadata'
       // SAVE wibling/id wrangling for later -- but we can double check identifiers have changed
       // (IMPORTANT we only have non-class-one identifiers for it to fall back to fuzzy title match)
       assert originalTiId == resolvedTiId;
