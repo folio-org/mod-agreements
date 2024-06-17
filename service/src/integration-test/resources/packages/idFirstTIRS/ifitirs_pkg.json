@@ -59,6 +59,21 @@
       "platformName": "K-Int",
       "sourceIdentifierNamespace": "K-Int",
       "sourceIdentifier": "aah-008"
+    },
+    {
+      "title": "Match multiple TIs",
+      "instanceMedium": "electronic",
+      "instanceMedia": "journal",
+      "instanceIdentifiers": [{
+        "namespace": "eissn",
+        "value": "1234-5678-MM"
+      }],
+      "coverage": [],
+      "embargo": null,
+      "url": "http://testpackage.com/journal/index.php?journalID=aah-008",
+      "platformName": "K-Int",
+      "sourceIdentifierNamespace": "K-Int",
+      "sourceIdentifier": "xxx-001"
     }
   ]
 }

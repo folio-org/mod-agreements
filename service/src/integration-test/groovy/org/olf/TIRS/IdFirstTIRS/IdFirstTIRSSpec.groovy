@@ -122,7 +122,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
       // Ignore the tis from the first test
       def tiGet = doGet("/erm/titles", [filters: ['name!=Brain of the firm'], stats: true]);
     then: "We have the expected number"
-      assert tiGet.total == 4
+      assert tiGet.total == 5
   }
 
   @Requires({ instance.isIdTIRS() })
@@ -247,6 +247,70 @@ class IdFirstTIRSSpec extends TIRSSpec {
       // (IMPORTANT we only have non-class-one identifiers for it to fall back to fuzzy title match)
       assert originalTiId == resolvedTiId;
       assert resolvedTi.name == 'Totally unique title (C -- Match on title)' // Name will remain the same since we matched on it
+  }
 
+  // Set up case where a work does NOT have a sourceId, and there are multiple titles which are matchable from eissn
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'IdFirstTIRS behaves as expected when we match multiple TIs' () {
+    when: 'We set up secondary TI that IdFirst fallback will find'
+      String eissn = "1234-5678-MM"
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        Identifier eissnId = Identifier.executeQuery("""
+          SELECT iden FROM Identifier iden
+          WHERE iden.value = :eissn
+        """. toString(), [eissn: eissn])[0];
+
+        TitleInstance newTI = new TitleInstance([
+          name: "Secondary Title Instance with eissn ${eissn}",
+          type: TitleInstance.lookupType('Serial'),
+          subType: TitleInstance.lookupSubType('Electronic'),
+        ]);
+
+        IdentifierOccurrence newIo = new IdentifierOccurrence([
+          identifier: eissnId,
+          status: IdentifierOccurrence.lookupOrCreateStatus('approved')
+        ]).save(failOnError: true);
+
+        newTI.addToIdentifiers(newIo);
+        newTI.save(failOnError: true, flush: true)
+      }
+    then: 'All good'
+      noExceptionThrown()
+    when: "We count IdentifierOccurrences for the eissn ${eissn}"
+      Integer ioCount;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        ioCount = IdentifierOccurrence.executeQuery("""
+          SELECT COUNT(iden.id) FROM IdentifierOccurrence AS iden
+          WHERE iden.identifier.value = :eissn
+        """.toString(), [eissn: eissn])[0]
+      }
+    then: 'We see 2 IdentifierOccurrences, one for each of the TIs in the system'
+      assert ioCount == 2;
+    when: 'We fetch the existing TIs and Siblings'
+      List<String> existingTiIds;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        existingTiIds = IdentifierOccurrence.executeQuery("""
+          SELECT io.resource.id FROM IdentifierOccurrence io
+          WHERE io.identifier.value = :eissn
+        """.toString(), [eissn: eissn])
+      }
+    then: 'We see the state we expect'
+      assert existingTiIds.size() == 2; // One from regular ingest and one multiple added in setup for this test    
+    when: 'We resolve a title with non-matching sourceId and there are multiple matches -- throws expected exception'
+      Long code
+      String message
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        try {
+          String tiId = titleInstanceResolverService.resolve(citationFromFile('match_multiple_tis.json'), true);
+        } catch (TIRSException e) {
+          code = e.code;
+          message = e.message
+        }
+      }
+    then: 'We got an expected error'
+      assert code == TIRSException.MULTIPLE_TITLE_MATCHES
+      assert message.startsWith('Class one match found 2 records::')
+      // At some point maybe we can check the errors thrown by multiple title
+      // matches in sibling/fuzzy title match, but not rn
   }
 }
