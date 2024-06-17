@@ -85,6 +85,56 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
     """.toString(), [ioId: io.id])
   }
 
+  // Helper function for removing sourceIdentifier and getting original data for later comparison
+  @Ignore
+  Map deleteWorkSourceIdentifierAndReturnOriginalData(String sourceIdentifierValue) {
+    List<TitleInstance> tis = getFullTIsForWork(getWorkFromSourceId(sourceIdentifierValue).id);
+    TitleInstance electronicTi = tis.find(ti -> ti.subType.value == 'electronic');
+    TitleInstance printTi = tis.find(ti -> ti.subType.value == 'print');
+
+    Set<IdentifierOccurrence> originalIdentifiers = electronicTi.identifiers;
+    Set<IdentifierOccurrence> originalPrintIdentifiers = printTi?.identifiers ?: [];
+
+    deleteWorkSourceIdentifier(sourceIdentifierValue);
+
+    return (
+      [
+        tis: tis,
+        electronicTi: electronicTi,
+        printTi: printTi,
+        originalIdentifiers: originalIdentifiers,
+        originalPrintIdentifiers: originalPrintIdentifiers
+      ]
+    )
+  }
+
+  // Helper function for resolving a title instance and obtaining information about it for comparison
+  @Ignore
+  Map resolveTIAndReturnNewData(String citation_file_name) {
+    String resolvedWorkSourceId;
+    String resolvedTiId = titleInstanceResolverService.resolve(citationFromFile(citation_file_name), true);
+    TitleInstance resolvedTi = TitleInstance.get(resolvedTiId);
+    resolvedWorkSourceId = resolvedTi.work.sourceIdentifier.identifier.value
+
+    Set<TitleInstance> relatedTitles = resolvedTi.relatedTitles;
+    TitleInstance resolvedPrintSibling = resolvedTi.relatedTitles?.getAt(0)
+
+    Set<IdentifierOccurrence> resolvedIdentifiers = resolvedTi.identifiers
+    Set<IdentifierOccurrence> resolvedApprovedIdentifiers = resolvedTi.approvedIdentifierOccurrences
+
+
+    return (
+      [
+        resolvedTi: resolvedTi,
+        relatedTitles: relatedTitles,
+        resolvedPrintSibling: resolvedPrintSibling,
+        resolvedIdentifiers: resolvedIdentifiers,
+        resolvedApprovedIdentifiers: resolvedApprovedIdentifiers,
+        resolvedWorkSourceId: resolvedWorkSourceId,
+      ]
+    )
+  }
+
 
   void 'Bind to content' () {
     when: 'Attempt the bind'
@@ -513,21 +563,15 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
   void 'Zero work match, single TI match on fallback -- Match on identifiers' () {
     when: 'We remove work source id'
       String workSourceId = 'aaf-006'; // Making sure this is the same throughout the test
-  
-      List<TitleInstance> tis;
-      TitleInstance electronicTi;
-      String originalTiId;
+      Map originalData = [:];
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
-        tis = getFullTIsForWork(getWorkFromSourceId(workSourceId).id);
-        electronicTi = tis.find(ti -> ti.subType.value == 'electronic');
-        originalTiId = electronicTi.id;
-
-        deleteWorkSourceIdentifier(workSourceId);
+        originalData = deleteWorkSourceIdentifierAndReturnOriginalData(workSourceId);
       }
     then: 'We have the expected TIs and an originalTiId'
-      assert tis.size() == 1
-      assert electronicTi.name == 'Zero Work Match-Single TI Out (A -- Match on identifiers)'
-      assert originalTiId != null;
+      assert originalData.tis.size() == 1
+      assert originalData.printTi == null;
+      assert originalData.electronicTi.name == 'Zero Work Match-Single TI Out (A -- Match on identifiers)'
+      assert originalData.electronicTi.id != null;
     when: 'We attempt to lookup the work by sourceId'
       Work work
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
@@ -536,23 +580,17 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
     then: 'We cannot find it'
       assert work == null;
     when: 'We resolve what should match on identifiers in IdFirstTIRS fallback'
-      String resolvedTiId;
-      TitleInstance resolvedTi;
-
-      String resolvedWorkSourceId;
+      Map resolvedData = [:];
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
-        resolvedTiId = titleInstanceResolverService.resolve(citationFromFile('match_on_identifiers.json'), true);
-        resolvedTi = TitleInstance.get(resolvedTiId);
-
-        resolvedWorkSourceId = resolvedTi.work.sourceIdentifier.identifier.value
+        resolvedData = resolveTIAndReturnNewData('match_on_identifiers.json');
       }
     then: 'We have matched to the expected title and it has updated basic metadata'
       // SAVE wibling/id wrangling for later
-      assert originalTiId == resolvedTiId;
-      assert resolvedTi.name == 'TITLE MATCH on identifier eissn:6789-0123-A'
+      assert originalData.electronicTi.id == resolvedData.resolvedTi.id;
+      assert resolvedData.resolvedTi.name == 'TITLE MATCH on identifier eissn:6789-0123-A'
 
       // Work sourceId has been reset
-      assert resolvedWorkSourceId == workSourceId;
+      assert resolvedData.resolvedWorkSourceId == workSourceId;
   }
 
   @Requires({ instance.isWorkSourceTIRS() })
@@ -560,27 +598,18 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
     when: 'We remove work source id'
       String workSourceId = 'aag-007'; // Making sure this is the same throughout the test
 
-      List<TitleInstance> tis;
-      TitleInstance electronicTi;
-      TitleInstance printTi;
-      String originalElectronicTiId;
-      String originalPrintTiId;
-
+      Map originalData = [:];
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
-        tis = getFullTIsForWork(getWorkFromSourceId(workSourceId).id);
-        electronicTi = tis.find(ti -> ti.subType.value == 'electronic');
-        printTi = tis.find(ti -> ti.subType.value == 'print');
-
-        originalElectronicTiId = electronicTi.id;
-        originalPrintTiId = printTi.id;
-
-        deleteWorkSourceIdentifier(workSourceId);
+        originalData = deleteWorkSourceIdentifierAndReturnOriginalData(workSourceId);
       }
     then: 'We have the expected TIs and an originalTiId'
-      assert tis.size() == 2
-      assert electronicTi.name == 'Zero Work Match-Single TI Out (B -- Match on sibling)'
-      assert originalElectronicTiId != null;
-      assert originalPrintTiId != null
+      assert originalData.tis.size() == 2
+      assert originalData.electronicTi.name == 'Zero Work Match-Single TI Out (B -- Match on sibling)'
+      assert originalData.printTi != null
+      assert originalData.printTi.name == 'Zero Work Match-Single TI Out (B -- Match on sibling)'
+  
+      assert originalData.electronicTi.id != null;
+      assert originalData.printTi.id != null
     when: 'We attempt to lookup the work by sourceId'
       Work work
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
@@ -589,62 +618,39 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
     then: 'We cannot find it'
       assert work == null;
     when: 'We resolve what should match on sibling in IdFirstTIRS fallback'
-      String resolvedTiId;
-      TitleInstance resolvedTi;
-      Set<TitleInstance> resolvedSiblings;
-      TitleInstance resolvedPrintSibling;
-
-      String resolvedWorkSourceId;
+      Map resolvedData = [:];
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
-        resolvedTiId = titleInstanceResolverService.resolve(citationFromFile('match_on_sibling.json'), true);
-        resolvedTi = TitleInstance.get(resolvedTiId);
-
-        resolvedSiblings = resolvedTi.relatedTitles
-        resolvedPrintSibling = resolvedTi.relatedTitles[0]
-
-        resolvedWorkSourceId = resolvedTi.work.sourceIdentifier.identifier.value
+        resolvedData = resolveTIAndReturnNewData('match_on_sibling.json');
       }
     then: 'We have matched to the expected title and it has updated basic metadata'
       // SAVE wibling/id wrangling for later (although we can check it's the same sibling)
-      assert originalElectronicTiId == resolvedTiId;
-      assert resolvedSiblings.size() == 1;
-      assert resolvedPrintSibling.id == originalPrintTiId;
+      assert originalData.electronicTi.id == resolvedData.resolvedTi.id;
+      assert resolvedData.relatedTitles.size() == 1;
+      assert originalData.printTi.id == resolvedData.resolvedPrintSibling.id;
 
-      assert resolvedTi.name == 'TITLE MATCH on sibling identifier issn:fghi-jklm-B'
-      assert resolvedPrintSibling.name == 'TITLE MATCH on sibling identifier issn:fghi-jklm-B'
+      assert resolvedData.resolvedTi.name == 'TITLE MATCH on sibling identifier issn:fghi-jklm-B'
+      assert resolvedData.resolvedPrintSibling.name == 'TITLE MATCH on sibling identifier issn:fghi-jklm-B'
 
       // Work sourceId has been reset
-      assert resolvedWorkSourceId == workSourceId;
+      assert resolvedData.resolvedWorkSourceId == workSourceId;
   }
 
   @Requires({ instance.isWorkSourceTIRS() })
   void 'Zero work match, single TI match on fallback -- Match on fuzzy title' () {
     when: 'We remove work source id'
       String workSourceId = 'aah-008'; // Making sure this is the same throughout the test
-
-      List<TitleInstance> tis;
-      TitleInstance electronicTi;
-      String originalTiId;
-
-      Set<IdentifierOccurrence> originalIdentifiers;
-
+      Map originalData = [:];
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
-        tis = getFullTIsForWork(getWorkFromSourceId(workSourceId).id);
-        electronicTi = tis.find(ti -> ti.subType.value == 'electronic');
-        originalTiId = electronicTi.id;
-
-        originalIdentifiers = electronicTi.identifiers;
-
-        deleteWorkSourceIdentifier(workSourceId);
+        originalData = deleteWorkSourceIdentifierAndReturnOriginalData(workSourceId);
       }
     then: 'We have the expected TIs and an originalTiId'
-      assert tis.size() == 1
-      assert electronicTi.name == 'Totally unique title (C -- Match on title)'
+      assert originalData.tis.size() == 1
+      assert originalData.electronicTi.name == 'Totally unique title (C -- Match on title)'
 
-      assert originalIdentifiers.size() == 1;
-      assert originalIdentifiers.find( io -> io.identifier.value == '6789-0123-C-1') != null;
+      assert originalData.originalIdentifiers.size() == 1;
+      assert originalData.originalIdentifiers.find( io -> io.identifier.value == '6789-0123-C-1') != null;
 
-      assert originalTiId != null;
+      assert originalData.electronicTi.id != null;
     when: 'We attempt to lookup the work by sourceId'
       Work work
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
@@ -653,39 +659,39 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
     then: 'We cannot find it'
       assert work == null;
     when: 'We resolve what should match on fuzzy title in IdFirstTIRS fallback'
-      String resolvedTiId;
-      TitleInstance resolvedTi;
-      Set<IdentifierOccurrence> resolvedIdentifiers;
-      Set<IdentifierOccurrence> resolvedApprovedIdentifiers;
-
-      String resolvedWorkSourceId;
+      Map resolvedData = [:];
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
-        resolvedTiId = titleInstanceResolverService.resolve(citationFromFile('match_on_fuzzy_title.json'), true);
-        resolvedTi = TitleInstance.get(resolvedTiId);
-
-
-        // Only looking at approved ones
-        resolvedIdentifiers = resolvedTi.identifiers;
-        resolvedApprovedIdentifiers = resolvedTi.approvedIdentifierOccurrences;
-
-        resolvedWorkSourceId = resolvedTi.work.sourceIdentifier.identifier.value
+        resolvedData = resolveTIAndReturnNewData('match_on_fuzzy_title.json');
       }
     then: 'We have matched to the expected title and it has updated basic metadata'
       // SAVE wibling/id wrangling for later -- but we can double check identifiers have changed
       // (IMPORTANT we only have non-class-one identifiers for it to fall back to fuzzy title match)
-      assert originalTiId == resolvedTiId;
-      assert resolvedTi.name == 'Totally unique title (C -- Match on title)' // Name will remain the same since we matched on it
+      assert originalData.electronicTi.id == resolvedData.resolvedTi.id;
+      assert resolvedData.resolvedTi.name == 'Totally unique title (C -- Match on title)' // Name will remain the same since we matched on it
 
       // Sneak peek at identifier wrangling
-      assert resolvedApprovedIdentifiers.size() == 1;
-      assert resolvedApprovedIdentifiers.find( io -> io.identifier.value == '6789-0123-C-1') == null;
-      assert resolvedApprovedIdentifiers.find( io -> io.identifier.value == '6789-0123-C-2') != null;
+      assert resolvedData.resolvedApprovedIdentifiers.size() == 1;
+      assert resolvedData.resolvedApprovedIdentifiers.find( io -> io.identifier.value == '6789-0123-C-1') == null;
+      assert resolvedData.resolvedApprovedIdentifiers.find( io -> io.identifier.value == '6789-0123-C-2') != null;
 
-      assert resolvedIdentifiers.size() == 2 // One approved one error
-      assert resolvedIdentifiers.findAll { ri -> ri.status.value == 'approved' }.size() == 1
-      assert resolvedIdentifiers.findAll { ri -> ri.status.value == 'error' }.size() == 1
+      assert resolvedData.resolvedIdentifiers.size() == 2 // One approved one error
+      assert resolvedData.resolvedIdentifiers.findAll { ri -> ri.status.value == 'approved' }.size() == 1
+      assert resolvedData.resolvedIdentifiers.findAll { ri -> ri.status.value == 'error' }.size() == 1
 
       // Work sourceId has been reset
-      assert resolvedWorkSourceId == workSourceId;
+      assert resolvedData.resolvedWorkSourceId == workSourceId;
+  }
+
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'Zero work match, single TI match on fallback with no sourceId attached' () {
+    when: 'We remove work source id'
+      String workSourceId = 'aba-010'; // Making sure this is the same throughout the test
+      Map originalData = [:];
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        originalData = deleteWorkSourceIdentifierAndReturnOriginalData(workSourceId);
+      }
+    then: 'We have the expected TIs'
+      assert originalData.tis.size() == 2
+      assert originalData.electronicTi.name == 'Zero Work Match-Single TI Out-No Source Id'
   }
 }
