@@ -36,6 +36,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Integration
 @Stepwise
+@Transactional
 class IdFirstTIRSSpec extends TIRSSpec {
   @Shared
   PackageContentImpl brainOfTheFirm
@@ -65,6 +66,16 @@ class IdFirstTIRSSpec extends TIRSSpec {
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
         titleInstanceResolverService.resolve(brainOfTheFirm, true);
       }
+    then: 'All good'
+      noExceptionThrown()
+  }
+
+  // Transaction needs to be different for subsequent lookup via API...
+  // this won't be an issue in production systems -- but avoid hereafter
+  // in this suite by doing DB lookups -- test title API elsewhere
+  @Requires({ instance.isIdTIRS() })
+  void 'Test title creation -- lookup' () {
+    when: 'We lookup titles'
       def tiGet = doGet("/erm/titles", [filters: ['name==Brain of the firm'], stats: true]);
     then: 'We get the expected TIs'
       assert tiGet.total == 2 // One print, one electronic

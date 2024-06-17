@@ -27,6 +27,8 @@ import grails.gorm.multitenancy.Tenants
 import grails.testing.mixin.integration.Integration
 import groovy.transform.CompileStatic
 
+import java.time.Instant
+
 import spock.lang.*
 
 import groovy.json.JsonOutput
@@ -36,20 +38,25 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Integration
 @Stepwise
+@Transactional
 class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
-  @Shared PackageContentImpl brainOfTheFirm
+  def cleanup() {
+    /* We need to ensure that the fallbackToIdFirstTIRSCache is
+     * cleared after every test so we can check the fallback methods
+     * work as expected. Realistically at least one of these tests will
+     * leave a Work without SourceId though, so probably doesn't
+     * strictly _need_ to be run after every test, but hey ho.
+     */
+    titleInstanceResolverService.fallbackToIdFirstTIRSTimestamp = Instant.EPOCH
+  }
 
-  @Shared
-  String pkg_id
+  @Shared PackageContentImpl brainOfTheFirm
 
   @Shared
   String resource_path = "${base_resource_path}/workSourceTIRS"
 
   @Shared
   String citation_path = "${resource_path}/citations"
-
-  // Todo I can't work out how to inject WorkSourceTIRS directly...
-  // not an issue for WorkSource tests because that's the default but it would be for other tests
 
   // Helper to avoid having to fill out package location every time
   @Ignore
@@ -76,6 +83,15 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
         titleInstanceResolverService.resolve(brainOfTheFirm, true);
       }
+    then: 'No exceptions'
+      noExceptionThrown()
+  }
+
+  // Transaction needs to be different for subsequent lookup via API...
+  // this won't be an issue in production systems
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'Test title creation -- lookup' () {
+    when: 'We fetch titles matching \'Brain of the firm\''
       def tiGet = doGet("/erm/titles", [filters: ['name==Brain of the firm'], stats: true]);
     then: 'We get the expected TIs'
       assert tiGet.total == 2 // One print, one electronic
@@ -135,10 +151,14 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
 
     then: 'Package imported'
       result.packageImported == true
-    
+  }
+
+  // Transaction needs to be different for subsequent lookup via API...
+  // this won't be an issue in production systems
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'Ingest via package service works as expected -- lookup' () {
     when: "Looked up package with name"
       List resp = doGet("/erm/packages", [filters: ['name==Work Source TIRS Package']])
-      pkg_id = resp[0].id
 
     then: "Package found"
       resp.size() == 1
@@ -230,12 +250,20 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
     then: 'It ingests without error'
       noExceptionThrown()
     when: 'We look up titles for this work'
-      def tiGet = doGet("/erm/titles", [filters: ["work.id==${work.id}"], stats: true]);
+      // As seen above, API lookups need to occur in a separate transaction. Instead fetch direct from DB
+      // We will continue this theme below -- we don't need to test the API in _this_ test suite
+      List<TitleInstance> tis = [];
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        tis = TitleInstance.executeQuery("""
+          SELECT ti FROM TitleInstance AS ti
+          WHERE ti.work.id = :workId
+        """.toString(), [workId: work.id])
+      }
     then: 'We get the expected number of TIs'
-      assert tiGet.total == 2 // One print, one electronic
+      assert tis.size() == 2 // One print, one electronic
     when: 'We inspect electronic and print tis'
-      def electronicTI = tiGet.results?.find {ti -> ti.subType.value == 'electronic'}
-      def printTI = tiGet.results?.find {ti -> ti.subType.value == 'print'}
+      def electronicTI = tis.find {ti -> ti.subType.value == 'electronic'}
+      def printTI = tis.find {ti -> ti.subType.value == 'print'}
     then: 'We have an electronic and a print TI on the work with expected identifiers'
       assert electronicTI != null;
       assert printTI != null;
@@ -247,10 +275,8 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       assert printTI.identifiers.any { id -> id.identifier.value == 'bcde-fghi-x'};
   }
 
-  // For whatever reason we can't do this in a single test without the flush exploding... this one is purely setup instead
   @Requires({ instance.isWorkSourceTIRS() })
-  @Transactional // Needed so we can save this TI as setup...
-  void 'Adding a new electronic title on a work \\(setup for \'WorkSourceIdentifierTIRS behaves as expected when matching work with many electronic TIs\'\\)' () {
+  void 'WorkSourceIdentifierTIRS behaves as expected when matching work with many electronic TIs' () {
     when: 'We add a new electronic title instance for a work'
       Work work;
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
@@ -264,20 +290,18 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       }
     then: 'All good'
       noExceptionThrown()
-  }
-
-  // Actual test for the above case
-  @Requires({ instance.isWorkSourceTIRS() })
-  void 'WorkSourceIdentifierTIRS behaves as expected when matching work with many electronic TIs' () {
-    when: 'We fetch electronic title instances for this work'
-      def tiGet;
-      Work work;
+    when: 'We get electronic title instances for this work'
+      List<TitleInstance> electronicTIs;
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
         work = getWorkFromSourceId('aac-003')
-        tiGet = doGet("/erm/titles", [filters: ["work.id==${work.id}", "subType.value==electronic"], stats: true]);
+        electronicTIs = TitleInstance.executeQuery("""
+          SELECT ti FROM TitleInstance ti
+            WHERE ti.subType.value = 'electronic' AND
+                  ti.work.id = :workId
+        """.toString(), [workId: work.id])
       }
     then: 'We see multiple TIs'
-      assert tiGet.total > 1
+      assert electronicTIs.size() > 1
     when: 'WorkSourceIdentifierTIRS attempts to match on this work'
       Long code
       String message
@@ -324,11 +348,11 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
 
   // Set up case where a work does NOT have a sourceId, and there are multiple titles which are matchable from eissn
   @Requires({ instance.isWorkSourceTIRS() })
-  @Transactional
-  void 'Removing a work sourceId and adding a new TitleInstance \\(Setup for WorkSourceIdentifierTIRS behaves as expected when no work is found and we match multiple TIs\\)' () {
-    when: 'We delete work sourceId'
+  void 'WorkSourceIdentifierTIRS behaves as expected when no work is found and we match multiple TIs' () {
+    when: 'We delete a work sourceId'
       String workSourceId = 'aae-005';
       String eissn = '5678-9012'
+      String issn = 'efgh-ijkl'
       Work work;
       Work findWork;
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
@@ -378,16 +402,9 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       }
     then: 'We see 2 IdentifierOccurrences, one for each of the TIs in the system'
       assert ioCount == 2;
-  }
-
-  // Actually do use case from the above
-  @Requires({ instance.isWorkSourceTIRS() })
-  void 'WorkSourceIdentifierTIRS behaves as expected when no work is found and we match multiple TIs' () {
     when: 'We fetch the existing TIs and Siblings'
       List<String> existingTiIds;
       List<String> existingSiblingIds;
-      String eissn = '5678-9012'
-      String issn = 'efgh-ijkl'
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
         existingTiIds = IdentifierOccurrence.executeQuery("""
           SELECT io.resource.id FROM IdentifierOccurrence io
@@ -423,7 +440,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
         assert !existingSiblingIds.contains(rt.id);
       }
 
-      assert resolvedTi.name == "Brand new title with eissn 5678-9012"
+      assert resolvedTi.name == "Brand new title matching eissn 5678-9012"
     when: 'We double check that the numbers now line up'
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
         existingTiIds = IdentifierOccurrence.executeQuery("""
@@ -439,6 +456,65 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
     then: 'We get the expected values'
       assert existingTiIds.size() == 3; // One new TI
       assert existingSiblingIds.size() == 2; // One new sibling
+  }
+
+  // Case where WorkSourceIdentifierTIRS is forced to fall back to IdFirstTIRS and then create new TI
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'Creation of new TI within fallbackToIdFirstTIRS' () {
+    when: 'We set up a work that does not have a sourceIdentifier'
+      String originalTiId;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        originalTiId = titleInstanceResolverService.resolve(citationFromFile('test_title.json'), true);
+        Work work = getWorkFromSourceId('tt-123-abc');
+
+        IdentifierOccurrence io = IdentifierOccurrence.executeQuery("""
+          SELECT io FROM IdentifierOccurrence AS io
+          WHERE io.resource.id = :workId
+        """.toString(), [workId: work.id])[0]
+
+        // First delete IdentifierOccurrence
+        IdentifierOccurrence.executeUpdate("""
+          DELETE FROM IdentifierOccurrence AS io
+            WHERE io.id = :ioId
+        """.toString(), [ioId: io.id])
+
+        // Then unlink from Work side
+        /* Work.executeUpdate("""
+          UPDATE Work AS w SET w.sourceIdentifier = NULL
+            WHERE w.id = :workId
+        """.toString(), [workId: work.id]) */
+      }
+    then: 'All good'
+      noExceptionThrown()
+    when: 'We check number of Works in system without sourceIdentifiers'
+      Integer worksWithoutSourceIds;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        worksWithoutSourceIds = Work.executeQuery("""
+          SELECT COUNT(w) FROM Work w
+          LEFT JOIN IdentifierOccurrence io ON io.resource = w.id
+          WHERE io.id = null
+        """.toString())[0]
+      }
+    then: 'At least one such Work exists'
+      assert worksWithoutSourceIds > 0
+    when: 'We resolve a brand new title'
+      String tiId;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        tiId = titleInstanceResolverService.resolve(citationFromFile('test_title2.json'), true);
+      }
+    then: 'All good'
+      noExceptionThrown()
+    when: 'We lookup the new title'
+      TitleInstance newTI;
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        newTI = TitleInstance.get(tiId);
+      }
+    then: 'It is a brand new title created by IdFirstTIRS'
+      // There is no way to be certain this fell back to IdFirstTIRS in code
+      // -- hence the checks above that should ensure that it did when coupled
+      // with cleanup enforcing the fallbackToIdFirstTIRS check on each test
+      assert originalTiId != tiId
+      assert newTI.name == 'TestTitle but this one should not be able to match via fuzzy title match';
   }
 
   // TODO next test cases are Zero Work Match-Single TI Out A/B and C -- need to set up work with 0 sourceId (See above)
