@@ -69,6 +69,23 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
     return bindMapToCitationFromFile(citation_file_name, citation_path)
   }
 
+
+  // Assumes you're already in a Tenant context
+  @Ignore
+  void deleteWorkSourceIdentifier(String sourceIdentifierValue) {
+    Work work = getWorkFromSourceId(sourceIdentifierValue);
+    IdentifierOccurrence io = IdentifierOccurrence.executeQuery("""
+      SELECT io FROM IdentifierOccurrence AS io
+      WHERE io.resource.id = :workId
+    """.toString(), [workId: work.id])[0]
+
+    IdentifierOccurrence.executeUpdate("""
+      DELETE FROM IdentifierOccurrence AS io
+        WHERE io.id = :ioId
+    """.toString(), [ioId: io.id])
+  }
+
+
   void 'Bind to content' () {
     when: 'Attempt the bind'
       brainOfTheFirm = citationFromFile('brain_of_the_firm.json')    
@@ -354,21 +371,14 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       String eissn = '5678-9012'
       String issn = 'efgh-ijkl'
       Work work;
-      Work findWork;
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        deleteWorkSourceIdentifier(workSourceId)
+
+        // Attempt to grab work from sourceId
         work = getWorkFromSourceId(workSourceId)
-        IdentifierOccurrence wsid = work.sourceIdentifier
-
-        // This would fail validation through Gorm (righly) so do directly
-        IdentifierOccurrence.executeUpdate("""
-          DELETE FROM IdentifierOccurrence WHERE id = :ioId
-        """.toString(), [ioId: wsid.id])
-
-        // Attempt to grab work again
-        findWork = getWorkFromSourceId(workSourceId)
       }
     then: 'Work is no longer findable from sourceId'
-      assert findWork == null
+      assert work == null
     when: 'We set up secondary TI that IdFirst fallback will find'
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
         Identifier eissnId = Identifier.executeQuery("""
@@ -465,24 +475,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       String originalTiId;
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
         originalTiId = titleInstanceResolverService.resolve(citationFromFile('test_title.json'), true);
-        Work work = getWorkFromSourceId('tt-123-abc');
-
-        IdentifierOccurrence io = IdentifierOccurrence.executeQuery("""
-          SELECT io FROM IdentifierOccurrence AS io
-          WHERE io.resource.id = :workId
-        """.toString(), [workId: work.id])[0]
-
-        // First delete IdentifierOccurrence
-        IdentifierOccurrence.executeUpdate("""
-          DELETE FROM IdentifierOccurrence AS io
-            WHERE io.id = :ioId
-        """.toString(), [ioId: io.id])
-
-        // Then unlink from Work side
-        /* Work.executeUpdate("""
-          UPDATE Work AS w SET w.sourceIdentifier = NULL
-            WHERE w.id = :workId
-        """.toString(), [workId: work.id]) */
+        deleteWorkSourceIdentifier('tt-123-abc');
       }
     then: 'All good'
       noExceptionThrown()
