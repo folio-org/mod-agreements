@@ -1094,11 +1094,11 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       assert originalData.printTi.id != newSibling.id
       // New sibling has correct identifier created
       assert newSibling.identifiers.size() == 1;
-      assert newSibling.newSiblingApprovedIds.size() == 1;
-      assert newSibling.newSiblingNonApprovedIds.size() == 0;
+      assert newSiblingApprovedIds.size() == 1;
+      assert newSiblingNonApprovedIds.size() == 0;
 
-      assert newSibling.newSiblingApprovedIds[0].id != erroneousSiblingIdentifierOccurrenceId;
-      assert newSibling.newSiblingApprovedIds[0].identifier.id == erroneousSiblingIdentifierOccurrenceIdentifierId;
+      assert newSiblingApprovedIds[0].id != erroneousSiblingIdentifierOccurrenceId;
+      assert newSiblingApprovedIds[0].identifier.id == erroneousSiblingIdentifierOccurrenceIdentifierId;
   }
 
   /* TODO potentially worth splitting all these huge "assert" blocks
