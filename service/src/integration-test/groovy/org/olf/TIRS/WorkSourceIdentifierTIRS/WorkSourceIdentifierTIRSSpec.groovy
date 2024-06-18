@@ -1013,7 +1013,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       Map originalData = [:];
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
         originalData = getOriginalData(workSourceId);
-        printSiblingIdentifierId == originalData.printTi.identifiers[0].id
+        printSiblingIdentifierId = originalData.printTi.identifiers[0].id
 
         // We need to add a new Identifier to sibling to test marking of error
         Identifier identifier = Identifier.executeQuery("""
