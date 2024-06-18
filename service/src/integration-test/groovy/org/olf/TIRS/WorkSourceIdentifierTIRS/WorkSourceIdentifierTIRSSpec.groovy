@@ -242,7 +242,7 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
       // Ignore the tis from the first test
       def tiGet = doGet("/erm/titles", [filters: ['name!=Brain of the firm'], stats: true]);
     then: "We have the expected number"
-      assert tiGet.total == 20
+      assert tiGet.total == 29
   }
 
   @Requires({ instance.isWorkSourceTIRS() })
@@ -823,5 +823,80 @@ class WorkSourceIdentifierTIRSSpec extends TIRSSpec {
    * and those really exist as protection cases while developing which should ensure that if we change how we approach
    * siblings then parts of our code would adapt immediately.
    */
+
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'Sibling wrangling works when there are no changes to sibling' () {
+    when: 'We grab the original data from the system'
+      String workSourceId = 'aea-040'; // Making sure this is the same throughout the test
+      String existingIdentifierOccurrenceId;
+
+      Map originalData = [:];
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        originalData = getOriginalData(workSourceId);
+  
+        existingIdentifierOccurrenceId = IdentifierOccurrence.executeQuery("""
+          SELECT io.id FROM IdentifierOccurrence AS io
+          WHERE io.identifier.value = :idenValue AND
+          io.resource.id = :tiId
+        """.toString(), [idenValue: 'aaa-bbb-111', tiId: originalData.printTi.id])[0]
+      }
+    then: 'We have the expected TIs'
+      assert originalData.tis.size() == 2
+      assert originalData.electronicTi.name == 'Sibling Wrangling (4.1)'
+      
+      assert originalData.relatedTitles.size() == 1
+      assert originalData.relatedTitles.every { rt -> rt.identifiers.size() == 1}
+
+      assert originalData.printTi.name == 'Sibling Wrangling (4.1)'
+      assert originalData.printTi.identifiers.find { oi -> oi.identifier.value == 'aaa-bbb-111' && oi.identifier.ns.value == 'issn'} != null
+    
+    when: 'We resolve what should match on identifier'
+      Map resolvedData = [:];
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        resolvedData = resolveTIAndReturnNewData('sibling_wrangling_4_1.json');        
+      }
+    then: 'We have matched to the expected title and siblings'
+      assert originalData.electronicTi.id == resolvedData.resolvedTi.id
+      assert resolvedData.resolvedTi.name == 'Sibling Wrangling (4.1) - NEW'
+
+      // Sibling is the same with updated metadata
+      assert originalData.printTi.id == resolvedData.printSibling.id
+
+      assert resolvedData.relatedTitles.size() == 1
+      assert resolvedData.relatedTitles.every { rt -> rt.identifiers.size() == 1}
+      
+      assert resolvedData.printSibling.name == 'Sibling Wrangling (4.1) - NEW'
+      assert resolvedData.printSibling.identifiers.find { oi -> oi.identifier.value == 'aaa-bbb-111' && oi.identifier.ns.value == 'issn'} != null
+      assert resolvedData.printSibling.identifiers.find { oi -> oi.identifier.value == 'aaa-bbb-111' && oi.identifier.ns.value == 'issn'}.id == existingIdentifierOccurrenceId
+  }
+
+  @Requires({ instance.isWorkSourceTIRS() })
+  void 'Sibling wrangling works when adding sibling' () {
+    when: 'We grab the original data from the system'
+      String workSourceId = 'afa-050'; // Making sure this is the same throughout the test
+      String existingIdentifierOccurrenceId;
+
+      Map originalData = [:];
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        originalData = getOriginalData(workSourceId);
+      }
+    then: 'We have the expected TIs'
+      assert originalData.tis.size() == 1
+      assert originalData.electronicTi.name == 'Sibling Wrangling (4.2)'
+      
+      assert originalData.relatedTitles.size() == 0
+
+      assert originalData.printTi == null
+    when: 'We resolve what should match on identifier'
+      Map resolvedData = [:];
+      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+        resolvedData = resolveTIAndReturnNewData('sibling_wrangling_4_2.json');        
+      }
+    then: 'We have matched to the expected title and created new sibling'
+      assert originalData.electronicTi.id == resolvedData.resolvedTi.id
+      assert resolvedData.relatedTitles.size() == 1
+
+      assert resolvedData.printSibling.identifiers.find { oi -> oi.identifier.value == 'xxx-yyy-zzz-1' && oi.identifier.ns.value == 'issn'} != null
+  }
 
 }
