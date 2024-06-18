@@ -197,10 +197,16 @@
       "title": "TI Wrangling New Ids",
       "instanceMedium": "electronic",
       "instanceMedia": "journal",
-      "instanceIdentifiers": [{
-        "namespace": "eissn",
-        "value": "8901-2345"
-      }],
+      "instanceIdentifiers": [
+        {
+          "namespace": "eissn",
+          "value": "8901-2345"
+        },
+        {
+          "namespace": "kint-special",
+          "value": "afeukhasl"
+        }
+      ],
       "siblingInstanceIdentifiers": [{
         "namespace": "issn",
         "value": "hijk-lmno"
