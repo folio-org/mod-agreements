@@ -448,17 +448,15 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     }
   }
 
-  // Dedeuplicate a list of Ids
+  // Dedeuplicate a list of Ids by converting to HashSet and back
+  // This will LOSE order, but be O(n) instead of O(n^2) with "unique" etc.
   protected List<String> listDeduplictor(List<String> ids) {
-    // Need to deduplicate output -- Could probably be neater code than this
-    List<String> outputList = [];
-    ids.each { obj ->
-      if (!outputList.contains(obj)) {
-        outputList << obj
-      }
-    }
+    def uniqueIds = ids as HashSet<String>;
 
-    outputList
+    List<String> outputList = [];
+    outputList.addAll(uniqueIds);
+
+    return outputList
   }
 
   protected void ensureSourceIdentifierFields(final ContentItemSchema citation) {
