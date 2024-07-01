@@ -364,6 +364,42 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     return identifierHQL
   }
 
+
+  // This will spit out HQL to be _directly_ used in a WHERE call for another HQL query looking for TitleInstance "ti"
+  protected String buildIdentifierHQL2(
+    Collection<IdentifierSchema> identifiers,
+    boolean approvedIdsOnly = true,
+    String tiAlias = 'ti'
+  ) {
+    String identifierHQL = identifiers.withIndex().collect { id, index ->
+      String ioAlias = "io${index}" // Keep these separate between multiple identifiers
+      String mainHQLBody = """${tiAlias}.id IN (
+        SELECT ${ioAlias}.resource.id FROM IdentifierOccurrence AS ${ioAlias} WHERE (
+            ${ioAlias}.identifier.ns.value = '${id.namespace.toLowerCase()}' OR
+            ${ioAlias}.identifier.ns.value = '${namespaceMapping(id.namespace)}' OR
+            ${ioAlias}.identifier.ns.value = '${mapNamespaceToElectronic(id.namespace)}' OR
+            ${ioAlias}.identifier.ns.value = '${mapNamespaceToPrint(id.namespace)}'
+          ) AND
+          ${ioAlias}.identifier.value = '${id.value}'
+      """
+
+      if (!approvedIdsOnly) {
+        return """${mainHQLBody}
+          )
+        """
+      }
+
+      return """${mainHQLBody} AND
+          ${ioAlias}.status.value = '${APPROVED}'
+        )
+      """
+    }.join("""
+      AND
+    """)
+
+    return identifierHQL
+  }
+
   protected int countClassOneIDs(final Iterable<IdentifierSchema> identifiers) {
     identifiers?.findAll( { IdentifierSchema id -> class_one_namespaces?.contains( id.namespace.toLowerCase() ) })?.size() ?: 0
   }

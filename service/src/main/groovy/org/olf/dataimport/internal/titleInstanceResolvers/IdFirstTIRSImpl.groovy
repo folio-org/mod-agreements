@@ -179,12 +179,11 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
   '''
 
   protected String getDirectMatchHQL(Collection<IdentifierSchema> identifiers, String workId = null, boolean approvedIdsOnly = true) {
-    String identifierHQL = buildIdentifierHQL(identifiers, approvedIdsOnly)
+    String identifierHQL = buildIdentifierHQL2(identifiers, approvedIdsOnly)
 
     // TODO Direct match (via identifierHQL) assumes single identfier I think... not sure this is right
     String outputHQL = """
       SELECT ti.id FROM TitleInstance as ti
-      JOIN ti.identifiers as io
       WHERE
         ${identifierHQL} AND
         ti.subType.value = :subtype
@@ -337,11 +336,10 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
       return []
     }
 
-    String siblingIdentifierHQL = buildIdentifierHQL(classOneIds);
+    String siblingIdentifierHQL = buildIdentifierHQL2(classOneIds, true, 'sibling');
     String siblingsHQL = """
       SELECT sibling.work.id FROM TitleInstance as sibling 
-        JOIN sibling.identifiers as io
-      WHERE 
+      WHERE
         ${siblingIdentifierHQL}
     """
 
