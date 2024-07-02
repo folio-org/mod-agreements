@@ -8,9 +8,12 @@ import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Pkg
 import org.olf.kb.TitleInstance
 
+import static groovy.transform.TypeCheckingMode.SKIP
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
 @Slf4j
+@CompileStatic
 // Cannot @CompileStatic while using DomainClass.lookupOrCreate${upperName} static method for RefdataValues
 public class IdentifierService {
 
@@ -39,6 +42,7 @@ public class IdentifierService {
     Reassignation will actually consist of the IdentifierOccurence in question
     being marked as "ERROR", and a new Occurrence being created on the targetTI
   */
+  @CompileStatic(SKIP)
   def reassignFromFile (final ArrayList<Map<String, String>> reassignmentQueue) {
     reassignmentQueue.each{reassignmentMap ->
       IdentifierOccurrence.withNewTransaction{
@@ -116,6 +120,7 @@ public class IdentifierService {
     result
   }
 
+  @CompileStatic(SKIP)
   public void updatePackageIdentifiers(Pkg pkg, List<org.olf.dataimport.erm.Identifier> identifiers) {
     // Assume any package identifier information is the truth, and upsert/delete as necessary
     IdentifierOccurrence.withTransaction {
@@ -189,7 +194,7 @@ public class IdentifierService {
         where iden.value = :value and iden.ns.value = :ns
       """.toString(),
       [value:value, ns:namespaceMapping(namespace)]
-    );
+    ) as ArrayList<String>; // Doing this to keep the return type the same as it was in BaseTIRS, not sure this needs to be an ArrayList
   }
 
   /*
@@ -199,6 +204,7 @@ public class IdentifierService {
    * ASSUMPTION -- Assumes context from calling code
    * This is where we can call the namespaceMapping function to ensure consistency in our DB
    */
+  @CompileStatic(SKIP)
   public IdentifierNamespace lookupOrCreateIdentifierNamespace(final String ns, final boolean flush = false) {
     IdentifierNamespace.findOrCreateByValue(namespaceMapping(ns)).save(failOnError:true, flush: flush)
   }
@@ -212,7 +218,7 @@ public class IdentifierService {
     String result = null;
 
     // Ensure we are looking up properly mapped namespace (pisbn -> isbn, etc)
-    def identifier_lookup = lookupIdentifier(value, namespace);
+    ArrayList<String> identifier_lookup = lookupIdentifier(value, namespace);
 
     switch(identifier_lookup.size() ) {
       case 0:
@@ -232,4 +238,91 @@ public class IdentifierService {
     return result;
   }
 
+  /* ASSUMPTION -- This method assumes that Identifiers are ONLY attached to IdentifierOccurrences.
+   * If this ever changes, this method will need to be updated
+   * ASSUMPTION -- Assumes context from calling code
+   * 
+   * fixEquivalent<namespace>s will work by assuming a "prime" namespace,
+   * and that ALL ids passed in should be merged to that one "prime" if it exists
+   *
+   * Throw exception if any of the values are not equivalent with strictValueEquivalence
+   * Returns the id of the single "true" identifier for the calling context to re-lookup.
+   */
+  public String fixEquivalentIds(
+    final Collection<String> equivalentIdentifierIds,
+    final String primeNamespace,
+    final String primeValue = null, // This is only _necessary_ when strictValueEquivalence is false
+    final boolean strictValueEquivalence = true
+  ) {
+    log.debug("fixEquivalentIds::(${equivalentIdentifierIds}, ${primeNamespace}, ${primeValue}, ${strictValueEquivalence})")
+    // Without primeNamespace, throw
+    if (primeNamespace == null) {
+      throw new IdentifierException(
+        "fixEquivalentIds was called without a primeNamespace",
+        IdentifierException.FIX_IDENTIFIER_ERROR
+      )
+    }
+
+    // If there are no equivalentIds, throw
+    if (equivalentIdentifierIds.size() == 0) {
+      throw new IdentifierException(
+        "fixEquivalentIds was called without any equivalent ids",
+        IdentifierException.FIX_IDENTIFIER_ERROR
+      )
+    }
+
+    // We have a list of Identifier ids. Fetch them all
+    List<Identifier> equivalentIds = Identifier.executeQuery("""
+      SELECT id FROM Identifier AS id
+      WHERE id.id IN :equivalentIdentifierIds
+    """.toString(), [equivalentIdentifierIds: equivalentIdentifierIds])
+
+    if (strictValueEquivalence) {
+      // If we're protecting
+      Map<String, List<Identifier>> valuesMap = equivalentIds.groupBy{ it.value }
+      if (valuesMap.keySet().size() > 1) {
+        throw new IdentifierException(
+          "fixEquivalentIds was passed a set of ids with differing values and is operating in strictValueEquivalence mode.",
+          IdentifierException.FIX_IDENTIFIER_ERROR
+        )
+      }
+    } else if (primeValue == null) {
+      throw new IdentifierException(
+        "fixEquivalentIds was called with strictValueEquivalence=false, but no primeValue was provided",
+        IdentifierException.FIX_IDENTIFIER_ERROR
+      )
+    }
+
+    /*
+     * At this point we should know exactly what the intended "prime" identifier should be...
+     * primeNamespace:primeValue OR primeNamespace:equivalentIds[0].value
+     *
+     * We allow primeValue to take precedence so it can act as an override
+     * BE CAREFUL here though, this will blindly merge ALL passed identifiers into this new prime identifier
+     */
+    final String finalPrimeValue = primeValue ?: equivalentIds[0].value;
+    Identifier primeIdentifier = Identifier.get(lookupOrCreateIdentifier(finalPrimeValue, primeNamespace));
+    // At this stage we _definitely_ have a primeIdentifier. It may be in the list of equivalentIds or not
+
+    equivalentIds.each { eid ->
+      // Don't do anything to the prime identifier
+      if (eid.id != primeIdentifier.id) {
+        // Change all IdentifierOccurrences over to the new prime identifier
+        List<IdentifierOccurrence> occurrences = IdentifierOccurrence.executeQuery("""
+          SELECT io FROM IdentifierOccurrence AS io
+          WHERE io.identifier.id = :iid
+        """.toString(), [iid: eid.id]);
+        occurrences.each { oc ->
+          oc.identifier = primeIdentifier;
+          oc.save(failOnError: true)
+        }
+
+        // Then delete the old identifier
+        eid.delete();
+      }
+    }
+
+    // TODO does primeIdentifier have an id if it didn't exist before?
+    return primeIdentifier.id;
+  }
 }
