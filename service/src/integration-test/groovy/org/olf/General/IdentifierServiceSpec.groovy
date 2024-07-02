@@ -165,6 +165,7 @@ class IdentifierServiceSpec extends BaseSpec {
 
       assert ios.size() == 3;
       assert ios.every { io -> io.identifier.id == primeId.id };
+      // TODO test prime occurrence wrangling
    /*  cleanup:
       withTenantNewTransaction {
         // Remove all IdentifierOccurrences and ErmTitleLists

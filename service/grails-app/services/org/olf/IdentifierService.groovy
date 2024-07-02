@@ -8,6 +8,8 @@ import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Pkg
 import org.olf.kb.TitleInstance
 
+import com.k_int.web.toolkit.refdata.RefdataValue
+
 import static groovy.transform.TypeCheckingMode.SKIP
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -42,7 +44,6 @@ public class IdentifierService {
     Reassignation will actually consist of the IdentifierOccurence in question
     being marked as "ERROR", and a new Occurrence being created on the targetTI
   */
-  @CompileStatic(SKIP)
   def reassignFromFile (final ArrayList<Map<String, String>> reassignmentQueue) {
     reassignmentQueue.each{reassignmentMap ->
       IdentifierOccurrence.withNewTransaction{
@@ -71,14 +72,14 @@ public class IdentifierService {
               // We have identified the single IO we wish to "move" to another TI
 
               // First we mark the current identifier occurrence as "error"
-              identifierOccurrence.status = IdentifierOccurrence.lookupOrCreateStatus('error');
+              identifierOccurrence.status = getErrorStatus();
               identifierOccurrence.save(failOnError: true)
 
               // Next we create a new IdentifierOccurrence on the targetTI
               IdentifierOccurrence newIdentifierOccurrence = new IdentifierOccurrence(
                 identifier: identifierOccurrence.identifier,
                 resource: targetTI,
-                status: IdentifierOccurrence.lookupOrCreateStatus('approved')
+                status: getApprovedStatus()
               ).save(failOnError: true)
 
               log.info("(${reassignmentMap.identifierNamespace}:${reassignmentMap.identifierValue}) IdentifierOccurrence for TI (${initialTI}) marked as ERROR, new IdentifierOccurrence created on TI (${targetTI})")
@@ -121,6 +122,16 @@ public class IdentifierService {
   }
 
   @CompileStatic(SKIP)
+  RefdataValue getApprovedStatus() {
+    return IdentifierOccurrence.lookupOrCreateStatus('approved');
+  }
+
+  @CompileStatic(SKIP)
+  RefdataValue getErrorStatus() {
+    return IdentifierOccurrence.lookupOrCreateStatus('error');
+  }
+
+  @CompileStatic(SKIP)
   public void updatePackageIdentifiers(Pkg pkg, List<org.olf.dataimport.erm.Identifier> identifiers) {
     // Assume any package identifier information is the truth, and upsert/delete as necessary
     IdentifierOccurrence.withTransaction {
@@ -147,7 +158,7 @@ public class IdentifierService {
   
             IdentifierOccurrence newIo = new IdentifierOccurrence([
               identifier: identifier,
-              status: IdentifierOccurrence.lookupOrCreateStatus('approved')
+              status: getApprovedStatus()
             ])
 
             pkg.addToIdentifiers(newIo)
@@ -159,7 +170,7 @@ public class IdentifierService {
             identifiers_to_keep << existingIo.id
             if (existingIo.status.value == 'error') {
               // This Identifier Occurrence exists as ERROR, reset to APPROVED
-              existingIo.status = IdentifierOccurrence.lookupOrCreateStatus('approved')
+              existingIo.status = getApprovedStatus()
             }
           }
         } else {
@@ -180,7 +191,7 @@ public class IdentifierService {
       ]);
 
       identsToRemove.each { ident -> 
-        ident.status = IdentifierOccurrence.lookupOrCreateStatus('error')
+        ident.status = getErrorStatus()
       }
 
       // Finally save the package
@@ -312,9 +323,47 @@ public class IdentifierService {
           SELECT io FROM IdentifierOccurrence AS io
           WHERE io.identifier.id = :iid
         """.toString(), [iid: eid.id]);
-        occurrences.each { oc ->
-          oc.identifier = primeIdentifier;
-          oc.save(failOnError: true)
+        ListIterator<IdentifierOccurrence> occurrenceIterator = occurrences.listIterator();
+        while (occurrenceIterator.hasNext()) {
+          IdentifierOccurrence oc = occurrenceIterator.next();
+          // Check whether there is already a prime identifier occurrence.
+          // If there is, we delete the one in hand (need to use an iterator here)
+          List<IdentifierOccurrence> prime_occurrence_candidates = IdentifierOccurrence.executeQuery("""
+            SELECT io FROM IdentifierOccurrence AS io
+            WHERE io.resource.id = :rid AND
+                  io.identifier.id = :iid
+          """.toString(), [iid: primeIdentifier.id, rid: oc.resource.id]);
+
+          switch (prime_occurrence_candidates.size()) {
+            case 0:
+              // There is no preexisting prime occurrence, swap over
+              oc.identifier = primeIdentifier;
+              oc.save(failOnError: true)
+              break;
+            case 1:
+              // There's already an IdentifierOccurrence for this resource/primeIdentifier combo
+              // Handle status and delete the one in hand
+              IdentifierOccurrence primeOccurrence = prime_occurrence_candidates[0];
+
+              // Only change status if primeOccurrence is error and we have an approved one.
+              // Else leave as is. I don't think this will be hit v often.
+              if (
+                primeOccurrence.status.value != 'approved' &&
+                oc.status.value == 'approved'
+              ) {
+                primeOccurrence.status = getApprovedStatus();
+              }
+              // Now remove the occurrence at hand
+              oc.delete();
+            default:
+              // This shouldn't happen, give up
+              throw new IdentifierException(
+                "fixEquivalentIds found multiple identifier occurrences for the same identifier/resource combination: ${prime_occurrence_candidates}",
+                IdentifierException.FIX_IDENTIFIER_ERROR
+              )
+              break;
+          }
+          
         }
 
         // Then delete the old identifier
