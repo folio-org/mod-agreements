@@ -4,6 +4,7 @@ package org.olf.kb;
 public class IdentifierException extends Exception {
   public static final Long GENERIC_ERROR = 0L;
   public static final Long MULTIPLE_IDENTIFIER_MATCHES = 1L;
+  public static final Long FIX_IDENTIFIER_ERROR = 2L;
 
 
   final Long code;

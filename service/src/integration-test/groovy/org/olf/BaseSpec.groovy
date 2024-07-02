@@ -69,6 +69,22 @@ abstract class BaseSpec extends HttpSpec {
     currentTenant.toLowerCase()
   }
 
+  @Ignore
+  def withTenant(Closure c) {
+    Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      c.call()
+    }
+  }
+
+  @Ignore
+  def withTenantNewTransaction(Closure c) {
+    withTenant {
+      GormUtils.withNewTransaction {
+        c.call()
+      }
+    }
+  }
+
   void 'Pre purge test tenant'() {
     boolean resp = false
     log.debug("Pre purge tenant");
@@ -155,7 +171,7 @@ abstract class BaseSpec extends HttpSpec {
   def importPackageFromMapViaService(Map package_data) {
     Map result = [:]
     log.debug("Create new package with tenant ${tenantId}");
-    Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+    withTenant {
       Pkg.withTransaction { status ->
         result = importService.importFromFile( package_data )
         // This logging causes issues with transactional test methods in WorkSourceIdentifierTIRSSpec -- commenting for now
