@@ -192,8 +192,11 @@ public class IdentifierService {
     );
   }
 
-
   /*
+   * TODO Should probably integration test these methods
+   *
+   *
+   * ASSUMPTION -- Assumes context from calling code
    * This is where we can call the namespaceMapping function to ensure consistency in our DB
    */
   public IdentifierNamespace lookupOrCreateIdentifierNamespace(final String ns) {
@@ -201,6 +204,7 @@ public class IdentifierService {
   }
 
   /*
+   * ASSUMPTION -- Assumes context from calling code
    * Given an identifier { value:'1234-5678', namespace:'isbn' }
    * lookup or create an identifier in the DB to represent that info.
    */
