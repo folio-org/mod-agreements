@@ -199,8 +199,8 @@ public class IdentifierService {
    * ASSUMPTION -- Assumes context from calling code
    * This is where we can call the namespaceMapping function to ensure consistency in our DB
    */
-  public IdentifierNamespace lookupOrCreateIdentifierNamespace(final String ns) {
-    IdentifierNamespace.findOrCreateByValue(namespaceMapping(ns)).save(failOnError:true)
+  public IdentifierNamespace lookupOrCreateIdentifierNamespace(final String ns, final boolean flush = false) {
+    IdentifierNamespace.findOrCreateByValue(namespaceMapping(ns)).save(failOnError:true, flush: flush)
   }
 
   /*
@@ -208,7 +208,7 @@ public class IdentifierService {
    * Given an identifier { value:'1234-5678', namespace:'isbn' }
    * lookup or create an identifier in the DB to represent that info.
    */
-  protected String lookupOrCreateIdentifier(final String value, final String namespace, boolean flush = true) {
+  public String lookupOrCreateIdentifier(final String value, final String namespace, final boolean flush = false) {
     String result = null;
 
     // Ensure we are looking up properly mapped namespace (pisbn -> isbn, etc)

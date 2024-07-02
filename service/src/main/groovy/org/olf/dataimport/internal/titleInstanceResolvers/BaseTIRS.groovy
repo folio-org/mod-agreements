@@ -58,7 +58,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
   protected String lookupOrCreateIdentifier(final String value, final String namespace) {
     String result = null;
     try {
-      result = identifierService.lookupOrCreateIdentifier(value, namespace);
+      result = identifierService.lookupOrCreateIdentifier(value, namespace, true); // We need this to flush in TIRS logic
     } catch (IdentifierException ie) {
       // Any other exceptions should not be caught and rethrown -- leave them to be caught above as normal;
       if (ie.code == IdentifierException.MULTIPLE_IDENTIFIER_MATCHES) {
