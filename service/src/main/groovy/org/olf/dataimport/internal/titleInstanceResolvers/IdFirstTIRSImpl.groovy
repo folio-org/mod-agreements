@@ -178,25 +178,6 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
     ORDER BY similarity(ti.name, :qrytitle) desc
   '''
 
-  protected String getDirectMatchHQL(Collection<IdentifierSchema> identifiers, String workId = null, boolean approvedIdsOnly = true) {
-    String identifierHQL = buildIdentifierHQL2(identifiers, approvedIdsOnly)
-
-    // TODO Direct match (via identifierHQL) assumes single identfier I think... not sure this is right
-    String outputHQL = """
-      SELECT ti.id FROM TitleInstance as ti
-      WHERE
-        ${identifierHQL} AND
-        ti.subType.value = :subtype
-    """
-
-    if (workId !== null) {
-      outputHQL += """ AND
-        ti.work.id = '${workId}'
-      """
-    }
-    return outputHQL
-  }
-
   /*
    * Being passed a map of namespace, value pair maps, attempt to locate any title instances with class 1 identifiers (ISSN, ISBN, DOI)
    */
@@ -314,16 +295,6 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
     return result
   }
 
-  // Direct match will find ALL title instances which match ANY of the instanceIdentifiers passed. Is extremely naive.
-  // Allow for non-approved identifiers if we wish
-  protected List<String> directMatch(final Iterable<IdentifierSchema> identifiers, String workId = null, String subtype = 'electronic', boolean approvedIdsOnly = true) {
-    if (identifiers.size() <= 0) {
-      return []
-    }
-    List<String> titleList = TitleInstance.executeQuery(getDirectMatchHQL(identifiers, workId, approvedIdsOnly),[subtype: subtype]);
-    return listDeduplictor(titleList)
-  }
-
   /**
    * Return a list of the siblings for this instance. Sometimes vendors identify a title by citing the issn of the print edition.
    * we model the print and electronic as 2 different title instances, linked by a common work. This method looks up/creates any sibling instances
@@ -336,7 +307,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
       return []
     }
 
-    String siblingIdentifierHQL = buildIdentifierHQL2(classOneIds, true, 'sibling');
+    String siblingIdentifierHQL = buildIdentifierHQL(classOneIds, true, 'sibling');
     String siblingsHQL = """
       SELECT sibling.work.id FROM TitleInstance as sibling 
       WHERE

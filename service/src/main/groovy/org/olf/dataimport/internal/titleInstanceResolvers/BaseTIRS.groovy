@@ -334,72 +334,6 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     result
   }
 
-  protected String buildIdentifierHQL(Collection<IdentifierSchema> identifiers, boolean approvedIdsOnly = true) {
-    String identifierHQL = identifiers.collect { id -> 
-      // Do we need all the namespace mapping variants?
-      String mainHQLBody = """(
-          (
-            io.identifier.ns.value = '${id.namespace.toLowerCase()}' OR
-            io.identifier.ns.value = '${namespaceMapping(id.namespace)}' OR
-            io.identifier.ns.value = '${mapNamespaceToElectronic(id.namespace)}' OR
-            io.identifier.ns.value = '${mapNamespaceToPrint(id.namespace)}'
-          ) AND
-          io.identifier.value = '${id.value}'
-      """
-
-      if (!approvedIdsOnly) {
-        return """${mainHQLBody}
-          )
-        """
-      }
-
-      return """${mainHQLBody} AND
-          io.status.value = '${APPROVED}'
-        )
-      """
-    }.join("""
-      AND
-    """)
-
-    return identifierHQL
-  }
-
-
-  // This will spit out HQL to be _directly_ used in a WHERE call for another HQL query looking for TitleInstance "ti"
-  protected String buildIdentifierHQL2(
-    Collection<IdentifierSchema> identifiers,
-    boolean approvedIdsOnly = true,
-    String tiAlias = 'ti'
-  ) {
-    String identifierHQL = identifiers.withIndex().collect { id, index ->
-      String ioAlias = "io${index}" // Keep these separate between multiple identifiers
-      String mainHQLBody = """${tiAlias}.id IN (
-        SELECT ${ioAlias}.resource.id FROM IdentifierOccurrence AS ${ioAlias} WHERE (
-            ${ioAlias}.identifier.ns.value = '${id.namespace.toLowerCase()}' OR
-            ${ioAlias}.identifier.ns.value = '${namespaceMapping(id.namespace)}' OR
-            ${ioAlias}.identifier.ns.value = '${mapNamespaceToElectronic(id.namespace)}' OR
-            ${ioAlias}.identifier.ns.value = '${mapNamespaceToPrint(id.namespace)}'
-          ) AND
-          ${ioAlias}.identifier.value = '${id.value}'
-      """
-
-      if (!approvedIdsOnly) {
-        return """${mainHQLBody}
-          )
-        """
-      }
-
-      return """${mainHQLBody} AND
-          ${ioAlias}.status.value = '${APPROVED}'
-        )
-      """
-    }.join("""
-      AND
-    """)
-
-    return identifierHQL
-  }
-
   protected int countClassOneIDs(final Iterable<IdentifierSchema> identifiers) {
     identifiers?.findAll( { IdentifierSchema id -> class_one_namespaces?.contains( id.namespace.toLowerCase() ) })?.size() ?: 0
   }
@@ -507,5 +441,84 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
         TIRSException.MISSING_MANDATORY_FIELD
       )
     }
+  }
+
+  // This will spit out HQL to be _directly_ used in a WHERE call for another HQL query looking for TitleInstance "ti"
+  // Can be used to match TIs from ANY identifiers (default) or ALL identifiers with mustMatchAll prop
+  protected String buildIdentifierHQL(
+    Collection<IdentifierSchema> identifiers,
+    boolean approvedIdsOnly = true,
+    String tiAlias = 'ti',
+    boolean mustMatchAll = false
+  ) {
+    String joiner = mustMatchAll ? 'AND' : 'OR';
+    String identifierHQL = identifiers.withIndex().collect { id, index ->
+      String ioAlias = "io${index}" // Keep these separate between multiple identifiers
+      String mainHQLBody = """${tiAlias}.id IN (
+        SELECT ${ioAlias}.resource.id FROM IdentifierOccurrence AS ${ioAlias} WHERE (
+            ${ioAlias}.identifier.ns.value = '${id.namespace.toLowerCase()}' OR
+            ${ioAlias}.identifier.ns.value = '${namespaceMapping(id.namespace)}' OR
+            ${ioAlias}.identifier.ns.value = '${mapNamespaceToElectronic(id.namespace)}' OR
+            ${ioAlias}.identifier.ns.value = '${mapNamespaceToPrint(id.namespace)}'
+          ) AND
+          ${ioAlias}.identifier.value = '${id.value}'
+      """
+
+      if (!approvedIdsOnly) {
+        return """${mainHQLBody}
+          )
+        """
+      }
+
+      return """${mainHQLBody} AND
+          ${ioAlias}.status.value = '${APPROVED}'
+        )
+      """
+    }.join("""
+      ${joiner}
+    """)
+
+    return identifierHQL
+  }
+
+  //Methods to do a "naive" identifier based match directly
+  protected String getDirectMatchHQL(
+    Collection<IdentifierSchema> identifiers,
+    String workId = null,
+    boolean approvedIdsOnly = true,
+    boolean mustMatchAll = false
+  ) {
+    String identifierHQL = buildIdentifierHQL(identifiers, approvedIdsOnly, 'ti', mustMatchAll)
+
+    String outputHQL = """
+      SELECT ti.id FROM TitleInstance as ti
+      WHERE
+        ${identifierHQL} AND
+        ti.subType.value = :subtype
+    """
+
+    if (workId !== null) {
+      outputHQL += """ AND
+        ti.work.id = '${workId}'
+      """
+    }
+    return outputHQL
+  }
+
+  // Direct match will find ALL title instances which match ANY of the instanceIdentifiers passed. Is extremely naive.
+  // (Can be swapped to match only TIs with _all_ of the identifiers)
+  // Allow for non-approved identifiers if we wish
+  public List<String> directMatch(
+    final Iterable<IdentifierSchema> identifiers,
+    String workId = null,
+    String subtype = 'electronic',
+    boolean approvedIdsOnly = true,
+    boolean mustMatchAll = false // Turn this on to only match any TI with all of the identifiers present
+  ) {
+    if (identifiers.size() <= 0) {
+      return []
+    }
+    List<String> titleList = TitleInstance.executeQuery(getDirectMatchHQL(identifiers, workId, approvedIdsOnly, mustMatchAll),[subtype: subtype]);
+    return listDeduplictor(titleList)
   }
 }
