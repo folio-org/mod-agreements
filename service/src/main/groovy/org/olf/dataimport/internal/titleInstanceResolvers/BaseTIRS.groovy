@@ -508,6 +508,8 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
   // Direct match will find ALL title instances which match ANY of the instanceIdentifiers passed. Is extremely naive.
   // (Can be swapped to match only TIs with _all_ of the identifiers)
   // Allow for non-approved identifiers if we wish
+
+  // TODO -- we should make sure that if this ever ends up used in anger it gets integration test cases added
   public List<String> directMatch(
     final Iterable<IdentifierSchema> identifiers,
     String workId = null,
