@@ -60,7 +60,8 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
   }
 
   /*
-   * Given an identifier in a citation { value:'1234-5678', namespace:'isbn' } lookup or create an identifier in the DB to represent that info
+   * Given an identifier in a citation { value:'1234-5678', namespace:'isbn' }
+   * lookup or create an identifier in the DB to represent that info.
    */
   protected String lookupOrCreateIdentifier(final String value, final String namespace) {
     String result = null;
