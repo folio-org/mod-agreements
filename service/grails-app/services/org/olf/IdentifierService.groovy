@@ -1,6 +1,9 @@
 package org.olf
 
+import org.olf.kb.IdentifierException
+
 import org.olf.kb.IdentifierNamespace
+import org.olf.kb.Identifier
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Pkg
 import org.olf.kb.TitleInstance
@@ -179,4 +182,50 @@ public class IdentifierService {
       pkg.save(failOnError: true)
     }
   }
+
+  public ArrayList<String> lookupIdentifier(final String value, final String namespace) {
+    return Identifier.executeQuery("""
+      SELECT iden.id from Identifier as iden
+        where iden.value = :value and iden.ns.value = :ns
+      """.toString(),
+      [value:value, ns:namespaceMapping(namespace)]
+    );
+  }
+
+
+  /*
+   * This is where we can call the namespaceMapping function to ensure consistency in our DB
+   */
+  public IdentifierNamespace lookupOrCreateIdentifierNamespace(final String ns) {
+    IdentifierNamespace.findOrCreateByValue(namespaceMapping(ns)).save(failOnError:true)
+  }
+
+  /*
+   * Given an identifier { value:'1234-5678', namespace:'isbn' }
+   * lookup or create an identifier in the DB to represent that info.
+   */
+  protected String lookupOrCreateIdentifier(final String value, final String namespace, boolean flush = true) {
+    String result = null;
+
+    // Ensure we are looking up properly mapped namespace (pisbn -> isbn, etc)
+    def identifier_lookup = lookupIdentifier(value, namespace);
+
+    switch(identifier_lookup.size() ) {
+      case 0:
+        IdentifierNamespace ns = lookupOrCreateIdentifierNamespace(namespace);
+        result = new Identifier(ns:ns, value:value).save(failOnError:true, flush: flush).id;
+        break;
+      case 1:
+        result = identifier_lookup[0];
+        break;
+      default:
+        throw new IdentifierException(
+          "Matched multiple identifiers for ${id}",
+          IdentifierException.MULTIPLE_IDENTIFIER_MATCHES
+        );
+        break;
+    }
+    return result;
+  }
+
 }

@@ -8,6 +8,7 @@ import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
 
+import org.olf.kb.IdentifierException
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierNamespace
@@ -50,50 +51,28 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     'doi'
   ];
 
-  protected ArrayList<String> lookupIdentifier(final String value, final String namespace) {
-    return Identifier.executeQuery("""
-      SELECT iden.id from Identifier as iden
-        where iden.value = :value and iden.ns.value = :ns
-      """.toString(),
-      [value:value, ns:namespaceMapping(namespace)]
-    );
-  }
-
   /*
    * Given an identifier in a citation { value:'1234-5678', namespace:'isbn' }
    * lookup or create an identifier in the DB to represent that info.
    */
   protected String lookupOrCreateIdentifier(final String value, final String namespace) {
     String result = null;
-
-    // Ensure we are looking up properly mapped namespace (pisbn -> isbn, etc)
-    def identifier_lookup = lookupIdentifier(value, namespace);
-
-    switch(identifier_lookup.size() ) {
-      case 0:
-        IdentifierNamespace ns = lookupOrCreateIdentifierNamespace(namespace);
-        result = new Identifier(ns:ns, value:value).save(failOnError:true, flush: true).id;
-        break;
-      case 1:
-        result = identifier_lookup[0];
-        break;
-      default:
+    try {
+      result = identifierService.lookupOrCreateIdentifier(value, namespace);
+    } catch (IdentifierException ie) {
+      // Any other exceptions should not be caught and rethrown;
+      if (ie.code == IdentifierException.MULTIPLE_IDENTIFIER_MATCHES) {
         throw new TIRSException(
-          "Matched multiple identifiers for ${id}",
-          TIRSException.MULTIPLE_IDENTIFIER_MATCHES
-        );
-        break;
+          ie.message,
+          TIRSException.MULTIPLE_IDENTIFIER_MATCHES // We understand this error, rethrow as a TIRSException
+        )
+      }
+
+      throw new TIRSException(ie.message) // Otherwise rethrow as a generic TIRSException
     }
+
     return result;
   }
-
-  /*
-   * This is where we can call the namespaceMapping function to ensure consistency in our DB
-   */
-  protected IdentifierNamespace lookupOrCreateIdentifierNamespace(final String ns) {
-    IdentifierNamespace.findOrCreateByValue(namespaceMapping(ns)).save(failOnError:true)
-  }
-
 
   /*
    * Check to see if the citation has properties that we really want to pull through to
