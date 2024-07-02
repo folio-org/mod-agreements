@@ -10,6 +10,8 @@ import org.olf.kb.TitleInstance
 
 import grails.gorm.multitenancy.Tenants
 
+import com.k_int.web.toolkit.utils.GormUtils
+
 import groovyx.net.http.HttpException
 import spock.lang.Stepwise
 import spock.lang.Ignore
