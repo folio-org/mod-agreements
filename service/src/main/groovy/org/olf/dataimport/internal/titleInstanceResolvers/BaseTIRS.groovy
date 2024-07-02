@@ -60,7 +60,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
     try {
       result = identifierService.lookupOrCreateIdentifier(value, namespace);
     } catch (IdentifierException ie) {
-      // Any other exceptions should not be caught and rethrown;
+      // Any other exceptions should not be caught and rethrown -- leave them to be caught above as normal;
       if (ie.code == IdentifierException.MULTIPLE_IDENTIFIER_MATCHES) {
         throw new TIRSException(
           ie.message,
@@ -68,7 +68,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
         )
       }
 
-      throw new TIRSException(ie.message) // Otherwise rethrow as a generic TIRSException
+      throw ie // Otherwise rethrow as is
     }
 
     return result;
