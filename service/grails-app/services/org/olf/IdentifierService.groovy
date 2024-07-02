@@ -224,7 +224,7 @@ public class IdentifierService {
         break;
       default:
         throw new IdentifierException(
-          "Matched multiple identifiers for ${id}",
+          "Matched multiple identifiers for ${namespace}:${value}",
           IdentifierException.MULTIPLE_IDENTIFIER_MATCHES
         );
         break;
