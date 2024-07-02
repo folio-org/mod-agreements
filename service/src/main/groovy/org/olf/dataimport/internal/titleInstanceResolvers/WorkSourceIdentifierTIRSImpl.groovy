@@ -320,6 +320,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
 
       if (!io) {
         // Identifier from citation not on TI, add it
+        // namespaceMapping is called in BaseTIRS lookupOrCreateIdentifier
         Identifier id = Identifier.get(lookupOrCreateIdentifier(citation_id.value, citation_id.namespace))
         IdentifierOccurrence newIO = new IdentifierOccurrence([
           identifier: id,

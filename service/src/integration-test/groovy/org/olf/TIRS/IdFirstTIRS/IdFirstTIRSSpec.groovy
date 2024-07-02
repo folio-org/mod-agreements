@@ -72,7 +72,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
   @Requires({ instance.isIdTIRS() })
   void 'Test title creation' () {
     when: 'IdFirstTIRS is passed a title citation'
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      withTenant {
         titleInstanceResolverService.resolve(brainOfTheFirm, true);
       }
     then: 'All good'
@@ -133,7 +133,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
       List<TitleInstance> tis;
       TitleInstance electronicTi;
       String originalTiId;
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      withTenant {
         tis = getFullTIsForWork(getWorkFromSourceId(workSourceId).id);
         electronicTi = tis.find(ti -> ti.subType.value == 'electronic');
         originalTiId = electronicTi.id;
@@ -146,7 +146,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
       String resolvedTiId;
       TitleInstance resolvedTi;
 
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      withTenant {
         resolvedTiId = titleInstanceResolverService.resolve(bindMapToCitationFromFile('match_on_identifiers.json', wsitirs_citation_path), true);
         resolvedTi = TitleInstance.get(resolvedTiId);
 
@@ -169,7 +169,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
       String originalElectronicTiId;
       String originalPrintTiId;
 
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      withTenant {
         tis = getFullTIsForWork(getWorkFromSourceId(workSourceId).id);
         electronicTi = tis.find(ti -> ti.subType.value == 'electronic');
         printTi = tis.find(ti -> ti.subType.value == 'print');
@@ -188,7 +188,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
       Set<TitleInstance> resolvedSiblings;
       TitleInstance resolvedPrintSibling;
 
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      withTenant {
         resolvedTiId = titleInstanceResolverService.resolve(bindMapToCitationFromFile('match_on_sibling.json', wsitirs_citation_path), true);
         resolvedTi = TitleInstance.get(resolvedTiId);
 
@@ -214,7 +214,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
 
       Set<IdentifierOccurrence> originalIdentifiers;
 
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      withTenant {
         tis = getFullTIsForWork(getWorkFromSourceId(workSourceId).id);
         electronicTi = tis.find(ti -> ti.subType.value == 'electronic');
         originalTiId = electronicTi.id;
@@ -235,7 +235,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
       Set<IdentifierOccurrence> resolvedIdentifiers;
       Set<IdentifierOccurrence> resolvedApprovedIdentifiers;
 
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      withTenant {
         resolvedTiId = titleInstanceResolverService.resolve(bindMapToCitationFromFile('match_on_fuzzy_title.json', wsitirs_citation_path), true);
         resolvedTi = TitleInstance.get(resolvedTiId);
 
@@ -254,7 +254,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
   void 'IdFirstTIRS behaves as expected when we match multiple TIs' () {
     when: 'We set up secondary TI that IdFirst fallback will find'
       String eissn = "1234-5678-MM"
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      withTenant {
         Identifier eissnId = Identifier.executeQuery("""
           SELECT iden FROM Identifier iden
           WHERE iden.value = :eissn
@@ -278,7 +278,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
       noExceptionThrown()
     when: "We count IdentifierOccurrences for the eissn ${eissn}"
       Integer ioCount;
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      withTenant {
         ioCount = IdentifierOccurrence.executeQuery("""
           SELECT COUNT(iden.id) FROM IdentifierOccurrence AS iden
           WHERE iden.identifier.value = :eissn
@@ -288,7 +288,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
       assert ioCount == 2;
     when: 'We fetch the existing TIs and Siblings'
       List<String> existingTiIds;
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      withTenant {
         existingTiIds = IdentifierOccurrence.executeQuery("""
           SELECT io.resource.id FROM IdentifierOccurrence io
           WHERE io.identifier.value = :eissn
@@ -299,7 +299,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
     when: 'We resolve a title with non-matching sourceId and there are multiple matches -- throws expected exception'
       Long code
       String message
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      withTenant {
         try {
           String tiId = titleInstanceResolverService.resolve(citationFromFile('match_multiple_tis.json'), true);
         } catch (TIRSException e) {
