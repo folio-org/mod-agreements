@@ -372,7 +372,6 @@ public class IdentifierService {
       }
     }
 
-    // TODO does primeIdentifier have an id if it didn't exist before?
     return primeIdentifier.id;
   }
 }

@@ -313,6 +313,7 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
 
     // First ensure all identifiers from citation are on TI
     identifiers.each {IdentifierSchema citation_id ->
+      // CHECK identifiers so we can un-error an existing id if necessary
       IdentifierOccurrence io = ti.identifiers.find { IdentifierOccurrence ti_id ->
         ti_id.identifier.ns.value == namespaceMapping(citation_id.namespace) &&
         ti_id.identifier.value == citation_id.value
@@ -337,8 +338,8 @@ class WorkSourceIdentifierTIRSImpl extends IdFirstTIRSImpl implements DataBinder
       }
     }
 
-    // Next ensure ONLY identifiers from citation are on TI
-    ti.identifiers.each { IdentifierOccurrence io ->
+    // Next ensure ONLY identifiers from citation are on TI (We can check just the approved ones here)
+    ti.approvedIdentifierOccurrences.each { IdentifierOccurrence io ->
       IdentifierSchema ids = identifiers.find { citation_id ->
         io.identifier.ns.value == namespaceMapping(citation_id.namespace) &&
         io.identifier.value == citation_id.value

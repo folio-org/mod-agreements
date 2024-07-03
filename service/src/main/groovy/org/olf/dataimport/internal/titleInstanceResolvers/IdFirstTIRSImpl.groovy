@@ -138,6 +138,7 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
 
     result = createNewTitleInstanceWithoutIdentifiers(citation, workId)
     citation.instanceIdentifiers.each { id ->
+      // namespaceMapping is called in BaseTIRS lookupOrCreateIdentifier
       Identifier id_lookup = Identifier.get(lookupOrCreateIdentifier(id.value, id.namespace));
       def io_record = new IdentifierOccurrence(
         status: IdentifierOccurrence.lookupOrCreateStatus('approved'),
