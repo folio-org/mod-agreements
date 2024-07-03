@@ -39,6 +39,8 @@ class IdentifierServiceSpec extends BaseSpec {
     'test': ['a'],
     'test-1': ['a'],
     'test-1x': ['a'],
+    'test-errors': ['id1', 'id2', 'id3'],
+    'test-errors-x': ['id1'],
     'test-2': ['a', 'b', 'c', 'c2'],
     'test-3': ['wibble']
   ]
@@ -166,12 +168,105 @@ class IdentifierServiceSpec extends BaseSpec {
       assert ios.size() == 3;
       assert ios.every { io -> io.identifier.id == primeId.id };
       // TODO test prime occurrence wrangling
-   /*  cleanup:
+    cleanup:
       withTenantNewTransaction {
         // Remove all IdentifierOccurrences and ErmTitleLists
+        IdentifierOccurrence.executeUpdate("""
+          DELETE FROM IdentifierOccurrence AS io
+        """.toString())
+
         ErmTitleList.executeUpdate("""
           DELETE FROM ErmTitleList AS etl
         """.toString())
-      } */
+      }
+  }
+
+  def 'Fix equivalent id error throwing' () {
+    when: 'We call fixEquivalentIds with no equivalentIds';
+      Long code
+      String message
+      withTenant {
+        try {
+          identifierService.fixEquivalentIds([], 'testNamespace');
+        } catch (IdentifierException e) {
+          code = e.code;
+          message = e.message
+        }
+      }
+    then: 'The expected Exception is thrown'
+      assert code == IdentifierException.FIX_IDENTIFIER_ERROR
+      assert message == "fixEquivalentIds was called without any equivalent ids"
+    when: 'We call fixEquivalentIds with no primeNamespace';
+      withTenant {
+        try {
+          identifierService.fixEquivalentIds(['fake-id-1', 'fake-id-2'], null);
+        } catch (IdentifierException e) {
+          code = e.code;
+          message = e.message
+        }
+      }
+    then: 'The expected Exception is thrown'
+      assert code == IdentifierException.FIX_IDENTIFIER_ERROR
+      assert message == "fixEquivalentIds was called without a primeNamespace"
+    when: 'We call fixEquivalentIds with strictValueEquivalence false and no primeValue';
+      withTenant {
+        try {
+          identifierService.fixEquivalentIds(['fake-id-1', 'fake-id-2'], 'testNameSpace', null, false);
+        } catch (IdentifierException e) {
+          code = e.code;
+          message = e.message
+        }
+      }
+    then: 'The expected Exception is thrown'
+      assert code == IdentifierException.FIX_IDENTIFIER_ERROR
+      assert message == "fixEquivalentIds was called with strictValueEquivalence=false, but no primeValue was provided"
+    when: 'We call fixEquivalentIds with strictValueEquivalence true and some of the values are not equivalent';
+      withTenant {
+        try {
+          identifierService.fixEquivalentIds(identifierObjectsInSystem.findAll { id -> id.ns.value == 'test-errors' }.collect { it.id }, 'test-errors');
+        } catch (IdentifierException e) {
+          code = e.code;
+          message = e.message
+        }
+      }
+    then: 'The expected Exception is thrown'
+      assert code == IdentifierException.FIX_IDENTIFIER_ERROR
+      assert message == "fixEquivalentIds was passed a set of ids with differing values and is operating in strictValueEquivalence mode."
+    when: 'We set up a broken prime-occurrence situation';
+      withTenantNewTransaction {
+        ErmTitleList mockTitleList1 = new ErmTitleList().save(failOnError: true);
+
+        IdentifierOccurrence io1 = new IdentifierOccurrence(
+          identifier: identifierObjectsInSystem.find { id -> id.ns.value == 'test-errors' && id.value == 'id1' },
+          resource: mockTitleList1,
+          status: IdentifierOccurrence.lookupOrCreateStatus('approved')
+        ).save(failOnError: true);
+
+        IdentifierOccurrence io2 = new IdentifierOccurrence(
+          identifier: identifierObjectsInSystem.find { id -> id.ns.value == 'test-errors' && id.value == 'id1' },
+          resource: mockTitleList1,
+          status: IdentifierOccurrence.lookupOrCreateStatus('error')
+        ).save(failOnError: true)
+
+        IdentifierOccurrence io3 = new IdentifierOccurrence(
+          identifier: identifierObjectsInSystem.find { id -> id.ns.value == 'test-errors-x' && id.value == 'id1' },
+          resource: mockTitleList1,
+          status: IdentifierOccurrence.lookupOrCreateStatus('approved')
+        ).save(failOnError: true)
+      }
+    then: 'All good'
+      noExceptionThrown()
+    when: 'We subsequently try to call fixEquivalentIds for the bad prime occurrence data'
+      withTenant {
+        try {
+          identifierService.fixEquivalentIds(identifierObjectsInSystem.findAll { id -> (id.ns.value == 'test-errors' && id.value == 'id1') || id.ns.value == 'test-errors-x'  }.collect { it.id }, 'test-errors');
+        } catch (IdentifierException e) {
+          code = e.code;
+          message = e.message
+        }
+      }
+    then: 'The expected Exception is thrown'
+      assert code == IdentifierException.FIX_IDENTIFIER_ERROR
+      assert message.startsWith("fixEquivalentIds found multiple identifier occurrences for the same identifier/resource combination: ")
   }
 }

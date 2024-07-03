@@ -358,7 +358,7 @@ public class IdentifierService {
             default:
               // This shouldn't happen, give up
               throw new IdentifierException(
-                "fixEquivalentIds found multiple identifier occurrences for the same identifier/resource combination: ${prime_occurrence_candidates}",
+                "fixEquivalentIds found multiple identifier occurrences for the same identifier/resource combination: ${prime_occurrence_candidates.collect { it.id }}",
                 IdentifierException.FIX_IDENTIFIER_ERROR
               )
               break;
