@@ -10,6 +10,8 @@ import org.olf.kb.TitleInstance
 
 import com.k_int.web.toolkit.refdata.RefdataValue
 
+import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
+
 import static groovy.transform.TypeCheckingMode.SKIP
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -72,14 +74,14 @@ public class IdentifierService {
               // We have identified the single IO we wish to "move" to another TI
 
               // First we mark the current identifier occurrence as "error"
-              identifierOccurrence.status = getErrorStatus();
+              identifierOccurrence.status = lookupOrCreateStatus('error');
               identifierOccurrence.save(failOnError: true)
 
               // Next we create a new IdentifierOccurrence on the targetTI
               IdentifierOccurrence newIdentifierOccurrence = new IdentifierOccurrence(
                 identifier: identifierOccurrence.identifier,
                 resource: targetTI,
-                status: getApprovedStatus()
+                status: lookupOrCreateStatus('approved')
               ).save(failOnError: true)
 
               log.info("(${reassignmentMap.identifierNamespace}:${reassignmentMap.identifierValue}) IdentifierOccurrence for TI (${initialTI}) marked as ERROR, new IdentifierOccurrence created on TI (${targetTI})")
@@ -122,13 +124,8 @@ public class IdentifierService {
   }
 
   @CompileStatic(SKIP)
-  RefdataValue getApprovedStatus() {
-    return IdentifierOccurrence.lookupOrCreateStatus('approved');
-  }
-
-  @CompileStatic(SKIP)
-  RefdataValue getErrorStatus() {
-    return IdentifierOccurrence.lookupOrCreateStatus('error');
+  RefdataValue lookupOrCreateStatus(String status) {
+    return IdentifierOccurrence.lookupOrCreateStatus(status);
   }
 
   @CompileStatic(SKIP)
@@ -158,7 +155,7 @@ public class IdentifierService {
   
             IdentifierOccurrence newIo = new IdentifierOccurrence([
               identifier: identifier,
-              status: getApprovedStatus()
+              status: lookupOrCreateStatus('approved')
             ])
 
             pkg.addToIdentifiers(newIo)
@@ -170,7 +167,7 @@ public class IdentifierService {
             identifiers_to_keep << existingIo.id
             if (existingIo.status.value == 'error') {
               // This Identifier Occurrence exists as ERROR, reset to APPROVED
-              existingIo.status = getApprovedStatus()
+              existingIo.status = lookupOrCreateStatus('approved')
             }
           }
         } else {
@@ -191,7 +188,7 @@ public class IdentifierService {
       ]);
 
       identsToRemove.each { ident -> 
-        ident.status = getErrorStatus()
+        ident.status = lookupOrCreateStatus('error')
       }
 
       // Finally save the package
@@ -265,6 +262,9 @@ public class IdentifierService {
     final String primeValue = null, // This is only _necessary_ when strictValueEquivalence is false
     final boolean strictValueEquivalence = true
   ) {
+    // Fetch this at the top so we aren't lookup-or-creating in a loop below.
+    RefdataValue approvedStatus = lookupOrCreateStatus('approved');
+
     log.debug("fixEquivalentIds::(${equivalentIdentifierIds}, ${primeNamespace}, ${primeValue}, ${strictValueEquivalence})")
     // Without primeNamespace, throw
     if (primeNamespace == null) {
@@ -351,10 +351,11 @@ public class IdentifierService {
                 primeOccurrence.status.value != 'approved' &&
                 oc.status.value == 'approved'
               ) {
-                primeOccurrence.status = getApprovedStatus();
+                primeOccurrence.status = approvedStatus;
               }
               // Now remove the occurrence at hand
               oc.delete();
+              break;
             default:
               // This shouldn't happen, give up
               throw new IdentifierException(
