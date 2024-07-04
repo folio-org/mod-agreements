@@ -45,6 +45,7 @@ abstract class BaseSpec extends HttpSpec {
   static String WORK_SOURCE_TIRS = "${baseTIRSPath}.WorkSourceIdentifierTIRSImpl"
 
   def importService
+  def identifierService
 
   def setupSpec() {
     httpClientConfig = {

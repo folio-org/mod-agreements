@@ -14,10 +14,13 @@ import org.springframework.core.io.Resource
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.kb.RemoteKB
 import org.olf.kb.Identifier
+import org.olf.kb.IdentifierNamespace
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.TitleInstance
 import org.olf.kb.ErmTitleList
 import org.olf.kb.Work
+
+import com.k_int.web.toolkit.refdata.RefdataValue
 
 import com.k_int.okapi.OkapiTenantResolver
 import com.k_int.web.toolkit.utils.GormUtils
@@ -122,7 +125,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
       // Ignore the tis from the first test
       def tiGet = doGet("/erm/titles", [filters: ['name!=Brain of the firm'], stats: true]);
     then: "We have the expected number"
-      assert tiGet.total == 5
+      assert tiGet.total == 8
   }
 
   @Requires({ instance.isIdTIRS() })
@@ -312,5 +315,139 @@ class IdFirstTIRSSpec extends TIRSSpec {
       assert message.startsWith('Class one match found 2 records::')
       // At some point maybe we can check the errors thrown by multiple title
       // matches in sibling/fuzzy title match, but not rn
+  }
+
+  @Requires({ instance.isIdTIRS() })
+  void 'Fix equivalent identifiers in IdFirstTIRS' () {
+    when: 'We check we have the expected setup'
+      String workSourceId1 = 'fei-001'; // Making sure this is the same throughout the test
+      String workSourceId2 = 'fei-002'; // Making sure this is the same throughout the test
+
+      String issn1 = 'fei-123-456';
+      String issn2 = 'fei-abc-def';
+
+      List<TitleInstance> tis1;
+      TitleInstance electronicTi1;
+      TitleInstance printTi1;
+      String originalTiId1;
+
+      List<TitleInstance> tis2;
+      TitleInstance electronicTi2;
+      TitleInstance printTi2;
+      String originalTiId2;
+      withTenant {
+        tis1 = getFullTIsForWork(getWorkFromSourceId(workSourceId1).id);
+        electronicTi1 = tis1.find(ti -> ti.subType.value == 'electronic');
+        printTi1 = tis1.find(ti -> ti.subType.value == 'print');
+        originalTiId1 = electronicTi1.id;
+
+        tis2 = getFullTIsForWork(getWorkFromSourceId(workSourceId2).id);
+        electronicTi2 = tis2.find(ti -> ti.subType.value == 'electronic');
+        printTi2 = tis2.find(ti -> ti.subType.value == 'print');
+        originalTiId2 = electronicTi2.id;
+      }
+    then: 'We have the expected TIs and an originalTiId'
+      assert tis1.size() == 2
+      assert electronicTi1.name == 'fixEquivalentIds-test1'
+      assert electronicTi1.identifiers.size() == 1;
+      assert electronicTi1.identifiers.find { io -> io.identifier.ns.value == 'eissn' } == null;
+      assert electronicTi1.identifiers.find { io -> io.identifier.ns.value == 'issn' } != null;
+
+      assert printTi1.name == 'fixEquivalentIds-test1'
+      assert printTi1.identifiers.size() == 1;
+      assert printTi1.identifiers.find { io -> io.identifier.ns.value == 'pissn' } == null;
+      assert printTi1.identifiers.find { io -> io.identifier.ns.value == 'issn' } != null;
+      assert originalTiId1 != null;
+
+      assert tis2.size() == 1
+      assert electronicTi2.name == 'fixEquivalentIds-test2'
+      assert electronicTi2.identifiers.size() == 1;
+      assert electronicTi2.identifiers.find { io -> io.identifier.ns.value == 'eissn' } == null;
+      assert electronicTi2.identifiers.find { io -> io.identifier.ns.value == 'issn' } != null;
+
+      assert printTi2 == null
+      assert originalTiId2 != null;
+    when: 'We set up an equivalent identifier for fei-123-456 and add said identifier to test1 and test2 (error)'
+      withTenant {
+        Identifier existingIssn = Identifier.executeQuery("""
+          SELECT iden FROM Identifier AS iden
+          WHERE iden.ns.value = 'issn' AND
+          iden.value = :issn
+        """.toString(), [issn: issn1])[0];
+
+        IdentifierNamespace pissnNs = IdentifierNamespace.findOrCreateByValue('pissn').save(failOnError:true)
+        IdentifierNamespace eissnNs = IdentifierNamespace.findOrCreateByValue('eissn').save(failOnError:true)
+
+        Identifier newPissn = new Identifier(
+          ns: pissnNs,
+          value: issn1
+        ).save(failOnError: true);
+
+        IdentifierOccurrence pissnIO = new IdentifierOccurrence(
+          identifier: newPissn,
+          status: IdentifierOccurrence.lookupOrCreateStatus('approved'),
+          resource: printTi1
+        ).save(failOnError: true)
+
+        Identifier newEissn = new Identifier(
+          ns: eissnNs,
+          value: issn1
+        ).save(failOnError: true);
+
+        IdentifierOccurrence eissnIO1 = new IdentifierOccurrence(
+          identifier: newEissn,
+          status: IdentifierOccurrence.lookupOrCreateStatus('approved'),
+          resource: electronicTi1
+        ).save(failOnError: true);
+
+        IdentifierOccurrence eissnIO2 = new IdentifierOccurrence(
+          identifier: newEissn,
+          status: IdentifierOccurrence.lookupOrCreateStatus('approved'),
+          resource: electronicTi2
+        ).save(failOnError: true, flush: true); // Flushing here because there's some weirdness in the TI save below
+      }
+/*       withTenantNewTransaction {
+        electronicTi1.addToIdentifiers(eissnIO1);
+        electronicTi2.addToIdentifiers(eissnIO2);
+        printTI1.addToIdentifiers(pissnIO);
+
+        electronicTi1.save(failOnError: true);
+        electronicTi2.save(failOnError: true);
+        printTi1.save(failOnError: true);
+      } */
+    then: 'All good'
+      noExceptionThrown();
+    when: 'We subsequently fetch the titleInstances'
+      withTenant {
+        tis1 = getFullTIsForWork(getWorkFromSourceId(workSourceId1).id);
+        electronicTi1 = tis1.find(ti -> ti.subType.value == 'electronic');
+        printTi1 = tis1.find(ti -> ti.subType.value == 'print');
+
+        tis2 = getFullTIsForWork(getWorkFromSourceId(workSourceId2).id);
+        electronicTi2 = tis2.find(ti -> ti.subType.value == 'electronic');
+        printTi2 = tis2.find(ti -> ti.subType.value == 'print');
+      }
+    then: 'We see the expected broken issn data'
+      assert tis1.size() == 2
+      assert electronicTi1.name == 'fixEquivalentIds-test1'
+      assert electronicTi1.identifiers.size() == 2;
+      assert electronicTi1.identifiers.find { io -> io.identifier.ns.value == 'eissn' } != null;
+      assert electronicTi1.identifiers.find { io -> io.identifier.ns.value == 'issn' } != null;
+
+      assert printTi1.name == 'fixEquivalentIds-test1'
+      assert printTi1.identifiers.size() == 2;
+      assert printTi1.identifiers.find { io -> io.identifier.ns.value == 'pissn' } != null;
+      assert printTi1.identifiers.find { io -> io.identifier.ns.value == 'issn' } != null;
+      assert originalTiId1 != null;
+
+      assert tis2.size() == 1
+      assert electronicTi2.name == 'fixEquivalentIds-test2'
+      assert electronicTi2.identifiers.size() == 2;
+      assert electronicTi2.identifiers.find { io -> io.identifier.ns.value == 'eissn' } != null;
+      assert electronicTi2.identifiers.find { io -> io.identifier.ns.value == 'issn' } != null;
+    when: 'We subsequently attempt to resolve a citation with fei-123-456'
+    then: 'No exceptions are thrown'
+    when: 'We look up identifiers'
+    then: 'We do not see duplicate identifiers in the system'
   }
 }
