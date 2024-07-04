@@ -404,17 +404,8 @@ class IdFirstTIRSSpec extends TIRSSpec {
           identifier: newEissn,
           status: IdentifierOccurrence.lookupOrCreateStatus('approved'),
           resource: electronicTi2
-        ).save(failOnError: true, flush: true); // Flushing here because there's some weirdness in the TI save below
+        ).save(failOnError: true, flush: true); // Flushing here because transactions are normally per test method.
       }
-/*       withTenantNewTransaction {
-        electronicTi1.addToIdentifiers(eissnIO1);
-        electronicTi2.addToIdentifiers(eissnIO2);
-        printTI1.addToIdentifiers(pissnIO);
-
-        electronicTi1.save(failOnError: true);
-        electronicTi2.save(failOnError: true);
-        printTi1.save(failOnError: true);
-      } */
     then: 'All good'
       noExceptionThrown();
     when: 'We subsequently fetch the titleInstances'
