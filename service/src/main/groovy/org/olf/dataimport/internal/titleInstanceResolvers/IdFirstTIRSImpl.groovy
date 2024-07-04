@@ -1,23 +1,28 @@
 package org.olf.dataimport.internal.titleInstanceResolvers
 
-import org.olf.general.StringUtils
-
+// Schema classes
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema.IdentifierSchema
+
+// Domain classes
+import org.olf.kb.IdentifierException
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierNamespace
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.TitleInstance
 import org.olf.kb.Work
 
+// Local utils
+import org.olf.general.StringUtils
+
+// Utilities
 import grails.gorm.transactions.Transactional
 import grails.web.databinding.DataBinder
+import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 
 import groovy.util.logging.Slf4j
-
 import groovy.json.*
-import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 
 /**
  * This service works at the module level, it's often called without a tenant context.
@@ -235,36 +240,63 @@ class IdFirstTIRSImpl extends BaseTIRS implements DataBinder {
             nsm:namespaceMapping(id.namespace),
             ens:mapNamespaceToElectronic(id.namespace),
             pns:mapNamespaceToPrint(id.namespace)
-          ],
-          [max:2]
+          ]
         )
 
-        if (id_matches.size() > 1) {
-          throw new TIRSException(
-            "Multiple (${id_matches.size()}) matches found for identifier ${id.namespace}::${id.value}",
-            TIRSException.MULTIPLE_IDENTIFIER_MATCHES,
-          );
+        Identifier matchedId;
+
+        // We have special cases issn and isbn where we might be able to fix multiple id_matches
+        switch (id_matches.size()) {
+          case 0:
+            // None found, that's not an error but we do nothing
+            break;
+          case 1:
+            matchedId = id_matches[0]
+            break;
+          default:
+            // We have multiple matches, this is normally an error
+            // However in special known cases we may be able to fix
+            if (
+              namespaceMapping(id.namespace) == 'issn' ||
+              namespaceMapping(id.namespace) == 'isbn'
+            ) {
+              // Attempt to fix those situations where we have duplicate data in the system
+              try {
+                matchedId = Identifier.get(identifierService.fixEquivalentIds(id_matches.collect { it.id }, namespaceMapping(id.namespace)))
+              } catch (IdentifierException ie) {
+                // We know a multiple identifier match from here is serious, since that's only thrown is there's a direct namespace/value match
+                // Any other exception should be allowed to bleed through and caught above normally
+                if (ie.code == IdentifierException.MULTIPLE_IDENTIFIER_MATCHES) {
+                  throw new TIRSException(
+                    ie.message,
+                    TIRSException.MULTIPLE_IDENTIFIER_MATCHES
+                  );
+                } else {
+                  // Rethrow
+                  throw ie
+                }
+              }
+            } else {
+              throw new TIRSException(
+                "Multiple (${id_matches.size()}) matches found for identifier ${id.namespace}::${id.value}",
+                TIRSException.MULTIPLE_IDENTIFIER_MATCHES,
+              );
+            }
+            break;
         }
 
-        // For each matched (It should only ever be 1)
-        id_matches.each { matched_id ->
-          // For each occurrence where the STATUS is APPROVED
-          matched_id.occurrences.each { io ->
-            // Read in titleInstance directly
-            TitleInstance foundTI = TitleInstance.read(io.resource.id);
-
-            if (
-              io.status?.value == APPROVED && // Ensure APPROVED (as above)
-              !result.contains(foundTI.id) && // If we've already seen this title, don't add it again
-              foundTI.subType.value == "electronic" // We restrict to electronic, so _all_ of these matching processes will return electronic titles only
-            ) {
-              // log.debug("Adding title ${io.resource.id} ${io.resource.title} to matches for ${matched_id}");
-              result << foundTI.id
-            }
+        // If there was a matched id, find occurrences etc
+        (matchedId?.occurrences ?: []).each { io ->
+          if (
+            io.status?.value == APPROVED && // Ensure APPROVED (as above) before doing anything else
+            !result.contains(io.resource.id) && // If we've already seen this title, don't add it again (or look it up even)
+            io.resource?.subType?.value == "electronic" // We restrict to electronic, so _all_ of these matching processes will return electronic titles only
+          ) { 
+            // log.debug("Adding title ${io.resource.id} ${io.resource.title} to matches for ${matched_id}");
+            result << io.resource.id
           }
         }
-      }
-      else {
+      } else {
         // log.debug("Identifier ${id} not from a class one namespace");
       }
     }

@@ -264,8 +264,6 @@ public class IdentifierService {
   ) {
     // Fetch this at the top so we aren't lookup-or-creating in a loop below.
     RefdataValue approvedStatus = lookupOrCreateStatus('approved');
-
-    log.debug("fixEquivalentIds::(${equivalentIdentifierIds}, ${primeNamespace}, ${primeValue}, ${strictValueEquivalence})")
     // Without primeNamespace, throw
     if (primeNamespace == null) {
       throw new IdentifierException(
@@ -287,6 +285,9 @@ public class IdentifierService {
       SELECT id FROM Identifier AS id
       WHERE id.id IN :equivalentIdentifierIds
     """.toString(), [equivalentIdentifierIds: equivalentIdentifierIds])
+
+    // Logging here so we can get information about which ids are being equated as well as their ids in the DB
+    log.debug("fixEquivalentIds::(${equivalentIds.collect { "${it.ns.value}:${it.value}(${it.id})" }}, ${primeNamespace}, ${primeValue}, ${strictValueEquivalence})")
 
     if (strictValueEquivalence) {
       // If we're protecting
