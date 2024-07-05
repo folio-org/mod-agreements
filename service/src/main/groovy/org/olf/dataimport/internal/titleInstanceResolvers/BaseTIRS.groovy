@@ -117,14 +117,19 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
       /*
       * For some reason whenever a title is updated with just refdata fields it fails to properly mark as dirty.
       * The below solution of '.markDirty()' is not ideal, but it does solve the problem for now.
-      * TODO: Ian to Review with Ethan - this makes no sense to me at the moment
       *
-      * If the "Authoritative" publication type is not equal to whatever mad value a remote site has sent then
-      * replace the authortiative value with the one sent?
+      * "publication instance media" refers to the remote site's own instructions about what an instance actually is,
+      * as opposed to monograph/serial which are our internal controlled ones. Since we are only in this method if we
+      * have marked this source as "trusted" for updating title medata (ie they are the 'owners' of this title) we allow
+      * the updating of this field with whatever the institution wishes to call these things.
+      *
+      *
+      * TL;DR we don't care what's in this field since we do our logic based on a controlled "instanceMedia" field instead.
       */
-      if (title.publicationType?.value != RefdataValue.normValue(citation.instancePublicationMedia)) {
-        if (citation.instancePublicationMedia) {
-          title.publicationTypeFromString = citation.instancePublicationMedia
+      String citationIPM = citation.instancePublicationMedia ? RefdataValue.normValue(citation.instancePublicationMedia) : null;
+      if (title.publicationType?.value != citationIPM) {
+        if (citationIPM) {
+          title.publicationTypeFromString = citationIPM
         } else {
           title.publicationType = null;
         }
@@ -191,7 +196,7 @@ abstract class BaseTIRS implements TitleInstanceResolverService {
   // Different TIRS implementations will have different workflows with identifiers, but the vast majority of the creation will be the same
   // We assume that the incoming citation already has split ids and siblingIds
   protected TitleInstance createNewTitleInstanceWithoutIdentifiers(final ContentItemSchema citation, String workId = null) {
-    Work work = workId ? Work.get(workId) : null;
+    Work work = workId ? Work.get(workId) as Work : null;
     TitleInstance result = null
 
     // Ian: adding this - Attempt to make sense of the instanceMedia value we have been passed
