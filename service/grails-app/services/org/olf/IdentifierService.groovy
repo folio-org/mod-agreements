@@ -287,7 +287,7 @@ public class IdentifierService {
     """.toString(), [equivalentIdentifierIds: equivalentIdentifierIds])
 
     // Logging here so we can get information about which ids are being equated as well as their ids in the DB
-    log.debug("fixEquivalentIds::(${equivalentIds.collect { "${it.ns.value}:${it.value}(${it.id})" }}, ${primeNamespace}, ${primeValue}, ${strictValueEquivalence})")
+    log.debug("fixEquivalentIds::(${equivalentIds.collect { "${it} (${it.id})" }}, ${primeNamespace}, ${primeValue}, ${strictValueEquivalence})")
 
     if (strictValueEquivalence) {
       // If we're protecting

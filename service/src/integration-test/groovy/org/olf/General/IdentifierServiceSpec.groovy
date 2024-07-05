@@ -72,7 +72,7 @@ class IdentifierServiceSpec extends BaseSpec {
         SELECT iden FROM Identifier AS iden
       """)
 
-    identifiersInSystem = identifiers.collect { "${it.ns.value}:${it.value}" } as Set;
+    identifiersInSystem = identifiers.collect { "${it}" } as Set;
     identifierObjectsInSystem = identifiers as Set;
   }
   
