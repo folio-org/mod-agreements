@@ -108,6 +108,21 @@
       "platformName": "K-Int",
       "sourceIdentifierNamespace": "K-Int",
       "sourceIdentifier": "fei-002"
+    },
+    {
+      "title": "fixEquivalentIds-test3",
+      "instanceMedium": "electronic",
+      "instanceMedia": "journal",
+      "instanceIdentifiers": [{
+        "namespace": "issn",
+        "value": "fei-321-abc"
+      }],
+      "coverage": [],
+      "embargo": null,
+      "url": "http://testpackage.com/journal/index.php?journalID=fei-003",
+      "platformName": "K-Int",
+      "sourceIdentifierNamespace": "K-Int",
+      "sourceIdentifier": "fei-003"
     }
   ]
 }

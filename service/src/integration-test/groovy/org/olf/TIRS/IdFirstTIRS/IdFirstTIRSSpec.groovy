@@ -125,7 +125,7 @@ class IdFirstTIRSSpec extends TIRSSpec {
       // Ignore the tis from the first test
       def tiGet = doGet("/erm/titles", [filters: ['name!=Brain of the firm'], stats: true]);
     then: "We have the expected number"
-      assert tiGet.total == 8
+      assert tiGet.total == 9
   }
 
   @Requires({ instance.isIdTIRS() })
@@ -472,5 +472,94 @@ class IdFirstTIRSSpec extends TIRSSpec {
       assert identifiersInSystem.findAll { io -> io.ns.value == 'issn' }.size() == 1;
       assert identifiersInSystem.findAll { io -> io.ns.value == 'pissn' }.size() == 0;
       assert identifiersInSystem.findAll { io -> io.ns.value == 'eissn' }.size() == 0;
+  }
+
+  @Requires({ instance.isIdTIRS() })
+  void 'Fix equivalent identifiers in IdFirstTIRS -- non issn/isbn' () {
+    when: "We fetch electronic TI from previous test" // Bit dodgy, we should probably have a new test case TI here instead
+      String workSourceId = 'fei-003'; // Making sure this is the same throughout the test
+      List<TitleInstance> tis;
+      TitleInstance electronicTi;
+      String originalTiId;
+
+      withTenant {
+        tis = getFullTIsForWork(getWorkFromSourceId(workSourceId).id);
+        electronicTi = tis.find(ti -> ti.subType.value == 'electronic');
+        originalTiId = electronicTi.id;
+      }
+    then: 'We have the title in hand'
+      assert tis.size() == 1
+      assert electronicTi.name == 'fixEquivalentIds-test3'
+      assert electronicTi.identifiers.size() == 1;
+    when: "We set up a duplicate identifier out of scope of the issn/isbn fixing"
+      String testValue = 'testing-identifier-123'
+      String doiString = 'doi'
+      withTenant {
+        IdentifierNamespace testNs = IdentifierNamespace.findOrCreateByValue(doiString).save(failOnError:true)
+
+        Identifier testIdentifier1 = new Identifier(
+          ns: testNs,
+          value: testValue
+        ).save(failOnError: true);
+
+        IdentifierOccurrence testIO1 = new IdentifierOccurrence(
+          identifier: testIdentifier1,
+          status: IdentifierOccurrence.lookupOrCreateStatus('approved'),
+          resource: electronicTi
+        ).save(failOnError: true);
+
+        Identifier testIdentifier2 = new Identifier(
+          ns: testNs,
+          value: testValue
+        ).save(failOnError: true);
+
+        IdentifierOccurrence testIO2 = new IdentifierOccurrence(
+          identifier: testIdentifier2,
+          status: IdentifierOccurrence.lookupOrCreateStatus('approved'),
+          resource: electronicTi
+        ).save(failOnError: true, flush: true); // Flushing to force transaction flush for next "then"
+      }
+    then: 'All good'
+      noExceptionThrown();
+    when: 'We subsequently fetch the titleInstances'
+      withTenant {
+        tis = getFullTIsForWork(getWorkFromSourceId(workSourceId).id);
+        electronicTi = tis.find(ti -> ti.subType.value == 'electronic');
+      }
+    then: 'We see the expected broken identifier data'
+      assert tis.size() == 1
+      assert electronicTi.name == 'fixEquivalentIds-test3'
+      assert electronicTi.id == originalTiId;
+      assert electronicTi.identifiers.size() == 3;
+      assert electronicTi.identifiers.find { io -> io.identifier.ns.value == 'issn' } != null;
+      assert electronicTi.identifiers.findAll { io -> io.identifier.ns.value == doiString && io.identifier.value == testValue }.size() == 2;
+    when: 'We subsequently attempt to resolve a citation with fei-321-abc (broken identifier not on citation)'
+      String resolvedTiId;
+      TitleInstance resolvedTi;
+      Set<IdentifierOccurrence> resolvedApprovedIdentifiers;
+
+      withTenant {
+        resolvedTiId = titleInstanceResolverService.resolve(citationFromFile('fix_equivalent_ids_2.json'), true);
+        resolvedTi = TitleInstance.get(resolvedTiId)
+        
+        resolvedApprovedIdentifiers = resolvedTi.approvedIdentifierOccurrences
+      }
+    then: 'We have the expected title(s)'
+      noExceptionThrown()
+      assert resolvedTiId == electronicTi.id
+    when: 'We subsequently attempt to resolve a citation with fei-321-abc (broken identifier on citation)'
+      Long code
+      String message
+      withTenant {
+        try {
+        titleInstanceResolverService.resolve(citationFromFile('fix_equivalent_ids_3.json'), true);
+        } catch (TIRSException e) {
+          code = e.code;
+          message = e.message
+        }
+      }
+    then: 'We throw the expected exception'
+      assert code == TIRSException.MULTIPLE_IDENTIFIER_MATCHES
+      assert message == 'Multiple (2) matches found for identifier doi::testing-identifier-123'
   }
 }
