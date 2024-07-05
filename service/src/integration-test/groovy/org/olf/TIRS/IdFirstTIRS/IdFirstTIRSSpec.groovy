@@ -436,9 +436,41 @@ class IdFirstTIRSSpec extends TIRSSpec {
       assert electronicTi2.identifiers.size() == 2;
       assert electronicTi2.identifiers.find { io -> io.identifier.ns.value == 'eissn' } != null;
       assert electronicTi2.identifiers.find { io -> io.identifier.ns.value == 'issn' } != null;
-    when: 'We subsequently attempt to resolve a citation with fei-123-456'
-    then: 'No exceptions are thrown'
     when: 'We look up identifiers'
+      List<Identifier> identifiersInSystem
+      withTenant {
+        identifiersInSystem = Identifier.executeQuery("""
+          SELECT iden FROM Identifier AS iden
+          WHERE iden.ns.value LIKE '%issn' AND
+          iden.value = :issn
+        """.toString(), [issn: issn1]);
+      }
+    then: 'We see "duplicate" identifiers in the system'
+      assert identifiersInSystem.size() == 3
+      assert identifiersInSystem.findAll { io -> io.ns.value == 'issn' }.size() == 1;
+      assert identifiersInSystem.findAll { io -> io.ns.value == 'pissn' }.size() == 1;
+      assert identifiersInSystem.findAll { io -> io.ns.value == 'eissn' }.size() == 1;
+
+    when: 'We subsequently attempt to resolve a citation with fei-123-456'
+      String resolvedTiId;
+      withTenant {
+        resolvedTiId = titleInstanceResolverService.resolve(citationFromFile('fix_equivalent_ids.json'), true);
+      }
+    then: 'We have the expected title(s)'
+      noExceptionThrown()
+      assert resolvedTiId == electronicTi1.id
+    when: 'We look up identifiers'
+      withTenant {
+        identifiersInSystem = Identifier.executeQuery("""
+          SELECT iden FROM Identifier AS iden
+          WHERE iden.ns.value LIKE '%issn' AND
+          iden.value = :issn
+        """.toString(), [issn: issn1]);
+      }
     then: 'We do not see duplicate identifiers in the system'
+      assert identifiersInSystem.size() == 1
+      assert identifiersInSystem.findAll { io -> io.ns.value == 'issn' }.size() == 1;
+      assert identifiersInSystem.findAll { io -> io.ns.value == 'pissn' }.size() == 0;
+      assert identifiersInSystem.findAll { io -> io.ns.value == 'eissn' }.size() == 0;
   }
 }
