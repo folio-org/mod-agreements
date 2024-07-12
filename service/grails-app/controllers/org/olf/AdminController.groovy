@@ -27,6 +27,7 @@ class AdminController implements DataBinder{
   def fileUploadService
   def kbManagementService
   def kbHarvestService
+  def identifierService
 
   public AdminController() {
   }
@@ -133,6 +134,18 @@ class AdminController implements DataBinder{
     def result = [:]
     log.debug("AdminController::triggerDocMigration");
     fileUploadService.migrateAtMost(0,'LOB','S3'); // n, FROM, TO
+    result.status = 'OK'
+    render result as JSON
+  }
+
+  /*
+   * Trigger identifierService bulkFixEquivalentIds
+   */
+  @Transactional
+  public bulkFixEquivalentIds() {
+    def result = [:]
+    log.debug("AdminController::bulkFixEquivalentIds");
+    identifierService.bulkFixEquivalentIds();
     result.status = 'OK'
     render result as JSON
   }

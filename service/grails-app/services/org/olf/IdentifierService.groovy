@@ -375,4 +375,34 @@ public class IdentifierService {
 
     return primeIdentifier.id;
   }
+
+  // FIXME ought we extrapolate TaskRunnerService for the string templating stuff,
+  // and then have this also able to call upon those threads if/when they're available?
+  void bulkFixEquivalentIds() {
+    log.debug("LOGDEBUG CALLED bulkFixEquivalentIds METHOD")
+    // TODO Check first for issn-like then isbn-like
+    // NOTE don't end in wildcard because we treat issnl as separate and distinct to issn etc
+    // We're ONLY identifying eissn/pissn/eisbn/pisbn
+    def issnOutput = Identifier.executeQuery(
+      """
+        SELECT
+          iden.value
+        FROM Identifier AS iden
+        LEFT JOIN IdentifierNamespace AS ns
+          ON ns.id = iden.ns.id
+        WHERE
+          ns.value = 'issn' OR
+          ns.value = 'eissn' OR
+          ns.value = 'pissn'
+        GROUP BY iden.value
+        HAVING COUNT(*) > 1
+        ORDER BY COUNT(*) DESC
+      """.toString(),
+      [],
+      //[max: 10]
+    );
+
+    log.debug("LOGDEBUG OUTPUT: ${issnOutput}")
+    log.debug("LOGDEBUG OUTPUT SIZE: ${issnOutput.size()}")
+  }
 }
