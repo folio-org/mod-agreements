@@ -1,3 +1,6 @@
+## 6.1.6 2024-07-12
+  * ERM-3281 Design and implement process to resolve eissn, pissn, eisbn and pisbn namespaces
+
 ## 6.1.5 2024-06-14
   * ERM-3274 If a citation gets passed to BaseTIRS without an instancePublicationMedia field it will crash
   * ERM-3254 With WorkSourceIDTIRS for GOKb we see "Field error in object" errors 
