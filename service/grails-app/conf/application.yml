@@ -235,6 +235,10 @@ environments:
       tenantId: public # Used by SystemPropertyTenantResolver
 
   production:
+    logging:
+      config: classpath:logback-development.xml
+      level:
+        web: DEBUG
     dataSource:
       url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olf}?ApplicationName=${okapi.schema.appName}"
       hikari:
