@@ -199,7 +199,8 @@ public class CoverageService {
         }
       }
 
-      saveResourceWithoutCalculatingCoverage(resource) // Save.
+      // Final save needs to calculate coverage because it may impact things up the heirachy
+      resource.save(failOnError: true, flush: true) // Save.
 //    }
   }
 
