@@ -127,7 +127,7 @@ public class CoverageService {
     return (value?.trim()?.length() ?: 0) > 0 ? value : null
   }
 
-  // FIXME this cannot be the best way to do this
+  // FIXME this indicates a need to refactor the beforeValidate call which forces a calculate coverage on every save
   public static void saveResourceWithoutCalculatingCoverage (ErmResource resource, boolean flush = true, boolean failOnError = true) {
     resource.doNotCalculateCoverage = true;
     resource.save(failOnError: failOnError, flush: flush)
@@ -136,7 +136,11 @@ public class CoverageService {
   /**
    * Set coverage from schema
    */
-  public static void setCoverageFromSchema (final ErmResource resource, final Iterable<CoverageStatementSchema> coverage_statements) {
+  public static void setCoverageFromSchema (
+    final ErmResource resource,
+    final Iterable<CoverageStatementSchema> coverage_statements,
+    final boolean calculateCoverageAtEnd = true
+  ) {
 
 //    ErmResource.withTransaction {
 
@@ -199,8 +203,12 @@ public class CoverageService {
         }
       }
 
-      // Final save needs to calculate coverage because it may impact things up the heirachy
-      resource.save(failOnError: true, flush: true) // Save.
+      if (calculateCoverageAtEnd) {
+        // Final save needs to calculate coverage because it may impact things up the heirachy
+        resource.save(failOnError: true, flush: true) // Save.
+      } else {
+        saveResourceWithoutCalculatingCoverage(resource)
+      }
 //    }
   }
 
