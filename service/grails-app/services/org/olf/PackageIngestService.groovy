@@ -136,31 +136,35 @@ class PackageIngestService implements DataBinder {
 							// log.debug("Try to resolve ${pc}")
 				
 							try {
-								PackageContentItem.withNewTransaction { status ->
-									// Delegate out to TitleIngestService so that any shared steps can move there.
-									Map titleIngestResult = titleIngestService.upsertTitle(pc, kb, trustedSourceTI)
+								PackageContentItem.withNewSession { tsess ->
+  								PackageContentItem.withNewTransaction { status ->
+									  // Delegate out to TitleIngestService so that any shared steps can move there.
+								  	Map titleIngestResult = titleIngestService.upsertTitle(pc, kb, trustedSourceTI)
 				
-									// titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
-									if ( titleIngestResult.titleInstanceId != null ) {
-										// Pass off to new hierarchy method (?)
-										Map hierarchyResult = lookupOrCreateTitleHierarchy(
-											titleIngestResult.titleInstanceId,
-											pkg.id,
-											trustedSourceTI,
-											pc,
-											result.updateTime,
-											result.titleCount
-										)
+							  		// titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
+						  			if ( titleIngestResult.titleInstanceId != null ) {
+					  					// Pass off to new hierarchy method (?)
+				  						Map hierarchyResult = lookupOrCreateTitleHierarchy(
+			  								titleIngestResult.titleInstanceId,
+		  									pkg.id,
+	  										trustedSourceTI,
+  											pc,
+											  result.updateTime,
+										  	result.titleCount
+									  	)
 				
-										PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
-										hierarchyResultMapLogic(hierarchyResult, result, pci)
-									}
-									else {
-										// Almost the same message exists in TitleIngestService if result is null
-										//String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
-										//log.error(message)
-									}
-								}
+								  		PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
+							  			hierarchyResultMapLogic(hierarchyResult, result, pci)
+						  			}
+					  				else {
+				  						// Almost the same message exists in TitleIngestService if result is null
+			  							//String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
+		  								//log.error(message)
+	  								}
+  								}
+									// Without this, created objects live on in the hibernate cache and will balloon memory badly
+									tsess.clear();
+                }
 							} catch ( IngestException ie ) {
                 // When we've caught an ingest exception, should have helpful error log message
                 String message = "Skipping \"${pc.title}\": ${ie.message}"
@@ -210,6 +214,7 @@ class PackageIngestService implements DataBinder {
 						return result
 					}
 				}
+        newSess.clear();
 			}
 		}
   }
