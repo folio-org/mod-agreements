@@ -141,6 +141,7 @@ public class CoverageService {
     final Iterable<CoverageStatementSchema> coverage_statements,
     final boolean calculateCoverageAtEnd = true
   ) {
+    //log.debug("CoverageService::setCoverageFromSchema(${resource}, ${coverage_statements}, ${calculateCoverageAtEnd})")
 
 //    ErmResource.withTransaction {
 
@@ -171,6 +172,7 @@ public class CoverageService {
 
             resource.addToCoverage( new_cs )
 
+            resource.doNotCalculateCoverage = true // Validate is called inside utility service here -- don't trigger calculate coverage
             if (!utilityService.checkValidBinding(resource)) {
               throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
             }
@@ -438,18 +440,21 @@ public class CoverageService {
     final PackageContentItem pci = asPCI(res)
     if ( pci ) {
       log.trace "PCI updated, regenerate PTI's coverage"
+      //log.debug "PCI updated, regenerate PTI's coverage"
       calculateCoverage( pci.pti )
     }
 
     final PlatformTitleInstance pti = asPTI(res)
     if ( pti ) {
       log.trace "PTI updated regenerate TI's coverage"
+      //log.debug "PTI updated regenerate TI's coverage"
       calculateCoverage( pti.titleInstance )
     }
 
     final TitleInstance ti = asTI(res)
     if ( ti ) {
       log.trace 'TI updated'
+      //log.debug("TI updated")
     }
   }
 
