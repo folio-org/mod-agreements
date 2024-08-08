@@ -216,16 +216,15 @@ public class CoverageService {
 
       // Use a sub query to select all the coverage statements linked to PCIs,
       // linked to this pti
-      List<org.olf.dataimport.erm.CoverageStatement> allCoverage = CoverageStatement.createCriteria().list {
-        'in' 'resource.id', new DetachedCriteria(PackageContentItem).build {
-          readOnly (true)
-          eq 'pti.id', pti.id
-
-          projections {
-            property ('id')
-          }
-        }
-      }.collect{ CoverageStatement cs ->
+      List<org.olf.dataimport.erm.CoverageStatement> allCoverage = CoverageStatement.executeQuery(
+        """
+          SELECT cs FROM CoverageStatement cs WHERE
+          resource.id IN (
+            SELECT pci.id FROM PackageContentItem pci WHERE
+            pci.pti.id = :ptiId 
+          )
+        """.toString(), [ptiId: pti.id]
+      ).collect { CoverageStatement cs ->
         new org.olf.dataimport.erm.CoverageStatement([
           'startDate': cs.startDate,
           'endDate': cs.endDate
@@ -247,18 +246,16 @@ public class CoverageService {
     // Use a sub query to select all the coverage statements linked to PTIs,
     // linked to this TI
 //    TitleInstance.withTransaction {
-      List<CoverageStatement> results = CoverageStatement.createCriteria().list {
-        'in' 'resource.id', new DetachedCriteria(PlatformTitleInstance, 'linked_ptis').build {
-          readOnly (true)
-          eq 'titleInstance.id', ti.id
 
-          projections {
-            property ('id')
-          }
-        }
-      }
-
-      List<org.olf.dataimport.erm.CoverageStatement> allCoverage = results.collect { CoverageStatement cs ->
+      List<org.olf.dataimport.erm.CoverageStatement> allCoverage = CoverageStatement.executeQuery(
+        """
+          SELECT cs FROM CoverageStatement cs WHERE
+          resource.id IN (
+            SELECT pti.id FROM PlatformTitleInstance pti WHERE
+            pti.titleInstance.id = :tiId 
+          )
+        """.toString(), [tiId: ti.id]
+      ).collect { CoverageStatement cs ->
         new org.olf.dataimport.erm.CoverageStatement([
           'startDate': cs.startDate,
           'endDate': cs.endDate
