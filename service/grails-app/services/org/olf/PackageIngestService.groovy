@@ -86,6 +86,18 @@ class PackageIngestService implements DataBinder {
   public Map upsertPackage(PackageSchema package_data, String remotekbname, boolean kbCreateReadOnly=false) {
 		// Really messy but required as withNew session does not work unless there is already a session
   	// bound.
+
+
+		final def result = [
+			startTime: System.currentTimeMillis(),
+			titleCount: 0,
+			newTitles: 0,
+			removedTitles: 0,
+			updatedTitles: 0,
+			updatedAccessStart: 0,
+			updatedAccessEnd: 0,
+		]
+				
 		Pkg.withSession { currentSess ->
 			Pkg.withTransaction {
 				Pkg.withNewSession { newSess ->
@@ -95,16 +107,6 @@ class PackageIngestService implements DataBinder {
 						MDC.remove('title')
             MDC.remove('packageSource')
 						MDC.remove('packageReference')
-						final def result = [
-							startTime: System.currentTimeMillis(),
-							titleCount: 0,
-							newTitles: 0,
-							removedTitles: 0,
-							updatedTitles: 0,
-							updatedAccessStart: 0,
-							updatedAccessEnd: 0,
-						]
-				
 				
 						// ERM caches many remote KB sources in it's local package inventory
 						// Look up which remote kb via the name
@@ -181,7 +183,6 @@ class PackageIngestService implements DataBinder {
 								log.debug ("(Package in progress) processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}s")
 							} */
 						}
-						long finishedTime = (System.currentTimeMillis()-result.startTime)/1000
 				
 						// This removed logic is WRONG under pushKB because it's chunked -- ensure pushKB does not call full upsertPackage method
 						// At the end - Any PCIs that are currently live (Don't have a removedTimestamp) but whos lastSeenTimestamp is < result.updateTime
@@ -204,19 +205,20 @@ class PackageIngestService implements DataBinder {
 								result.removedTitles++
 							}
 						}
-
-            // Not sure if MDC logic can go in shared method
-						MDC.remove('recordNumber')
-						MDC.remove('title')
-            logPackageResults(result, finishedTime);
-				//    MDC.clear()
-				
-						return result
 					}
           newSess.clear();
 				}
 			}
 		}
+
+    // Not sure if MDC logic can go in shared method
+		//    MDC.clear()
+		MDC.remove('recordNumber')
+		MDC.remove('title')
+		long finishedTime = (System.currentTimeMillis()-result.startTime)/1000
+    logPackageResults(result, finishedTime);
+
+		return result
   }
 
   // Pass in finished time so we're not waiting for package content cleanup
