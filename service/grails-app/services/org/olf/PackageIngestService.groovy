@@ -598,7 +598,8 @@ class PackageIngestService implements DataBinder {
         result.pciStatus = 'new'
       }
 
-      pci.save(flush: true, failOnError: true)
+      // FIXME this seems horrendously messy -- consequence of beforeValidate calling calculateCoverage
+      coverageService.saveResourceWithoutCalculatingCoverage(pci)
 
       // ADD PTI AND PCI ID TO RESULT
       result.pciId = pci.id;

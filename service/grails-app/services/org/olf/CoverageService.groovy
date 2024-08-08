@@ -127,6 +127,12 @@ public class CoverageService {
     return (value?.trim()?.length() ?: 0) > 0 ? value : null
   }
 
+  // FIXME this cannot be the best way to do this
+  public static void saveResourceWithoutCalculatingCoverage (ErmResource resource, boolean flush = true, boolean failOnError = true) {
+    resource.doNotCalculateCoverage = true;
+    resource.save(failOnError: failOnError, flush: flush)
+  }
+
   /**
    * Set coverage from schema
    */
@@ -142,9 +148,9 @@ public class CoverageService {
         if (resource.coverage) {
           statements.addAll( resource.coverage.collect() )
           resource.coverage.clear()
-          resource.save(failOnError: true) // Necessary to remove the orphans.
-        }
 
+          saveResourceWithoutCalculatingCoverage(resource, false, true)
+        }
         for ( CoverageStatementSchema cs : coverage_statements ) {
           /* Not using utilityService.checkValidBinding here
            * because we have custom error logging behaviour
@@ -165,7 +171,7 @@ public class CoverageService {
               throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
             }
 
-            resource.save()
+            saveResourceWithoutCalculatingCoverage(resource, false, false)
           } else {
 
             // Not valid coverage statement
@@ -193,7 +199,7 @@ public class CoverageService {
         }
       }
 
-      resource.save(failOnError: true, flush:true) // Save.
+      saveResourceWithoutCalculatingCoverage(resource) // Save.
 //    }
   }
 
