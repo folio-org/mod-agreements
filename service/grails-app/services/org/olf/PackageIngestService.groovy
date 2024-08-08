@@ -213,8 +213,8 @@ class PackageIngestService implements DataBinder {
 				
 						return result
 					}
+          newSess.clear();
 				}
-        newSess.clear();
 			}
 		}
   }
