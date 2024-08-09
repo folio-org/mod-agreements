@@ -183,7 +183,7 @@ class PackageIngestService implements DataBinder {
 								log.debug ("(Package in progress) processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}s")
 							} */
 						}
-				
+
 						// This removed logic is WRONG under pushKB because it's chunked -- ensure pushKB does not call full upsertPackage method
 						// At the end - Any PCIs that are currently live (Don't have a removedTimestamp) but whos lastSeenTimestamp is < result.updateTime
 						// were not found on this run, and have been removed. We *may* introduce some extra checks here - like 3 times or a time delay, but for now,
@@ -215,7 +215,7 @@ class PackageIngestService implements DataBinder {
 		//    MDC.clear()
 		MDC.remove('recordNumber')
 		MDC.remove('title')
-		long finishedTime = (System.currentTimeMillis()-result.startTime)/1000
+		long finishedTime = (System.currentTimeMillis()-result.startTime) // Don't divide by 1000 here, instead leave in ms for greater accuracy
     logPackageResults(result, finishedTime);
 
 		return result
@@ -226,7 +226,7 @@ class PackageIngestService implements DataBinder {
     // Need to pause long enough so that the timestamps are different
     TimeUnit.MILLISECONDS.sleep(1)
     if (result.titleCount > 0) {
-      log.debug ("Processed ${result.titleCount} titles in ${finishedTime} seconds (${finishedTime/result.titleCount}s average)")
+      log.debug ("Processed ${result.titleCount} titles in ${finishedTime/1000} seconds (${(finishedTime/result.titleCount)/1000}s average)")
       log.info("Package titles summary::Processed/${result.titleCount}, Added/${result.newTitles}, Updated/${result.updatedTitles}, Removed/${result.removedTitles}, AccessStart/${result.updatedAccessStart}, AccessEnd/${result.updatedAccessEnd}")
 
       // Log the counts too.
