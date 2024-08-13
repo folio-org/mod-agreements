@@ -490,12 +490,20 @@ class PackageIngestService implements DataBinder {
       pti = new PlatformTitleInstance(titleInstance:title,
         platform:platform,
         url:pc.url,
-      ).save(failOnError: true)
+      );
+
+      // Ensure coverages don't change here... I _think_ this is only used during ingest where PCI coverage sweep will get triggered eventually
+      pti.doNotCalculateCoverage = true
+      pti.save(failOnError: true)
     } else if (trustedSourceTI) {
       // Update any PTI fields directly
       if (pti.url != pc.url) {
         pti.url = pc.url
       }
+
+      // Ensure coverages don't change here... I _think_ this is only used during ingest where PCI coverage sweep will get triggered eventually
+      pti.doNotCalculateCoverage = true
+
       pti.save(flush: true, failOnError: true)
     }
 
@@ -605,8 +613,6 @@ class PackageIngestService implements DataBinder {
         result.pciStatus = 'new'
       }
 
-      pci.save(flush: true, failOnError: true)
-
       // ADD PTI AND PCI ID TO RESULT
       result.pciId = pci.id;
 
@@ -618,8 +624,11 @@ class PackageIngestService implements DataBinder {
         // We define coverage to be a list in the exchange format, but sometimes it comes just as a JSON map. Convert that
         // to the list of maps that coverageService.extend expects
         Iterable<CoverageStatementSchema> cov = pc.coverage instanceof Iterable ? pc.coverage : [ pc.coverage ]
-        coverageService.setCoverageFromSchema (pci, cov)
+        // Ensure this doesn't trigger the calculateCoverage, that will happen on PCI save
+        coverageService.setCoverageFromSchema (pci, cov, false)
       }
+
+      pci.save(failOnError: true, flush: true)
     }
     else {
       throw new IngestException("Unable to identify platform from ${platform_url_to_use} and ${pc.platformName}");
