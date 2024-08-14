@@ -39,6 +39,8 @@ class TenantAPISpec extends HttpSpec {
   
   void "Create Tenant" () {
     
+    Thread.sleep(2000);
+
     // Max time to wait is 10 seconds
     def conditions = new PollingConditions(timeout: 10)
     

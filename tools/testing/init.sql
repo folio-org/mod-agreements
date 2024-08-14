@@ -1,5 +1,7 @@
 select 1;
 
+ALTER SYSTEM SET max_connections = 500;
+
 CREATE USER folio_admin WITH PASSWORD 'folio_admin';
 CREATE USER folio WITH PASSWORD 'folio';
 DROP DATABASE if exists okapi_modules_test;

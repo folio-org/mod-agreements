@@ -179,6 +179,8 @@ dependencies {
 	testImplementation( 'com.athaydes:spock-reports:2.3.2-groovy-3.0' ) {
 		transitive = false // this avoids affecting your version of Groovy/Spock
 	}
+
+	// implementation 'org.springdoc:springdoc-openapi-ui:1.6.5'
 }
 /* 
 application {

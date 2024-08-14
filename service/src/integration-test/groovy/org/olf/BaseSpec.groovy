@@ -91,6 +91,7 @@ abstract class BaseSpec extends HttpSpec {
   void 'Pre purge test tenant'() {
     boolean resp = false
     log.debug("Pre purge tenant");
+    Thread.sleep(1000);
 
     when: 'Purge the tenant'
       try {
