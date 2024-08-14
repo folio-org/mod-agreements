@@ -70,11 +70,10 @@ public class TestController {
     @ApiResponse(responseCode = "200", content = { @Content(schema = @Schema(implementation = DummyResponse.class), mediaType = "application/json") }),
     @ApiResponse(responseCode = "404", content = { @Content(schema = @Schema()) }),
     @ApiResponse(responseCode = "500", content = { @Content(schema = @Schema()) }) })
-  @GetMapping(value="/tutorials/{id}",produces=MediaType.APPLICATION_JSON_VALUE)
-  @JsonView(DummyResponse.class)
+  @GetMapping(value="/tutorials/{id}")
   public @ResponseBody ResponseEntity<DummyResponse> getTutorialById(@PathVariable("id") long id) {
     DummyResponse dr = new DummyResponse("Wibble");
-    return ResponseEntity.of(Optional.of(dr));
+    return new ResponseEntity(dr, HttpStatus.OK);
   }
 
 }
