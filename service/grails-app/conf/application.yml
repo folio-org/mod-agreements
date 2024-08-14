@@ -272,3 +272,14 @@ environments:
         port: 9130
 
 
+
+springdoc:
+  api-docs:
+    path: /api
+  packages-to-scan: org.olf.agreements.controllers
+  swagger-ui:
+    path: /docsui
+    tryItOutEnabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+    filter: true
