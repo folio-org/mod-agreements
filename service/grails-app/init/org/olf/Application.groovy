@@ -4,12 +4,14 @@ import org.springframework.boot.web.embedded.undertow.UndertowBuilderCustomizer
 import org.springframework.boot.web.embedded.undertow.UndertowServletWebServerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.scheduling.annotation.EnableScheduling
+import org.springframework.context.annotation.ComponentScan;
 
 import grails.boot.GrailsApp
 import grails.boot.config.GrailsAutoConfiguration
 import groovy.transform.CompileStatic
 import io.undertow.Undertow.Builder
 
+@ComponentScan("org.olf.agreements.controllers")
 @CompileStatic
 @EnableScheduling
 class Application extends GrailsAutoConfiguration {

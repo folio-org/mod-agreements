@@ -72,6 +72,11 @@ repositories {
 }
 
 dependencies {
+
+  // added for lombok
+  compileOnly 'org.projectlombok:lombok:1.18.32'
+  annotationProcessor 'org.projectlombok:lombok:1.18.32'
+
   /* Grails 6 */
   compileOnly("io.micronaut:micronaut-inject-groovy")
   console("org.grails:grails-console")
@@ -81,6 +86,8 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-logging")
+  implementation("org.springframework:spring-web")
+
   //implementation("org.springframework.boot:spring-boot-starter-tomcat")
   //implementation("org.springframework.boot:spring-boot-starter-validation")
 
