@@ -141,7 +141,8 @@ public class CoverageService {
     final Iterable<CoverageStatementSchema> coverage_statements,
     final boolean calculateCoverageAtEnd = true
   ) {
-      //log.debug("CoverageService::setCoverageFromSchema(${resource}, ${coverage_statements}, ${calculateCoverageAtEnd})")
+    // resource is null for logging unless a gorm operation is applied to it... something something proxying something :p
+    //log.debug("CoverageService::setCoverageFromSchema(${resource}, ${coverage_statements}, ${calculateCoverageAtEnd})")
 
 //    ErmResource.withTransaction {
 
@@ -197,11 +198,12 @@ public class CoverageService {
         }
       } catch (ValidationException e) {
         // Don't bother erroring this to the user, the above validation errors will log through UtilityService
-        log.debug("Coverage changes to Resource ${resource.id} not saved")
+        log.debug("Coverage changes to resource ${resource} not saved. \n${e.message}")
+        //e.printStackTrace() // Can turn off except for dev
 
         // In this case we must RESET the coverage 
         // This shouldn't need to be a log error, as the validation error above comes from somewhere which ALREADY logs as error.
-        resource.coverage = [] // Ensure set if not existing initially, or cleared ready for reverting
+        resource.coverage?.clear();
 
         statements.each {
           resource.addToCoverage( it )
