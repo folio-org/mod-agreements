@@ -192,10 +192,13 @@ public class CoverageService {
 
             // Throwing a ValildationException here we "reset" if even one coverageStatement is wrong.
             // Without this we simply ignore the incorrect statement and try to continue...
-            throw new ValidationException('Coverage statement is incorrect')
+            throw new ValidationException('Coverage statement is incorrect', cs.errors)
           }
         }
       } catch (ValidationException e) {
+        // Don't bother erroring this to the user, the above validation errors will log through UtilityService
+        log.debug("Coverage changes to Resource ${resource.id} not saved")
+
         // In this case we must RESET the coverage 
         // This shouldn't need to be a log error, as the validation error above comes from somewhere which ALREADY logs as error.
         resource.coverage = [] // Ensure set if not existing initially, or cleared ready for reverting
