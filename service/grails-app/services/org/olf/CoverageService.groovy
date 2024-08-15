@@ -145,7 +145,6 @@ public class CoverageService {
 
 //    ErmResource.withTransaction {
 
-      boolean changed = false
       final Set<CoverageStatement> statements = []
       try {
 
@@ -181,7 +180,6 @@ public class CoverageService {
             }
 
             saveResourceWithoutCalculatingCoverage(resource, false, false)
-            changed = true
           } else {
             // Not valid coverage statement
             cs.errors.allErrors.each { ObjectError error ->
@@ -191,16 +189,15 @@ public class CoverageService {
                 log.error (messageSource.getMessage(error, LocaleContextHolder.locale))
               }
             }
+
+            // Throwing a ValildationException here we "reset" if even one coverageStatement is wrong.
+            // Without this we simply ignore the incorrect statement and try to continue...
+            throw new ValidationException('Coverage statement is incorrect')
           }
         }
-
-        // log.debug("New coverage saved")
       } catch (ValidationException e) {
+        // In this case we must RESET the coverage 
         // This shouldn't need to be a log error, as the validation error above comes from somewhere which ALREADY logs as error.
-        log.debug("Coverage changes to Resource ${resource.id} not saved")
-      }
-
-      if (!changed) { // We DO NOT skip if coverage is wrong, only log out coverage errors
         resource.coverage = [] // Ensure set if not existing initially, or cleared ready for reverting
 
         statements.each {
