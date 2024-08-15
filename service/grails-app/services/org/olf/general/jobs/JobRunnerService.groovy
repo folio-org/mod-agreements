@@ -88,8 +88,8 @@ order by pj.dateCreated
   @PostConstruct
   void init() {
     // Set up the Executor
-    if ( grailsApplication.config.concurrentJobsGlobal instanceof Integer && grailsApplication.config.concurrentJobsGlobal > 0 )
-      CONCURRENT_JOBS_GLOBAL = grailsApplication.config.concurrentJobsGlobal;
+    CONCURRENT_JOBS_GLOBAL = grailsApplication.getConfig().getProperty('concurrentJobsGlobal',Integer,3);
+    log.info("Set concurrent jobs global to ${grailsApplication.config.concurrentJobsGlobal}");
     
 		// Base the number of small jobs executable on the limit imposed on the default runner.
 		taskConcurrency = CONCURRENT_JOBS_GLOBAL * 2
