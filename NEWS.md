@@ -1,6 +1,7 @@
 ## 6.1.7 2024-08-22
   * ERM-3310 Expose concurrent jobs as env var
   * ERM-3308 Ingest process slows down dramatically on certain packages
+  * Tweaked processing log message for more accurate harvest performance numbers
 
 ## 6.1.6 2024-07-12
   * ERM-3281 Design and implement process to resolve eissn, pissn, eisbn and pisbn namespaces
