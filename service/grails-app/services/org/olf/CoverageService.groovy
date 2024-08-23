@@ -127,24 +127,37 @@ public class CoverageService {
     return (value?.trim()?.length() ?: 0) > 0 ? value : null
   }
 
+  // FIXME this indicates a need to refactor the beforeValidate call which forces a calculate coverage on every save
+  public static void saveResourceWithoutCalculatingCoverage (ErmResource resource, boolean flush = true, boolean failOnError = true) {
+    resource.doNotCalculateCoverage = true;
+    resource.save(failOnError: failOnError, flush: flush)
+  }
+
   /**
    * Set coverage from schema
    */
-  public static void setCoverageFromSchema (final ErmResource resource, final Iterable<CoverageStatementSchema> coverage_statements) {
+  public static void setCoverageFromSchema (
+    final ErmResource resource,
+    final Iterable<CoverageStatementSchema> coverage_statements,
+    final boolean calculateCoverageAtEnd = true
+  ) {
+    // resource is null for logging unless a gorm operation is applied to it... something something proxying something :p
+    //log.debug("CoverageService::setCoverageFromSchema(${resource}, ${coverage_statements}, ${calculateCoverageAtEnd})")
 
 //    ErmResource.withTransaction {
 
-      boolean changed = false
       final Set<CoverageStatement> statements = []
       try {
 
         // Clear the existing coverage, or initialize to empty set.
         if (resource.coverage) {
           statements.addAll( resource.coverage.collect() )
-          resource.coverage.clear()
-          resource.save(failOnError: true) // Necessary to remove the orphans.
-        }
 
+          resource.coverage.clear()
+
+          // I don't think we need to save here... On my head be it :p
+          //saveResourceWithoutCalculatingCoverage(resource, false, true)
+        }
         for ( CoverageStatementSchema cs : coverage_statements ) {
           /* Not using utilityService.checkValidBinding here
            * because we have custom error logging behaviour
@@ -161,13 +174,14 @@ public class CoverageService {
 
             resource.addToCoverage( new_cs )
 
-            if (!utilityService.checkValidBinding(resource)) {
+            resource.doNotCalculateCoverage = true // Validate is called inside utility service here -- don't trigger calculate coverage
+            // This will _already_ log out errors, add extra context around what a failure means in this case.
+            if (!utilityService.checkValidBinding(resource, "Coverage statements (${coverage_statements}) invalid. Coverage for ${resource} will be reset (${statements})")) {
               throw new ValidationException('Adding coverage statement invalidates Resource', resource.errors)
             }
 
-            resource.save()
+            saveResourceWithoutCalculatingCoverage(resource, false, false)
           } else {
-
             // Not valid coverage statement
             cs.errors.allErrors.each { ObjectError error ->
               /* TODO Perhaps in future we can extend checkValidBinding to this use case */
@@ -176,24 +190,36 @@ public class CoverageService {
                 log.error (messageSource.getMessage(error, LocaleContextHolder.locale))
               }
             }
+
+            // Throwing a ValildationException here we "reset" if even one coverageStatement is wrong.
+            // Without this we simply ignore the incorrect statement and try to continue...
+            throw new ValidationException('Coverage statement is incorrect', cs.errors)
           }
         }
-
-        // log.debug("New coverage saved")
-        changed = true
       } catch (ValidationException e) {
-        log.error("Coverage changes to Resource ${resource.id} not saved")
-      }
+        // Don't bother erroring this to the user, the above validation errors will log through UtilityService
+        log.debug("Coverage changes to resource ${resource} not saved. \n${e.message}")
+        //e.printStackTrace() // Can turn off except for dev
 
-      if (!changed) {
-        // Revert the coverage set.
-        if (!resource.coverage) resource.coverage = []
+        // In this case we must RESET the coverage 
+        // This shouldn't need to be a log error, as the validation error above comes from somewhere which ALREADY logs as error.
+        resource.coverage?.clear();
+
         statements.each {
           resource.addToCoverage( it )
         }
       }
 
-      resource.save(failOnError: true, flush:true) // Save.
+      // Save and flush (Don't propogate coverage changes yet)
+      // Flush is NECESSARY here so that changelistener lookups have access to all created coverageStatements
+      saveResourceWithoutCalculatingCoverage(resource)
+
+      if (calculateCoverageAtEnd) {
+        // If we want this to propogate down we need to run the change listener here specifically.
+        changeListener(resource);
+        // Again, if changeListener ends up doing more things
+        // we may need to separate out the coverage-only part
+      }
 //    }
   }
 
@@ -204,27 +230,24 @@ public class CoverageService {
    * @param pti The PlatformTitleInstance
    */
   public static void calculateCoverage( final PlatformTitleInstance pti ) {
-
     // log.debug 'Calculate coverage for PlatformTitleInstance {}', pti.id
 
       // Use a sub query to select all the coverage statements linked to PCIs,
       // linked to this pti
-      List<org.olf.dataimport.erm.CoverageStatement> allCoverage = CoverageStatement.createCriteria().list {
-        'in' 'resource.id', new DetachedCriteria(PackageContentItem).build {
-          readOnly (true)
-          eq 'pti.id', pti.id
-
-          projections {
-            property ('id')
-          }
-        }
-      }.collect{ CoverageStatement cs ->
+      List<org.olf.dataimport.erm.CoverageStatement> allCoverage = CoverageStatement.executeQuery(
+        """
+          SELECT cs FROM CoverageStatement cs WHERE
+          cs.resource.id IN (
+            SELECT pci.id FROM PackageContentItem pci WHERE
+            pci.pti.id = :ptiId
+          )
+        """.toString(), [ptiId: pti.id]
+      ).collect { CoverageStatement cs ->
         new org.olf.dataimport.erm.CoverageStatement([
           'startDate': cs.startDate,
           'endDate': cs.endDate
         ])
       }
-
       allCoverage = collateCoverageStatements(allCoverage)
 
       setCoverageFromSchema(pti, allCoverage)
@@ -240,18 +263,16 @@ public class CoverageService {
     // Use a sub query to select all the coverage statements linked to PTIs,
     // linked to this TI
 //    TitleInstance.withTransaction {
-      List<CoverageStatement> results = CoverageStatement.createCriteria().list {
-        'in' 'resource.id', new DetachedCriteria(PlatformTitleInstance, 'linked_ptis').build {
-          readOnly (true)
-          eq 'titleInstance.id', ti.id
 
-          projections {
-            property ('id')
-          }
-        }
-      }
-
-      List<org.olf.dataimport.erm.CoverageStatement> allCoverage = results.collect { CoverageStatement cs ->
+      List<org.olf.dataimport.erm.CoverageStatement> allCoverage = CoverageStatement.executeQuery(
+        """
+          SELECT cs FROM CoverageStatement cs WHERE
+          cs.resource.id IN (
+            SELECT pti.id FROM PlatformTitleInstance pti WHERE
+            pti.titleInstance.id = :tiId
+          )
+        """.toString(), [tiId: ti.id]
+      ).collect { CoverageStatement cs ->
         new org.olf.dataimport.erm.CoverageStatement([
           'startDate': cs.startDate,
           'endDate': cs.endDate
@@ -421,23 +442,30 @@ public class CoverageService {
     res instanceof TitleInstance ? res : null
   }
 
+
+  // NOTE -- this is slightly misnamed. As of right now this is _only_ a change coverage listener.
+  // This means this whole method is not triggered when doNotCalculate coverage transient is
+  // set on the resource
   public static void changeListener(ErmResource res) {
 
     final PackageContentItem pci = asPCI(res)
     if ( pci ) {
       log.trace "PCI updated, regenerate PTI's coverage"
+      //log.debug "PCI updated, regenerate PTI's coverage"
       calculateCoverage( pci.pti )
     }
 
     final PlatformTitleInstance pti = asPTI(res)
     if ( pti ) {
       log.trace "PTI updated regenerate TI's coverage"
+      //log.debug "PTI updated regenerate TI's coverage"
       calculateCoverage( pti.titleInstance )
     }
 
     final TitleInstance ti = asTI(res)
     if ( ti ) {
       log.trace 'TI updated'
+      //log.debug("TI updated")
     }
   }
 

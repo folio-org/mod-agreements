@@ -177,7 +177,7 @@ class PackageIngestService implements DataBinder {
 								log.debug ("(Package in progress) processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}s")
 							} */
 						}
-						long finishedTime = (System.currentTimeMillis()-result.startTime)/1000
+						long finishedTime = (System.currentTimeMillis()-result.startTime) // Don't divide by 1000 here, instead leave in ms for greater accuracy
 				
 						// This removed logic is WRONG under pushKB because it's chunked -- ensure pushKB does not call full upsertPackage method
 						// At the end - Any PCIs that are currently live (Don't have a removedTimestamp) but whos lastSeenTimestamp is < result.updateTime
@@ -219,7 +219,7 @@ class PackageIngestService implements DataBinder {
     // Need to pause long enough so that the timestamps are different
     TimeUnit.MILLISECONDS.sleep(1)
     if (result.titleCount > 0) {
-      log.debug ("Processed ${result.titleCount} titles in ${finishedTime} seconds (${finishedTime/result.titleCount}s average)")
+      log.debug ("Processed ${result.titleCount} titles in ${finishedTime/1000} seconds (${(finishedTime/result.titleCount)/1000}s average)")
       log.info("Package titles summary::Processed/${result.titleCount}, Added/${result.newTitles}, Updated/${result.updatedTitles}, Removed/${result.removedTitles}, AccessStart/${result.updatedAccessStart}, AccessEnd/${result.updatedAccessEnd}")
 
       // Log the counts too.
@@ -482,12 +482,20 @@ class PackageIngestService implements DataBinder {
       pti = new PlatformTitleInstance(titleInstance:title,
         platform:platform,
         url:pc.url,
-      ).save(failOnError: true)
+      );
+
+      // Ensure coverages don't change here... I _think_ this is only used during ingest where PCI coverage sweep will get triggered eventually
+      pti.doNotCalculateCoverage = true
+      pti.save(failOnError: true)
     } else if (trustedSourceTI) {
       // Update any PTI fields directly
       if (pti.url != pc.url) {
         pti.url = pc.url
       }
+
+      // Ensure coverages don't change here... I _think_ this is only used during ingest where PCI coverage sweep will get triggered eventually
+      pti.doNotCalculateCoverage = true
+
       pti.save(flush: true, failOnError: true)
     }
 
@@ -597,8 +605,6 @@ class PackageIngestService implements DataBinder {
         result.pciStatus = 'new'
       }
 
-      pci.save(flush: true, failOnError: true)
-
       // ADD PTI AND PCI ID TO RESULT
       result.pciId = pci.id;
 
@@ -610,8 +616,11 @@ class PackageIngestService implements DataBinder {
         // We define coverage to be a list in the exchange format, but sometimes it comes just as a JSON map. Convert that
         // to the list of maps that coverageService.extend expects
         Iterable<CoverageStatementSchema> cov = pc.coverage instanceof Iterable ? pc.coverage : [ pc.coverage ]
-        coverageService.setCoverageFromSchema (pci, cov)
+        // Ensure this doesn't trigger the calculateCoverage, that will happen on PCI save
+        coverageService.setCoverageFromSchema (pci, cov, false)
       }
+
+      pci.save(failOnError: true, flush: true)
     }
     else {
       throw new IngestException("Unable to identify platform from ${platform_url_to_use} and ${pc.platformName}");
