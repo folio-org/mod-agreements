@@ -111,10 +111,11 @@ class PushKBService implements DataBinder {
       updatedAccessEnd: 0,
     ]
     KBIngressType ingressType = kbManagementBean.ingressType
-
+    log.debug("pushPCIs (Service) called")
     if (ingressType == KBIngressType.PushKB) {
       try {
         pcis.each { Map record ->
+          log.debug("PCI record: ${record}")
 
           // Handle MDC directly? Might not be the right approach
           MDC.put('title', StringUtils.truncate(record.title.toString()))
@@ -129,12 +130,81 @@ class PushKBService implements DataBinder {
             pc.instanceMedium = 'Electronic'
           }
 
+          log.debug("BeforeBind")
           bindData(pc, record)
+          log.debug("AfterBind")
           if (utilityService.checkValidBinding(pc)) {
+            log.debug("IsValid")
             try {
               Pkg pkg = null;
-              Pkg.withNewTransaction { status ->
+              Pkg.withSession { currentSess ->
+                Pkg.withTransaction {
+                  Pkg.withNewSession { newSess ->
+                    Pkg.withTransaction {
+                      // TODO this will allow the PCI data to update the PKG record... do we want this?
+                      log.debug("Before package look")
+
+                      pkg = packageIngestService.lookupOrCreatePackageFromTitle(pc);
+                      log.debug("LOGGING PACKAGE OBTAINED FROM PCI: ${pkg}")
+                    }
+                    newSess.clear()
+                  }
+                }
+              }
+
+              TitleInstance.withSession { currentSess ->
+                TitleInstance.withTransaction {
+                  TitleInstance.withNewSession { newSess ->
+                    TitleInstance.withTransaction {
+                      Map titleIngestResult = titleIngestService.upsertTitleDirect(pc)
+                      log.debug("LOGGING titleIngestResult: ${titleIngestResult}")
+
+                      if ( titleIngestResult.titleInstanceId != null ) {
+                        log.debug("Before lookupOrCreateTitleHierarchy")
+
+                        Map hierarchyResult = packageIngestService.lookupOrCreateTitleHierarchy(
+                          titleIngestResult.titleInstanceId,
+                          pkg.id,
+                          true,
+                          pc,
+                          result.updateTime,
+                          result.titleCount // FIXME not sure about this
+                        )
+
+                        PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
+                        packageIngestService.hierarchyResultMapLogic(hierarchyResult, result, pci)
+                        log.debug("After lookupOrCreateTitleHierarchy")
+
+                        /* TODO figure out if use of removedTimestamp
+                         * should be something harvest also needs to do directly
+                         * And whether we should be doing it after all the above
+                         * or before.
+                         */
+                        if (pc.removedTimestamp) {
+                            try {
+                              log.debug("Removal candidate: pci.id #${pci.id} (Last seen ${pci.lastSeenTimestamp}, thisUpdate ${result.updateTime}) -- Set removed")
+                              pci.removedTimestamp = pc.removedTimestamp
+                              pci.save(failOnError:true)
+                            } catch ( Exception e ) {
+                              log.error("Problem removing ${pci} in package load", e)
+                            }
+                          result.removedTitles++
+                        }
+                      } else {
+                        String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
+                        log.error(message)
+                      }
+                    }
+                    newSess.clear()
+                  }
+                }
+              }
+
+              // FIXME trying with aggressive session managemnet and clearing as in ingest service -- might not work
+              /* Pkg.withNewTransaction { status ->
                 // TODO this will allow the PCI data to update the PKG record... do we want this?
+                log.debug("Before package look")
+
                 pkg = packageIngestService.lookupOrCreatePackageFromTitle(pc);
                 log.debug("LOGGING PACKAGE OBTAINED FROM PCI: ${pkg}")
                 
@@ -142,6 +212,8 @@ class PushKBService implements DataBinder {
                 log.debug("LOGGING titleIngestResult: ${titleIngestResult}")
 
                 if ( titleIngestResult.titleInstanceId != null ) {
+                  log.debug("Before lookupOrCreateTitleHierarchy")
+
                   Map hierarchyResult = packageIngestService.lookupOrCreateTitleHierarchy(
                     titleIngestResult.titleInstanceId,
                     pkg.id,
@@ -153,12 +225,13 @@ class PushKBService implements DataBinder {
 
                   PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
                   packageIngestService.hierarchyResultMapLogic(hierarchyResult, result, pci)
+                  log.debug("After lookupOrCreateTitleHierarchy")
 
                   /* TODO figure out if use of removedTimestamp
                    * should be something harvest also needs to do directly
                    * And whether we should be doing it after all the above
                    * or before.
-                   */
+                   * /
                   if (pc.removedTimestamp) {
                       try {
                       log.debug("Removal candidate: pci.id #${pci.id} (Last seen ${pci.lastSeenTimestamp}, thisUpdate ${result.updateTime}) -- Set removed")
@@ -173,7 +246,7 @@ class PushKBService implements DataBinder {
                   String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
                   log.error(message)
                 }
-              }
+              } */
             } catch ( IngestException ie ) {
                 // When we've caught an ingest exception, should have helpful error log message
                 String message = "Skipping \"${pc.title}\": ${ie.message}"
@@ -182,6 +255,7 @@ class PushKBService implements DataBinder {
               String message = "Skipping \"${pc.title}\". System error: ${e.message}"
               log.error(message,e)
             }
+            log.debug("Near end") // FIXME seems to be taking 0.1s from log.debug("After lookupOrCreateTitleHierarchy")???
 
             result.titleCount++
             
@@ -196,7 +270,7 @@ class PushKBService implements DataBinder {
           } */
         }
 
-        long finishedTime = (System.currentTimeMillis()-result.startTime)/1000
+        long finishedTime = (System.currentTimeMillis()-result.startTime) // Don't divide by 1000 here
         result.success = true
 
         // TODO Logging may need tweaking between pushKB and harvest
@@ -212,6 +286,7 @@ class PushKBService implements DataBinder {
       result.errorMessage = "pushPCIs not valid when kbManagementBean is configured with type (${ingressType})"
     }
 
+    log.debug("Before return")
     return result
   }
 }
