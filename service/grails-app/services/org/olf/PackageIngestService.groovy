@@ -142,7 +142,7 @@ class PackageIngestService implements DataBinder {
   								PackageContentItem.withNewTransaction { status ->
 									  // Delegate out to TitleIngestService so that any shared steps can move there.
 								  	Map titleIngestResult = titleIngestService.upsertTitle(pc, kb, trustedSourceTI)
-				
+                    //log.debug("LOGDEBUG RESOLVED TITLE: ${titleIngestResult}")
 							  		// titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
 						  			if ( titleIngestResult.titleInstanceId != null ) {
 					  					// Pass off to new hierarchy method (?)

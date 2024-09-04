@@ -111,11 +111,11 @@ class PushKBService implements DataBinder {
       updatedAccessEnd: 0,
     ]
     KBIngressType ingressType = kbManagementBean.ingressType
-    log.debug("pushPCIs (Service) called")
+    //log.debug("pushPCIs (Service) called")
     if (ingressType == KBIngressType.PushKB) {
       try {
         pcis.each { Map record ->
-          log.debug("PCI record: ${record}")
+          //log.debug("PCI record: ${record}")
 
           // Handle MDC directly? Might not be the right approach
           MDC.put('title', StringUtils.truncate(record.title.toString()))
@@ -130,11 +130,11 @@ class PushKBService implements DataBinder {
             pc.instanceMedium = 'Electronic'
           }
 
-          log.debug("BeforeBind")
+          //log.debug("BeforeBind")
           bindData(pc, record)
-          log.debug("AfterBind")
+          //log.debug("AfterBind")
           if (utilityService.checkValidBinding(pc)) {
-            log.debug("IsValid")
+            //log.debug("IsValid")
             try {
               Pkg pkg = null;
               Pkg.withSession { currentSess ->
@@ -142,10 +142,10 @@ class PushKBService implements DataBinder {
                   Pkg.withNewSession { newSess ->
                     Pkg.withTransaction {
                       // TODO this will allow the PCI data to update the PKG record... do we want this?
-                      log.debug("Before package look")
+                      //log.debug("Before package look")
 
                       pkg = packageIngestService.lookupOrCreatePackageFromTitle(pc);
-                      log.debug("LOGGING PACKAGE OBTAINED FROM PCI: ${pkg}")
+                      //log.debug("LOGGING PACKAGE OBTAINED FROM PCI: ${pkg}")
                     }
                     newSess.clear()
                   }
@@ -157,10 +157,10 @@ class PushKBService implements DataBinder {
                   TitleInstance.withNewSession { newSess ->
                     TitleInstance.withTransaction {
                       Map titleIngestResult = titleIngestService.upsertTitleDirect(pc)
-                      log.debug("LOGGING titleIngestResult: ${titleIngestResult}")
+                      //log.debug("LOGGING titleIngestResult: ${titleIngestResult}")
 
                       if ( titleIngestResult.titleInstanceId != null ) {
-                        log.debug("Before lookupOrCreateTitleHierarchy")
+                        //log.debug("Before lookupOrCreateTitleHierarchy")
 
                         Map hierarchyResult = packageIngestService.lookupOrCreateTitleHierarchy(
                           titleIngestResult.titleInstanceId,
@@ -173,7 +173,7 @@ class PushKBService implements DataBinder {
 
                         PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
                         packageIngestService.hierarchyResultMapLogic(hierarchyResult, result, pci)
-                        log.debug("After lookupOrCreateTitleHierarchy")
+                        //log.debug("After lookupOrCreateTitleHierarchy")
 
                         /* TODO figure out if use of removedTimestamp
                          * should be something harvest also needs to do directly
@@ -255,7 +255,7 @@ class PushKBService implements DataBinder {
               String message = "Skipping \"${pc.title}\". System error: ${e.message}"
               log.error(message,e)
             }
-            log.debug("Near end") // FIXME seems to be taking 0.1s from log.debug("After lookupOrCreateTitleHierarchy")???
+            //log.debug("Near end") // FIXME seems to be taking 0.1s from log.debug("After lookupOrCreateTitleHierarchy")???
 
             result.titleCount++
             
@@ -286,7 +286,7 @@ class PushKBService implements DataBinder {
       result.errorMessage = "pushPCIs not valid when kbManagementBean is configured with type (${ingressType})"
     }
 
-    log.debug("Before return")
+    //log.debug("Before return")
     return result
   }
 }
