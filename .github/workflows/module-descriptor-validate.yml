@@ -1,4 +1,4 @@
-name: Validate module descriptor
+name: Validate module
 
 on:
   push:
