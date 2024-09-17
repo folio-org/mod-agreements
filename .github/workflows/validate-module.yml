@@ -59,9 +59,7 @@ jobs:
       - name: Read file contents
         if: failure()
         id: read_file
-        uses: andstor/file-reader-action@v1
-        with:
-          path: "validate_module_descriptor_errors.txt"
+        run: echo "validate_module_descriptor_errors=$(cat validate_module_descriptor_errors.txt)" >> $GITHUB_OUTPUT
       - name: Comment failures on PR
         if: failure()
         run: |
@@ -70,4 +68,4 @@ jobs:
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           COMMENT_URL="https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
 
-          curl -s -H --data "@/validate_module_descriptor_errors.txt" "Authorization: token ${GITHUB_TOKEN}" -X POST $COMMENT_URL"
+          curl -s -H "Authorization: token ${GITHUB_TOKEN}" -X POST $COMMENT_URL - d \"{ \"body\": \"${{steps.read_file.outputs.validate_module_descriptor_errors}}\"}\""
