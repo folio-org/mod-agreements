@@ -60,7 +60,7 @@ jobs:
       - name: Setup validate_module_descriptor_errors file
         if: failure()
         ## Make sure we convert to JSON-safe text before we try to send later
-        run: echo "$(cat validate_module_descriptor_output.txt)" | grep "\[ERROR\]" | jq -Rs | tee validate_module_descriptor_errors.txt
+        run: echo "$(cat validate_module_descriptor_output.txt)" | grep "\[ERROR\]" | tee validate_module_descriptor_errors.txt
       - name: Comment failures on PR
         if: failure()
         run: |
@@ -69,4 +69,4 @@ jobs:
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           COMMENT_URL="https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
           echo "SENDING TO: $COMMENT_URL"
-          curl -s -H "Authorization: token ${GITHUB_TOKEN}" -X POST $COMMENT_URL --data "{ \"body\": \"$(cat validate_module_descriptor_errors.txt)\" }"
+          curl -s -H "Authorization: token ${GITHUB_TOKEN}" -X POST $COMMENT_URL --data "{ \"body\": $(cat validate_module_descriptor_errors.txt) }"
