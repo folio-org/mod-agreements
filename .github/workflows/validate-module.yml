@@ -8,6 +8,11 @@ jobs:
     name: Validate module descriptor
     runs-on: ubuntu-latest
     steps:
+      - name: Get Pull Request Number
+        id: pr_number
+        run: echo "pull_request_number=$(gh pr view --json number -q .number || echo "")" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -60,8 +65,8 @@ jobs:
         if: failure()
         run: |
           # Use GitHub API to create a comment on the PR
-          PR_NUMBER=${{ github.event.pull_request.number }}
+          PR_NUMBER=${{ steps.pr_number.outputs.pull_request_number }}
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           COMMENT_URL="https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
-          curl -s -H "Authorization: token ${GITHUB_TOKEN}" -X POST $COMMENT_URL -d "{\"body\":\"Just testing\"}"
-          #curl -s -H "Authorization: token ${GITHUB_TOKEN}" -X POST $COMMENT_URL -d "{ \"body\": \"\"\"$(cat validate_module_descriptor_errors.txt)\"\"\" }"
+          echo "SENDING TO: $COMMENT_URL"
+          curl -s -H "Authorization: token ${GITHUB_TOKEN}" -X POST $COMMENT_URL -d "{ \"body\": \"\"\"$(cat validate_module_descriptor_errors.txt)\"\"\" }"
