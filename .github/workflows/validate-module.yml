@@ -53,13 +53,15 @@ jobs:
           path: |
             validate_module_descriptor_output.txt
           retention-days: 1
+      - name: Setup validate_module_descriptor_errors file
+        if: failure()
+        run: grep "\[ERROR\]" validate_module_descriptor_output.txt > validate_module_descriptor_errors.txt
       - name: Read file contents
+        if: failure()
         id: read_file
         uses: andstor/file-reader-action@v1
         with:
-          path: "validate_module_descriptor_output.txt"
-      - name: Testing echo
-        run: echo "${ steps.read_file.outputs.contents }"
+          path: "validate_module_descriptor_errors.txt"
       - name: Comment failures on PR
         if: failure()
         run: |
