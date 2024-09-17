@@ -8,7 +8,9 @@ jobs:
     name: Validate module descriptor
     runs-on: ubuntu-latest
     steps:
-      - name: Install maven
-        uses: s4u/setup-maven-action@1.14.0
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: 3.8.2
       - name: Run validator
         run: mvn org.folio:folio-module-descriptor-validator:1.0.0:validate -DmoduleDescriptorFile=build/resources/main/okapi/ModuleDescriptor.json -s settings.xml
