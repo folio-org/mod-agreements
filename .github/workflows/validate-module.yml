@@ -56,10 +56,6 @@ jobs:
       - name: Setup validate_module_descriptor_errors file
         if: failure()
         run: grep "\[ERROR\]" validate_module_descriptor_output.txt > validate_module_descriptor_errors.txt
-      - name: Read file contents
-        if: failure()
-        id: read_file
-        run: echo "validate_module_descriptor_errors=$(cat validate_module_descriptor_errors.txt)" >> $GITHUB_OUTPUT
       - name: Comment failures on PR
         if: failure()
         run: |
@@ -68,4 +64,4 @@ jobs:
           GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           COMMENT_URL="https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments"
 
-          curl -s -H "Authorization: token ${GITHUB_TOKEN}" -X POST $COMMENT_URL -d <<'RAW' { "body": "$(cat validate_module_descriptor_errors.txt)" } RAW
+          curl -s -H "Authorization: token ${GITHUB_TOKEN}" -X POST $COMMENT_URL --data { "body": "$(cat validate_module_descriptor_errors.txt)" }
