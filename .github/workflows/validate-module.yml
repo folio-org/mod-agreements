@@ -55,7 +55,7 @@ jobs:
           retention-days: 1
       - name: Setup validate_module_descriptor_errors file
         if: failure()
-        run: grep "\[ERROR\]" validate_module_descriptor_output.txt > validate_module_descriptor_errors.txt
+        run: echo "$(cat validate_module_descriptor_output.txt)" | tee | grep "\[ERROR\]" 2>&1 | tee validate_module_descriptor_errors.txt
       - name: Comment failures on PR
         if: failure()
         run: |
