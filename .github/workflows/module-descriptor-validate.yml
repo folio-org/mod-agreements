@@ -1,0 +1,14 @@
+name: Validate module descriptor
+
+on:
+  push:
+
+jobs:
+  run:
+    name: Validate module descriptor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install maven
+        uses: s4u/setup-maven-action@1.14.0
+      - name: Run validator
+        run: mvn org.folio:folio-module-descriptor-validator:1.0.0:validate -DmoduleDescriptorFile=build/resources/main/okapi/ModuleDescriptor.json -s settings.xml
