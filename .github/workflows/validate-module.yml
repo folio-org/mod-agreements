@@ -20,5 +20,28 @@ jobs:
         uses: stCarolas/setup-maven@v5
         with:
           maven-version: 3.8.2
+      - name: Set up settings file
+        uses: 1arp/create-a-file-action@0.4.5
+        with:
+          path: 'service'
+          file: 'settings.xml'
+          content:
+            <settings>
+              <profiles>
+                <profile>
+                  <id>folioMavenProfile</id>
+                  <pluginRepositories>
+                    <pluginRepository>
+                      <id>folio-nexus</id>
+                      <name>FOLIO Maven repository</name>
+                      <url>https://repository.folio.org/repository/maven-folio</url>
+                    </pluginRepository>
+                  </pluginRepositories>
+                </profile>
+              </profiles>
+              <activeProfiles>
+                <activeProfile>folioMavenProfile</activeProfile>
+              </activeProfiles>
+            </settings>
       - name: Run validator
         run: mvn org.folio:folio-module-descriptor-validator:1.0.0:validate -DmoduleDescriptorFile=service/src/main/okapi/ModuleDescriptor-template.json -s service/settings.xml
