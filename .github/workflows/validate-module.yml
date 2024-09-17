@@ -45,11 +45,21 @@ jobs:
             </settings>
       - name: Run validator
         run: mvn org.folio:folio-module-descriptor-validator:1.0.0:validate -DmoduleDescriptorFile=service/src/main/okapi/ModuleDescriptor-template.json -s service/settings.xml -l validate_module_descriptor_output.txt
+      - name: Upload validator result
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: validate_module_descriptor_output
+          path: |
+            validate_module_descriptor_output.txt
+          retention-days: 1
       - name: Read file contents
         id: read_file
         uses: andstor/file-reader-action@v1
         with:
           path: "validate_module_descriptor_output.txt"
+      - name: Testing echo
+        run: echo "${ steps.read_file.outputs.contents }"
       - name: Comment failures on PR
         if: failure()
         run: |
