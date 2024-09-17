@@ -44,12 +44,12 @@ jobs:
               </activeProfiles>
             </settings>
       - name: Run validator
-        run: mvn org.folio:folio-module-descriptor-validator:1.0.0:validate -DmoduleDescriptorFile=service/src/main/okapi/ModuleDescriptor-template.json -s service/settings.xml -l validate-module-descriptor-output.txt
+        run: mvn org.folio:folio-module-descriptor-validator:1.0.0:validate -DmoduleDescriptorFile=service/src/main/okapi/ModuleDescriptor-template.json -s service/settings.xml -l validate_module_descriptor_output.txt
       - name: Read file contents
         id: read_file
         uses: andstor/file-reader-action@v1
         with:
-          path: "validate-module-descriptor-output.txt"
+          path: "validate_module_descriptor_output.txt"
       - name: Comment failures on PR
         if: failure()
         run: |
