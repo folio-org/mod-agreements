@@ -13,4 +13,4 @@ jobs:
         with:
           maven-version: 3.8.2
       - name: Run validator
-        run: mvn org.folio:folio-module-descriptor-validator:1.0.0:validate -DmoduleDescriptorFile=service/build/resources/main/okapi/ModuleDescriptor.json -s service/settings.xml
+        run: mvn org.folio:folio-module-descriptor-validator:1.0.0:validate -DmoduleDescriptorFile=${{ github.action_path }}/service/build/resources/main/okapi/ModuleDescriptor.json -s ${{ github.action_path }}/service/settings.xml
