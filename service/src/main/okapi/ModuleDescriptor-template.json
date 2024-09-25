@@ -832,7 +832,7 @@
           ],
           "pathPattern": "/erm/validate/subscriptionAgreement/*",
           "permissionsRequired": [
-            "erm.agreements..property.validate"
+            "erm.agreements.property.validate"
           ]
         },
         {
@@ -1616,7 +1616,7 @@
       "description": "Get resource's entitlement records"
     },
     {
-      "permissionName": "erm.resources.entitlement.get",
+      "permissionName": "erm.resources.entitlement.related.get",
       "displayName": "Resources related entitlement get",
       "description": "Get resource's related entitlement records"
     },
@@ -1652,7 +1652,7 @@
       "permissionName": "erm.entitlements.logEntry.collection.get",
       "displayName": "Entitlements log entry get",
       "description": "Get entitlement log entries"
-    }
+    },
     {
       "permissionName": "erm.entitlements.item.get",
       "displayName": "Entitlements item get",
