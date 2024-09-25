@@ -58,7 +58,7 @@
           ],
           "pathPattern": "/erm/sas/linkedLicenses",
           "permissionsRequired": [
-            "erm.agreements.linkedLicenses.get"
+            "erm.linkedLicenses.collection.get"
           ]
         },
         {
@@ -1109,6 +1109,11 @@
       "permissionName": "erm.agreements.linkedLicenses.get",
       "displayName": "Agreements linked licenses get",
       "description": "Get the linked licenses for an agreement"
+    },
+    {
+      "permissionName": "erm.linkedLicenses.collection.get",
+      "displayName": "Linked licenses collection get",
+      "description": "Get collection of linked license records"
     },
     {
       "permissionName": "erm.agreements.usageDataProviders.collection.get",
