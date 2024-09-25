@@ -643,7 +643,7 @@
           ],
           "pathPattern": "/erm/titles/electronic",
           "permissionsRequired": [
-            "erm.titles.collection.get"
+            "erm.titles.electronic.collection.get"
           ]
         },
         {
@@ -652,7 +652,7 @@
           ],
           "pathPattern": "/erm/titles/entitled",
           "permissionsRequired": [
-            "erm.titles.collection.get"
+            "erm.titles.entitled.collection.get"
           ]
         },
         {
@@ -1708,6 +1708,16 @@
       "description": "Get a collection of title records"
     },
     {
+      "permissionName": "erm.titles.electronic.collection.get",
+      "displayName": "Electronic title collection get",
+      "description": "Get a collection of electronic title records"
+    },
+    {
+      "permissionName": "erm.titles.entitled.collection.get",
+      "displayName": "Entitled title collection get",
+      "description": "Get a collection of entitled title records"
+    },
+    {
       "permissionName": "erm.titles.item.get",
       "displayName": "Title item get",
       "description": "Get title record"
@@ -1716,6 +1726,8 @@
       "permissionName": "erm.titles.view",
       "subPermissions": [
         "erm.titles.collection.get",
+        "erm.titles.electronic.collection.get",
+        "erm.titles.entitled.collection.get",
         "erm.titles.item.get"
       ]
     },
