@@ -382,7 +382,7 @@
           ],
           "pathPattern": "/erm/jobs/{id}/fullLog",
           "permissionsRequired": [
-            "erm.jobs.item.get"
+            "erm.jobs.fullLog.get"
           ]
         },
         {
@@ -391,7 +391,7 @@
           ],
           "pathPattern": "/erm/jobs/{id}/errorLog",
           "permissionsRequired": [
-            "erm.jobs.item.get"
+            "erm.jobs.errorLog.get"
           ]
         },
         {
@@ -400,7 +400,7 @@
           ],
           "pathPattern": "/erm/jobs/{id}/infoLog",
           "permissionsRequired": [
-            "erm.jobs.item.get"
+            "erm.jobs.infoLog.get"
           ]
         },
         {
@@ -409,7 +409,7 @@
           ],
           "pathPattern": "/erm/jobs/{id}/fullLogStream",
           "permissionsRequired": [
-            "erm.jobs.item.get"
+            "erm.jobs.fullLogStream.get"
           ]
         },
         {
@@ -418,7 +418,7 @@
           ],
           "pathPattern": "/erm/jobs/{id}/errorLogStream",
           "permissionsRequired": [
-            "erm.jobs.item.get"
+            "erm.jobs.errorLogStream.get"
           ]
         },
         {
@@ -427,7 +427,7 @@
           ],
           "pathPattern": "/erm/jobs/{id}/infoLogStream",
           "permissionsRequired": [
-            "erm.jobs.item.get"
+            "erm.jobs.infoLogStream.get"
           ]
         },
         {
@@ -436,7 +436,7 @@
           ],
           "pathPattern": "/erm/jobs/{id}/downloadFileObject",
           "permissionsRequired": [
-            "erm.jobs.item.get"
+            "erm.jobs.fileObject.download"
           ]
         },
         {
@@ -1246,10 +1246,58 @@
       "description": "Get job record"
     },
     {
+      "permissionName": "erm.jobs.fullLog.get",
+      "displayName": "Job full log get",
+      "description": "Get full logs for job record"
+    },
+    {
+      "permissionName": "erm.jobs.infoLog.get",
+      "displayName": "Job info log get",
+      "description": "Get info logs for job record"
+    },
+    {
+      "permissionName": "erm.jobs.errorLog.get",
+      "displayName": "Job error log get",
+      "description": "Get error logs for job record"
+    },
+    {
+      "permissionName": "erm.jobs.fullLogStream.get",
+      "displayName": "Job full log get",
+      "description": "Get full log stream for job record"
+    },
+    {
+      "permissionName": "erm.jobs.infoLogStream.get",
+      "displayName": "Job info log get",
+      "description": "Get info log stream for job record"
+    },
+    {
+      "permissionName": "erm.jobs.errorLogStream.get",
+      "displayName": "Job error log get",
+      "description": "Get error log stream for job record"
+    },
+    {
+      "permissionName": "erm.jobs.fileObject.download",
+      "displayName": "Job file object download",
+      "description": "Download file object for  job record"
+    },
+    {
+      "permissionName": "erm.jobs.logs.view",
+      "subPermissions": [
+        "erm.jobs.fullLog.get",
+        "erm.jobs.fullLogStream.get",
+        "erm.jobs.infoLog.get",
+        "erm.jobs.infoLogStream.get",
+        "erm.jobs.errorLog.get",
+        "erm.jobs.errorLogStream.get"
+      ]
+    },
+    {
       "permissionName": "erm.jobs.view",
       "subPermissions": [
         "erm.jobs.collection.get",
-        "erm.jobs.item.get"
+        "erm.jobs.item.get",
+        "erm.jobs.logs.view",
+        "erm.jobs.fileObject.download"
       ]
     },
     {
