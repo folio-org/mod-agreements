@@ -463,7 +463,7 @@
           ],
           "pathPattern": "/erm/jobs/type/{type}",
           "permissionsRequired": [
-            "erm.jobs.collection.get"
+            "erm.jobs-by-type.collection.get"
           ]
         },
         {
@@ -1241,6 +1241,11 @@
       "description": "Get a collection of job records"
     },
     {
+      "permissionName": "erm.jobs-by-type.collection.get",
+      "displayName": "Jobs by type collection get",
+      "description": "Get a collection of job records by job type"
+    },
+    {
       "permissionName": "erm.jobs.item.get",
       "displayName": "Job item get",
       "description": "Get job record"
@@ -1295,6 +1300,7 @@
       "permissionName": "erm.jobs.view",
       "subPermissions": [
         "erm.jobs.collection.get",
+        "erm.jobs-by-type.collection.get",
         "erm.jobs.item.get",
         "erm.jobs.logs.view",
         "erm.jobs.fileObject.download"
