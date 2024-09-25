@@ -805,7 +805,7 @@
           ],
           "pathPattern": "/erm/custprops/contexts",
           "permissionsRequired": [
-            "erm.custprops.collection.get"
+            "erm.custprops.contexts.get"
           ]
         },
         {
@@ -1581,6 +1581,11 @@
       "description": "Get a collection of custom properties records"
     },
     {
+      "permissionName": "erm.custprops.contexts.get",
+      "displayName": "Custom properties contexts get",
+      "description": "Get all contexts for agreements custom properties"
+    },
+    {
       "permissionName": "erm.custprops.item.get",
       "displayName": "Custom property item get",
       "description": "Get custom property record"
@@ -1589,6 +1594,7 @@
       "permissionName": "erm.custprops.view",
       "subPermissions": [
         "erm.custprops.collection.get",
+        "erm.custprops.contexts.get",
         "erm.custprops.item.get"
       ]
     },
