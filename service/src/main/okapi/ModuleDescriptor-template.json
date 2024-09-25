@@ -598,7 +598,7 @@
           ],
           "pathPattern": "/erm/resource/{id}/entitlements",
           "permissionsRequired": [
-            "erm.resources.item.entitlement.get"
+            "erm.resources.entitlement.get"
           ]
         },
         {
@@ -607,7 +607,7 @@
           ],
           "pathPattern": "/erm/resource/{id}/entitlements/related",
           "permissionsRequired": [
-            "erm.resources.item.entitlement.get"
+            "erm.resources.entitlement.related.get"
           ]
         },
         {
@@ -1605,9 +1605,14 @@
       "description": "Get resource record"
     },
     {
-      "permissionName": "erm.resources.item.entitlement.get",
-      "displayName": "Resources item entitlement get",
+      "permissionName": "erm.resources.entitlement.get",
+      "displayName": "Resources entitlement get",
       "description": "Get resource's entitlement records"
+    },
+    {
+      "permissionName": "erm.resources.entitlement.get",
+      "displayName": "Resources related entitlement get",
+      "description": "Get resource's related entitlement records"
     },
     {
       "permissionName": "erm.resources.entitlementOptions.get",
@@ -1624,7 +1629,8 @@
       "subPermissions": [
         "erm.resources.collection.get",
         "erm.resources.item.get",
-        "erm.resources.item.entitlement.get",
+        "erm.resources.entitlement.get",
+        "erm.resources.entitlement.related.get",
         "erm.resources.entitlementOptions.get",
         "erm.resources.entitlementOptions.static.get",
         "erm.entitlements.view",
