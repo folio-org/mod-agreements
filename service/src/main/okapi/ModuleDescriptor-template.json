@@ -49,7 +49,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/export/*",
           "permissionsRequired": [
-            "erm.agreements.export"
+            "erm.agreements.subset.export"
           ]
         },
         {
@@ -112,7 +112,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/resources/export",
           "permissionsRequired": [
-            "erm.agreements.export"
+            "erm.agreements.resources.export"
           ]
         },
         {
@@ -121,7 +121,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/resources/export/*",
           "permissionsRequired": [
-            "erm.agreements.export"
+            "erm.agreements.resources.specific.export"
           ]
         },
         {
@@ -166,7 +166,7 @@
           ],
           "pathPattern": "/export",
           "permissionsRequired": [
-            "erm.agreements.export"
+            "erm.agreements.direct.export"
           ]
         },
         {
@@ -175,7 +175,7 @@
           ],
           "pathPattern": "/export/*",
           "permissionsRequired": [
-            "erm.agreements.export"
+            "erm.agreements.direct.subset.export"
           ]
         },
         {
@@ -1065,7 +1065,45 @@
     {
       "permissionName": "erm.agreements.export",
       "displayName": "Agreements export",
-      "description": "Export an agreement or its resources"
+      "description": "Export an agreement"
+    },
+    {
+      "permissionName": "erm.agreements.subset.export",
+      "displayName": "Agreements subset export",
+      "description": "Export some slice of an agreement"
+    },
+    {
+      "permissionName": "erm.agreements.resources.export",
+      "displayName": "Agreements resources export",
+      "description": "Export the resources for an agreement"
+    },
+    {
+      "permissionName": "erm.agreements.resources.specific.export",
+      "displayName": "Agreements resources specific export",
+      "description": "Export the resources for an agreement as a subset and/or specifying a format"
+    },
+    {
+      "permissionName": "erm.agreements.direct.export",
+      "displayName": "Agreements direct export",
+      "description": "Export an agreement through the '/export' endpoint"
+    },
+    {
+      "permissionName": "erm.agreements.direct.subset.export",
+      "displayName": "Agreements direct subset export",
+      "description":"Export some slice of an agreement through the '/export' endpoint"
+    },
+    {
+      "permissionName": "erm.agreements.all.export",
+      "displayName": "All agreements export permissions",
+      "description": "Allow any and all agreement export options",
+      "subPermissions": [
+        "erm.agreements.export",
+        "erm.agreements.subset.export",
+        "erm.agreements.resources.export",
+        "erm.agreements.resources.specific.export",
+        "erm.agreements.direct.export",
+        "erm.agreements.direct.subset.export"
+      ]
     },
     {
       "permissionName": "erm.agreements.linkedLicenses.get",
@@ -1089,7 +1127,7 @@
         "erm.agreements.item.get",
         "erm.agreements.resources.get",
         "erm.agreements.resources.subset.get",
-        "erm.agreements.export",
+        "erm.agreements.all.export",
         "erm.agreements.linkedLicenses.get",
         "erm.agreements.usageDataProviders.get",
         "erm.resources.view"
