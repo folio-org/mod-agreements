@@ -94,7 +94,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/resources",
           "permissionsRequired": [
-            "erm.agreements.item.resources.get"
+            "erm.agreements.resources.get"
           ]
         },
         {
@@ -103,7 +103,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/resources/*",
           "permissionsRequired": [
-            "erm.agreements.item.resources.get"
+            "erm.agreements.resources.subset.get"
           ]
         },
         {
@@ -1053,9 +1053,14 @@
       "description": "Get an agreement record"
     },
     {
-      "permissionName": "erm.agreements.item.resources.get",
-      "displayName": "Agreements item resources get",
+      "permissionName": "erm.agreements.resources.get",
+      "displayName": "Agreements resources get",
       "description": "Get an agreement record's resources"
+    },
+    {
+      "permissionName": "erm.agreements.resources.subset.get",
+      "displayName": "Agreements resources subset get",
+      "description": "Get a subset of an agreement record's resources (eg \"future\" or \"dropped\")"
     },
     {
       "permissionName": "erm.agreements.export",
@@ -1082,7 +1087,8 @@
       "subPermissions": [
         "erm.agreements.collection.get",
         "erm.agreements.item.get",
-        "erm.agreements.item.resources.get",
+        "erm.agreements.resources.get",
+        "erm.agreements.resources.subset.get",
         "erm.agreements.export",
         "erm.agreements.linkedLicenses.get",
         "erm.agreements.usageDataProviders.get",
