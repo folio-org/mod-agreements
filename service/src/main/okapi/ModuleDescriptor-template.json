@@ -904,7 +904,7 @@
           ],
           "pathPattern": "/erm/sts/template",
           "permissionsRequired": [
-            "erm.sts.template"
+            "erm.sts.template.generate"
           ]
         },
         {
@@ -913,7 +913,7 @@
           ],
           "pathPattern": "/erm/sts/template/{id}",
           "permissionsRequired": [
-            "erm.sts.collection.get"
+            "erm.sts-for-id.collection.get"
           ]
         },
         {
@@ -1639,6 +1639,11 @@
       "description": "Get a collection of string templates"
     },
     {
+      "permissionName": "erm.sts-for-id.collection.get",
+      "displayName": "String templates for id collection get",
+      "description": "Get a collection of string templates for a platform id"
+    },
+    {
       "permissionName": "erm.sts.item.get",
       "displayName": "String templates item get",
       "description": "Get a string template record"
@@ -1647,6 +1652,7 @@
       "permissionName": "erm.sts.view",
       "subPermissions": [
         "erm.sts.collection.get",
+        "erm.sts-for-id.collection.get",
         "erm.sts.item.get"
       ]
     },
@@ -1681,9 +1687,9 @@
       ]
     },
     {
-      "permissionName": "erm.sts.template",
-      "displayName": "String templates perform template",
-      "description": "Performs string templating"
+      "permissionName": "erm.sts.template.generate",
+      "displayName": "String templates perform template (DEPRECATED)",
+      "description": "Performs string templating (DEPRECATED)"
     },
     {
       "permissionName": "erm.admin.action.execute",
