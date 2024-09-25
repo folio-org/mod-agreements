@@ -616,7 +616,7 @@
           ],
           "pathPattern": "/erm/resource/{id}/entitlementOptions",
           "permissionsRequired": [
-            "erm.resources.item.entitlementOptions.get"
+            "erm.resources.entitlementOptions.get"
           ]
         },
         {
@@ -625,7 +625,7 @@
           ],
           "pathPattern": "/erm/resource/{id}/static/entitlementOptions",
           "permissionsRequired": [
-            "erm.resources.item.entitlementOptions.get"
+            "erm.resources.entitlementOptions.static.get"
           ]
         },
         {
@@ -1537,7 +1537,12 @@
       "description": "Get resource's entitlement records"
     },
     {
-      "permissionName": "erm.resources.item.entitlementOptions.get",
+      "permissionName": "erm.resources.entitlementOptions.get",
+      "displayName": "Resources item entitlement options get",
+      "description": "Get resource's entitlement options records"
+    },
+    {
+      "permissionName": "erm.resources.entitlementOptions.static.get",
       "displayName": "Resources item entitlement options get",
       "description": "Get resource's entitlement options records"
     },
@@ -1547,7 +1552,8 @@
         "erm.resources.collection.get",
         "erm.resources.item.get",
         "erm.resources.item.entitlement.get",
-        "erm.resources.item.entitlementOptions.get",
+        "erm.resources.entitlementOptions.get",
+        "erm.resources.entitlementOptions.static.get",
         "erm.entitlements.view",
         "erm.kbs.collection.get"
       ]
