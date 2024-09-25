@@ -931,7 +931,7 @@
           ],
           "pathPattern": "/erm/admin/*",
           "permissionsRequired": [
-            "erm.admin.action"
+            "erm.admin.action.execute"
           ]
         },
         {
@@ -1686,7 +1686,7 @@
       "description": "Performs string templating"
     },
     {
-      "permissionName": "erm.admin.action",
+      "permissionName": "erm.admin.action.execute",
       "displayName": "Admin endpoint perform action",
       "description": "Performs action from admin endpoint"
     },
