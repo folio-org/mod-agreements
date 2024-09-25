@@ -148,7 +148,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/clone",
           "permissionsRequired": [
-            "erm.agreements.item.clone"
+            "erm.agreements.clone.execute"
           ]
         },
         {
@@ -1100,7 +1100,7 @@
       "description": "Put an agreement"
     },
     {
-      "permissionName": "erm.agreements.item.clone",
+      "permissionName": "erm.agreements.clone.execute",
       "displayName": "Agreements item clone",
       "description": "Clone an agreement"
     },
@@ -1110,7 +1110,7 @@
         "erm.agreements.view",
         "erm.agreements.item.post",
         "erm.agreements.item.put",
-        "erm.agreements.item.clone",
+        "erm.agreements.clone.execute",
         "erm.agreements.validate"
       ]
     },
