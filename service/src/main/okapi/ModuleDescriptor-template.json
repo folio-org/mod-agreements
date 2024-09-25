@@ -922,7 +922,7 @@
           ],
           "pathPattern": "/erm/entitlementLogEntry",
           "permissionsRequired": [
-            "erm.entitlements.collection.get"
+            "erm.entitlements.logEntry.collection.get"
           ]
         },
         {
@@ -1643,6 +1643,11 @@
       "description": "Get a collection of entitlement records"
     },
     {
+      "permissionName": "erm.entitlements.logEntry.collection.get",
+      "displayName": "Entitlements log entry get",
+      "description": "Get entitlement log entries"
+    }
+    {
       "permissionName": "erm.entitlements.item.get",
       "displayName": "Entitlements item get",
       "description": "Get entitlement record"
@@ -1651,6 +1656,7 @@
       "permissionName": "erm.entitlements.view",
       "subPermissions": [
         "erm.entitlements.collection.get",
+        "erm.entitlements.logEntry.collection.get",
         "erm.entitlements.item.get"
       ]
     },
