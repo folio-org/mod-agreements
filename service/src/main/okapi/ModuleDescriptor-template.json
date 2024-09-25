@@ -346,7 +346,7 @@
           ],
           "pathPattern": "/erm/packages/{id}/content/*",
           "permissionsRequired": [
-            "erm.packages.item.content.get"
+            "erm.packages.item.content.subset.get"
           ]
         },
         {
@@ -355,7 +355,7 @@
           ],
           "pathPattern": "/erm/packages/sources",
           "permissionsRequired": [
-            "erm.packages.collection.get"
+            "erm.packages.sources.get"
           ]
         },
         {
@@ -1262,6 +1262,11 @@
       "description": "Get a collection of package records"
     },
     {
+      "permissionName": "erm.packages.sources.get",
+      "displayName": "Packages sources get",
+      "description": "Get sources for all package records"
+    },
+    {
       "permissionName": "erm.packages.item.get",
       "displayName": "Package item get",
       "description": "Get package record"
@@ -1272,11 +1277,18 @@
       "description": "Get package record's contents"
     },
     {
+      "permissionName": "erm.packages.item.content.subset.get",
+      "displayName": "Package item content subset get",
+      "description": "Get a subset of a package record's contents"
+    },
+    {
       "permissionName": "erm.packages.view",
       "subPermissions": [
         "erm.packages.collection.get",
+        "erm.packages.sources.get",
         "erm.packages.item.get",
-        "erm.packages.item.content.get"
+        "erm.packages.item.content.get",
+        "erm.packages.item.content.subset.get"
       ]
     },
     {
