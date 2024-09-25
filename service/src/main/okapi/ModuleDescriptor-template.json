@@ -472,7 +472,7 @@
           ],
           "pathPattern": "/erm/refdata",
           "permissionsRequired": [
-            "erm.refdata.collection.get"
+            "erm.refdata-category.collection.get"
           ]
         },
         {
@@ -481,7 +481,7 @@
           ],
           "pathPattern": "/erm/refdata/{domain}/{property}",
           "permissionsRequired": [
-            "erm.refdata.collection.get"
+            "erm.refdata-value.collection.get"
           ]
         },
         {
@@ -490,7 +490,7 @@
           ],
           "pathPattern": "/erm/refdata/{id}",
           "permissionsRequired": [
-            "erm.refdata.item.get"
+            "erm.refdata-category.item.get"
           ]
         },
         {
@@ -499,7 +499,7 @@
           ],
           "pathPattern": "/erm/refdata",
           "permissionsRequired": [
-            "erm.refdata.item.post"
+            "erm.refdata-category.item.post"
           ]
         },
         {
@@ -508,7 +508,7 @@
           ],
           "pathPattern": "/erm/refdata/{id}",
           "permissionsRequired": [
-            "erm.refdata.item.put"
+            "erm.refdata-category.item.put"
           ]
         },
         {
@@ -517,7 +517,7 @@
           ],
           "pathPattern": "/erm/refdata/{id}",
           "permissionsRequired": [
-            "erm.refdata.item.delete"
+            "erm.refdata-category.item.delete"
           ]
         },
         {
@@ -1276,50 +1276,55 @@
       ]
     },
     {
-      "permissionName": "erm.refdata.collection.get",
-      "displayName": "Refdata collection get",
-      "description": "Get a collection of refdata records"
+      "permissionName": "erm.refdata-category.collection.get",
+      "displayName": "Refdata category collection get",
+      "description": "Get a collection of refdata category records"
     },
     {
-      "permissionName": "erm.refdata.item.get",
-      "displayName": "Refdata item get",
-      "description": "Get refdata record"
+      "permissionName": "erm.refdata-value.collection.get",
+      "displayName": "Refdata value collection get",
+      "description": "Get a collection of refdata value records"
+    },
+    {
+      "permissionName": "erm.refdata-category.item.get",
+      "displayName": "Refdata item category get",
+      "description": "Get refdata category record"
     },
     {
       "permissionName": "erm.refdata.view",
       "subPermissions": [
-        "erm.refdata.collection.get",
-        "erm.refdata.item.get"
+        "erm.refdata-category.collection.get",
+        "erm.refdata-category.item.get"
       ]
     },
     {
-      "permissionName": "erm.refdata.item.post",
-      "displayName": "Refdata item post",
-      "description": "Post refdata record"
+      "permissionName": "erm.refdata-category.item.post",
+      "displayName": "Refdata category item post",
+      "description": "Post refdata category record"
     },
     {
-      "permissionName": "erm.refdata.item.put",
-      "displayName": "Refdata item put",
-      "description": "Put refdata record"
+      "permissionName": "erm.refdata-category.item.put",
+      "displayName": "Refdata category item put",
+      "description": "Put refdata category record"
     },
     {
       "permissionName": "erm.refdata.edit",
       "subPermissions": [
         "erm.refdata.view",
-        "erm.refdata.item.post",
-        "erm.refdata.item.put"
+        "erm.refdata-category.item.post",
+        "erm.refdata-category.item.put"
       ]
     },
     {
-      "permissionName": "erm.refdata.item.delete",
-      "displayName": "Refdata item delete",
-      "description": "Delete refdata record"
+      "permissionName": "erm.refdata-category.item.delete",
+      "displayName": "Refdata category item delete",
+      "description": "Delete refdata category record"
     },
     {
       "permissionName": "erm.refdata.manage",
       "subPermissions": [
         "erm.refdata.edit",
-        "erm.refdata.item.delete"
+        "erm.refdata-category.item.delete"
       ]
     },
     {
