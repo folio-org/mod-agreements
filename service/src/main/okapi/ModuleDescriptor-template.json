@@ -832,7 +832,7 @@
           ],
           "pathPattern": "/erm/validate/subscriptionAgreement/*",
           "permissionsRequired": [
-            "erm.agreements.validate"
+            "erm.agreements..property.validate"
           ]
         },
         {
@@ -1122,8 +1122,13 @@
     },
     {
       "permissionName": "erm.agreements.validate",
-      "displayName": "Validate subscription agreement post",
-      "description": "Validate subscription agreement information"
+      "displayName": "Validate subscription agreement",
+      "description": "Validate a subscription agreement record"
+    },
+    {
+      "permissionName": "erm.agreements.property.validate",
+      "displayName": "Validate SubscriptionAgreement property",
+      "description": "Validate a property on a SubscriptionAgreement record"
     },
     {
       "permissionName": "erm.agreements.view",
@@ -1161,7 +1166,8 @@
         "erm.agreements.item.post",
         "erm.agreements.item.put",
         "erm.agreements.clone.execute",
-        "erm.agreements.validate"
+        "erm.agreements.validate",
+        "erm.agreements.property.validate"
       ]
     },
     {
