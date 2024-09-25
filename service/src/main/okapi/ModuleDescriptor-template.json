@@ -580,7 +580,7 @@
           ],
           "pathPattern": "/erm/resource/electronic",
           "permissionsRequired": [
-            "erm.resources.collection.get"
+            "erm.resources.electronic.collection.get"
           ]
         },
         {
@@ -1575,6 +1575,11 @@
       "permissionName": "erm.resources.collection.get",
       "displayName": "Resources collection get",
       "description": "Get a collection of resource records"
+    },
+    {
+      "permissionName": "erm.resources.electronic.collection.get",
+      "displayName": "Resources electronic collection get",
+      "description": "Get a collection of electronic resource records"
     },
     {
       "permissionName": "erm.resources.item.get",
