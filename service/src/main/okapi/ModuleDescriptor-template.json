@@ -850,7 +850,7 @@
           ],
           "pathPattern": "/erm/validate/remoteKB/*",
           "permissionsRequired": [
-            "erm.kbs.validate"
+            "erm.kbs.property.validate"
           ]
         },
         {
@@ -1393,8 +1393,13 @@
     },
     {
       "permissionName": "erm.kbs.validate",
-      "displayName": "Validate knowledge base post",
-      "description": "Validate knowledge base information"
+      "displayName": "Validate RemoteKB",
+      "description": "Validate a RemoteKB record"
+    },
+    {
+      "permissionName": "erm.kbs.property.validate",
+      "displayName": "Validate RemoteKB property",
+      "description": "Validate a property on a RemoteKB record"
     },
     {
       "permissionName": "erm.kbs.view",
@@ -1419,7 +1424,8 @@
         "erm.kbs.view",
         "erm.kbs.item.post",
         "erm.kbs.item.put",
-        "erm.kbs.validate"
+        "erm.kbs.validate",
+        "erm.kbs.property.validate"
       ]
     },
     {
