@@ -805,7 +805,7 @@
           ],
           "pathPattern": "/erm/custprops/contexts",
           "permissionsRequired": [
-            "erm.custprops.contexts.get"
+            "erm.custprops.contexts.collection.get"
           ]
         },
         {
@@ -1810,7 +1810,7 @@
       "permissionName": "erm.custprops.view",
       "subPermissions": [
         "erm.custprops.collection.get",
-        "erm.custprops.contexts.get",
+        "erm.custprops.contexts.collection.get",
         "erm.custprops.item.get"
       ]
     },
