@@ -76,7 +76,7 @@
           ],
           "pathPattern": "/erm/sas/usageDataProviders",
           "permissionsRequired": [
-            "erm.agreements.usageDataProviders.collection.get"
+            "erm.usageDataProviders.collection.get"
           ]
         },
         {
@@ -85,7 +85,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/usageDataProviders",
           "permissionsRequired": [
-            "erm.agreements.usageDataProviders.get"
+            "erm.agreements.usageDataProviders.collection.get"
           ]
         },
         {
@@ -337,7 +337,7 @@
           ],
           "pathPattern": "/erm/packages/{id}/content",
           "permissionsRequired": [
-            "erm.packages.item.content.get"
+            "erm.packages.content.collection.get"
           ]
         },
         {
@@ -346,7 +346,7 @@
           ],
           "pathPattern": "/erm/packages/{id}/content/*",
           "permissionsRequired": [
-            "erm.packages.item.content.subset.get"
+            "erm.packages.content.subset.collection.get"
           ]
         },
         {
@@ -355,7 +355,7 @@
           ],
           "pathPattern": "/erm/packages/sources",
           "permissionsRequired": [
-            "erm.packages.sources.get"
+            "erm.packages.sources.collection.get"
           ]
         },
         {
@@ -1109,13 +1109,16 @@
       "description": "Get collection of linked license records"
     },
     {
-      "permissionName": "erm.agreements.usageDataProviders.collection.get",
-      "displayName": "Agreements usage data providers collection get",
-      "description": "Get usage data providers"
+      "permissionName": "erm.usageDataProviders.collection.get",
+      "displayName": "Usage data providers collection get",
+      "description": "Get usage data providers",
+      "replaces": [
+        "erm.agreements.usageDataProviders.get"
+      ]
     },
     {
-      "permissionName": "erm.agreements.usageDataProviders.get",
-      "displayName": "Agreements usage data providers get",
+      "permissionName": "erm.agreements.usageDataProviders.collection.get",
+      "displayName": "Agreements usage data providers collection get",
       "description": "Get the usage data providers for an agreement"
     },
     {
@@ -1142,8 +1145,8 @@
         "erm.all.agreements.resources.export",
         "erm.all.agreements.resources.subset_by_format.export",
         "erm.agreements.linkedLicenses.get",
+        "erm.usageDataProviders.collection.get",
         "erm.agreements.usageDataProviders.collection.get",
-        "erm.agreements.usageDataProviders.get",
         "erm.resources.view"
       ]
     },
@@ -1280,7 +1283,7 @@
       "description": "Get a collection of package records"
     },
     {
-      "permissionName": "erm.packages.sources.get",
+      "permissionName": "erm.packages.sources.collection.get",
       "displayName": "Packages sources get",
       "description": "Get sources for all package records"
     },
@@ -1290,23 +1293,29 @@
       "description": "Get package record"
     },
     {
-      "permissionName": "erm.packages.item.content.get",
+      "permissionName": "erm.packages.content.collection.get",
       "displayName": "Package item content get",
-      "description": "Get package record's contents"
+      "description": "Get package record's contents",
+      "replaces": [
+        "erm.packages.item.content.get"
+      ]
     },
     {
-      "permissionName": "erm.packages.item.content.subset.get",
+      "permissionName": "erm.packages.content.subset.collection.get",
       "displayName": "Package item content subset get",
-      "description": "Get a subset of a package record's contents"
+      "description": "Get a subset of a package record's contents",
+      "replaces": [
+        "erm.packages.item.content.get"
+      ]
     },
     {
       "permissionName": "erm.packages.view",
       "subPermissions": [
         "erm.packages.collection.get",
-        "erm.packages.sources.get",
+        "erm.packages.sources.collection.get",
         "erm.packages.item.get",
-        "erm.packages.item.content.get",
-        "erm.packages.item.content.subset.get"
+        "erm.packages.content.collection.get",
+        "erm.packages.content.subset.collection.get"
       ]
     },
     {
