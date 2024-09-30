@@ -67,7 +67,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/linkedLicenses",
           "permissionsRequired": [
-            "erm.agreements.linkedLicenses.get"
+            "erm.agreements.linkedLicenses.collection.get"
           ]
         },
         {
@@ -598,7 +598,7 @@
           ],
           "pathPattern": "/erm/resource/{id}/entitlements",
           "permissionsRequired": [
-            "erm.resources.entitlement.get"
+            "erm.resources.entitlement.collection.get"
           ]
         },
         {
@@ -607,7 +607,7 @@
           ],
           "pathPattern": "/erm/resource/{id}/entitlements/related",
           "permissionsRequired": [
-            "erm.resources.entitlement.related.get"
+            "erm.resources.entitlement.related.collection.get"
           ]
         },
         {
@@ -1099,14 +1099,20 @@
       "description":"Export a subset of all resources across all agreements"
     },
     {
-      "permissionName": "erm.agreements.linkedLicenses.get",
-      "displayName": "Agreements linked licenses get",
-      "description": "Get the linked licenses for an agreement"
+      "permissionName": "erm.agreements.linkedLicenses.collection.get",
+      "displayName": "Agreements linked licenses collection get",
+      "description": "Get the linked licenses for an agreement",
+      "replaces": [
+        "erm.agreements.linkedLicenses.get"
+      ]
     },
     {
       "permissionName": "erm.linkedLicenses.collection.get",
       "displayName": "Linked licenses collection get",
-      "description": "Get collection of linked license records"
+      "description": "Get collection of linked license records",
+      "replaces": [
+        "erm.agreements.linkedLicenses.get"
+      ]
     },
     {
       "permissionName": "erm.usageDataProviders.collection.get",
@@ -1144,7 +1150,7 @@
         "erm.agreements.resources.subset_by_format.export",
         "erm.all.agreements.resources.export",
         "erm.all.agreements.resources.subset_by_format.export",
-        "erm.agreements.linkedLicenses.get",
+        "erm.agreements.linkedLicenses.collection.get",
         "erm.usageDataProviders.collection.get",
         "erm.agreements.usageDataProviders.collection.get",
         "erm.resources.view"
@@ -1645,14 +1651,20 @@
       "description": "Get resource record"
     },
     {
-      "permissionName": "erm.resources.entitlement.get",
+      "permissionName": "erm.resources.entitlement.collection.get",
       "displayName": "Resources entitlement get",
-      "description": "Get resource's entitlement records"
+      "description": "Get entitlement records for a resource",
+      "replaces": [
+        "erm.resources.item.entitlement.get"
+      ]
     },
     {
-      "permissionName": "erm.resources.entitlement.related.get",
+      "permissionName": "erm.resources.entitlement.related.collection.get",
       "displayName": "Resources related entitlement get",
-      "description": "Get resource's related entitlement records"
+      "description": "Get related entitlement records for a resource",
+      "replaces": [
+        "erm.resources.item.entitlement.get"
+      ]
     },
     {
       "permissionName": "erm.resources.entitlementOptions.collection.get",
@@ -1676,8 +1688,8 @@
         "erm.resources.collection.get",
         "erm.resources.electronic.collection.get",
         "erm.resources.item.get",
-        "erm.resources.entitlement.get",
-        "erm.resources.entitlement.related.get",
+        "erm.resources.entitlement.collection.get",
+        "erm.resources.entitlement.related.collection.get",
         "erm.resources.entitlementOptions.collection.get",
         "erm.resources.entitlementOptions.static.collection.get",
         "erm.entitlements.view",
