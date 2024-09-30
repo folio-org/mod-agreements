@@ -49,7 +49,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/export/*",
           "permissionsRequired": [
-            "erm.agreements.subset.export"
+            "erm.agreements_with_resource_subset.export"
           ]
         },
         {
@@ -94,7 +94,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/resources",
           "permissionsRequired": [
-            "erm.agreements.resources.get"
+            "erm.agreements.resources.collection.get"
           ]
         },
         {
@@ -103,7 +103,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/resources/*",
           "permissionsRequired": [
-            "erm.agreements.resources.subset.get"
+            "erm.agreements.resources.subset.collection.get"
           ]
         },
         {
@@ -121,7 +121,7 @@
           ],
           "pathPattern": "/erm/sas/{id}/resources/export/*",
           "permissionsRequired": [
-            "erm.agreements.resources.specific.export"
+            "erm.agreements.resources.subset_by_format.export"
           ]
         },
         {
@@ -166,7 +166,7 @@
           ],
           "pathPattern": "/export",
           "permissionsRequired": [
-            "erm.agreements.direct.export"
+            "erm.all.agreements.resources.export"
           ]
         },
         {
@@ -175,7 +175,7 @@
           ],
           "pathPattern": "/export/*",
           "permissionsRequired": [
-            "erm.agreements.direct.subset.export"
+            "erm.all.agreements.resources.subset_by_format.export"
           ]
         },
         {
@@ -382,7 +382,7 @@
           ],
           "pathPattern": "/erm/jobs/{id}/fullLog",
           "permissionsRequired": [
-            "erm.jobs.fullLog.get"
+            "erm.jobs.fullLog.collection.get"
           ]
         },
         {
@@ -391,7 +391,7 @@
           ],
           "pathPattern": "/erm/jobs/{id}/errorLog",
           "permissionsRequired": [
-            "erm.jobs.errorLog.get"
+            "erm.jobs.errorLog.collection.get"
           ]
         },
         {
@@ -400,7 +400,7 @@
           ],
           "pathPattern": "/erm/jobs/{id}/infoLog",
           "permissionsRequired": [
-            "erm.jobs.infoLog.get"
+            "erm.jobs.infoLog.collection.get"
           ]
         },
         {
@@ -463,7 +463,7 @@
           ],
           "pathPattern": "/erm/jobs/type/{type}",
           "permissionsRequired": [
-            "erm.jobs-by-type.collection.get"
+            "erm.jobs_by_type.collection.get"
           ]
         },
         {
@@ -616,7 +616,7 @@
           ],
           "pathPattern": "/erm/resource/{id}/entitlementOptions",
           "permissionsRequired": [
-            "erm.resources.entitlementOptions.get"
+            "erm.resources.entitlementOptions.collection.get"
           ]
         },
         {
@@ -625,7 +625,7 @@
           ],
           "pathPattern": "/erm/resource/{id}/static/entitlementOptions",
           "permissionsRequired": [
-            "erm.resources.entitlementOptions.static.get"
+            "erm.resources.entitlementOptions.static.collection.get"
           ]
         },
         {
@@ -913,7 +913,7 @@
           ],
           "pathPattern": "/erm/sts/template/{id}",
           "permissionsRequired": [
-            "erm.sts-for-id.collection.get"
+            "erm.sts_for_platform_id.collection.get"
           ]
         },
         {
@@ -1053,14 +1053,20 @@
       "description": "Get an agreement record"
     },
     {
-      "permissionName": "erm.agreements.resources.get",
+      "permissionName": "erm.agreements.resources.collection.get",
       "displayName": "Agreements resources get",
-      "description": "Get an agreement record's resources"
+      "description": "Get an agreement record's resources",
+      "replaces": [
+        "erm.agreements.item.resources.get"
+      ]
     },
     {
-      "permissionName": "erm.agreements.resources.subset.get",
+      "permissionName": "erm.agreements.resources.subset.collection.get",
       "displayName": "Agreements resources subset get",
-      "description": "Get a subset of an agreement record's resources (eg \"future\" or \"dropped\")"
+      "description": "Get a subset of an agreement record's resources (eg \"future\" or \"dropped\")",
+      "replaces": [
+        "erm.agreements.item.resources.get"
+      ]
     },
     {
       "permissionName": "erm.agreements.export",
@@ -1068,7 +1074,7 @@
       "description": "Export an agreement"
     },
     {
-      "permissionName": "erm.agreements.subset.export",
+      "permissionName": "erm.agreements_with_resource_subset.export",
       "displayName": "Agreements subset export",
       "description": "Export some slice of an agreement"
     },
@@ -1078,32 +1084,19 @@
       "description": "Export the resources for an agreement"
     },
     {
-      "permissionName": "erm.agreements.resources.specific.export",
+      "permissionName": "erm.agreements.resources.subset_by_format.export",
       "displayName": "Agreements resources specific export",
       "description": "Export the resources for an agreement as a subset and/or specifying a format"
     },
     {
-      "permissionName": "erm.agreements.direct.export",
-      "displayName": "Agreements direct export",
-      "description": "Export an agreement through the '/export' endpoint"
+      "permissionName": "erm.all.agreements.resources.export",
+      "displayName": "All agreements export resources",
+      "description": "Export all resources for all agreements"
     },
     {
-      "permissionName": "erm.agreements.direct.subset.export",
+      "permissionName": "erm.all.agreements.resources.subset_by_format.export",
       "displayName": "Agreements direct subset export",
-      "description":"Export some slice of an agreement through the '/export' endpoint"
-    },
-    {
-      "permissionName": "erm.agreements.all.export",
-      "displayName": "All agreements export permissions",
-      "description": "Allow any and all agreement export options",
-      "subPermissions": [
-        "erm.agreements.export",
-        "erm.agreements.subset.export",
-        "erm.agreements.resources.export",
-        "erm.agreements.resources.specific.export",
-        "erm.agreements.direct.export",
-        "erm.agreements.direct.subset.export"
-      ]
+      "description":"Export a subset of all resources across all agreements"
     },
     {
       "permissionName": "erm.agreements.linkedLicenses.get",
@@ -1140,9 +1133,14 @@
       "subPermissions": [
         "erm.agreements.collection.get",
         "erm.agreements.item.get",
-        "erm.agreements.resources.get",
-        "erm.agreements.resources.subset.get",
-        "erm.agreements.all.export",
+        "erm.agreements.resources.collection.get",
+        "erm.agreements.resources.subset.collection.get",
+        "erm.agreements.export",
+        "erm.agreements_with_resource_subset.export",
+        "erm.agreements.resources.export",
+        "erm.agreements.resources.subset_by_format.export",
+        "erm.all.agreements.resources.export",
+        "erm.all.agreements.resources.subset_by_format.export",
         "erm.agreements.linkedLicenses.get",
         "erm.agreements.usageDataProviders.collection.get",
         "erm.agreements.usageDataProviders.get",
@@ -1162,7 +1160,10 @@
     {
       "permissionName": "erm.agreements.clone.execute",
       "displayName": "Agreements item clone",
-      "description": "Clone an agreement"
+      "description": "Clone an agreement",
+      "replaces": [
+        "erm.agreements.item.clone"
+      ]
     },
     {
       "permissionName": "erm.agreements.edit",
@@ -1314,7 +1315,7 @@
       "description": "Get a collection of job records"
     },
     {
-      "permissionName": "erm.jobs-by-type.collection.get",
+      "permissionName": "erm.jobs_by_type.collection.get",
       "displayName": "Jobs by type collection get",
       "description": "Get a collection of job records by job type"
     },
@@ -1324,17 +1325,17 @@
       "description": "Get job record"
     },
     {
-      "permissionName": "erm.jobs.fullLog.get",
+      "permissionName": "erm.jobs.fullLog.collection.get",
       "displayName": "Job full log get",
       "description": "Get full logs for job record"
     },
     {
-      "permissionName": "erm.jobs.infoLog.get",
+      "permissionName": "erm.jobs.infoLog.collection.get",
       "displayName": "Job info log get",
       "description": "Get info logs for job record"
     },
     {
-      "permissionName": "erm.jobs.errorLog.get",
+      "permissionName": "erm.jobs.errorLog.collection.get",
       "displayName": "Job error log get",
       "description": "Get error logs for job record"
     },
@@ -1361,11 +1362,11 @@
     {
       "permissionName": "erm.jobs.logs.view",
       "subPermissions": [
-        "erm.jobs.fullLog.get",
+        "erm.jobs.fullLog.collection.get",
         "erm.jobs.fullLogStream.get",
-        "erm.jobs.infoLog.get",
+        "erm.jobs.infoLog.collection.get",
         "erm.jobs.infoLogStream.get",
-        "erm.jobs.errorLog.get",
+        "erm.jobs.errorLog.collection.get",
         "erm.jobs.errorLogStream.get"
       ]
     },
@@ -1373,7 +1374,7 @@
       "permissionName": "erm.jobs.view",
       "subPermissions": [
         "erm.jobs.collection.get",
-        "erm.jobs-by-type.collection.get",
+        "erm.jobs_by_type.collection.get",
         "erm.jobs.item.get",
         "erm.jobs.logs.view",
         "erm.jobs.fileObject.download"
@@ -1645,24 +1646,31 @@
       "description": "Get resource's related entitlement records"
     },
     {
-      "permissionName": "erm.resources.entitlementOptions.get",
+      "permissionName": "erm.resources.entitlementOptions.collection.get",
       "displayName": "Resources item entitlement options get",
-      "description": "Get resource's entitlement options records"
+      "description": "Get resource's entitlement options records",
+      "replaces": [
+        "erm.resources.item.entitlementOptions.get"
+      ]
     },
     {
-      "permissionName": "erm.resources.entitlementOptions.static.get",
+      "permissionName": "erm.resources.entitlementOptions.static.collection.get",
       "displayName": "Resources item entitlement options get",
-      "description": "Get resource's entitlement options records"
+      "description": "Get resource's entitlement options records",
+      "replaces": [
+        "erm.resources.item.entitlementOptions.get"
+      ]
     },
     {
       "permissionName": "erm.resources.view",
       "subPermissions": [
         "erm.resources.collection.get",
+        "erm.resources.electronic.collection.get",
         "erm.resources.item.get",
         "erm.resources.entitlement.get",
         "erm.resources.entitlement.related.get",
-        "erm.resources.entitlementOptions.get",
-        "erm.resources.entitlementOptions.static.get",
+        "erm.resources.entitlementOptions.collection.get",
+        "erm.resources.entitlementOptions.static.collection.get",
         "erm.entitlements.view",
         "erm.kbs.collection.get"
       ]
@@ -1768,8 +1776,8 @@
       "description": "Get a collection of custom properties records"
     },
     {
-      "permissionName": "erm.custprops.contexts.get",
-      "displayName": "Custom properties contexts get",
+      "permissionName": "erm.custprops.contexts.collection.get",
+      "displayName": "Custom properties contexts collection get",
       "description": "Get all contexts for agreements custom properties"
     },
     {
@@ -1826,7 +1834,7 @@
       "description": "Get a collection of string templates"
     },
     {
-      "permissionName": "erm.sts-for-id.collection.get",
+      "permissionName": "erm.sts_for_platform_id.collection.get",
       "displayName": "String templates for id collection get",
       "description": "Get a collection of string templates for a platform id"
     },
@@ -1839,7 +1847,7 @@
       "permissionName": "erm.sts.view",
       "subPermissions": [
         "erm.sts.collection.get",
-        "erm.sts-for-id.collection.get",
+        "erm.sts_for_platform_id.collection.get",
         "erm.sts.item.get"
       ]
     },
@@ -1876,7 +1884,10 @@
     {
       "permissionName": "erm.sts.template.generate",
       "displayName": "String templates perform template (DEPRECATED)",
-      "description": "Performs string templating (DEPRECATED)"
+      "description": "Performs string templating (DEPRECATED)",
+      "replaces": [
+        "erm.sts.template"
+      ]
     },
     {
       "permissionName": "erm.admin.action.execute",
