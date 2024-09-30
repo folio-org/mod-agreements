@@ -1881,7 +1881,10 @@
     {
       "permissionName": "erm.admin.action.execute",
       "displayName": "Admin endpoint perform action",
-      "description": "Performs action from admin endpoint"
+      "description": "Performs action from admin endpoint",
+      "replaces": [
+        "erm.admin.action"
+      ]
     },
     {
       "permissionName": "erm.settings.get",
