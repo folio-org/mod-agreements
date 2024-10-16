@@ -200,53 +200,6 @@ class PushKBService implements DataBinder {
                 }
               }
 
-              // FIXME trying with aggressive session managemnet and clearing as in ingest service -- might not work
-              /* Pkg.withNewTransaction { status ->
-                // TODO this will allow the PCI data to update the PKG record... do we want this?
-                log.debug("Before package look")
-
-                pkg = packageIngestService.lookupOrCreatePackageFromTitle(pc);
-                log.debug("LOGGING PACKAGE OBTAINED FROM PCI: ${pkg}")
-                
-                Map titleIngestResult = titleIngestService.upsertTitleDirect(pc)
-                log.debug("LOGGING titleIngestResult: ${titleIngestResult}")
-
-                if ( titleIngestResult.titleInstanceId != null ) {
-                  log.debug("Before lookupOrCreateTitleHierarchy")
-
-                  Map hierarchyResult = packageIngestService.lookupOrCreateTitleHierarchy(
-                    titleIngestResult.titleInstanceId,
-                    pkg.id,
-                    true,
-                    pc,
-                    result.updateTime,
-                    result.titleCount // FIXME not sure about this
-                  )
-
-                  PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
-                  packageIngestService.hierarchyResultMapLogic(hierarchyResult, result, pci)
-                  log.debug("After lookupOrCreateTitleHierarchy")
-
-                  /* TODO figure out if use of removedTimestamp
-                   * should be something harvest also needs to do directly
-                   * And whether we should be doing it after all the above
-                   * or before.
-                   * /
-                  if (pc.removedTimestamp) {
-                      try {
-                      log.debug("Removal candidate: pci.id #${pci.id} (Last seen ${pci.lastSeenTimestamp}, thisUpdate ${result.updateTime}) -- Set removed")
-                      pci.removedTimestamp = pc.removedTimestamp
-                      pci.save(failOnError:true)
-                    } catch ( Exception e ) {
-                      log.error("Problem removing ${pci} in package load", e)
-                    }
-                    result.removedTitles++
-                  }
-                } else {
-                  String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
-                  log.error(message)
-                }
-              } */
             } catch ( IngestException ie ) {
                 // When we've caught an ingest exception, should have helpful error log message
                 String message = "Skipping \"${pc.title}\": ${ie.message}"
