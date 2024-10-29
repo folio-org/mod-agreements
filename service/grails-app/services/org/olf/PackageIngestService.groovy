@@ -137,14 +137,11 @@ class PackageIngestService implements DataBinder {
 							// ENSURE MDC title is set as early as possible
 							MDC.put('title', StringUtils.truncate(pc.title.toString()))
 				
-							// log.debug("Try to resolve ${pc}")
-				
 							try {
 								PackageContentItem.withNewSession { tsess ->
   								PackageContentItem.withNewTransaction { status ->
 									  // Delegate out to TitleIngestService so that any shared steps can move there.
 								  	Map titleIngestResult = titleIngestService.upsertTitle(pc, kb, trustedSourceTI)
-                    //log.debug("LOGDEBUG RESOLVED TITLE: ${titleIngestResult}")
 							  		// titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
 						  			if ( titleIngestResult.titleInstanceId != null ) {
 					  					// Pass off to new hierarchy method (?)
@@ -292,7 +289,7 @@ class PackageIngestService implements DataBinder {
   public Pkg lookupPkgAndUpdate(PackageSchema package_data) {
     Pkg pkg = lookupPkg(package_data)
     Org vendor = getVendorFromPackageData(package_data)
-    // FIXME do update step but NOT create step
+    // Do update step but NOT create step
     if (pkg != null) {
       pkg.sourceDataUpdated = package_data.header.sourceDataUpdated
 
@@ -510,7 +507,6 @@ class PackageIngestService implements DataBinder {
     }
 
     Platform platform = Platform.resolve(platform_url_to_use, pc.platformName)
-    // log.debug("Platform: ${platform}")
 
     if ( platform == null && PROXY_MISSING_PLATFORM ) {
       platform = Platform.resolve('http://localhost.localdomain', 'This platform entry is used for error cases')
@@ -562,8 +558,6 @@ class PackageIngestService implements DataBinder {
     Map result = [
       pciStatus: 'none' // This should be 'none', 'updated' or 'new'
     ]
-
-    // log.debug("platform ${pc.platformUrl} ${pc.platformName} (item URL is ${pc.url})")
 
     // lets try and work out the platform for the item
     Platform platform = lookupOrCreatePlatform(pc);
