@@ -350,7 +350,7 @@ public class KBart implements Serializable {
             KBart kbartclone = new KBart();
             kbartclone = kbart.clone()
             kbartclone.date_first_issue_online = coverage.startDate.toString()
-            kbartclone.date_last_issue_online = coverage.endDate.toString()
+            kbartclone.date_last_issue_online = coverage.endDate?.toString() ?: ""
 
             kbartclone.num_first_issue_online = coverage.startIssue
             kbartclone.num_last_issue_online = coverage.endIssue
