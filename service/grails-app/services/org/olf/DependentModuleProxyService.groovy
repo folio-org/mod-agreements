@@ -61,7 +61,7 @@ public class DependentModuleProxyService {
             name: result.name,
             orgsUuid: result.id,
             sourceURI: "/vendor/${result.id}"
-          ).save( failOnError:true )
+          ).save( flush: true, failOnError:true )
           break
           
         case 0:
@@ -73,7 +73,7 @@ public class DependentModuleProxyService {
 
           // Create a new local one.
           log.debug "No vendor found. Adding local org for ${orgName}"
-          org = (new Org(name:orgName)).save( failOnError:true )
+          org = (new Org(name:orgName)).save( flush: true, failOnError:true )
           break
           
         default:
