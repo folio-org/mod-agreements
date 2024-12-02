@@ -20,13 +20,15 @@ Developers looking to access the services exposed by mod-agreements can find mor
 The module has important dependences on reference data. initial installations and module upgrades should specify loadReference=true. The module
 may not work as expected if this is omitted.
 
-While this README and the module description template offer some guidance on how to run this module and the resourcing required, it is not possible to anticipate all possible environmental configurations and deployment processes. Determining the exact resourcing, deployment processes and other aspects such as the size of database conneciton pools needed in any particular environment is down to those running the moule and it is recommended that all such practices are fully documented by those responsible
+While this README and the module description template offer some guidance on how to run this module and the resourcing required, it is not possible to anticipate all possible environmental configurations and deployment processes. Determining the exact resourcing, deployment processes and other aspects such as the size of database conneciton pools needed in any particular environment is down to those running the module and it is recommended that all such practices are fully documented by those responsible
 
 ### Locks and failure to upgrade
 This module has a few "problem" scenarios that _shouldn't_ occur in general operation, but particular approaches to upgrades in particular can leave the module unable to self right. This occurs especially often where the module or container die/are killed regularly shortly after/during the upgrade.
 
 In order of importance to check:
 
+- **CPU resource**
+  - In the past we have had these particular issues reported commonly where the app was not getting enough CPU resources to run. Please ensure that the CPU resources being allocated to the application are sufficient, see the requisite module requirements for the version running ([Ramsons example matrix](https://folio-org.atlassian.net/wiki/spaces/REL/pages/398983244/Ramsons+R2+2024+-+Bugfest+env+preparation+-+Modules+configuration+details?focusedCommentId=608305153))
 - **Liquibase**
   - The module uses liquibase in order to facilitate module data migrations
   - Unfortunately this has a weakness to shutdown mid migration.
