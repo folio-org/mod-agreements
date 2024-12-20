@@ -7,7 +7,7 @@ inherits template: "/remoteOkapiLink/remoteOkapiLink"
 
 json {
   if (usageDataProvider.usageDataProviderNote){
-    'usageDataProviderNote' g.render( usageDataProvider.usageDataProviderNote )
+    'usageDataProviderNote' usageDataProvider.usageDataProviderNote
   }
 
   if (params.controller == 'usageDataProvider') {
