@@ -1,3 +1,6 @@
+## 7.0.10 2025-01-24
+  * ERM-3464 /erm/entitlements API returns invalid JSON data
+
 ## 7.0.9 2024-10-18
   * Fixed problem with concurrentJobsGlobal not actually reading from environment variable
 
