@@ -20,7 +20,7 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
   Integer sourceTitleCount
 
   // A boolean to track whether we are choosing to sync the contents from the source or not
-  boolean syncContentsFromSource = false
+  Boolean syncContentsFromSource = false
 
   String reference  // Reference contains the KBs authoritative ID for this package - Reference should be unique within KB
 
