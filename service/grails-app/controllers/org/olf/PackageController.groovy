@@ -30,7 +30,7 @@ class PackageController extends OkapiTenantAwareController<Pkg> {
     super(Pkg)
   }
 
-  // FIXME we need to protect syncContentsFromSource on PUT.
+  // We need to protect syncContentsFromSource on PUT.
   //  We don't want this to be edited directly, instead it'll go via an action.
   @Override
   def update() {
