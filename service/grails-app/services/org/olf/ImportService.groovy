@@ -318,7 +318,7 @@ class ImportService implements DataBinder {
           monographEdition: getFieldFromLine(currentRecord, acceptedFields, 'monographEdition'),
           firstEditor: getFieldFromLine(currentRecord, acceptedFields, 'firstEditor'),
           sourceIdentifier: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifier') ?: getFieldFromLine(currentRecord, acceptedFields, 'titleId'),
-          sourceIdentifierNamespace: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifierNamespace') ?: packageSource
+          sourceIdentifierNamespace: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifierNamespace') ?: packageSource,
           syncContentsFromSource: true // This is defaulted right now, for more control the JSON import should be used
         )
         MDC.put('title', StringUtils.truncate(pkgLine.title))
