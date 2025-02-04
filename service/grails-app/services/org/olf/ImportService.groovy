@@ -231,7 +231,8 @@ class ImportService implements DataBinder {
       packageSource: packageSource,
       packageSlug: packageReference,
       packageProvider: pkgPrv,
-      trustedSourceTI: trustedSourceTI
+      trustedSourceTI: trustedSourceTI,
+      syncContentsFromSource: true // This is defaulted right now, for more control the JSON import should be used
     )
 
     String[] record = file.readNext()
@@ -318,8 +319,7 @@ class ImportService implements DataBinder {
           monographEdition: getFieldFromLine(currentRecord, acceptedFields, 'monographEdition'),
           firstEditor: getFieldFromLine(currentRecord, acceptedFields, 'firstEditor'),
           sourceIdentifier: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifier') ?: getFieldFromLine(currentRecord, acceptedFields, 'titleId'),
-          sourceIdentifierNamespace: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifierNamespace') ?: packageSource,
-          syncContentsFromSource: true // This is defaulted right now, for more control the JSON import should be used
+          sourceIdentifierNamespace: getFieldFromLine(currentRecord, acceptedFields, 'sourceIdentifierNamespace') ?: packageSource
         )
         MDC.put('title', StringUtils.truncate(pkgLine.title))
 
