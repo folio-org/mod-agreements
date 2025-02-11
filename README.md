@@ -21,6 +21,12 @@ The module has important dependences on reference data. initial installations an
 may not work as expected if this is omitted.
 
 While this README and the module description template offer some guidance on how to run this module and the resourcing required, it is not possible to anticipate all possible environmental configurations and deployment processes. Determining the exact resourcing, deployment processes and other aspects such as the size of database conneciton pools needed in any particular environment is down to those running the module and it is recommended that all such practices are fully documented by those responsible
+### Environment variables 
+This is a NON-EXHAUSTIVE list of environment variables which tweak behaviour in this module
+
+| Variable | Description | Options | Default |
+| -- | -- | -- | -- |
+| SYNC_PACKAGES_VIA_HARVEST | Allows the turning on/off of "sync" for packages harvested via the GokbOAIAdapter | `'true'`/`'false'` | `'false'` |
 
 ### Locks and failure to upgrade
 This module has a few "problem" scenarios that _shouldn't_ occur in general operation, but particular approaches to upgrades in particular can leave the module unable to self right. This occurs especially often where the module or container die/are killed regularly shortly after/during the upgrade.
