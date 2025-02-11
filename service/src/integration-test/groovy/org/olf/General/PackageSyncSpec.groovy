@@ -24,7 +24,7 @@ class PackageSyncSpec extends BaseSpec {
   private static specPackagePath = "src/integration-test/resources/packages/packageSyncSpec"
 
   @Unroll
-  void "Test Package import via #ingestType results in syncContentsFromSource: #expectedSyncContentsFromSource" (
+  void "Test Package #packageName import via #ingestType results in syncContentsFromSource: #expectedSyncContentsFromSource" (
       String ingestType,
       String packageFileName,
       String packageName,
@@ -73,8 +73,8 @@ class PackageSyncSpec extends BaseSpec {
     where:
     ingestType | packageFileName                                      | packageName               | expectedSyncContentsFromSource
       'kbart'  | "Testdata_KBART_AnnualReviews.tsv"                   | "KbartImportPackage1"     | true
-      'json'   | "simple_pkg_with_syncContentsFromSource_null.json"   | "K-Int Test Package 001"  | false
-      'json'   | "simple_pkg_with_syncContentsFromSource_true.json"   | "K-Int Test Package 002"  | true
+      'json'   | "simple_pkg_with_syncContentsFromSource_true.json"   | "K-Int Test Package 001"  | true
+      'json'   | "simple_pkg_with_syncContentsFromSource_null.json"   | "K-Int Test Package 002"  | false
   }
 
 /*
