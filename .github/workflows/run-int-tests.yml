@@ -14,7 +14,7 @@ on:
       syncViaHarvestEnvVar:
         required: false
         type: string
-        default: 'true'
+        default: 'false'
 
 jobs:
   reusable_integration_test_job:
