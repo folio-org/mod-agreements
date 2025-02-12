@@ -98,6 +98,7 @@ class UrlMappings {
         "/import" (controller: 'package', action: 'import', method: 'POST')
         "/tsvParse" (controller: 'package', action: 'tsvParse', method: 'POST')
         "/sources" (controller: 'package', action: 'fetchSources', method: 'GET')
+        "/controlSync" (controller: 'package', action: 'controlPackageSyncronisation', method: 'PUT')
       }
 
       "/content"         (controller: 'package', action: 'content', method: 'GET')
