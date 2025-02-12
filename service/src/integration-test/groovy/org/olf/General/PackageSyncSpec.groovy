@@ -25,6 +25,9 @@ class PackageSyncSpec extends BaseSpec {
 
   private static specPackagePath = "src/integration-test/resources/packages/packageSyncSpec"
 
+  @Shared
+  Map<String, String> packageIds = [:]
+
   @Unroll
   void "Test Package #packageName import via #ingestType results in syncContentsFromSource: #expectedSyncContentsFromSource" (
       String ingestType,
@@ -66,6 +69,8 @@ class PackageSyncSpec extends BaseSpec {
       List resp = doGet("/erm/packages", [filters: ["name==${packageName}"]]);
       Map pkg = resp?.getAt(0);
 
+      packageIds[packageName] = pkg.id;
+
     then: "Single package found and is as expected"
       resp.size() == 1
       pkg.id != null
@@ -85,7 +90,7 @@ class PackageSyncSpec extends BaseSpec {
       withTenantNewTransaction {
         Pkg.executeUpdate("""
           UPDATE Pkg AS pkg SET pkg.syncContentsFromSource = NULL
-        """.toString(), [])
+        """.toString())
       }
       List resp = doGet("/erm/packages", [filters: ["name==K-Int Test Package 001"]]);
       Map pkg = resp?.getAt(0);
@@ -154,6 +159,66 @@ class PackageSyncSpec extends BaseSpec {
     then: 'Name hasn\'t changed back, and syncContentsFromSource remains null'
       pkgResp.name == 'Wibble'
       pkgResp.syncContentsFromSource == null
+    cleanup:
+      // Return package name to where it was
+      withTenant {
+        doPut("/erm/packages/${pkgId}", {
+          'name' 'K-Int Test Package 001'
+        });
+      }
+  }
+
+  @Unroll
+  void "(sequentially run) Test controlSync POST works as expected for #controlPkgs :: #state" (
+      List<String> controlPkgs,
+      String state,
+      Map expectedControlResponse,
+      Map expectedSyncContentsFromSource
+  ) {
+    String filterBothPackages = "name==K-Int Test Package 001||name==K-Int Test Package 002"
+
+    if (controlPkgs.size() > 0) {
+      String packages = controlPkgs.size() == 2 ? "both packages" : "${controlPkgs[0]}"
+      String testMessage = "We explicitly turn ${state == 'PAUSED' ? 'off' : 'on'} sync for ${packages}"
+
+      List<String> controlIds = controlPkgs.collect { packageIds[it] }
+
+      when: testMessage
+        Map controlSyncResp = doPost("/erm/packages/controlSync", {
+          'packageIds' controlIds
+          'syncState' state
+        });
+      then: "Responds as expected"
+        controlSyncResp.packagesUpdated == expectedControlResponse.packagesUpdated
+        controlSyncResp.packagesSkipped == expectedControlResponse.packagesSkipped
+        controlSyncResp.success == expectedControlResponse.success
+    }
+
+    when: 'We fetch the packages K-Int Test Package 001 and K-Int Test Package 002'
+      List resp = doGet("/erm/packages", [
+          filters: [
+              filterBothPackages
+          ],
+      ]);
+
+      Map pkg1 = resp.find {p -> p.name == 'K-Int Test Package 001' };
+      Map pkg2 = resp.find {p -> p.name == 'K-Int Test Package 002' };
+    then: "Two packages found and are as expected"
+      resp.size() == 2
+    then: "K-Int Test Package 001 has syncContentsFromSource: ${expectedSyncContentsFromSource['K-Int Test Package 001']}"
+      pkg1.id != null
+      pkg1.syncContentsFromSource == expectedSyncContentsFromSource['K-Int Test Package 001'];
+    then: "K-Int Test Package 002 has syncContentsFromSource: ${expectedSyncContentsFromSource['K-Int Test Package 002']}"
+      pkg2.id != null
+      pkg2.syncContentsFromSource == expectedSyncContentsFromSource['K-Int Test Package 002'];;
+    where:
+      controlPkgs                                           | state            | expectedControlResponse                                  | expectedSyncContentsFromSource
+      []                                                    | null             | null                                                     | ["K-Int Test Package 001": null, "K-Int Test Package 002": null]
+      ["K-Int Test Package 001", "K-Int Test Package 002"]  | 'PAUSED'         | [packagesUpdated: 2, packagesSkipped: 0, success: true ] | ["K-Int Test Package 001": false, "K-Int Test Package 002": false]
+      ["K-Int Test Package 001"]                            | 'SYNCHRONIZING'  | [packagesUpdated: 1, packagesSkipped: 1, success: true ] | ["K-Int Test Package 001": true, "K-Int Test Package 002": false]
+      ["K-Int Test Package 001", "K-Int Test Package 002"]  | 'SYNCHRONIZING'  | [packagesUpdated: 1, packagesSkipped: 1, success: true ] | ["K-Int Test Package 001": true, "K-Int Test Package 002": true]
+      ["K-Int Test Package 001", "K-Int Test Package 002"]  | 'PAUSED'         | [packagesUpdated: 2, packagesSkipped: 0, success: true ] | ["K-Int Test Package 001": false, "K-Int Test Package 002": false]
+
   }
 }
 
