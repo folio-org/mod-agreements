@@ -24,9 +24,12 @@ While this README and the module description template offer some guidance on how
 ### Environment variables 
 This is a NON-EXHAUSTIVE list of environment variables which tweak behaviour in this module
 
-| Variable | Description | Options | Default |
-| -- | -- | -- | -- |
-| SYNC_PACKAGES_VIA_HARVEST | Allows the turning on/off of "sync" for packages harvested via the GokbOAIAdapter | `'true'`/`'false'` | `'false'` |
+| Variable | Description                                                                                                                                                                                                                                                         | Options                                                    | Default                       |
+| -- |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------|-------------------------------|
+| TIRS | Allows the switching of the default "matching" logic underpinning when we declare two incoming titles as equivalent                                                                                                                                                 | `'IdFirst'`/`'TitleFirst'`/`'WorkSourceIdentifier'`        | `WorkSourceIdentifier`        |
+| SYNC_PACKAGES_VIA_HARVEST | Allows the turning on/off of "sync" for packages harvested via the GokbOAIAdapter                                                                                                                                                                                   | `'true'`/`'false'`                                         | `'false'`                     |
+| INGRESS_TYPE | Allows the switching between the two main ingress methods to get packages/titles into the local KB. These are mutually exclusive options, which is why they are surfaced as an environment variable                                                                 | `PushKB`/`Harvest`                                         | `Harvest` (Subject to change) |
+| KB_HARVEST_BUFFER | Allows changing of the default time it takes for mod-agreements to consider its local KB "stale". Note that this will _not_ change the frequency with which the Jobs are created in the system, simply the rate at which those jobs will finish without doing work. | `ONE_HOUR`/`ZERO`/Any integer -- representing milliseconds | `1*60*60*1000` (`ONE_HOUR`)     |
 
 ### Locks and failure to upgrade
 This module has a few "problem" scenarios that _shouldn't_ occur in general operation, but particular approaches to upgrades in particular can leave the module unable to self right. This occurs especially often where the module or container die/are killed regularly shortly after/during the upgrade.
