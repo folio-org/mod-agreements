@@ -10,6 +10,8 @@ import grails.gorm.multitenancy.Tenants
 import grails.testing.mixin.integration.Integration
 import spock.lang.*
 
+import groovyx.net.http.HttpException
+
 @Integration
 @Stepwise
 class PackageSyncSpec extends BaseSpec {
@@ -100,6 +102,58 @@ class PackageSyncSpec extends BaseSpec {
       pkg = resp?.getAt(0);
     then: 'Sync status has not been overwritten'
       pkg.syncContentsFromSource == null;
+  }
+
+  @Unroll
+  void "Test package PUT can not overwrite syncContentsFromSource" ( ) {
+    when: 'We fetch the package K-Int Test Package 001'
+      List resp = doGet("/erm/packages", [filters: ["name==K-Int Test Package 001"]]);
+
+      Map pkg = resp?.getAt(0);
+
+    then: "Single package found and is as expected"
+      resp.size() == 1
+      pkg.id != null
+      pkg.name == 'K-Int Test Package 001'
+      pkg.syncContentsFromSource == null;
+
+    String pkgId = pkg.id;
+    Map putResp = [:];
+
+    when: 'We PUT just the package name'
+      withTenant {
+        putResp = doPut("/erm/packages/${pkgId}", {
+          'name' 'Wibble'
+        });
+      }
+    then: 'PUT response is as expected'
+      putResp.name == 'Wibble'
+    when: 'Package is subsequently refetched'
+      Map pkgResp = [:]
+      pkgResp = doGet("/erm/packages/${pkgId}");
+    then: 'Name has changed'
+      pkgResp.name == 'Wibble'
+    when: 'We include a change to syncContentsFromSource in the PUT'
+      def errorObj;
+      try {
+        withTenant {
+          putResp = doPut("/erm/packages/${pkgId}", {
+            'name' 'K-Int Test Package 001'
+            'syncContentsFromSource' 'true'
+          });
+        }
+      } catch (HttpException e) {
+        errorObj = e;
+      }
+
+    then: 'PUT fails with "Unprocessable Entity"'
+      errorObj != null
+      errorObj.getMessage() == 'Unprocessable Entity' // I wish this were a little more helpful ngl
+    when: 'Package is subsequently refetched'
+      pkgResp = doGet("/erm/packages/${pkgId}");
+    then: 'Name hasn\'t changed back, and syncContentsFromSource remains null'
+      pkgResp.name == 'Wibble'
+      pkgResp.syncContentsFromSource == null
   }
 }
 
