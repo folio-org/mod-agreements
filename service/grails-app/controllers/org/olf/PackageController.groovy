@@ -43,7 +43,7 @@ class PackageController extends OkapiTenantAwareController<Pkg> {
       "syncState": "PAUSED" vs "SYNCHRONISING"
     }
    */
-  def controlPackageSyncronisation(PackageSynchronisationBody syncBody) {
+  def controlPackageSynchronization(PackageSynchronisationBody syncBody) {
     // Control mismatched request body
     if(!syncBody.validate()) {
       def errors = []
