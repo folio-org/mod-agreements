@@ -6,6 +6,8 @@ import java.time.Instant
 import org.olf.general.pushKB.PushKBService
 import org.olf.general.jobs.JobContext
 
+import org.olf.kb.metadata.ResourceIngressType
+
 import grails.gorm.multitenancy.Tenants
 import grails.gorm.multitenancy.CurrentTenant
 import groovy.util.logging.Slf4j
@@ -28,7 +30,16 @@ class PushKBController {
     // Handle PushKBSession and PushKBChunk
     handleSessionAndChunk(bindObj, tenantId);
     try {
-      Map pushPkgResult = pushKBService.pushPackages(bindObj.records)
+      // FIXME this needs to come from PushKB
+      Map ingressMetadata = [
+          ingressType: ResourceIngressType.PUSHKB,
+          'ingressId': 'testPushTaskId1',
+          'ingressUrl': 'www.wibble.com',
+          'contentIngressId': 'testPushTaskId2',
+          'contentIngressUrl': 'www.wibble.com',
+      ]
+
+      Map pushPkgResult = pushKBService.pushPackages(bindObj.records, ingressMetadata)
       if (pushPkgResult.success == false) {
         String messageString = pushPkgResult?.errorMessage ?: 'Something went wrong'
         respond ([message: messageString, statusCode: HttpStatus.INTERNAL_SERVER_ERROR.value(), pushPkgResult: pushPkgResult], status: HttpStatus.INTERNAL_SERVER_ERROR.value())

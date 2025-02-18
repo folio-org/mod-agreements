@@ -58,7 +58,7 @@ class PushKBService implements DataBinder {
   // For now this is repeated in packageIngestService
   private static final def countChanges = ['accessStart', 'accessEnd']
 
-  public Map pushPackages(final List<Map> packages) {
+  public Map pushPackages(final List<Map> packages, final Map ingressMetadata = [:]) {
     Map result = [
       success: false
     ]
@@ -80,8 +80,7 @@ class PushKBService implements DataBinder {
 
                     // These calls mirror what's in upsertPackage but conveniently avoid the
                     // logic which handles TIPPS
-                    // FIXME ADD INGRESS METADATA
-                    Pkg pkg = packageIngestService.lookupOrCreatePkg(package_data);
+                    Pkg pkg = packageIngestService.lookupOrCreatePkg(package_data, ingressMetadata);
                       // Retain logging information
                       MDC.put('packageSource', pkg.source.toString())
                       MDC.put('packageReference', pkg.reference.toString())

@@ -49,6 +49,7 @@ class PackageIngestService implements DataBinder {
   TitleIngestService titleIngestService
   IdentifierService identifierService
   CoverageService coverageService
+  IngressMetadataService ingressMetadataService
 
   // dependentModuleProxyService is a service which hides the fact that we might be dependent upon other
   // services for our reference data. In this class - vendors are erm Org entries, but in folio these are
@@ -300,7 +301,7 @@ AccessEnd/${result.updatedAccessEnd}\
     return vendor;
   }
 
-  public Pkg lookupPkgAndUpdate(PackageSchema package_data) {
+  public Pkg lookupPkgAndUpdate(PackageSchema package_data, final Map ingressMetadata = [:]) {
     Pkg pkg = lookupPkg(package_data)
     Org vendor = getVendorFromPackageData(package_data)
     // Do update step but NOT create step
@@ -328,6 +329,9 @@ AccessEnd/${result.updatedAccessEnd}\
       updateAlternateNames(pkg.id, package_data)
       updateAvailabilityConstraints(pkg.id, package_data)
       updatePackageDescriptionUrls(pkg.id, package_data)
+
+      // Handle "update" of ingressMetadata
+      ingressMetadataService.upsertPackageIngressMetadata(pkg.id, ingressMetadata)
     }
 
     return pkg;
@@ -341,9 +345,9 @@ AccessEnd/${result.updatedAccessEnd}\
    *
    * This method ALSO updates information for packages.
    */
-  public Pkg lookupOrCreatePkg(PackageSchema package_data) {
+  public Pkg lookupOrCreatePkg(PackageSchema package_data, final Map ingressMetadata = [:]) {
     // This takes care of any updates
-    Pkg pkg = lookupPkgAndUpdate(package_data);
+    Pkg pkg = lookupPkgAndUpdate(package_data, ingressMetadata);
 
     // If pkg is null, then we can safely create a new one
     if ( pkg == null ) {
