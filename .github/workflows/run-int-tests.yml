@@ -15,6 +15,10 @@ on:
         required: false
         type: string
         default: 'false'
+      ingressTypeEnvVar:
+        required: false
+        type: string
+        default: 'Harvest'
 
 jobs:
   reusable_integration_test_job:
@@ -43,10 +47,19 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           build-root-directory: service
+      - name: Set environment variables
+        run: |
+          echo "TIRS=${{ inputs.tirsEnvVar }}" >> $TIRS
+          echo "SYNC_PACKAGES_VIA_HARVEST=${{ inputs.syncViaHarvestEnvVar }}" >> $SYNC_PACKAGES_VIA_HARVEST
+          echo "INGRESS_TYPE=${{ inputs.ingressTypeEnvVar }}" >> $INGRESS_TYPE
+#      - name: Run integration test
+#        working-directory: ./service
+#        run:
+#          export TIRS=${{ inputs.tirsEnvVar }}; export SYNC_PACKAGES_VIA_HARVEST=${{ inputs.syncViaHarvestEnvVar }}; ./gradlew integrationTest --tests ${{ inputs.testPath }}
       - name: Run integration test
         working-directory: ./service
         run:
-          export TIRS=${{ inputs.tirsEnvVar }}; export SYNC_PACKAGES_VIA_HARVEST=${{ inputs.syncViaHarvestEnvVar }}; ./gradlew integrationTest --tests ${{ inputs.testPath }}
+          ./gradlew integrationTest --tests ${{ inputs.testPath }}
       - name: Upload Test Results Files
         uses: actions/upload-artifact@v4
         if: always()

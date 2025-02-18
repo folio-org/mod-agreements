@@ -9,6 +9,7 @@ import grails.gorm.MultiTenant
  * data came to be in the system. This includes ingressType (enum)
  */
 public class PackageIngressMetadata implements MultiTenant<PackageIngressMetadata> {
+  String id
   ErmResource resource
 
   ResourceIngressType ingressType
@@ -42,6 +43,7 @@ public class PackageIngressMetadata implements MultiTenant<PackageIngressMetadat
   String contentIngressUrl
 
   static mapping = {
+                   id column: 'pim_id', generator: 'uuid2', length:36
              resource column: 'pim_resource_fk'
           ingressType column: 'pim_ingress_type'
             ingressId column: 'pim_ingress_id'
@@ -52,7 +54,7 @@ public class PackageIngressMetadata implements MultiTenant<PackageIngressMetadat
 
   static constraints = {
              resource (nullable:false, blank:false)
-          ingressType (nullable:false, blank:false)
+          ingressType (nullable:true, blank:false)
             ingressId (nullable:true, blank:false)
            ingressUrl (nullable:true, blank:false)
      contentIngressId (nullable:true, blank:false)

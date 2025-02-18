@@ -56,6 +56,7 @@ class KbartImportJob extends PersistentJob implements MultiTenant<KbartImportJob
           .build();
 
           CSVReader csvReader = new CSVReaderBuilder(fr).withCSVParser(parser).build();
+          // FIXME ADD INGRESS METADATA
           importService.importPackageFromKbart(csvReader, packageInfo)
         } else {
           log.error "No file attached to the Job."
