@@ -101,7 +101,6 @@ class PackageController extends OkapiTenantAwareController<Pkg> {
     }
   }
 
-  // FIXME ADD INGRESS METADATA
   def 'import' () {
     final bindObj = this.getObjectToBind()
     log.debug("Importing package: ${bindObj}")
@@ -126,7 +125,6 @@ class PackageController extends OkapiTenantAwareController<Pkg> {
     return;
   }
 
-  // FIXME ADD INGRESS METADATA
   def 'tsvParse' () {
     MultipartFile file = request.getFile('upload')
 

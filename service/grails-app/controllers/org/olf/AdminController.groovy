@@ -52,7 +52,6 @@ class AdminController implements DataBinder{
         return
       }
 
-      // FIXME ADD INGRESS METADATA (?) Maybe unused
       result = packageIngestService.upsertPackage(package_data)
     }
     else {

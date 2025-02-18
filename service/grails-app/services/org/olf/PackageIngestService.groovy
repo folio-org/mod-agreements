@@ -59,8 +59,8 @@ class PackageIngestService implements DataBinder {
   // looking up an Org in vendors and stashing the vendor info in the local cache table.
   DependentModuleProxyService dependentModuleProxyService
 
-  public Map upsertPackage(PackageSchema package_data) {
-    return upsertPackage(package_data,'LOCAL',true)
+  public Map upsertPackage(PackageSchema package_data, Map ingressMetadata = [ingressType: ResourceIngressType.JSON_IMPORT]) {
+    return upsertPackage(package_data,'LOCAL',true, ingressMetadata)
   }
 
 
