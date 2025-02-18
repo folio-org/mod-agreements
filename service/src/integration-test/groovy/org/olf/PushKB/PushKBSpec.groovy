@@ -24,14 +24,21 @@ class PushKBSpec extends BaseSpec {
       resp.pushPkgResult.success == true
     when: 'Packages are fetched'
       Map pkgGet = doGet("/erm/packages?stats=true");
+      String pkgId = pkgGet.results[0].id;
 
     then: 'We have the expected amount'
       pkgGet.total == 2636
     when: 'Package metadata are fetched'
-      Map pkgMetadata = doGet("/erm/packages/metadata?stats=true");
+      Map pkgMetadataList = doGet("/erm/packages/metadata?stats=true");
     then: 'We see expected results'
-      log.debug("PKGMETADATA: ${pkgMetadata}")
-      pkgMetadata.total == 2636
+      //log.debug("PKGMETADATA: ${pkgMetadataList}")
+      pkgMetadataList.total == 2636
+    when: "Package metadata is fetched for ${pkgId}"
+      Map pkgMetadata = doGet("/erm/packages${pkgId}/metadata");
+    then: 'We see expected results'
+      pkgMetadata.ingressType == 'PUSHKB'
+      pkgMetadata.resource.id == pkgId
+      // FIXME also test the other fields once they're hooked up
   }
 }
 
