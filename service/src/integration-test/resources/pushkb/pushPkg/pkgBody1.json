@@ -588,17 +588,6 @@
     {
       "header": {
         "packageSource": "PushKB::GOKb",
-        "packageSlug": "1c642ec7-c15d-4311-8fd7-8bca7975dda0",
-        "packageName": "Duke University Press: E Duke Journals Expanded",
-        "packageProvider": {
-          "name": "Duke University Press"
-        },
-        "lifecycleStatus": "Current"
-      }
-    },
-    {
-      "header": {
-        "packageSource": "PushKB::GOKb",
         "packageSlug": "4f5e8b59-4d4a-487f-8dd9-7d789328c247",
         "packageName": "eRef Lehrbücher 2020 (neue Titel)",
         "packageProvider": {
