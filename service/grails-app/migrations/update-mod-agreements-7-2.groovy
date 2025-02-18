@@ -8,6 +8,7 @@ databaseChangeLog = {
   changeSet(author: "efreestone (manual)", id: "20250217-1445-001") {
     createTable(tableName: "package_ingress_metadata") {
       column(name: "pim_id", type: "VARCHAR(36)")
+      column(name: "pim_version", type: "BIGINT")
       column(name: "pim_resource_fk", type: "VARCHAR(36)")
       column(name: "pim_ingress_type", type: "VARCHAR(64)")
       column(name: "pim_ingress_id", type: "VARCHAR(36)")

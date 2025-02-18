@@ -44,6 +44,7 @@ public class PackageIngressMetadata implements MultiTenant<PackageIngressMetadat
 
   static mapping = {
                    id column: 'pim_id', generator: 'uuid2', length:36
+              version column: 'pim_version'
              resource column: 'pim_resource_fk'
           ingressType column: 'pim_ingress_type'
             ingressId column: 'pim_ingress_id'
