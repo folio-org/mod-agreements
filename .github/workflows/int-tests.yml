@@ -35,7 +35,7 @@ jobs:
   pushkb-tests:
     uses: ./.github/workflows/run-int-tests.yml
     with:
-      testPath: org.olf.PushKB
+      testPath: org.olf.PushKB.*
       ingressTypeEnvVar: 'PushKB'
       outputDirectory: PushKB
   publish-test-results:
