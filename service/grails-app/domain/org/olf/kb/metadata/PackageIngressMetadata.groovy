@@ -17,7 +17,7 @@ public class PackageIngressMetadata implements MultiTenant<PackageIngressMetadat
   /* Will hold:
    *  Package level PushTaskId for Pushkb
    *  RemoteKB.id for harvest,
-   *  null for json/kbart import
+   *  LOCAL RemoteKB.id for json/kbart import
    */
   String ingressId
 

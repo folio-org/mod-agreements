@@ -4,6 +4,8 @@ import static org.springframework.transaction.annotation.Propagation.REQUIRES_NE
 
 import java.util.concurrent.TimeUnit
 
+import org.olf.kb.metadata.ResourceIngressType
+
 import org.olf.general.Org
 
 import org.olf.general.StringUtils
@@ -77,6 +79,11 @@ class PackageIngestService implements DataBinder {
 		kb
 	}
 
+
+  // TODO This is a bit of a mess now. PushKB does NOT use upsertPackage in the same way,
+  // instead kind of mirroring the process while skipping all the RemoteKB AND contents logic.
+  // This will be used, however, for all RemoteKB upserts
+  // We should try to identify more of the work
   /**
    * Load the paackage data (Given in the agreed canonical json package format) into the KB.
    * This function must be passed VALID package data. At this point, all package contents are
@@ -86,11 +93,14 @@ class PackageIngestService implements DataBinder {
    * package into the KB.
    * @return id of package upserted
    */
-  // FIXME ADD INGRESS METADATA
-  public Map upsertPackage(PackageSchema package_data, String remotekbname, boolean kbCreateReadOnly=false) {
+  public Map upsertPackage(
+      PackageSchema package_data,
+      String remotekbname,
+      boolean kbCreateReadOnly=false,
+      Map ingressMetadata = [:] // Allow JSON/KBART to pre-declare that they're coming from Json or Kbart, otherwise empty
+  ) {
 		// Really messy but required as withNew session does not work unless there is already a session
   	// bound.
-
 
 		final def result = [
 			startTime: System.currentTimeMillis(),
@@ -124,8 +134,13 @@ class PackageIngestService implements DataBinder {
 							log.info("Package header: ${package_data.header} - update start time is ${result.updateTime}")
 							
 							// Farm out package lookup and creation to a separate method
-              // FIXME ADD INGRESS METADATA
-							pkg = lookupOrCreatePkg(package_data);
+
+              if (ingressMetadata.ingressType == null) {
+                ingressMetadata.ingressType = ResourceIngressType.HARVEST
+              }
+              ingressMetadata.ingressId = kb.id;
+
+							pkg = lookupOrCreatePkg(package_data, ingressMetadata);
 							// Retain logging information
 							MDC.put('packageSource', pkg.source.toString())
 							MDC.put('packageReference', pkg.reference.toString())
