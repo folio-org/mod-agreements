@@ -15,6 +15,8 @@ databaseChangeLog = {
       column(name: "pim_ingress_url", type: "VARCHAR(255)")
       column(name: "pim_content_ingress_id", type: "VARCHAR(36)")
       column(name: "pim_content_ingress_url", type: "VARCHAR(255)")
+      column(name: "pim_date_created", type: "TIMESTAMP")
+      column(name: "pim_last_updated", type: "TIMESTAMP")
     }
     addPrimaryKey(
       columnNames: "pim_id",

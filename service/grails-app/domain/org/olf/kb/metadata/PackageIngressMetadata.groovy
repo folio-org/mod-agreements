@@ -1,6 +1,7 @@
 package org.olf.kb.metadata
 
 import org.olf.kb.ErmResource
+import java.time.Instant;
 
 import grails.gorm.MultiTenant
 
@@ -42,6 +43,9 @@ public class PackageIngressMetadata implements MultiTenant<PackageIngressMetadat
    */
   String contentIngressUrl
 
+  Instant dateCreated
+  Instant lastUpdated
+
   static mapping = {
                    id column: 'pim_id', generator: 'uuid2', length:36
               version column: 'pim_version'
@@ -51,6 +55,8 @@ public class PackageIngressMetadata implements MultiTenant<PackageIngressMetadat
            ingressUrl column: 'pim_ingress_url'
      contentIngressId column: 'pim_content_ingress_id'
     contentIngressUrl column: 'pim_content_ingress_url'
+          dateCreated column: 'pim_date_created'
+          lastUpdated column: 'pim_last_updated'
   }
 
   static constraints = {

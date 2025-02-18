@@ -1,6 +1,5 @@
 package org.olf.PushKB
 
-import org.codehaus.groovy.transform.stc.SharedVariableCollector
 import org.olf.BaseSpec
 
 import grails.gorm.multitenancy.Tenants
