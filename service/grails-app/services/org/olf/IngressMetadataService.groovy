@@ -16,23 +16,23 @@ import groovy.util.logging.Slf4j
 class IngressMetadataService implements DataBinder {
 
   PackageIngressMetadata getPIMFromPackageId(String pkgId) {
-    log.debug("IngressMetdataService::getPIMFromPackageId(${pkgId})")
+    //log.debug("IngressMetdataService::getPIMFromPackageId(${pkgId})")
 
     List<PackageIngressMetadata> pimList = PackageIngressMetadata.executeQuery("""
       SELECT pim FROM PackageIngressMetadata pim WHERE pim.resource.id = :pkgId
     """, [pkgId: pkgId]);
 
-    if (pimList.size() > 0) {
-      throw new RuntimeException("There should only be a single ingressMetadata for package(${pkgId}), found: ${pimList.size()}")
-    } else if (pimList.size() == 0) {
+    if (pimList.size() == 0) {
       return null;
+    } else if (pimList.size() > 1) {
+      throw new RuntimeException("There should only be a single ingressMetadata for package(${pkgId}), found: ${pimList.size()}")
     }
 
     return pimList[0];
   }
 
   PackageIngressMetadata createPackageIngressMetadata(String pkgId, Map ingressMetadata = [:]) {
-    log.debug("IngressMetdataService::createPackageIngressMetadata(${pkgId}, ${ingressMetadata})")
+    //log.debug("IngressMetdataService::createPackageIngressMetadata(${pkgId}, ${ingressMetadata})")
 
     Pkg pkg = Pkg.get(pkgId);
     ingressMetadata.resource = pkg;
@@ -42,7 +42,7 @@ class IngressMetadataService implements DataBinder {
   }
 
   PackageIngressMetadata upsertPackageIngressMetadata (final String pkgId, final Map ingressMetadata = [:]) {
-    log.debug("IngressMetdataService::upsertPackageIngressMetadata(${pkgId}, ${ingressMetadata})")
+    //log.debug("IngressMetdataService::upsertPackageIngressMetadata(${pkgId}, ${ingressMetadata})")
     PackageIngressMetadata pim = getPIMFromPackageId(pkgId);
 
     if (pim != null) {
@@ -71,8 +71,8 @@ class IngressMetadataService implements DataBinder {
       String fieldName
   ) {
     if (
-        pim[fieldName] != null && // This allows us to ONLY update certain fields at a time.
-            pim[fieldName] != ingressMetadata[fieldName]
+        ingressMetadata[fieldName] != null && // This allows us to ONLY update certain fields at a time.
+        pim[fieldName] != ingressMetadata[fieldName]
     ) {
       pim[fieldName] = ingressMetadata[fieldName]
       return true
@@ -81,7 +81,7 @@ class IngressMetadataService implements DataBinder {
   }
 
   PackageIngressMetadata updatePackageIngressMetadata(PackageIngressMetadata pim, final Map ingressMetadata = [:]) {
-    log.debug("IngressMetdataService::updatePackageIngressMetadata(${pim}, ${ingressMetadata})")
+    //log.debug("IngressMetdataService::updatePackageIngressMetadata(${pim}, ${ingressMetadata})")
 
     // This is where it gets a little more complicated...
     // We want to UPDATE anything coming in but be careful
@@ -89,7 +89,7 @@ class IngressMetadataService implements DataBinder {
     if (pimFieldUpdate(pim, ingressMetadata, 'ingressUrl')) updateCount++
     if (pimFieldUpdate(pim, ingressMetadata, 'ingressId')) updateCount++
 
-    // Only update PIM content fields if we're
+    // Only update PIM content fields if we're in the PushKB case
     if (pim.ingressType == ResourceIngressType.PUSHKB) {
       // Special case for the contentMetadata
       if (pimFieldUpdate(pim, ingressMetadata, 'contentIngressId')) updateCount++

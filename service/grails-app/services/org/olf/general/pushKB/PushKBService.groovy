@@ -106,7 +106,7 @@ class PushKBService implements DataBinder {
     return result
   }
 
-  public Map pushPCIs(final List<Map> pcis) {
+  public Map pushPCIs(final List<Map> pcis, final Map packageIngressMetadata = [:]) {
     Map result = [
       success: false,
       startTime: System.currentTimeMillis(),
@@ -145,8 +145,7 @@ class PushKBService implements DataBinder {
                   Pkg.withNewSession { newSess ->
                     Pkg.withTransaction {
                       // TODO this will allow the PCI data to update the PKG record... do we want this?
-                      // FIXME ADD INGRESS METADATA
-                      pkg = packageIngestService.lookupOrCreatePackageFromTitle(pc);
+                      pkg = packageIngestService.lookupOrCreatePackageFromTitle(pc, packageIngressMetadata);
                     }
                     newSess.clear()
                   }

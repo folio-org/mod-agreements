@@ -35,8 +35,6 @@ class PushKBController {
           ingressType: ResourceIngressType.PUSHKB,
           'ingressId': 'testPushTaskId1',
           'ingressUrl': 'www.wibble.com',
-          'contentIngressId': 'testPushTaskId2',
-          'contentIngressUrl': 'www.wibble.com',
       ]
 
       Map pushPkgResult = pushKBService.pushPackages(bindObj.records, ingressMetadata)
@@ -61,9 +59,17 @@ class PushKBController {
 
     // Handle PushKBSession and PushKBChunk
     handleSessionAndChunk(bindObj, tenantId);
+    // FIXME this needs to come from PushKB
+    Map packageIngressMetadata = [
+        ingressType: ResourceIngressType.PUSHKB,
+        'contentIngressId': 'testPushTaskId2',
+        'contentIngressUrl': 'www.wibble.com',
+    ]
+
+    // If we want to do metadata on PCI as well at some point we'd set up a separate Map for that.
 
     try {
-      Map pushPCIResult = pushKBService.pushPCIs(bindObj.records)
+      Map pushPCIResult = pushKBService.pushPCIs(bindObj.records, packageIngressMetadata)
       if (pushPCIResult.success == false) {
         String messageString = pushPCIResult?.errorMessage ?: 'Something went wrong'
         respond ([message: messageString, statusCode: HttpStatus.INTERNAL_SERVER_ERROR.value(), pushPCIResult: pushPCIResult], status: HttpStatus.INTERNAL_SERVER_ERROR.value())

@@ -86,6 +86,7 @@ class PackageIngestService implements DataBinder {
    * package into the KB.
    * @return id of package upserted
    */
+  // FIXME ADD INGRESS METADATA
   public Map upsertPackage(PackageSchema package_data, String remotekbname, boolean kbCreateReadOnly=false) {
 		// Really messy but required as withNew session does not work unless there is already a session
   	// bound.
@@ -123,6 +124,7 @@ class PackageIngestService implements DataBinder {
 							log.info("Package header: ${package_data.header} - update start time is ${result.updateTime}")
 							
 							// Farm out package lookup and creation to a separate method
+              // FIXME ADD INGRESS METADATA
 							pkg = lookupOrCreatePkg(package_data);
 							// Retain logging information
 							MDC.put('packageSource', pkg.source.toString())
@@ -366,6 +368,9 @@ AccessEnd/${result.updatedAccessEnd}\
                         vendor: vendor,
       ).save(flush:true, failOnError:true)
 
+      // Set up ingressMetadata for new packages
+      ingressMetadataService.createPackageIngressMetadata(pkg.id, ingressMetadata)
+
       (package_data?.header?.contentTypes ?: []).each {
         pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
       }
@@ -505,10 +510,10 @@ AccessEnd/${result.updatedAccessEnd}\
    * off chance that a PCI is attempting to be ingested when the package
    * for that title has not been yet.
    */
-  public Pkg lookupOrCreatePackageFromTitle(ContentItemSchema pc) {
+  public Pkg lookupOrCreatePackageFromTitle(ContentItemSchema pc, Map ingressMetadata = [:]) {
     Pkg pkg = null;
     if (pc?.contentItemPackage) {
-      pkg = lookupOrCreatePkg(pc.contentItemPackage)
+      pkg = lookupOrCreatePkg(pc.contentItemPackage, ingressMetadata)
     } else {
       /* WIP this feels like not the right thing to do */
       throw new Exception("Cannot create package from title if no contentItemPackage is provided.")
