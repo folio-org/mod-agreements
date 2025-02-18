@@ -47,10 +47,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           build-root-directory: service
-#      - name: Run integration test
-#        working-directory: ./service
-#        run:
-#          export TIRS=${{ inputs.tirsEnvVar }}; export SYNC_PACKAGES_VIA_HARVEST=${{ inputs.syncViaHarvestEnvVar }}; ./gradlew integrationTest --tests ${{ inputs.testPath }}
       - name: Run integration test
         working-directory: ./service
         env:

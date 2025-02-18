@@ -185,6 +185,13 @@ abstract class BaseSpec extends HttpSpec {
     kbManagementBean.ingressType == ResourceIngressType.HARVEST
   }
 
+  @Ignore
+  def getDataFromFile(String test_package_file_name, String path = "src/integration-test/resources/packages") {
+    String test_package_file = "${path}/${test_package_file_name}";
+
+    return jsonSlurper.parse(new File(test_package_file))
+  }
+
   // Set up helper methods to import test packages so we don't repeat that code throughout tests
   @Ignore
   def importPackageFromFileViaService(String test_package_file_name, String path = "src/integration-test/resources/packages") {
