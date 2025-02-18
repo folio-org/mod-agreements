@@ -54,9 +54,9 @@ jobs:
       - name: Run integration test
         working-directory: ./service
         env:
-          TIRS: inputs.tirsEnvVar
-          SYNC_PACKAGES_VIA_HARVEST: inputs.syncViaHarvestEnvVar
-          INGRESS_TYPE: inputs.ingressTypeEnvVar
+          TIRS: ${{inputs.tirsEnvVar}}
+          SYNC_PACKAGES_VIA_HARVEST: ${{inputs.syncViaHarvestEnvVar}}
+          INGRESS_TYPE: ${{inputs.ingressTypeEnvVar}}
         run: |
           echo "TIRS=$TIRS"
           echo "SYNC_PACKAGES_VIA_HARVEST=$SYNC_PACKAGES_VIA_HARVEST"
