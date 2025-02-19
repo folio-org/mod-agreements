@@ -30,11 +30,10 @@ class PushKBController {
     // Handle PushKBSession and PushKBChunk
     handleSessionAndChunk(bindObj, tenantId);
     try {
-      // FIXME this needs to come from PushKB
       Map ingressMetadata = [
           ingressType: ResourceIngressType.PUSHKB,
-          'ingressId': 'testPushTaskId1',
-          'ingressUrl': 'www.wibble.com',
+          'ingressId': bindObj.pushableId,
+          'ingressUrl': bindObj.pushKbUrl,
       ]
 
       Map pushPkgResult = pushKBService.pushPackages(bindObj.records, ingressMetadata)
@@ -59,11 +58,10 @@ class PushKBController {
 
     // Handle PushKBSession and PushKBChunk
     handleSessionAndChunk(bindObj, tenantId);
-    // FIXME this needs to come from PushKB
     Map packageIngressMetadata = [
         ingressType: ResourceIngressType.PUSHKB,
-        'contentIngressId': 'testPushTaskId2',
-        'contentIngressUrl': 'www.wibble.com',
+        'contentIngressId': bindObj.pushableId,
+        'contentIngressUrl': bindObj.pushKbUrl,
     ]
 
     // If we want to do metadata on PCI as well at some point we'd set up a separate Map for that.
