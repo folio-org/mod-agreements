@@ -1,6 +1,8 @@
 {
   "sessionId": "pci-session-1",
   "chunkId": "chunk1",
+  "pushableId": "pci-pushtask-id-1",
+  "pushKbUrl": "pci-pushkb-url-1",
   "records": [
     {
       "title": "The journal of antimicrobial chemotherapy",

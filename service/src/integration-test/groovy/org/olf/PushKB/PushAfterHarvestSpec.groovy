@@ -51,8 +51,8 @@ class PushAfterHarvestSpec extends BaseSpec {
     then: 'We see expected results'
       pkgMetadata.ingressType == 'PUSHKB'
       pkgMetadata.resource.id == dukePkgId
-      pkgMetadata.ingressId != null;
-      pkgMetadata.ingressUrl != null;
+      pkgMetadata.ingressId == "pkg-pushtask-id-duke";
+      pkgMetadata.ingressUrl == "pkg-pushkb-url-duke";
       pkgMetadata.contentIngressId == null;
       pkgMetadata.contentIngressUrl == null;
       metadataCreated != null
@@ -68,8 +68,8 @@ class PushAfterHarvestSpec extends BaseSpec {
     then: 'We see expected results'
       pkgMetadata.ingressType == 'HARVEST'
       pkgMetadata.resource.id == dukePkgId
-      pkgMetadata.ingressId != null;
-      pkgMetadata.ingressUrl != null;
+      pkgMetadata.ingressId == "pkg-pushtask-id-duke";
+      pkgMetadata.ingressUrl == "pkg-pushkb-url-duke";
       pkgMetadata.contentIngressId == null;
       pkgMetadata.contentIngressUrl == null;
       pkgMetadata.dateCreated == metadataCreated;
@@ -88,8 +88,8 @@ class PushAfterHarvestSpec extends BaseSpec {
     then: 'We see expected results'
       pkgMetadata.ingressType == 'PUSHKB'
       pkgMetadata.resource.id == dukePkgId
-      pkgMetadata.ingressId != null;
-      pkgMetadata.ingressUrl != null;
+      pkgMetadata.ingressId == "pkg-pushtask-id-duke";
+      pkgMetadata.ingressUrl == "pkg-pushkb-url-duke";
       pkgMetadata.contentIngressId == null;
       pkgMetadata.contentIngressUrl == null;
 

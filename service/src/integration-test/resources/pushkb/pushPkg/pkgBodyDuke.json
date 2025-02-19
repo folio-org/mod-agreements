@@ -1,6 +1,8 @@
 {
   "sessionId": "package-session-1",
   "chunkId": "chunk2",
+  "pushableId": "pkg-pushtask-id-duke",
+  "pushKbUrl": "pkg-pushkb-url-duke",
   "records": [
     {
       "header": {

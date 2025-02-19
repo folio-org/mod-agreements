@@ -50,11 +50,10 @@ class PushKBSpec extends BaseSpec {
     then: 'We see expected results'
       pkgMetadata.ingressType == 'PUSHKB'
       pkgMetadata.resource.id == oxfordPkgId
-      pkgMetadata.ingressId != null;
-      pkgMetadata.ingressUrl != null;
+      pkgMetadata.ingressId == "pkg-pushtask-id-1";
+      pkgMetadata.ingressUrl == "pkg-pushkb-url-1";
       pkgMetadata.contentIngressId == null;
       pkgMetadata.contentIngressUrl == null;
-      // FIXME test the other fields with ids once pushKB shape is known
   }
 
   @Unroll
@@ -84,11 +83,10 @@ class PushKBSpec extends BaseSpec {
     then: 'We see expected results'
       pkgMetadata.ingressType == 'PUSHKB'
       pkgMetadata.resource.id == oxfordPkgId
-      pkgMetadata.ingressId != null;
-      pkgMetadata.ingressUrl != null;
-      pkgMetadata.contentIngressId != null;
-      pkgMetadata.contentIngressUrl != null;
-      // FIXME test the other fields with ids once pushKB shape is known
+      pkgMetadata.ingressId == "pkg-pushtask-id-1";
+      pkgMetadata.ingressUrl == "pkg-pushkb-url-1";
+      pkgMetadata.contentIngressId == "pci-pushtask-id-1";
+      pkgMetadata.contentIngressUrl == "pci-pushkb-url-1";
   }
 
   @Unroll
@@ -108,8 +106,8 @@ class PushKBSpec extends BaseSpec {
       pkgMetadata.resource.id == dukePkgId
       pkgMetadata.ingressId == null;
       pkgMetadata.ingressUrl == null;
-      pkgMetadata.contentIngressId != null;
-      pkgMetadata.contentIngressUrl != null;
+      pkgMetadata.contentIngressId == "pci-pushtask-id-1";
+      pkgMetadata.contentIngressUrl == "pci-pushkb-url-1";
     when: 'We POST to pushPkg endpoint'
       def pushPkgBody = getDataFromFile("pkgBodyDuke.json", "src/integration-test/resources/pushkb/pushPkg");
       Map resp = doPost("/erm/pushKB/pkg", pushPkgBody);
@@ -120,10 +118,10 @@ class PushKBSpec extends BaseSpec {
     then: 'We see expected results'
       pkgMetadata.ingressType == 'PUSHKB'
       pkgMetadata.resource.id == dukePkgId
-      pkgMetadata.ingressId != null;
-      pkgMetadata.ingressUrl != null;
-      pkgMetadata.contentIngressId != null;
-      pkgMetadata.contentIngressUrl != null;
+      pkgMetadata.ingressId == "pkg-pushtask-id-duke";
+      pkgMetadata.ingressUrl == "pkg-pushkb-url-duke";
+      pkgMetadata.contentIngressId == "pci-pushtask-id-1";
+      pkgMetadata.contentIngressUrl == "pci-pushkb-url-1";
   }
 }
 
