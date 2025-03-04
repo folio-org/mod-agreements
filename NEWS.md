@@ -1,3 +1,6 @@
+## 7.0.11 2025-03-04
+  * ERM-3626 Handle duplicate identifiers in local KB data ingest
+
 ## 7.0.10 2025-01-24
   * ERM-3464 /erm/entitlements API returns invalid JSON data
 
