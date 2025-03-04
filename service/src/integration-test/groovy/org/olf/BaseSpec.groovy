@@ -10,6 +10,8 @@ import org.olf.kb.TitleInstance
 
 import grails.gorm.multitenancy.Tenants
 
+import com.k_int.web.toolkit.utils.GormUtils
+
 import groovyx.net.http.HttpException
 import spock.lang.Stepwise
 import spock.lang.Ignore
@@ -28,6 +30,7 @@ abstract class BaseSpec extends HttpSpec {
   static String WORK_SOURCE_TIRS = "${baseTIRSPath}.WorkSourceIdentifierTIRSImpl"
 
   def importService
+  def identifierService
 
   def setupSpec() {
     httpClientConfig = {
@@ -49,8 +52,28 @@ abstract class BaseSpec extends HttpSpec {
   String getCurrentTenant() {
     allHeaders?.get(OkapiHeaders.TENANT)
   }
-  
-  void 'Pre purge tenant' () {
+
+  final String getTenantId() {
+    currentTenant.toLowerCase()
+  }
+
+  @Ignore
+  def withTenant(Closure c) {
+    Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantId )) {
+      c.call()
+    }
+  }
+
+  @Ignore
+  def withTenantNewTransaction(Closure c) {
+    withTenant {
+      GormUtils.withNewTransaction {
+        c.call()
+      }
+    }
+  }
+
+  void 'Pre purge test tenant'() {
     boolean resp = false
 
     println("test");
@@ -114,9 +137,8 @@ abstract class BaseSpec extends HttpSpec {
   @Ignore
   def importPackageFromMapViaService(Map package_data) {
     Map result = [:]
-    final String tenantid = currentTenant.toLowerCase()
-    log.debug("Create new package with tenant ${tenantid}");
-    Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+    log.debug("Create new package with tenant ${tenantId}");
+    withTenant {
       Pkg.withTransaction { status ->
         result = importService.importFromFile( package_data )
         log.debug("Package import complete - num packages: ${Pkg.executeQuery('select count(p.id) from Pkg as p')}");

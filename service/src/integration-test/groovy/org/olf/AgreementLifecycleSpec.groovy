@@ -374,7 +374,7 @@ class AgreementLifecycleSpec extends BaseSpec {
       final String tenantid = currentTenant.toLowerCase()
       log.debug("Create new package with tenant ${tenantid}");
 
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+      withTenant {
         FileUpload fu = null;
 
         FileUpload.withTransaction { status ->
@@ -398,7 +398,7 @@ class AgreementLifecycleSpec extends BaseSpec {
       final String tenantid = currentTenant.toLowerCase()
       log.debug("Create new package with tenant ${tenantid}");
 
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+      withTenant {
         FileUpload fu = null;
 
         FileUpload.withTransaction { status ->
@@ -426,7 +426,7 @@ class AgreementLifecycleSpec extends BaseSpec {
       final String tenantid = currentTenant.toLowerCase()
       log.debug("Create new package with tenant ${tenantid}");
 
-      Tenants.withId(OkapiTenantResolver.getTenantSchemaName( tenantid )) {
+      withTenant {
         String fu_id = null;
 
         FileUpload.withTransaction { status ->
