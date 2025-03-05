@@ -6,6 +6,8 @@ import org.olf.kb.metadata.ResourceIngressType
 
 import org.olf.general.jobs.PackageTriggerResyncJob
 
+import org.olf.general.pushKB.PushKBClient
+
 import com.k_int.web.toolkit.utils.GormUtils
 
 import grails.gorm.multitenancy.CurrentTenant
@@ -88,7 +90,7 @@ class PackageSyncService {
   public void resyncPushKBPackage(Package pkg, PackageIngressMetadata pim) {
     if (
         pim.contentIngressId != null &&
-            pim.contentIngressUrl != null
+        pim.contentIngressUrl != null
     ) {
       String gokbUUID = pkg.approvedIdentifierOccurrences.find { io ->
         io.identifier.ns.value == "gokb_uuid"
