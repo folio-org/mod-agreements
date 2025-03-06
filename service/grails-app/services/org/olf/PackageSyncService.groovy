@@ -1,5 +1,8 @@
 package org.olf
 
+
+import java.time.Instant
+
 import org.olf.kb.Pkg
 import org.olf.kb.metadata.PackageIngressMetadata
 import org.olf.kb.metadata.ResourceIngressType
@@ -37,9 +40,15 @@ class PackageSyncService {
           pkg.save(failOnError: true);
           returnObj.packagesUpdated++
 
-          new PackageTriggerResyncJob([
-              packageId: pkgId
-          ]).save(failOnError: true)
+          if (syncStatusBool == true) {
+            PackageTriggerResyncJob job = new PackageTriggerResyncJob([
+                name: "PackageTriggerResyncJob for ${pkgId}, ${Instant.now()}",
+                packageId: pkgId
+            ])
+
+            job.setStatusFromString('Queued')
+            job.save(failOnError: true)
+          }
         } else {
           returnObj.packagesSkipped++
         }
@@ -57,14 +66,14 @@ class PackageSyncService {
    */
 
   public void resyncPackage(String packageId) {
-    Package.withTransaction {
-      Package pkg = Package.get(packageId);
+    Pkg.withTransaction {
+      Pkg pkg = Pkg.get(packageId);
 
       if (pkg != null) {
         PackageIngressMetadata pim = PackageIngressMetadata.executeQuery("""
           SELECT pim FROM PackageIngressMetadata pim
           WHERE pim.resource.id = :pid
-        """.toString(), [pid: packageId]);
+        """.toString(), [pid: packageId])[0];
 
         if (pim != null) {
           switch (pim.ingressType) {
@@ -87,24 +96,24 @@ class PackageSyncService {
     }
   }
   // Break out logic for specifically resyncing a pkg with ingressType == PUSH_KB
-  public void resyncPushKBPackage(Package pkg, PackageIngressMetadata pim) {
+  public void resyncPushKBPackage(Pkg pkg, PackageIngressMetadata pim) {
     if (
         pim.contentIngressId != null &&
         pim.contentIngressUrl != null
     ) {
       String gokbUUID = pkg.approvedIdentifierOccurrences.find { io ->
         io.identifier.ns.value == "gokb_uuid"
-      }.value;
+      }.identifier.value;
 
       if (gokbUUID != null) {
         // FINALLY actually do the package resync
         PushKBClient client = new PushKBClient(pim.contentIngressUrl);
-        client.temporaryPushTask(contentIngressId, gokbUUID);
+        client.temporaryPushTask(pim.contentIngressId, gokbUUID);
       } else {
-        log.error("Cannot currently trigger resync for package \"${pkg.name}\" with id: ${packageId}, could not find identifier with namespace \"gokb_uuid\"")
+        log.error("Cannot currently trigger resync for package \"${pkg.name}\" with id: ${pkg.id}, could not find identifier with namespace \"gokb_uuid\"")
       }
     } else {
-      log.error("Cannot currently trigger resync for package \"${pkg.name}\" with id: ${packageId}, PackageIngressMetadata does not yet include enough information to trigger PushKB temporaryPushTask creation")
+      log.error("Cannot currently trigger resync for package \"${pkg.name}\" with id: ${pkg.id}, PackageIngressMetadata does not yet include enough information to trigger PushKB temporaryPushTask creation")
     }
   }
 }

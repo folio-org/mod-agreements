@@ -125,12 +125,12 @@
   </logger>
 
   <logger name="org.olf.general.pushKB.PushKBClient">
-    <level value="INFO" />
+    <level value="DEBUG" />
     <appender-ref ref="JOB" />
   </logger>
 
   <logger name="org.olf.PackageSyncService">
-    <level value="INFO" />
+    <level value="DEBUG" />
     <appender-ref ref="JOB" />
   </logger>
 
