@@ -16,9 +16,6 @@ import com.k_int.web.toolkit.utils.GormUtils
 import grails.gorm.multitenancy.CurrentTenant
 import groovy.util.logging.Slf4j
 
-/**
- * This service works at the module level, it's often called without a tenant context.
- */
 @Slf4j
 @CurrentTenant
 class PackageSyncService {
