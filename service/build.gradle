@@ -143,6 +143,10 @@ dependencies {
   }
   implementation 'org.liquibase:liquibase-core:4.19.0'
 
+  // Plugin to avoid liquibase session locking causing issues
+  implementation 'com.github.blagerweij:liquibase-sessionlock:1.6.9'
+
+
 
   implementation 'com.opencsv:opencsv:5.7.1'
   implementation 'commons-io:commons-io:2.7'
