@@ -1,5 +1,7 @@
 package org.olf.kb.adapters
 
+import org.olf.kb.parsers.LazyTIPPXmlSlurper
+
 import static groovy.transform.TypeCheckingMode.SKIP
 
 import java.text.*
@@ -55,7 +57,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     def query_params = [
         'verb': 'ListRecords',
         'metadataPrefix': 'gokb',
-        //'resumptionToken': '||1091|gokb' // DO NOT MERGE THIS, HERE FOR TESTING
+        'resumptionToken': '||1001|gokb' // DO NOT MERGE THIS, HERE FOR TESTING
     ]
 
    String cursor = null
@@ -81,6 +83,10 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
       // Built in parser for XML returns GPathResult
       Object sync_result = getSync(packagesUrl, query_params) {
+        response.parser('text/xml'){ ChainedHttpConfig cfg, FromServer fs ->
+          return new LazyTIPPXmlSlurper().parse(fs.inputStream)
+        }
+
         response.failure { FromServer fromServer ->
           log.error "HTTP/OAI Request failed with status ${fromServer.statusCode}"
           found_records = false

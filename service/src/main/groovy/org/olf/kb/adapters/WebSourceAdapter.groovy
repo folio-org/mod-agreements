@@ -82,14 +82,14 @@ public abstract class WebSourceAdapter {
       request.uri = url
       request.uri.query = params
       request.headers['User-Agent'] = header
-      
-      if (expand) {
-        expand.rehydrate(delegate, expand.owner, thisObject)()
-      }
 
       // Manually swap to newer GPathResult
       response.parser('text/xml'){ ChainedHttpConfig cfg, FromServer fs ->
         return new XmlSlurper().parse(fs.inputStream)
+      }
+      
+      if (expand) {
+        expand.rehydrate(delegate, expand.owner, thisObject)()
       }
     })
   }
