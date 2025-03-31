@@ -1,19 +1,10 @@
-package org.olf.General
+package org.olf.Agreements
 
-import static groovyx.net.http.ContentTypes.*
-import static groovyx.net.http.HttpBuilder.configure
-import static org.springframework.http.HttpStatus.*
 
 import org.olf.BaseSpec
-
-import com.k_int.okapi.OkapiHeaders
-import com.k_int.okapi.OkapiTenantResolver
-import geb.spock.GebSpec
-import grails.gorm.multitenancy.Tenants
 import grails.testing.mixin.integration.Integration
 import java.time.LocalDate
 import spock.lang.Stepwise
-import spock.lang.Unroll
 import spock.lang.Shared
 
 import groovy.util.logging.Slf4j
@@ -21,7 +12,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Integration
 @Stepwise
-class UpdateStartDateBugSpec extends BaseSpec {
+class AgreementTitleUpdatesWithMultiCustomPropertyERM3438 extends BaseSpec {
 
   @Shared
   List respList
