@@ -126,9 +126,9 @@ class AgreementPeriodDateERM3438Spec extends BaseSpec {
     respMap.startDate == tomorrow.toString()
 
     where:
-    custProp           | agreementName
-    null               | 'Agreement no custprop'
-    'multiRefdataProp' | 'Agreement with single custprop'
-    'refdataProp'      | 'Agreement with multi custprop'
+    custProp            | agreementName
+    null                | 'Agreement no custprop'
+    'refdataProp'       | 'Agreement with single custprop'
+    'multiRefdataProp'  | 'Agreement with multi custprop'
   }
 }
