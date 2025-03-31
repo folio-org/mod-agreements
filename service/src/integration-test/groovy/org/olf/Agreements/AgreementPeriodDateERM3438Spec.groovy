@@ -12,7 +12,7 @@ import groovy.util.logging.Slf4j
 @Slf4j
 @Integration
 @Stepwise
-class AgreementTitleUpdatesWithMultiCustomPropertyERM3438 extends BaseSpec {
+class AgreementPeriodDateERM3438Spec extends BaseSpec {
 
   @Shared
   List respList
