@@ -225,9 +225,22 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
   }
 
   public void calculateDates () {
+    LocalDate originalStartDate = this.startDate
+    LocalDate originalEndDate = this.endDate
+    LocalDate originalCancellationDeadline = this.cancellationDeadline
+
     startDate = PeriodService.calculateStartDate(periods)
     endDate = PeriodService.calculateEndDate(periods)
     cancellationDeadline = PeriodService.calculateCancellationDeadline(periods)
+
+    if (
+        startDate != originalStartDate ||
+        endDate != originalEndDate ||
+        cancellationDeadline != originalCancellationDeadline
+    ) {
+      this.markDirty() // This is a little gross, but since `period`
+      // change wouldn't mark this as dirty, it may choose not to persist
+    }
   }
 
   /**
@@ -238,6 +251,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     Clonable.super.clone()
   }
 
+  @Transient
   public LocalDate getLocalDate() {
     LocalDate ld
     // Use the request if possible
@@ -264,6 +278,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     ld
   }
 
+  @Transient
   public String findCurrentPeriod() {
     log.debug "Find current period"
     LocalDate ld = getLocalDate()
@@ -276,6 +291,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     cpId
   }
 
+  @Transient
   public String findPreviousPeriod() {
     log.debug "Find previous period"
     LocalDate ld = getLocalDate()
@@ -284,6 +300,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
     ppId
   }
 
+  @Transient
   public String findNextPeriod() {
     log.debug "Find next period"
     LocalDate ld = getLocalDate()
