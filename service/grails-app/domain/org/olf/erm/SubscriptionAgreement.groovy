@@ -238,8 +238,17 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
         endDate != originalEndDate ||
         cancellationDeadline != originalCancellationDeadline
     ) {
-      this.markDirty() // This is a little gross, but since `period`
-      // change wouldn't mark this as dirty, it may choose not to persist
+      // This is currently ONLY required when SubscriptionAgreement
+      // has a customProperty of type "MultiRefdata". This behaviour is
+      // a complete mystery to me, and while the below solves it, it seems
+      // a quick-and-dirty (pardon the pun) fix for some complicated
+      // grails domain interactions happening under the hood.
+      // I'd like to return to this and understand what's going wrong.
+      //
+      // In general I think the use of `beforeValidate`
+      // everywhere to persist what would otherwise be transient
+      // values is a pattern we should really strive to stamp out anyway
+      this.markDirty()
     }
   }
 
