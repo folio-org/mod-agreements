@@ -4,6 +4,8 @@ import static org.springframework.transaction.annotation.Propagation.REQUIRES_NE
 
 import java.util.concurrent.TimeUnit
 
+import org.olf.kb.metadata.ResourceIngressType
+
 import org.olf.general.Org
 
 import org.olf.general.StringUtils
@@ -49,6 +51,7 @@ class PackageIngestService implements DataBinder {
   TitleIngestService titleIngestService
   IdentifierService identifierService
   CoverageService coverageService
+  IngressMetadataService ingressMetadataService
 
   // dependentModuleProxyService is a service which hides the fact that we might be dependent upon other
   // services for our reference data. In this class - vendors are erm Org entries, but in folio these are
@@ -56,8 +59,8 @@ class PackageIngestService implements DataBinder {
   // looking up an Org in vendors and stashing the vendor info in the local cache table.
   DependentModuleProxyService dependentModuleProxyService
 
-  public Map upsertPackage(PackageSchema package_data) {
-    return upsertPackage(package_data,'LOCAL',true)
+  public Map upsertPackage(PackageSchema package_data, Map ingressMetadata = [ingressType: ResourceIngressType.JSON_IMPORT]) {
+    return upsertPackage(package_data,'LOCAL',true, ingressMetadata)
   }
 
 
@@ -76,6 +79,11 @@ class PackageIngestService implements DataBinder {
 		kb
 	}
 
+
+  // TODO This is a bit of a mess now. PushKB does NOT use upsertPackage in the same way,
+  // instead kind of mirroring the process while skipping all the RemoteKB AND contents logic.
+  // This will be used, however, for all RemoteKB upserts
+  // We should try to identify more of the work
   /**
    * Load the paackage data (Given in the agreed canonical json package format) into the KB.
    * This function must be passed VALID package data. At this point, all package contents are
@@ -85,10 +93,14 @@ class PackageIngestService implements DataBinder {
    * package into the KB.
    * @return id of package upserted
    */
-  public Map upsertPackage(PackageSchema package_data, String remotekbname, boolean kbCreateReadOnly=false) {
+  public Map upsertPackage(
+      PackageSchema package_data,
+      String remotekbname,
+      boolean kbCreateReadOnly=false,
+      Map ingressMetadata = [:] // Allow JSON/KBART to pre-declare that they're coming from Json or Kbart, otherwise empty
+  ) {
 		// Really messy but required as withNew session does not work unless there is already a session
   	// bound.
-
 
 		final def result = [
 			startTime: System.currentTimeMillis(),
@@ -122,7 +134,13 @@ class PackageIngestService implements DataBinder {
 							log.info("Package header: ${package_data.header} - update start time is ${result.updateTime}")
 							
 							// Farm out package lookup and creation to a separate method
-							pkg = lookupOrCreatePkg(package_data);
+
+              if (ingressMetadata.ingressType == null) {
+                ingressMetadata.ingressType = ResourceIngressType.HARVEST
+              }
+              ingressMetadata.ingressId = kb.id;
+
+							pkg = lookupOrCreatePkg(package_data, ingressMetadata);
 							// Retain logging information
 							MDC.put('packageSource', pkg.source.toString())
 							MDC.put('packageReference', pkg.reference.toString())
@@ -132,78 +150,83 @@ class PackageIngestService implements DataBinder {
 				
 							result.packageId = pkg.id
 						}
-				
-						package_data.packageContents.eachWithIndex { ContentItemSchema pc, int index ->
-							// ENSURE MDC title is set as early as possible
-							MDC.put('title', StringUtils.truncate(pc.title.toString()))
-				
-							try {
-								PackageContentItem.withNewSession { tsess ->
-  								PackageContentItem.withNewTransaction { status ->
-									  // Delegate out to TitleIngestService so that any shared steps can move there.
-								  	Map titleIngestResult = titleIngestService.upsertTitle(pc, kb, trustedSourceTI)
-							  		// titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
-						  			if ( titleIngestResult.titleInstanceId != null ) {
-					  					// Pass off to new hierarchy method (?)
-				  						Map hierarchyResult = lookupOrCreateTitleHierarchy(
-			  								titleIngestResult.titleInstanceId,
-		  									pkg.id,
-	  										trustedSourceTI,
-  											pc,
-											  result.updateTime,
-										  	result.titleCount
-									  	)
-				
-								  		PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
-							  			hierarchyResultMapLogic(hierarchyResult, result, pci)
-						  			}
-					  				else {
-				  						// Almost the same message exists in TitleIngestService if result is null
-			  							//String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
-		  								//log.error(message)
-	  								}
-  								}
-									// Without this, created objects live on in the hibernate cache and will balloon memory badly
-									tsess.clear();
+
+            // We are treating `null` as `true`, but NOT overwriting it moving forward
+            // This is the analogue to the same check happening in PushKBService::pushPCIs
+            if (pkg.syncContentsFromSource != false) {
+              package_data.packageContents.eachWithIndex { ContentItemSchema pc, int index ->
+                // ENSURE MDC title is set as early as possible
+                MDC.put('title', StringUtils.truncate(pc.title.toString()))
+
+                try {
+                  PackageContentItem.withNewSession { tsess ->
+                    PackageContentItem.withNewTransaction { status ->
+                      // Delegate out to TitleIngestService so that any shared steps can move there.
+                      Map titleIngestResult = titleIngestService.upsertTitle(pc, kb, trustedSourceTI)
+                      // titleIngestResult.titleInstanceId will be non-null IFF TitleIngestService managed to find a title with that Id.
+                      if (titleIngestResult.titleInstanceId != null) {
+                        // Pass off to new hierarchy method (?)
+                        Map hierarchyResult = lookupOrCreateTitleHierarchy(
+                            titleIngestResult.titleInstanceId,
+                            pkg.id,
+                            trustedSourceTI,
+                            pc,
+                            result.updateTime,
+                            result.titleCount
+                        )
+
+                        PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
+                        hierarchyResultMapLogic(hierarchyResult, result, pci)
+                      } else {
+                        // Almost the same message exists in TitleIngestService if result is null
+                        //String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
+                        //log.error(message)
+                      }
+                    }
+                    // Without this, created objects live on in the hibernate cache and will balloon memory badly
+                    tsess.clear();
+                  }
+                } catch (IngestException ie) {
+                  // When we've caught an ingest exception, should have helpful error log message
+                  String message = "Skipping \"${pc.title}\": ${ie.message}"
+                  log.error(message, ie)
+                } catch (Exception e) {
+                  String message = "Skipping \"${pc.title}\". System error: ${e.message}"
+                  log.error(message, e)
                 }
-							} catch ( IngestException ie ) {
-                // When we've caught an ingest exception, should have helpful error log message
-                String message = "Skipping \"${pc.title}\": ${ie.message}"
-                log.error(message, ie)
-							} catch ( Exception e ) {
-								String message = "Skipping \"${pc.title}\". System error: ${e.message}"
-								log.error(message, e)
-							}
-							result.titleCount++
+                result.titleCount++
 
-              // Do we really need a running average?
-              /* if ( result.titleCount % 100 == 0 ) {
-                result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/(result.titleCount * 1000)
-								log.debug ("(Package in progress) processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}s")
-							} */
-						}
+                // Do we really need a running average?
+                /* if ( result.titleCount % 100 == 0 ) {
+                  result.averageTimePerTitle=(System.currentTimeMillis()-result.startTime)/(result.titleCount * 1000)
+                  log.debug ("(Package in progress) processed ${result.titleCount} titles, average per title: ${result.averageTimePerTitle}s")
+                } */
+              }
 
-						// This removed logic is WRONG under pushKB because it's chunked -- ensure pushKB does not call full upsertPackage method
-						// At the end - Any PCIs that are currently live (Don't have a removedTimestamp) but whos lastSeenTimestamp is < result.updateTime
-						// were not found on this run, and have been removed. We *may* introduce some extra checks here - like 3 times or a time delay, but for now,
-						// this is how we detect deletions in the package file.
-						log.debug("Remove any content items that have disappeared since the last upload. ${pkg.name}/${pkg.source}/${pkg.reference}/${result.updateTime}")
-						int removal_counter = 0
-				
-						PackageContentItem.withNewTransaction { status ->
-							// FIXME we're querying on pkg itself here not pkg.id
-							PackageContentItem.executeQuery('select pci from PackageContentItem as pci where pci.pkg = :pkg and pci.lastSeenTimestamp < :updateTime and pci.removedTimestamp is null',
-																							[pkg:pkg, updateTime:result.updateTime]).each { removal_candidate ->
-								try {
-									log.debug("Removal candidate: pci.id #${removal_candidate.id} (Last seen ${removal_candidate.lastSeenTimestamp}, thisUpdate ${result.updateTime}) -- Set removed")
-									removal_candidate.removedTimestamp = result.updateTime
-									removal_candidate.save(flush:true, failOnError:true)
-								} catch ( Exception e ) {
-									log.error("Problem removing ${removal_candidate} in package load",e)
-								}
-								result.removedTitles++
-							}
-						}
+              // This removed logic is WRONG under pushKB because it's chunked -- ensure pushKB does not call full upsertPackage method
+              // At the end - Any PCIs that are currently live (Don't have a removedTimestamp) but whos lastSeenTimestamp is < result.updateTime
+              // were not found on this run, and have been removed. We *may* introduce some extra checks here - like 3 times or a time delay, but for now,
+              // this is how we detect deletions in the package file.
+              log.debug("Remove any content items that have disappeared since the last upload. ${pkg.name}/${pkg.source}/${pkg.reference}/${result.updateTime}")
+              int removal_counter = 0
+
+              PackageContentItem.withNewTransaction { status ->
+                // FIXME we're querying on pkg itself here not pkg.id
+                PackageContentItem.executeQuery('select pci from PackageContentItem as pci where pci.pkg = :pkg and pci.lastSeenTimestamp < :updateTime and pci.removedTimestamp is null',
+                    [pkg: pkg, updateTime: result.updateTime]).each { removal_candidate ->
+                  try {
+                    log.debug("Removal candidate: pci.id #${removal_candidate.id} (Last seen ${removal_candidate.lastSeenTimestamp}, thisUpdate ${result.updateTime}) -- Set removed")
+                    removal_candidate.removedTimestamp = result.updateTime
+                    removal_candidate.save(flush: true, failOnError: true)
+                  } catch (Exception e) {
+                    log.error("Problem removing ${removal_candidate} in package load", e)
+                  }
+                  result.removedTitles++
+                }
+              }
+            } else {
+              log.info("Package: ${pkg.name}(${pkg.id}) has syncContentsFromSource: false, skipping title ingest")
+            }
 					}
           newSess.clear();
 				}
@@ -226,8 +249,17 @@ class PackageIngestService implements DataBinder {
     TimeUnit.MILLISECONDS.sleep(1)
     if (result.titleCount > 0) {
       log.debug ("Processed ${result.titleCount} titles in ${finishedTime/1000} seconds (${(finishedTime/result.titleCount)/1000}s average)")
-      log.info("Package titles summary::Processed/${result.titleCount}, Added/${result.newTitles}, Updated/${result.updatedTitles}, Removed/${result.removedTitles}, AccessStart/${result.updatedAccessStart}, AccessEnd/${result.updatedAccessEnd}")
-
+      log.info(
+"""\
+Package titles summary::Processed/${result.titleCount}, \
+Added/${result.newTitles}, \
+Updated/${result.updatedTitles}, \
+Removed/${result.removedTitles}, \
+Not synced/${result.nonSyncedTitles}, \
+AccessStart/${result.updatedAccessStart}, \
+AccessEnd/${result.updatedAccessEnd}\
+"""
+      )
       // Log the counts too.
       for (final String change : countChanges) {
         if (result[change]) {
@@ -286,7 +318,7 @@ class PackageIngestService implements DataBinder {
     return vendor;
   }
 
-  public Pkg lookupPkgAndUpdate(PackageSchema package_data) {
+  public Pkg lookupPkgAndUpdate(PackageSchema package_data, final Map ingressMetadata = [:]) {
     Pkg pkg = lookupPkg(package_data)
     Org vendor = getVendorFromPackageData(package_data)
     // Do update step but NOT create step
@@ -301,6 +333,8 @@ class PackageIngestService implements DataBinder {
         pkg.availabilityScopeFromString = package_data.header.availabilityScope
       }
 
+      // DO NOT UPDATE syncContentsFromSource.
+
       pkg.vendor = vendor
       pkg.description = package_data.header.description
       pkg.name = package_data.header.packageName
@@ -312,6 +346,9 @@ class PackageIngestService implements DataBinder {
       updateAlternateNames(pkg.id, package_data)
       updateAvailabilityConstraints(pkg.id, package_data)
       updatePackageDescriptionUrls(pkg.id, package_data)
+
+      // Handle "update" of ingressMetadata
+      ingressMetadataService.upsertPackageIngressMetadata(pkg.id, ingressMetadata)
     }
 
     return pkg;
@@ -325,25 +362,29 @@ class PackageIngestService implements DataBinder {
    *
    * This method ALSO updates information for packages.
    */
-  public Pkg lookupOrCreatePkg(PackageSchema package_data) {
+  public Pkg lookupOrCreatePkg(PackageSchema package_data, final Map ingressMetadata = [:]) {
     // This takes care of any updates
-    Pkg pkg = lookupPkgAndUpdate(package_data);
+    Pkg pkg = lookupPkgAndUpdate(package_data, ingressMetadata);
 
     // If pkg is null, then we can safely create a new one
     if ( pkg == null ) {
       Org vendor = getVendorFromPackageData(package_data)
       pkg = new Pkg(
-                     name: package_data.header.packageName,
-                   source: package_data.header.packageSource,
-                reference: package_data.header.packageSlug,
-              description: package_data.header.description,
-        sourceDataCreated: package_data.header.sourceDataCreated,
-        sourceDataUpdated: package_data.header.sourceDataUpdated,
-         sourceTitleCount: package_data.header.sourceTitleCount,
-        availabilityScope: ( package_data.header.availabilityScope != null ? Pkg.lookupOrCreateAvailabilityScope(package_data.header.availabilityScope) : null ),
-          lifecycleStatus: Pkg.lookupOrCreateLifecycleStatus(package_data.header.lifecycleStatus != null ? package_data.header.lifecycleStatus : 'Unknown'),
-                   vendor: vendor,
+                          name: package_data.header.packageName,
+                        source: package_data.header.packageSource,
+                     reference: package_data.header.packageSlug,
+                   description: package_data.header.description,
+             sourceDataCreated: package_data.header.sourceDataCreated,
+             sourceDataUpdated: package_data.header.sourceDataUpdated,
+              sourceTitleCount: package_data.header.sourceTitleCount,
+        syncContentsFromSource: package_data.header.syncContentsFromSource,
+             availabilityScope: ( package_data.header.availabilityScope != null ? Pkg.lookupOrCreateAvailabilityScope(package_data.header.availabilityScope) : null ),
+               lifecycleStatus: Pkg.lookupOrCreateLifecycleStatus(package_data.header.lifecycleStatus != null ? package_data.header.lifecycleStatus : 'Unknown'),
+                        vendor: vendor,
       ).save(flush:true, failOnError:true)
+
+      // Set up ingressMetadata for new packages
+      ingressMetadataService.createPackageIngressMetadata(pkg.id, ingressMetadata)
 
       (package_data?.header?.contentTypes ?: []).each {
         pkg.addToContentTypes(new ContentType([contentType: ContentType.lookupOrCreateContentType(it.contentType)]))
@@ -484,10 +525,10 @@ class PackageIngestService implements DataBinder {
    * off chance that a PCI is attempting to be ingested when the package
    * for that title has not been yet.
    */
-  public Pkg lookupOrCreatePackageFromTitle(ContentItemSchema pc) {
+  public Pkg lookupOrCreatePackageFromTitle(ContentItemSchema pc, Map ingressMetadata = [:]) {
     Pkg pkg = null;
     if (pc?.contentItemPackage) {
-      pkg = lookupOrCreatePkg(pc.contentItemPackage)
+      pkg = lookupOrCreatePkg(pc.contentItemPackage, ingressMetadata)
     } else {
       /* WIP this feels like not the right thing to do */
       throw new Exception("Cannot create package from title if no contentItemPackage is provided.")

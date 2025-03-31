@@ -5,6 +5,9 @@ import com.k_int.okapi.OkapiTenantResolver
 import com.k_int.web.toolkit.testing.HttpSpec
 import org.olf.dataimport.internal.TitleInstanceResolverService
 
+import org.olf.dataimport.internal.KBManagementBean
+import org.olf.kb.metadata.ResourceIngressType
+
 import org.olf.kb.Pkg
 import org.olf.kb.TitleInstance
 
@@ -22,6 +25,16 @@ import groovy.json.JsonSlurper
 import spock.lang.*
 
 import groovy.util.logging.Slf4j
+
+// KBART file stuffs
+import java.io.FileInputStream
+import org.apache.commons.io.input.BOMInputStream
+
+import com.opencsv.ICSVParser
+import com.opencsv.CSVParser
+import com.opencsv.CSVParserBuilder
+import com.opencsv.CSVReader
+import com.opencsv.CSVReaderBuilder
 
 @Slf4j
 @Stepwise
@@ -159,6 +172,26 @@ abstract class BaseSpec extends HttpSpec {
     titleInstanceResolverService?.class?.name
   }
 
+  // KBManagementBean gets injected as a spring bean
+  KBManagementBean kbManagementBean
+
+  @Ignore
+  Boolean isPushKb() {
+    kbManagementBean.ingressType == ResourceIngressType.PUSHKB
+  }
+
+  @Ignore
+  Boolean isHarvest() {
+    kbManagementBean.ingressType == ResourceIngressType.HARVEST
+  }
+
+  @Ignore
+  def getDataFromFile(String test_package_file_name, String path = "src/integration-test/resources/packages") {
+    String test_package_file = "${path}/${test_package_file_name}";
+
+    return jsonSlurper.parse(new File(test_package_file))
+  }
+
   // Set up helper methods to import test packages so we don't repeat that code throughout tests
   @Ignore
   def importPackageFromFileViaService(String test_package_file_name, String path = "src/integration-test/resources/packages") {
@@ -183,6 +216,38 @@ abstract class BaseSpec extends HttpSpec {
         /* Pkg.executeQuery('select p.id, p.name from Pkg as p').each { p ->
           log.debug("Package: ${p}");
         } */
+      }
+    }
+
+    return result;
+  }
+
+  @Ignore
+  def importKBARTPackageViaService(
+      String test_package_file_name,
+      String path = "src/integration-test/resources/packages",
+      Map packageInfo = [
+          packageName: 'testPackage',
+          packageSource: 'testSource',
+          packageReference: 'testReference',
+          packageProvider: 'testProvider',
+          trustedSourceTI: true
+      ]
+  ) {
+    boolean result = false
+    log.debug("Create new package from KBART with tenant ${tenantId}");
+    withTenant {
+      Pkg.withTransaction { status ->
+        String test_package_file = "${path}/${test_package_file_name}";
+
+        BOMInputStream bis = new BOMInputStream(new FileInputStream(new File(test_package_file)));
+        CSVParser parser = new CSVParserBuilder().withSeparator('\t' as char)
+            .withQuoteChar(ICSVParser.DEFAULT_QUOTE_CHARACTER)
+            .withEscapeChar(ICSVParser.DEFAULT_ESCAPE_CHARACTER)
+            .build();
+
+        CSVReader csvReader = new CSVReaderBuilder(new InputStreamReader(bis)).withCSVParser(parser).build();
+        result = importService.importPackageFromKbart(csvReader, packageInfo)
       }
     }
 

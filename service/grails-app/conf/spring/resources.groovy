@@ -1,6 +1,6 @@
 import org.olf.dataimport.internal.titleInstanceResolvers.*
 import org.olf.dataimport.internal.KBManagementBean
-import org.olf.dataimport.internal.KBManagementBean.KBIngressType
+import org.olf.kb.metadata.ResourceIngressType
 
 // Place your Spring DSL code here
 beans = {
@@ -35,14 +35,30 @@ beans = {
 
   // Swap between PushKB and Harvest processes to get data into internal KB
   String INGRESS_TYPE = System.getenv("INGRESS_TYPE")
+  String SYNC_PACKAGES_VIA_HARVEST = System.getenv("SYNC_PACKAGES_VIA_HARVEST")
+
   kbManagementBean(KBManagementBean) {
     switch (INGRESS_TYPE) {
       case 'PushKB':
-        ingressType = KBIngressType.PushKB
+        ingressType = ResourceIngressType.PUSHKB
         break;
       case 'Harvest':
       default:
-        ingressType = KBIngressType.Harvest
+        ingressType = ResourceIngressType.HARVEST
+        break;
+    }
+
+    switch (SYNC_PACKAGES_VIA_HARVEST) {
+      case true:
+      case 'true':
+      case 'True':
+        syncPackagesViaHarvest = true
+        break;
+      case false:
+      case 'false':
+      case 'False':
+      default:
+        syncPackagesViaHarvest = false
         break;
     }
   }

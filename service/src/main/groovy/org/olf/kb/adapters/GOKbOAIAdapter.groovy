@@ -4,11 +4,15 @@ import static groovy.transform.TypeCheckingMode.SKIP
 
 import java.text.*
 
+
 import org.olf.TitleEnricherService
 import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
+
+import org.olf.dataimport.internal.KBManagementBean
+
 import org.olf.kb.KBCache
 import org.olf.kb.KBCacheUpdater
 import org.springframework.validation.BindingResult
@@ -16,10 +20,13 @@ import org.springframework.validation.BindingResult
 import grails.web.databinding.DataBinder
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import groovy.util.slurpersupport.GPathResult
+
+// We can access this BECAUSE we are slurping to new GPathResult in WebSourceAdapter getSync
+import groovy.xml.slurpersupport.GPathResult
 import groovyx.net.http.*
 
 import org.slf4j.MDC
+
 
 /**
  * An adapter to go between the GOKb OAI service, for example the one at
@@ -31,9 +38,10 @@ import org.slf4j.MDC
 @CompileStatic
 public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, DataBinder {
 
-  private static final String PATH_PACKAGES = '/packages'
-  private static final String PATH_TITLES = '/titles'
+  protected static final String PATH_PACKAGES = '/packages'
+  protected static final String PATH_TITLES = '/titles'
 
+  @CompileStatic(SKIP)
   public void freshenPackageData(final String source_name,
                                  final String base_url,
                                  final String current_cursor,
@@ -46,7 +54,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
     def query_params = [
         'verb': 'ListRecords',
-        'metadataPrefix': 'gokb'
+        'metadataPrefix': 'gokb',
+        //'resumptionToken': '||1091|gokb' // DO NOT MERGE THIS, HERE FOR TESTING
     ]
 
    String cursor = null
@@ -81,8 +90,16 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       if ( (found_records) && ( sync_result instanceof GPathResult ) ) {
 
         xml = (GPathResult) sync_result;
+        // Remove sync_result now we've got it as a GPathResult
+
         log.debug("got page of data from OAI, cursor=${cursor}, ...")
-        Map page_result = processPackagePage(cursor, xml, source_name, cache, trustedSourceTI)
+
+        Tuple2<List<Tuple2<PackageSchema, String>>, String> transformedPage = transformPackagePage(xml, cache, trustedSourceTI);
+
+        // Remove XML before sending down transformed page to service (For GC)
+        xml = null
+
+        Map page_result = processPackagePage(cursor, transformedPage, source_name, cache)
         log.debug("processPackagePage returned, processed ${page_result.count} packages, cursor will be ${page_result.new_cursor}")
 
         // Extract some info from the page.
@@ -198,31 +215,19 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     throw new RuntimeException("Holdings data not suported by GOKb")
   }
 
+  // Returns a Tuple2 containing
+  // 1. List of transformed packageSchemas along with the requisite datestamps for that package
+  // 2. The resumption token from the page
+  // We are doing this step separately to allow us to separate all references to xml
   @CompileStatic(SKIP)
-  private Map processPackagePage(String cursor, GPathResult oai_page, String source_name, KBCache cache, boolean trustedSourceTI) {
+  protected Tuple2<List<Tuple2<PackageSchema, String>>, String> transformPackagePage(GPathResult oai_page, KBCache cache, boolean trustedSourceTI) {
+    List<Tuple2<PackageSchema, String>> transformedRecords = [] as List<Tuple2<PackageSchema, String>>
 
-    final SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
-
-    // Force the formatter to use UCT because we want "Z" as the timezone
-    sdf.setTimeZone(TimeZone.getTimeZone("UTC"))
-
-    def result = [:]
-
-
-    // If there is no cursor, initialise it to an empty string.
-    result.new_cursor = (cursor && cursor.trim()) != '' ? cursor : ''
-    result.count = 0
-
-    log.debug("GOKbOAIAdapter::processPackagePage(${cursor},...")
-
-    // Remove the ThreadLocal<Set> containing ids of TIs enriched by this process.
-    TitleEnricherService.enrichedIds.remove()
-
-    oai_page.ListRecords.record.each { record ->
-      result.count++
+    // We may need to remove each node as we go
+    oai_page.ListRecords.record.eachWithIndex { record, idx ->
       def record_identifier = record?.header?.identifier?.text()
       def package_name = record?.metadata?.gokb?.package?.name?.text()
-      def primary_slug = record?.metadata?.gokb?.package?.find{
+      def primary_slug = record?.metadata?.gokb?.package?.find {
         it.@uuid?.text() != null && it.@uuid?.text()?.trim() != ''
       }?.@uuid?.text()
       def datestamp = record?.header?.datestamp?.text()
@@ -230,7 +235,8 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       def listStatus = record?.metadata?.gokb?.package?.listStatus?.text()
       def packageStatus = record?.metadata?.gokb?.package?.status?.text()
 
-      log.debug("Processing OAI record :: ${result.count} ${record_identifier} ${package_name}")
+      log.debug("Processing OAI record :: ${idx} ${record_identifier} ${package_name}")
+      PackageSchema json_package_description = null;
 
       if (!package_name) {
         log.info("Ignoring Package '${record_identifier}' because package_name is missing")
@@ -241,7 +247,41 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       } else if (listStatus.toLowerCase() != 'checked') {
         log.info("Ignoring Package '${package_name}' because listStatus=='${listStatus}' (required: 'checked')")
       } else {
-        PackageSchema json_package_description = gokbToERM(record, trustedSourceTI)
+        json_package_description = gokbToERM(record, trustedSourceTI, cache.kbManagementBean)
+      }
+
+      transformedRecords.add(new Tuple2(json_package_description, datestamp))
+    }
+
+    return new Tuple2(transformedRecords, oai_page.ListRecords?.resumptionToken?.text());
+  }
+
+  @CompileStatic(SKIP)
+  protected Map processPackagePage(String cursor, Tuple2<List<Tuple2<PackageSchema, String>>, String> packagePageInformation, String source_name, KBCache cache) {
+
+    final SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+
+    // Force the formatter to use UCT because we want "Z" as the timezone
+    sdf.setTimeZone(TimeZone.getTimeZone("UTC"))
+
+    def result = [:]
+
+    // If there is no cursor, initialise it to an empty string.
+    result.new_cursor = (cursor && cursor.trim()) != '' ? cursor : ''
+    result.count = 0
+
+    log.debug("GOKbOAIAdapter::processPackagePage(${cursor},...")
+
+    // Remove the ThreadLocal<Set> containing ids of TIs enriched by this process.
+    TitleEnricherService.enrichedIds.remove()
+
+    List<Tuple2<PackageSchema, String>> transformedRecords = packagePageInformation.getV1();
+
+    transformedRecords.each { record ->
+      result.count++
+      PackageSchema json_package_description = record.getV1();
+      String datestamp = record.getV2()
+      if (json_package_description != null) {
         cache.onPackageChange(source_name, json_package_description)
       }
 
@@ -258,12 +298,13 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       }
     }
 
-    result.resumptionToken = oai_page.ListRecords?.resumptionToken?.text()
+    result.resumptionToken = packagePageInformation.getV2()
+
     return result
   }
 
   @CompileStatic(SKIP)
-  private Map processTitlePage(String cursor, GPathResult oai_page, String source_name, KBCache cache, boolean trustedSourceTI) {
+  protected Map processTitlePage(String cursor, GPathResult oai_page, String source_name, KBCache cache, boolean trustedSourceTI) {
 
     final SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
@@ -308,8 +349,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     return result
   }
 
+
   @CompileStatic(SKIP)
-  private String obtainNamespace(GPathResult record) {
+  protected String obtainNamespace(GPathResult record) {
     if (record.@namespaceName?.text() != null && record.@namespaceName?.text()?.trim() != '') {
       return record.@namespaceName?.text()?.toLowerCase()?.replaceAll(/\s+/, "_")
     } else if (record.@namespace?.text() != null && record.@namespace?.text()?.trim() != '') {
@@ -324,7 +366,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
    *   https://gokbt.gbv.de/gokb/oai/index/packages?verb=ListRecords&metadataPrefix=gokb
    */
   @CompileStatic(SKIP)
-  protected InternalPackageImplWithPackageContents gokbToERM(GPathResult xml_gokb_record, boolean trustedSourceTI) {
+  protected InternalPackageImplWithPackageContents gokbToERM(GPathResult xml_gokb_record, boolean trustedSourceTI, KBManagementBean kbManagementBean) {
 
     def package_record = xml_gokb_record?.metadata?.gokb?.package
     def header = xml_gokb_record?.header
@@ -453,6 +495,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
           packageSource:'GOKb',
           packageName: package_name,
           trustedSourceTI: trustedSourceTI,
+          // We send down `false` here as the default, crucially any
+          // pre-existing packages will not be overwritten from `null`
+          syncContentsFromSource: kbManagementBean.syncPackagesViaHarvest,
           packageSlug: primary_slug,
           sourceDataCreated: source_data_created,
           sourceDataUpdated: source_data_updated,
@@ -625,7 +670,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   // that isn't available on the package ingest stream
   // Since ERM-2370, this has been replaced by information made available directly through the main ingest stream
   @CompileStatic(SKIP)
-  private Map gokbToERMSecondary(GPathResult xml_gokb_record, String subType) {
+  protected Map gokbToERMSecondary(GPathResult xml_gokb_record, String subType) {
     /* We take in the subType here as we may need to do different things
      * with the data depending on whether it refers to an electronic/print TI
     */
@@ -650,7 +695,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
   // A method to convert the incoming GoKB record to something our ERM software knows the shape of
   @CompileStatic(SKIP)
-  private PackageContentImpl gokbToERMTitle(GPathResult xml_gokb_record) {
+  protected PackageContentImpl gokbToERMTitle(GPathResult xml_gokb_record) {
     def title_record = xml_gokb_record?.metadata?.gokb?.title
 
     def result = null
@@ -678,7 +723,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
    */
   @CompileStatic(SKIP)
   // Include tipp_coverage information for media logic
-  private Map parseTitleInformation(GPathResult title, def coverage = null) {
+  protected Map parseTitleInformation(GPathResult title, def coverage = null) {
     def titleText = title?.name?.text()
     def media = null
 

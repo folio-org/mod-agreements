@@ -21,7 +21,8 @@ import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.dataimport.internal.KBManagementBean
-import org.olf.dataimport.internal.KBManagementBean.KBIngressType
+import org.olf.kb.metadata.ResourceIngressType
+
 
 // Have moved to another package to help pull some of this work together, now need to import these beans
 import org.olf.UtilityService
@@ -57,13 +58,13 @@ class PushKBService implements DataBinder {
   // For now this is repeated in packageIngestService
   private static final def countChanges = ['accessStart', 'accessEnd']
 
-  public Map pushPackages(final List<Map> packages) {
+  public Map pushPackages(final List<Map> packages, final Map ingressMetadata = [:]) {
     Map result = [
       success: false
     ]
-    KBIngressType ingressType = kbManagementBean.ingressType
+    ResourceIngressType ingressType = kbManagementBean.ingressType
 
-    if (ingressType == KBIngressType.PushKB) {
+    if (ingressType == ResourceIngressType.PUSHKB) {
       try {
         packages.each { Map record ->
           final PackageSchema package_data = InternalPackageImpl.newInstance();
@@ -79,7 +80,7 @@ class PushKBService implements DataBinder {
 
                     // These calls mirror what's in upsertPackage but conveniently avoid the
                     // logic which handles TIPPS
-                    Pkg pkg = packageIngestService.lookupOrCreatePkg(package_data);
+                    Pkg pkg = packageIngestService.lookupOrCreatePkg(package_data, ingressMetadata);
                       // Retain logging information
                       MDC.put('packageSource', pkg.source.toString())
                       MDC.put('packageReference', pkg.reference.toString())
@@ -105,7 +106,7 @@ class PushKBService implements DataBinder {
     return result
   }
 
-  public Map pushPCIs(final List<Map> pcis) {
+  public Map pushPCIs(final List<Map> pcis, final Map packageIngressMetadata = [:]) {
     Map result = [
       success: false,
       startTime: System.currentTimeMillis(),
@@ -115,9 +116,10 @@ class PushKBService implements DataBinder {
       updatedTitles: 0,
       updatedAccessStart: 0,
       updatedAccessEnd: 0,
+      nonSyncedTitles: 0,
     ]
-    KBIngressType ingressType = kbManagementBean.ingressType
-    if (ingressType == KBIngressType.PushKB) {
+    ResourceIngressType ingressType = kbManagementBean.ingressType
+    if (ingressType == ResourceIngressType.PUSHKB) {
       try {
         pcis.each { Map record ->
 
@@ -143,57 +145,61 @@ class PushKBService implements DataBinder {
                   Pkg.withNewSession { newSess ->
                     Pkg.withTransaction {
                       // TODO this will allow the PCI data to update the PKG record... do we want this?
-
-                      pkg = packageIngestService.lookupOrCreatePackageFromTitle(pc);
+                      pkg = packageIngestService.lookupOrCreatePackageFromTitle(pc, packageIngressMetadata);
                     }
                     newSess.clear()
                   }
                 }
               }
 
-              TitleInstance.withSession { currentSess ->
-                TitleInstance.withTransaction {
-                  TitleInstance.withNewSession { newSess ->
-                    TitleInstance.withTransaction {
-                      Map titleIngestResult = titleIngestService.upsertTitleDirect(pc)
+              // We are treating `null` as `true`, but NOT overwriting it moving forward
+              // This is the analogue to the same check happening in PackageIngestService::upsertPackage
+              if (pkg.syncContentsFromSource != false) {
+                TitleInstance.withSession { currentSess ->
+                  TitleInstance.withTransaction {
+                    TitleInstance.withNewSession { newSess ->
+                      TitleInstance.withTransaction {
+                        Map titleIngestResult = titleIngestService.upsertTitleDirect(pc)
 
-                      if ( titleIngestResult.titleInstanceId != null ) {
+                        if (titleIngestResult.titleInstanceId != null) {
+                          Map hierarchyResult = packageIngestService.lookupOrCreateTitleHierarchy(
+                              titleIngestResult.titleInstanceId,
+                              pkg.id,
+                              true,
+                              pc,
+                              result.updateTime,
+                              result.titleCount // Not totally sure this is valuable here
+                          )
 
-                        Map hierarchyResult = packageIngestService.lookupOrCreateTitleHierarchy(
-                          titleIngestResult.titleInstanceId,
-                          pkg.id,
-                          true,
-                          pc,
-                          result.updateTime,
-                          result.titleCount // Not totally sure this is valuable here
-                        )
+                          PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
+                          packageIngestService.hierarchyResultMapLogic(hierarchyResult, result, pci)
 
-                        PackageContentItem pci = PackageContentItem.get(hierarchyResult.pciId)
-                        packageIngestService.hierarchyResultMapLogic(hierarchyResult, result, pci)
-
-                        /* TODO figure out if use of removedTimestamp
-                         * should be something harvest also needs to do directly
-                         * And whether we should be doing it after all the above
-                         * or before.
-                         */
-                        if (pc.removedTimestamp) {
+                          /* TODO figure out if use of removedTimestamp
+                           * should be something harvest also needs to do directly
+                           * And whether we should be doing it after all the above
+                           * or before.
+                           */
+                          if (pc.removedTimestamp) {
                             try {
                               log.debug("Removal candidate: pci.id #${pci.id} (Last seen ${pci.lastSeenTimestamp}, thisUpdate ${result.updateTime}) -- Set removed")
                               pci.removedTimestamp = pc.removedTimestamp
-                              pci.save(failOnError:true)
-                            } catch ( Exception e ) {
+                              pci.save(failOnError: true)
+                            } catch (Exception e) {
                               log.error("Problem removing ${pci} in package load", e)
                             }
-                          result.removedTitles++
+                            result.removedTitles++
+                          }
+                        } else {
+                          String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
+                          log.error(message)
                         }
-                      } else {
-                        String message = "Skipping \"${pc.title}\". Unable to resolve title from ${pc.title} with identifiers ${pc.instanceIdentifiers}"
-                        log.error(message)
                       }
+                      newSess.clear()
                     }
-                    newSess.clear()
                   }
                 }
+              } else {
+                result.nonSyncedTitles++
               }
 
             } catch ( IngestException ie ) {

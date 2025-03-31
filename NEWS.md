@@ -1,4 +1,25 @@
-## 7.2.0 IN PROGRESS
+## 7.3.0 IN PROGRESS
+
+## 7.2.1 2025-03-27
+  * ERM-3662 Patch mod-agreements/licenses/serials/service-interaction/oa for instability during update
+  * Updated Env vars table to include S3_GLOBAL_SECRET_KEY
+
+## 7.2.0 2025-03-13
+  * ERM-3629 mod-agreements OOM killed during GOKb harvest
+  * ERM-3581 Support changing the sync status of a single package in the local KB
+  * ERM-3580 Support changing the sync status of multiple packages in the local KB
+  * ERM-3579 Support re-starting synchronisation of pushKB ingested packages
+  * ERM-3578 Add ingest metadata to ERM Resources
+  * ERM-3567 Implement boolean “synchronise” property for packages: mod-agreements
+  * ERM-3470 S3 environment variable settings
+    * Added new environment variable GLOBAL_S3_SECRET_KEY
+    * Deprecated environment variable AWS_SECRET_ACCESS_KEY
+
+## 7.1.5 2025-01-24
+  * ERM-3570 Add missing required interfaces to Module Descriptor
+
+## 7.1.4 2025-01-07
+  * ERM-3464 /erm/entitilements API returns invalid JSON data
 
 ## 7.1.3 2024-12-06
   * ERM-3436 When exporting a KBART file, the column date_last_issue_online should not contain a NULL value in case there is no end year
