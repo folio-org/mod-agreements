@@ -38,7 +38,16 @@ class EntitlementLogSpec extends BaseSpec {
   
   def 'Ingest a test package' () {
     when: 'Testing package added'
-      importPackageFromFileViaService('access_start_access_end_tests.json')
+      def package_data = jsonSlurper.parse(new File("src/integration-test/resources/packages/access_start_access_end_tests.json"))
+
+      // Relies on first PCI not having existing open ended coverage, remove that for this test
+      package_data.records[0].contentItems[0].coverage = []
+      
+      // Edit some of the data manually to follow date tests are run
+      package_data.records[0].contentItems[3].accessStart = '${nextWeek}'
+      package_data.records[0].contentItems[3].coverage[0].startDate = '${nextWeek}'
+
+      importPackageFromMapViaService( package_data )
     and: 'Find the package by name'
       List resp = doGet("/erm/packages", [filters: ['name==access_start_access_end_tests Package']])
       List pci_list = doGet("/erm/pci")
@@ -233,7 +242,7 @@ class EntitlementLogSpec extends BaseSpec {
       ele_update = ele.results?.findAll { it.eventType == 'UPDATE' }
 
     then: 'There is a new UPDATE event'
-      assert ele.totalRecords == totalExpectedRecords; // 9 records
+      assert ele.totalRecords == totalExpectedRecords; // 7 records
       assert ele_add.size() == 1;
       assert ele_update.size() == totalExpectedRecords - 1; // All but the single ADD record
   }
@@ -249,7 +258,7 @@ class EntitlementLogSpec extends BaseSpec {
       def ele_remove = ele.results?.findAll { it.eventType == 'REMOVE' }
 
     then: 'There is a new REMOVE event'
-      assert ele.totalRecords == totalExpectedRecords; // 10 records
+      assert ele.totalRecords == totalExpectedRecords; // 8 records
       assert ele_add.size() == 1;
       assert ele_update.size() == totalExpectedRecords - 2; // All but the ADD/REMOVE records
       assert ele_remove.size() == 1;
