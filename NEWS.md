@@ -1,3 +1,6 @@
+## 7.0.12
+  * ERM-3667 Prevent instability of grails modules during updates: Quesnalia
+
 ## 7.0.11 2025-03-04
   * ERM-3626 Handle duplicate identifiers in local KB data ingest
 
