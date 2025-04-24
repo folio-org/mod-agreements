@@ -111,7 +111,7 @@ class UrlMappings {
     }
 
     "/erm/pci"(resources:'packageContentItem') // Note that we still technically allow single deletes
-    "/erm/pci"(controller: 'packageContentItem', action: 'heirarchicalDeletePCIs', method: 'DELETE')
+    "/erm/pci/hdelete"(controller: 'packageContentItem', action: 'heirarchicalDeletePCIs', method: 'POST')
     "/erm/platforms"(resources:'platform')
     "/erm/entitlements"(resources:'entitlement', excludes: ['patch']) {
       collection {

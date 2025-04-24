@@ -8,7 +8,8 @@ import org.olf.kb.Pkg
 import org.olf.kb.PackageContentItem
 import org.olf.kb.PlatformTitleInstance
 import grails.converters.JSON
-
+import org.olf.kb.http.request.body.HeirarchicalDeletePCIBody
+import org.springframework.http.HttpStatus
 
 /**
  * Explore package content items - the KB
@@ -22,7 +23,60 @@ class PackageContentItemController extends OkapiTenantAwareController<PackageCon
   }
 
   // TODO: Override POST and DELETE
-  def heirarchicalDeletePCIs() {
+  def heirarchicalDeletePCIs(HeirarchicalDeletePCIBody deleteBody) {
+    log.info("Received request for hierarchical PCI delete. Body: {}", deleteBody.toString())
+
+    respond(deleteBody.pCIIds)
+    return
+
+
+    if (deleteBody == null || deleteBody.hasErrors()) {
+      log.warn("Validation failed for hierarchical delete request body: {}", deleteBody?.errors)
+      response.status = HttpStatus.BAD_REQUEST.value()
+      respond(deleteBody?.errors)
+      return
+    }
+
+    List<String> idsToDelete = []
+    try {
+      // Ensure pCIIds is not null or empty (partially covered by validation)
+      if (deleteBody.pCIIds) {
+        // Filter out any null or blank strings just in case
+        idsToDelete = deleteBody.pCIIds.findAll { String idStr ->
+          idStr != null && !idStr.trim().isEmpty()
+        }
+      }
+      if (idsToDelete.isEmpty()) {
+        log.warn("No valid non-empty PCI IDs provided in the list.")
+        response.status = HttpStatus.BAD_REQUEST.value() // 400
+        render(contentType: 'application/json') { [message: "No valid IDs provided in the list."] }
+        return
+      }
+    }
+    catch (Exception e) {
+      log.error("Error processing ID list: ${e.message}", e)
+      response.status = HttpStatus.INTERNAL_SERVER_ERROR.value() // 500
+      render(contentType: 'application/json') { [message: "Error processing provided IDs."] }
+      return
+    }
+
+    try {
+
+      List<PackageContentItem> pciInstances = PackageContentItem.getAll(idsToDelete)
+      if (pciInstances) {
+        render(contentType: 'application/json', text: pciInstances as JSON)
+      } else {
+        log.warn("No PackageContentItem instances found for the provided IDs.")
+      }
+
+    } catch (Exception e) {
+      log.error("Error during hierarchical PCI deletion for IDs {}: {}", idsToDelete, e.message, e)
+      response.status = HttpStatus.INTERNAL_SERVER_ERROR.value()
+      render(contentType: 'application/json') {
+        [error: "Internal Server Error", message: "Failed to delete package content items: ${e.message}"]
+      }
+      return
+    }
 
   }
 
