@@ -21,5 +21,10 @@ class PackageContentItemController extends OkapiTenantAwareController<PackageCon
     super(PackageContentItem)
   }
 
+  // TODO: Override POST and DELETE
+  def heirarchicalDeletePCIs() {
+
+  }
+
 }
 
