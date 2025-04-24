@@ -110,7 +110,8 @@ class UrlMappings {
       "/metadata"        (controller: 'packageIngressMetadata', action: 'getMetadataForPackage', method: 'GET')
     }
 
-    "/erm/pci"(resources:'packageContentItem')
+    "/erm/pci"(resources:'packageContentItem') // Note that we still technically allow single deletes
+    "/erm/pci"(controller: 'packageContentItem', action: 'heirarchicalDeletePCIs', method: 'DELETE')
     "/erm/platforms"(resources:'platform')
     "/erm/entitlements"(resources:'entitlement', excludes: ['patch']) {
       collection {
