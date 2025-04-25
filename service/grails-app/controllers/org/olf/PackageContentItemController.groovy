@@ -26,10 +26,6 @@ class PackageContentItemController extends OkapiTenantAwareController<PackageCon
   def heirarchicalDeletePCIs(HeirarchicalDeletePCIBody deleteBody) {
     log.info("Received request for hierarchical PCI delete. Body: {}", deleteBody.toString())
 
-    respond(deleteBody.pCIIds)
-    return
-
-
     if (deleteBody == null || deleteBody.hasErrors()) {
       log.warn("Validation failed for hierarchical delete request body: {}", deleteBody?.errors)
       response.status = HttpStatus.BAD_REQUEST.value()
@@ -39,9 +35,7 @@ class PackageContentItemController extends OkapiTenantAwareController<PackageCon
 
     List<String> idsToDelete = []
     try {
-      // Ensure pCIIds is not null or empty (partially covered by validation)
       if (deleteBody.pCIIds) {
-        // Filter out any null or blank strings just in case
         idsToDelete = deleteBody.pCIIds.findAll { String idStr ->
           idStr != null && !idStr.trim().isEmpty()
         }
@@ -60,6 +54,8 @@ class PackageContentItemController extends OkapiTenantAwareController<PackageCon
       return
     }
 
+
+    // Get instances from DB based on IDs.
     try {
 
       List<PackageContentItem> pciInstances = PackageContentItem.getAll(idsToDelete)
