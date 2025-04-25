@@ -8,6 +8,7 @@ import org.olf.kb.Pkg
 import org.olf.kb.PackageContentItem
 import org.olf.kb.PlatformTitleInstance
 import grails.converters.JSON
+import org.olf.kb.Work
 import org.olf.kb.http.request.body.HeirarchicalDeletePCIBody
 import org.springframework.http.HttpStatus
 
@@ -21,6 +22,8 @@ class PackageContentItemController extends OkapiTenantAwareController<PackageCon
   PackageContentItemController() {
     super(PackageContentItem)
   }
+
+  PackageContentItemDeletionService packageContentItemDeletionService;
 
   // TODO: Override POST and DELETE
   def heirarchicalDeletePCIs(HeirarchicalDeletePCIBody deleteBody) {
@@ -58,9 +61,10 @@ class PackageContentItemController extends OkapiTenantAwareController<PackageCon
     // Get instances from DB based on IDs.
     try {
 
-      List<PackageContentItem> pciInstances = PackageContentItem.getAll(idsToDelete)
-      if (pciInstances) {
-        render(contentType: 'application/json', text: pciInstances as JSON)
+//      List<PackageContentItem> pciInstances = PackageContentItem.getAll(idsToDelete)
+      Work work = packageContentItemDeletionService.heirarchicalDeletePCI(idsToDelete);
+      if (work) {
+        render(contentType: 'application/json', text: work as JSON)
       } else {
         log.warn("No PackageContentItem instances found for the provided IDs.")
       }
