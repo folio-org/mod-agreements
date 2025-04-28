@@ -61,13 +61,7 @@ class PackageContentItemController extends OkapiTenantAwareController<PackageCon
     // Get instances from DB based on IDs.
     try {
 
-//      List<PackageContentItem> pciInstances = PackageContentItem.getAll(idsToDelete)
-      Work work = packageContentItemDeletionService.heirarchicalDeletePCI(idsToDelete);
-      if (work) {
-        render(contentType: 'application/json', text: work as JSON)
-      } else {
-        log.warn("No PackageContentItem instances found for the provided IDs.")
-      }
+      render(contentType: 'application/json', text: packageContentItemDeletionService.heirarchicalDeletePCI(idsToDelete) as JSON)
 
     } catch (Exception e) {
       log.error("Error during hierarchical PCI deletion for IDs {}: {}", idsToDelete, e.message, e)
