@@ -67,6 +67,16 @@ public class ErmHousekeepingService {
             [ 'fileStorage', 'S3BucketName',  'String', null,                 default_aws_bucket ?: "${tenantId}-shared" ],
             [ 'fileStorage', 'S3ObjectPrefix','String', null,                 "/${tenantId}/agreements/" ],
             [ 'fileStorage', 'S3BucketRegion','String', null,                 default_aws_region ],
+            [ 'agreements_display_settings', 'displaysuppressfromdiscovery_pci', 'Boolean', null, true ],
+            [ 'agreements_display_settings', 'displaysuppressfromdiscovery_agreementline', 'Boolean', null, true ],
+            [ 'agreements_display_settings', 'displaysuppressfromdiscovery_title', 'Boolean', null, true ],
+            [ 'agreements_display_settings', 'hideaccordions_usagedata', 'Boolean', null, false ],
+            [ 'agreements_display_settings', 'hideeresourcesfunctionality', 'Boolean', null, false ],
+            [ 'agreements_display_settings', 'pagesize_agreementlines', 'Integer', null, 10 ],
+            [ 'agreements_display_settings', 'pagesize_agreementeresources', 'Integer', null, 10 ],
+            [ 'agreements_display_settings', 'pagesize_entitlementoptions', 'Integer', null, 10 ],
+            [ 'agreements_display_settings', 'pagesize_packagecontents', 'Integer', null, 10 ],
+            [ 'agreements_display_settings', 'pagesize_entitlements', 'Integer', null, 10 ],       
           ].each { st_row ->
             log.debug("Check app setting ${st_row}");
   
