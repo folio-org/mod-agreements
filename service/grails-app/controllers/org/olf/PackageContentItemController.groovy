@@ -23,7 +23,7 @@ class PackageContentItemController extends OkapiTenantAwareController<PackageCon
     super(PackageContentItem)
   }
 
-  PackageContentItemDeletionService packageContentItemDeletionService;
+  ErmResourceService ermResourceService;
 
   // TODO: Override POST and DELETE
   def heirarchicalDeletePCIs(HeirarchicalDeletePCIBody deleteBody) {
@@ -61,7 +61,7 @@ class PackageContentItemController extends OkapiTenantAwareController<PackageCon
     // Get instances from DB based on IDs.
     try {
 
-      render(contentType: 'application/json', text: packageContentItemDeletionService.heirarchicalDeletePCI(idsToDelete) as JSON)
+      render(contentType: 'application/json', text: ermResourceService.heirarchicalDeletePCI(idsToDelete) as JSON)
 
     } catch (Exception e) {
       log.error("Error during hierarchical PCI deletion for IDs {}: {}", idsToDelete, e.message, e)

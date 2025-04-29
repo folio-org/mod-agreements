@@ -2,20 +2,18 @@ package org.olf.General
 
 import grails.testing.mixin.integration.Integration
 import org.olf.BaseSpec
-import org.olf.PackageContentItemDeletionService
-import org.olf.dataimport.internal.PackageContentImpl
+import org.olf.ErmResourceService
 import org.olf.kb.PackageContentItem
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.TitleInstance
 import org.olf.kb.Work
-import spock.lang.Shared
 import spock.lang.Stepwise
 
 @Integration
 @Stepwise
 class HierarchicalDeletionServiceSpec extends BaseSpec{
 
-  PackageContentItemDeletionService packageContentItemDeletionService
+  ErmResourceService ermResourceService;
 
 
   private Map createPciPtiTiWorkInstance(String suffix = "") {
@@ -31,7 +29,7 @@ class HierarchicalDeletionServiceSpec extends BaseSpec{
 
   }
 
-  def "Scenario 1: Fully delete one PCI chain with no other references"() {
+  void "Scenario 1: Fully delete one PCI chain with no other references"() {
     given: "One PCI -> PTI -> TI -> Work chain with no entitlements or other references"
     Map chain = createPciPtiTiWorkInstance("Scenario1")
     PackageContentItem pci = chain.pci
@@ -49,7 +47,7 @@ class HierarchicalDeletionServiceSpec extends BaseSpec{
 
     when: "The service is called with the PCI ID"
     List<String> pciIdsToTest = [pci.id.toString()]
-    Map<String, List<String>> result = packageContentItemDeletionService.heirarchicalDeletePCI(pciIdsToTest)
+    Map<String, List<String>> result = ermResourceService.heirarchicalDeletePCI(pciIdsToTest)
 
     then: "The result map contains IDs for PCI, PTI, TI, and Work"
     result != null
