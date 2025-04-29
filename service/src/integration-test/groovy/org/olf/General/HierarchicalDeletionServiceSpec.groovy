@@ -23,6 +23,9 @@ class HierarchicalDeletionServiceSpec extends BaseSpec{
   @Shared
   String pkg_id
 
+  @Shared
+  String pkg_id2
+
   String PCI_HQL = """
     SELECT pci
     FROM PackageContentItem AS pci
@@ -76,20 +79,60 @@ class HierarchicalDeletionServiceSpec extends BaseSpec{
     return [work: work, ti: ti, pti: pti, pci: pci]
   }
 
+  @Ignore
+  void clearResources() {
+    ErmResource.withTransaction {
+      ErmResource.executeUpdate(
+          """DELETE FROM PackageContentItem"""
+      )
+
+      ErmResource.executeUpdate(
+          """DELETE FROM PlatformTitleInstance"""
+      )
+
+      ErmResource.executeUpdate(
+          """DELETE FROM TitleInstance"""
+      )
+
+      ErmResource.executeUpdate(
+          """DELETE FROM Work"""
+      )
+
+      ErmResource.executeUpdate(
+          """DELETE FROM ErmResource"""
+      )
+
+      ErmResource.executeUpdate(
+          """DELETE FROM ErmTitleList"""
+      )
+
+      ErmResource.executeUpdate(
+          """DELETE FROM SubscriptionAgreement"""
+      )
+
+      ErmResource.executeUpdate(
+          """DELETE FROM Entitlement"""
+      )
+    }
+  }
 
   void "Load Packages"() {
 
     when: 'File loaded'
-    Map result = importPackageFromFileViaService('deletion_service_pkg.json')
+//    Map result = importPackageFromFileViaService('hierarchicalDeletion/deletion_service_pkg.json')
+    Map result = importPackageFromFileViaService('hierarchicalDeletion/top_link_deletion.json')
+    Map result2 = importPackageFromFileViaService('hierarchicalDeletion/top_link_deletion_link.json')
 
     then: 'Package imported'
     result.packageImported == true
 
     when: "Looked up package with name"
-    List resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
+    List resp = doGet("/erm/packages", [filters: ['name==K-Int Link - Deletion Test Package 001']])
+    List resp2 = doGet("/erm/packages", [filters: ['name==K-Int Link - Deletion Test Package 002']])
     log.info(resp.toString())
     log.info(resp[0].toString())
     pkg_id = resp[0].id
+    pkg_id2 = resp2[0].id
 
     then: "Package found"
     resp.size() == 1
@@ -113,48 +156,51 @@ class HierarchicalDeletionServiceSpec extends BaseSpec{
 
   void "Scenario 1: Fully delete one PCI chain with no other references"() {
     given: "Test aaa-000"
+    Map statsResp = doGet("/erm/statistics/kbCount")
+    log.info("Stats in test: {}", statsResp.toString())
+
     List resp = doGet("/erm/pci")
     log.info(resp.toString())
     log.info(resp.get(0).get("longName"));
     log.info(resp.get(1).get("longName"));
+
     List<String> pciIds = new ArrayList<>();
     resp.forEach { Map item ->
       if (item?.id) {
         pciIds.add(item.id)
       }
     }
-    log.info(pciIds.toListString());
-    PackageContentItem pci = getPCIByName("Test aaa-000")
 
-//    PlatformTitleInstance pti = pci?.pti
-//    TitleInstance ti = pti?.ti
-//    Work work = ti?.work
-//
-//    // Ensure no entitlements exist
-////    assert Entitlement.countByResource(pci) == 0
-////    assert Entitlement.countByResource(pti) == 0
-////    assert PackageContentItem.count() == 1
-////    assert PlatformTitleInstance.count() == 1
-////    assert TitleInstance.count() == 1
-////    assert Work.count() == 1
-//
-//    when: "The service is called with the PCI ID"
-//    List<String> pciIdsToTest = [pci.id.toString()]
-//    Map<String, List<String>> result = ermResourceService.heirarchicalDeletePCI(pciIdsToTest)
-//
-//    then: "The result map contains IDs for PCI, PTI, TI, and Work"
-//    result != null
-//    result.PCIs?.size() == 1
-//    result.PCIs?.contains(pci.id.toString())
-//
-//    result.PTIs?.size() == 1
-//    result.PTIs?.contains(pti.id.toString())
-//
-//    result.TIs?.size() == 1
-//    result.TIs?.contains(ti.id.toString())
-//
-//    result.Works?.size() == 1
-//    result.Works?.contains(work.id.toString())
+    log.info("PCI ids in test: {}", pciIds.toListString());
+
+    withTenant {
+      List<String> workIds = Work.executeQuery("""
+        SELECT work.id FROM Work work
+      """.toString())
+      log.info(ermResourceService.visualizePciHierarchy(pciIds.get(0)))
+      workIds.forEach{String id ->  log.info(ermResourceService.visualizeWorkHierarchy(id))}
+    }
+
+    Map deleteResp = doPost("/erm/pci/hdelete", {
+      'pCIIds' pciIds
+    })
+
+    log.info(deleteResp.toString())
+  }
+
+  void "Scenario 1: Fully delete one PCI chain with no other references"() {
+    when: 'We check what resources are in the system'
+      Map kbStatsResp = doGet("/erm/statistics/kbCount")
+      Map sasStatsResp = doGet("/erm/statistics/sasCount")
+    then:
+      kbStatsResp.ErmResource == 0
+      kbStatsResp.PackageContentItems == 0
+      kbStatsResp.PlatformTitleInstance == 0
+      kbStatsResp.TitleInstance == 0
+      kbStatsResp.Work == 0
+
+      sasStatsResp.SubscriptionAgreement == 0
+      sasStatsResp.Entitlement == 0
   }
 
 }

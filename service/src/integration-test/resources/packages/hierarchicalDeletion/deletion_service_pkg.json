@@ -46,31 +46,13 @@
     "siblingInstanceIdentifiers": [{
       "namespace": "issn",
       "value": "0001-000X"
-    }],
+}],
     "embargo": null,
     "coverage": [],
-    "url": "http://testpackage.com/journal/index.php?journalID=packageA",
-    "platformName": "K-Int",
-    "sourceIdentifierNamespace": "K-Int",
-    "sourceIdentifier": "aaa-000"
-  },
-    {
-      "title": "Test ccc-000",
-      "instanceMedium": "electronic",
-      "instanceMedia": "journal",
-      "instanceIdentifiers": [{
-        "namespace": "eissn",
-        "value": "0002-0002"
-      }],
-      "siblingInstanceIdentifiers": [{
-        "namespace": "issn",
-        "value": "0002-000X"
-      }],
-      "embargo": null,
-      "coverage": [],
-      "url": "http://testpackage.com/journal/index.php?journalID=packageB",
-      "platformName": "K-Int B",
-      "sourceIdentifierNamespace": "K-Int B",
-      "sourceIdentifier": "ccc-000"
-    }]
+    "url": "http://testpackage.com/journal/index.php?journalID=packageB",
+    "platformName": "K-Int B",
+    "sourceIdentifierNamespace": "K-Int B",
+    "sourceIdentifier": "bbb-000"
+  }
+]
 }
