@@ -47,19 +47,19 @@ class DeletionBaseSpec extends BaseSpec {
     }
   }
 
-  void "Scenario 1: Fully delete one PCI chain with no other references"() {
-    when: 'We check what resources are in the system'
-    Map kbStatsResp = doGet("/erm/statistics/kbCount")
-    Map sasStatsResp = doGet("/erm/statistics/sasCount")
-    then:
-    kbStatsResp.ErmResource == 0
-    kbStatsResp.PackageContentItems == 0
-    kbStatsResp.PlatformTitleInstance == 0
-    kbStatsResp.TitleInstance == 0
-    kbStatsResp.Work == 0
-
-    sasStatsResp.SubscriptionAgreement == 0
-    sasStatsResp.Entitlement == 0
-  }
+//  void "Scenario 1: Fully delete one PCI chain with no other references"() {
+//    when: 'We check what resources are in the system'
+//    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+//    Map sasStatsResp = doGet("/erm/statistics/sasCount")
+//    then:
+//    kbStatsResp.ErmResource == 0
+//    kbStatsResp.PackageContentItems == 0
+//    kbStatsResp.PlatformTitleInstance == 0
+//    kbStatsResp.TitleInstance == 0
+//    kbStatsResp.Work == 0
+//
+//    sasStatsResp.SubscriptionAgreement == 0
+//    sasStatsResp.Entitlement == 0
+//  }
 
 }

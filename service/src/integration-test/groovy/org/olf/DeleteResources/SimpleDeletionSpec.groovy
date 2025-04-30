@@ -65,6 +65,21 @@ class SimpleDeletionSpec extends DeletionBaseSpec{
     return results
   }
 
+  @Ignore
+  void visualiseHierarchy(List<String> pciIds) {
+    log.info("PCI ids in test: {}", pciIds.toListString());
+
+    withTenant {
+      List<String> workIds = Work.executeQuery("""
+        SELECT work.id FROM Work work
+      """.toString())
+
+      pciIds.forEach{String id -> log.info(ermResourceService.visualizePciHierarchy(id))}
+
+      workIds.forEach{String id ->  log.info(ermResourceService.visualizeWorkHierarchy(id))}
+    }
+  }
+
   void "Load Packages"() {
 
     when: 'File loaded'
@@ -100,14 +115,13 @@ class SimpleDeletionSpec extends DeletionBaseSpec{
   }
 
   void "Scenario 1: Fully delete one PCI chain with no other references"() {
-    given: "Test aaa-000"
-    Map statsResp = doGet("/erm/statistics/kbCount")
-    log.info("Stats in test: {}", statsResp.toString())
-
+    when: "One 1:1:1 PCI is marked for deletion and no entitlements."
+    // Fetch PCIs and save IDs to list
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    Map sasStatsResp = doGet("/erm/statistics/sasCount")
     List resp = doGet("/erm/pci")
-    log.info(resp.toString())
-    log.info(resp.get(0).get("longName"));
-    log.info(resp.get(1).get("longName"));
+    log.info("KB Counts: {}", kbStatsResp.toString())
+    log.info("Response from /erm/pci: {}", resp.toString())
 
     List<String> pciIds = new ArrayList<>();
     resp.forEach { Map item ->
@@ -116,21 +130,38 @@ class SimpleDeletionSpec extends DeletionBaseSpec{
       }
     }
 
-    log.info("PCI ids in test: {}", pciIds.toListString());
+    // Visualise Hierarchy
+    visualiseHierarchy(pciIds)
 
-    withTenant {
-      List<String> workIds = Work.executeQuery("""
-        SELECT work.id FROM Work work
-      """.toString())
-      log.info(ermResourceService.visualizePciHierarchy(pciIds.get(0)))
-      workIds.forEach{String id ->  log.info(ermResourceService.visualizeWorkHierarchy(id))}
-    }
-
+    // Delete PCI
+    List<String> pcisToDelete = new ArrayList<>();
+    pcisToDelete.add(pciIds.get(0));
     Map deleteResp = doPost("/erm/pci/hdelete", {
-      'pCIIds' pciIds
+      'pCIIds' pcisToDelete
     })
 
+    // Get PCI for assertions
+    PackageContentItem pci;
+    withTenant {
+      pci = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""").get(0);
+    }
+
     log.info(deleteResp.toString())
+
+    then:
+    deleteResp
+    deleteResp.pci
+    deleteResp.pci.size() == 1
+    deleteResp.pci[0] == pcisToDelete.get(0)
+
+    deleteResp.pti.size() == 1
+    deleteResp.pti[0] == pci.pti.id
+
+    deleteResp.ti.size() == 2
+    deleteResp.ti.any { ti -> ti == pci.pti.titleInstance.id }
+
+    deleteResp.work.size() == 1
+    deleteResp.work[0] == pci.pti.titleInstance.work.id;
   }
 
 }

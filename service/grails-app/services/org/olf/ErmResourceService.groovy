@@ -208,7 +208,6 @@ public class ErmResourceService {
     markForDeletion.put('work', new ArrayList<>());
 
     List<String> tisMarkedForWorkChecking = new ArrayList<>();
-    //List<String> pcisForDeletion = new ArrayList<>();
 
     ids.forEach { String id -> {
       // Find agreement lines for PCI.
@@ -223,10 +222,8 @@ public class ErmResourceService {
         markForDeletion.get('pci').add(id);
       }
     }}
-    //markForDeletion.put("PCIs", pcisForDeletion);
 
     // Check zero-case
-    //List<String> ptisForDeletion = new ArrayList<>();
     markForDeletion.get("pci").forEach{ String id -> {
       // Find PTIs for PCI.
       PlatformTitleInstance.executeQuery("""
@@ -249,25 +246,25 @@ public class ErmResourceService {
 
         // If no agreement lines and no other non-deletable PCIs exist for the PTI, mark for deletion.
         if (linesForResource.size() == 0 && pcisForPti.size() == 0) {
-          markForDeletion.get('pti').add(id);
+          markForDeletion.get('pti').add(ptiId);
         }
       }}
     }}
 
     markForDeletion.get("pti").forEach{ String ptiId -> {
-      // Find TI that belongs to the PTI marked for deletion.
+      // Find TIs that belongs to the PTI marked for deletion.
       TitleInstance.executeQuery("""
         SELECT pti.titleInstance.id from PlatformTitleInstance pti
         WHERE pti.id = :ptiId
       """.toString(), [ptiId:ptiId]).forEach{ String tiId -> {
+        log.info("LOG DEBUG tis found - {}", tiId);
 
-        // Find any other PTIs that have not been marked for deletion that exist for the TI.
+        // Find any other PTIs that have not been marked for deletion that exist for the TIs.
         List<String> ptisForTi = PlatformTitleInstance.executeQuery("""
           SELECT pti.id FROM PlatformTitleInstance pti
           WHERE pti.titleInstance.id = :tiId
           AND pti.id NOT IN :ptisForDeletion
         """.toString(), [tiId:tiId, ptisForDeletion:markForDeletion.get("pti")], [max:1])
-
 
         if (ptisForTi.size() == 0) {
           tisMarkedForWorkChecking.add(tiId);

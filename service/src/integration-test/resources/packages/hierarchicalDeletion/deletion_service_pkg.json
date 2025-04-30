@@ -34,25 +34,6 @@
     "platformName": "K-Int",
     "sourceIdentifierNamespace": "K-Int",
     "sourceIdentifier": "aaa-000"
-  },
-  {
-    "title": "Test bbb-000",
-    "instanceMedium": "electronic",
-    "instanceMedia": "journal",
-    "instanceIdentifiers": [{
-      "namespace": "eissn",
-      "value": "0001-0001"
-    }],
-    "siblingInstanceIdentifiers": [{
-      "namespace": "issn",
-      "value": "0001-000X"
-}],
-    "embargo": null,
-    "coverage": [],
-    "url": "http://testpackage.com/journal/index.php?journalID=packageB",
-    "platformName": "K-Int B",
-    "sourceIdentifierNamespace": "K-Int B",
-    "sourceIdentifier": "bbb-000"
   }
 ]
 }
