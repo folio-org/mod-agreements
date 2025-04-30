@@ -30,7 +30,7 @@
     }],
     "embargo": null,
     "coverage": [],
-    "url": "http://testpackage.com/journal/index.php?journalID=packageA",
+    "url": "http://testpackageA.com/journal/index.php?journalID=packageA",
     "platformName": "K-Int",
     "sourceIdentifierNamespace": "K-Int",
     "sourceIdentifier": "aaa-000"

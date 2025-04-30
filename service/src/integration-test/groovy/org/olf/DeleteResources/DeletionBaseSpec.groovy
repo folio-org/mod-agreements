@@ -33,44 +33,53 @@ class DeletionBaseSpec extends BaseSpec {
 //  }
 
   @Ignore
+  List loadSingleChainDeletion() {
+    importPackageFromFileViaService('hierarchicalDeletion/deletion_service_pkg.json')
+    List resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
+    return resp
+  }
+
+  @Ignore
   void clearResources() {
-    ErmResource.withTransaction {
-      PackageIngressMetadata.executeUpdate("DELETE FROM PackageIngressMetadata")
+    withTenant {
+      ErmResource.withTransaction {
+        PackageIngressMetadata.executeUpdate("DELETE FROM PackageIngressMetadata")
 
 
-      IdentifierOccurrence.executeUpdate("DELETE FROM IdentifierOccurrence")
+        IdentifierOccurrence.executeUpdate("DELETE FROM IdentifierOccurrence")
 
-      ErmResource.executeUpdate(
-          """DELETE FROM PackageContentItem"""
-      )
+        ErmResource.executeUpdate(
+            """DELETE FROM PackageContentItem"""
+        )
 
-      ErmResource.executeUpdate(
-          """DELETE FROM PlatformTitleInstance"""
-      )
+        ErmResource.executeUpdate(
+            """DELETE FROM PlatformTitleInstance"""
+        )
 
-      ErmResource.executeUpdate(
-          """DELETE FROM TitleInstance"""
-      )
+        ErmResource.executeUpdate(
+            """DELETE FROM TitleInstance"""
+        )
 
-      ErmResource.executeUpdate(
-          """DELETE FROM Work"""
-      )
+        ErmResource.executeUpdate(
+            """DELETE FROM Work"""
+        )
 
-      ErmResource.executeUpdate(
-          """DELETE FROM ErmResource"""
-      )
+        ErmResource.executeUpdate(
+            """DELETE FROM ErmResource"""
+        )
 
-      ErmResource.executeUpdate(
-          """DELETE FROM ErmTitleList"""
-      )
+        ErmResource.executeUpdate(
+            """DELETE FROM ErmTitleList"""
+        )
 
-      ErmResource.executeUpdate(
-          """DELETE FROM SubscriptionAgreement"""
-      )
+        ErmResource.executeUpdate(
+            """DELETE FROM SubscriptionAgreement"""
+        )
 
-      ErmResource.executeUpdate(
-          """DELETE FROM Entitlement"""
-      )
+        ErmResource.executeUpdate(
+            """DELETE FROM Entitlement"""
+        )
+      }
     }
   }
 

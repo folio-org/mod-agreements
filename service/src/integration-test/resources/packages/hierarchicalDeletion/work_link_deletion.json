@@ -7,11 +7,11 @@
       "name": "Knowledge Integration Ltd"
     },
     "packageSource": "k-int",
-    "packageName": "K-Int Deletion Test Package 001",
+    "packageName": "K-Int Work Link - Deletion Test Package 001",
     "_intenalId": 276432871385,
     "startDate": "2015-01-01T00:00:00Z",
     "endDate": "2020-12-31T00:00:00Z",
-    "packageSlug": "deletion_test_package_1",
+    "packageSlug": "deletion_test_package_work_link_1",
     "availabilityScope": "Global",
     "lifecycleStatus": "Current",
     "syncContentsFromSource": true
@@ -24,12 +24,16 @@
       "namespace": "eissn",
       "value": "2212-6988"
     }],
+    "siblingInstanceIdentifiers": [{
+      "namespace": "issn",
+      "value": "2212-697X"
+    }],
     "embargo": null,
     "coverage": [],
-    "url": "http://testpackage.com/journal/index.php?journalID=packageD",
-    "platformName": "K-Int D",
-    "sourceIdentifierNamespace": "K-Int D",
-    "sourceIdentifier": "ddd-000"
+    "url": "http://testpackageB.com/journal/index.php?journalID=packageC",
+    "platformName": "K-Int C",
+    "sourceIdentifierNamespace": "K-Int",
+    "sourceIdentifier": "aaa-000"
   }
 ]
 }
