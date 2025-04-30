@@ -5,80 +5,66 @@ import groovy.util.logging.Slf4j
 import org.olf.ErmResourceService
 import org.olf.kb.ErmResource
 import org.olf.kb.PackageContentItem
-import org.olf.kb.PlatformTitleInstance
-import org.olf.kb.TitleInstance
-import org.olf.kb.Work
-import spock.lang.Ignore
+import groovyx.net.http.HttpException
 import spock.lang.Shared
 import spock.lang.Stepwise
 
 @Integration
 @Stepwise
 @Slf4j
-class SimpleDeletionSpec extends DeletionBaseSpec{
-
-  ErmResourceService ermResourceService;
+class SimpleDeletionSpec extends DeletionBaseSpec {
 
   @Shared
   String pkg_id
 
-  String PCI_HQL = """
-    SELECT pci
-    FROM PackageContentItem AS pci
-    """.toString()
+  List<String> pciIds;
 
-  String PTI_HQL = """
-    SELECT pti
-    FROM PlatformTitleInstance AS pti
-    """.toString()
+  List resp;
 
-  String TI_HQL = """
-    SELECT ti
-    FROM TitleInstance AS ti
-    """.toString()
-
-  List<ErmResource> getAllResource(String hqlForResource) {
-    List<PackageContentItem> results = []
-
-    withTenant {
-      log.debug("Executing query within tenant context: {}", tenantId)
-      results = ErmResource.executeQuery(hqlForResource)
-      log.debug("Query returned {} results", results?.size() ?: 0)
+  def setup() {
+    if (!pkg_id) {
+      return;
     }
+    log.info("--- Running Setup for test: ${specificationContext.currentIteration?.name ?: specificationContext.currentFeature?.name} ---")
+    importPackageFromFileViaService('hierarchicalDeletion/deletion_service_pkg.json')
+    resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
+    log.info(resp.toListString())
+    pkg_id = resp[0].id
 
-    return results
+    // Fetch PCIs and save IDs to list
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    Map sasStatsResp = doGet("/erm/statistics/sasCount")
+    List resp = doGet("/erm/pci")
+
+    log.info("KB Counts (in setup): {}", kbStatsResp?.toString()) // Use safe navigation ?. just in case
+    log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
+
+    pciIds = []
+    resp?.forEach { Map item ->
+      if (item?.id) {
+        pciIds.add(item.id.toString())
+      }
+    }
+    log.info("Found PCI IDs (in setup): {}", pciIds)
+
+    if (!pciIds.isEmpty()) {
+      visualiseHierarchy(pciIds)
+    } else {
+      log.warn("No PCI IDs found during setup, visualization skipped.")
+    }
+    log.info("--- Setup Complete ---")
   }
 
-  List<ErmResource> getPCIByName(String name) {
-    String HQL = """
-    SELECT pci
-    FROM PackageContentItem AS pci
-    WHERE pci.name = '${name}'
-    """.toString()
+//  def cleanup() {
+//    if (specificationContext.currentFeature.specification.name == SimpleDeletionSpec.name) {
+//      log.info("--- Running Cleanup specifically for test: ${specificationContext.currentIteration?.name ?: specificationContext.currentFeature?.name} in ${SimpleDeletionSpec.name} ---")
+//      withTenant { clearResources() } // Assuming withTenant needs a specific context
+//      log.info("--- ${SimpleDeletionSpec.name} Cleanup Complete ---")
+//    } else {
+//      log.info("--- Skipping SimpleDeletionSpec cleanup for BaseSpec feature: ${specificationContext.currentFeature?.name} ---")
+//    }
+//  }
 
-    List<PackageContentItem> results = []
-
-    withTenant {
-      results = ErmResource.executeQuery(HQL)
-    }
-
-    return results
-  }
-
-  @Ignore
-  void visualiseHierarchy(List<String> pciIds) {
-    log.info("PCI ids in test: {}", pciIds.toListString());
-
-    withTenant {
-      List<String> workIds = Work.executeQuery("""
-        SELECT work.id FROM Work work
-      """.toString())
-
-      pciIds.forEach{String id -> log.info(ermResourceService.visualizePciHierarchy(id))}
-
-      workIds.forEach{String id ->  log.info(ermResourceService.visualizeWorkHierarchy(id))}
-    }
-  }
 
   void "Load Packages"() {
 
@@ -89,7 +75,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec{
     result.packageImported == true
 
     when: "Looked up package with name"
-    List resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
+    resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
     log.info(resp.toString())
     log.info(resp[0].toString())
     pkg_id = resp[0].id
@@ -97,48 +83,36 @@ class SimpleDeletionSpec extends DeletionBaseSpec{
     then: "Package found"
     resp.size() == 1
     resp[0].id != null
-    getAllResource(PCI_HQL).forEach{ErmResource pci ->
+    getAllResource(PCI_HQL).forEach { ErmResource pci ->
       {
         log.info(pci.toString())
       }
     }
-    getAllResource(PTI_HQL).forEach{ErmResource pti ->
+    getAllResource(PTI_HQL).forEach { ErmResource pti ->
       {
         log.info(pti.toString())
       }
     }
-    getAllResource(TI_HQL).forEach{ErmResource ti ->
+    getAllResource(TI_HQL).forEach { ErmResource ti ->
       {
         log.info(ti.toString())
       }
     }
   }
 
+
   void "Scenario 1: Fully delete one PCI chain with no other references"() {
-    when: "One 1:1:1 PCI is marked for deletion and no entitlements."
-    // Fetch PCIs and save IDs to list
-    Map kbStatsResp = doGet("/erm/statistics/kbCount")
-    Map sasStatsResp = doGet("/erm/statistics/sasCount")
-    List resp = doGet("/erm/pci")
-    log.info("KB Counts: {}", kbStatsResp.toString())
-    log.info("Response from /erm/pci: {}", resp.toString())
+    given: "Setup has found PCI IDs"
+    assert pciIds != null: "pciIds should have been initialized by setup()"
+    assert !pciIds.isEmpty(): "Setup() must find at least one PCI for this test"
+    when: "The first PCI found during setup is marked for deletion"
+    List<String> pcisToDelete = [pciIds.get(0)]
+    log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
 
-    List<String> pciIds = new ArrayList<>();
-    resp.forEach { Map item ->
-      if (item?.id) {
-        pciIds.add(item.id)
-      }
-    }
-
-    // Visualise Hierarchy
-    visualiseHierarchy(pciIds)
-
-    // Delete PCI
-    List<String> pcisToDelete = new ArrayList<>();
-    pcisToDelete.add(pciIds.get(0));
     Map deleteResp = doPost("/erm/pci/hdelete", {
       'pCIIds' pcisToDelete
     })
+    log.info("Delete Response: {}", deleteResp.toString())
 
     // Get PCI for assertions
     PackageContentItem pci;
@@ -162,6 +136,71 @@ class SimpleDeletionSpec extends DeletionBaseSpec{
 
     deleteResp.work.size() == 1
     deleteResp.work[0] == pci.pti.titleInstance.work.id;
+
+    cleanup:
+    log.info("--- Manually running cleanup for feature two ---")
+    withTenant { // May need explicit tenant ID if setup changed it
+      clearResources()
+    }
+    log.info("--- Manual cleanup complete for feature two ---")
   }
 
+  void "Scenario 2: Nothing marked for deletion with one PCI chain."() {
+    given: "An empty list of PCI IDs is prepared"
+    List<String> pcisToDelete = new ArrayList<>()
+    def requestBody = [pCIIds: pcisToDelete]
+
+    when: "A hierarchical delete request is made with the empty list"
+    doPost("/erm/pci/hdelete", requestBody)
+
+    then: "An HttpException indicating an Unprocessable Entity (422) error is thrown"
+    def e = thrown(HttpException)
+    log.info(e.toString())
+    assert e.message == "Unprocessable Entity"
+
+//    cleanup:
+//    log.info("--- Manually running cleanup for feature two ---")
+//    withTenant { // May need explicit tenant ID if setup changed it
+//      clearResources()
+//    }
+//    log.info("--- Manual cleanup complete for feature two ---")
+  }
+
+  void "Scenario 3: Single PCI marked for deletion when PTI is attached to agreement line."() {
+    given: "A PCI that references a PTI attached to an agreement line."
+    List<String> pcisToDelete = [pciIds.get(0)]
+    PackageContentItem pci;
+    withTenant {
+      pci = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""").get(0);
+    }
+
+    doPut("/erm/entitlements/${pci.pti.id}", {
+        [
+          {
+            "resource" {
+              "id" pci.pti.id
+            }
+          }
+      ]
+    })
+
+    Map sasStatsResp = doGet("/erm/statistics/sasCount")
+    log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
+
+    def requestBody = [pCIIds: pcisToDelete]
+
+    when: "A hierarchical delete request is made with the empty list."
+    Map deleteResp = doPost("/erm/pci/hdelete", requestBody)
+
+    then: "Only the PCI is marked for deletion."
+    deleteResp
+    deleteResp.pci
+    deleteResp.pci.size() == 1
+    deleteResp.pci[0] == pcisToDelete.get(0)
+
+    deleteResp.pti.size() == 0
+    deleteResp.ti.size() == 0
+    deleteResp.work.size() == 0
+
+  }
 }
