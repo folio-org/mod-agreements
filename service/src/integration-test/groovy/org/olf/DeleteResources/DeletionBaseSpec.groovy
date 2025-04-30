@@ -2,6 +2,7 @@ package org.olf.DeleteResources
 
 import grails.testing.mixin.integration.Integration
 import org.olf.BaseSpec
+import org.olf.ErmResourceService
 import org.olf.kb.ErmResource
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.PackageContentItem
@@ -13,6 +14,8 @@ import spock.lang.Stepwise
 @Integration
 @Stepwise
 class DeletionBaseSpec extends BaseSpec {
+
+  ErmResourceService ermResourceService;
 
 //  void "Scenario 1: Fully delete one PCI chain with no other references"() {
 //    when: 'We check what resources are in the system'

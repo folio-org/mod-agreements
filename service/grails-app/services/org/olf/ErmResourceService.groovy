@@ -227,9 +227,13 @@ public class ErmResourceService {
     markForDeletion.get("pci").forEach{ String id -> {
       // Find PTIs for PCI.
       PlatformTitleInstance.executeQuery("""
-        SELECT pci.pti.id FROM PackageContentItem pci
+        SELECT DISTINCT pci.pti.id FROM PackageContentItem pci
         WHERE pci.id = :pciId
       """.toString(), [pciId:id]).forEach{ String ptiId -> {
+        if (markForDeletion.get('pti').any{String ptiForDeletion -> ptiForDeletion == ptiId}) {
+          log.debug("PTI ID ${ptiId} is already marked for deletion, skipping to next pti.")
+          return
+        }
         // Find agreement lines for PTI.
         List<String> linesForResource = Entitlement.executeQuery(
             """
