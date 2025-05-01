@@ -1,6 +1,7 @@
 package org.olf.DeleteResources
 
 import grails.testing.mixin.integration.Integration
+import groovy.util.logging.Slf4j
 import org.olf.BaseSpec
 import org.olf.ErmResourceService
 import org.olf.erm.SubscriptionAgreement
@@ -17,6 +18,7 @@ import groovy.json.JsonOutput
 
 @Integration
 @Stepwise
+@Slf4j
 class DeletionBaseSpec extends BaseSpec {
 
   ErmResourceService ermResourceService;
@@ -65,6 +67,21 @@ class DeletionBaseSpec extends BaseSpec {
           }
       ])
     }) as Map
+  }
+
+  PackageContentItem findPCIByPackageName(String packageName) {
+    withTenant {
+      String hql = """
+            SELECT pci
+            FROM PackageContentItem pci
+            WHERE pci.pkg.name = :packageName
+        """
+      List results = PackageContentItem.executeQuery(hql, [packageName: packageName])
+      if (results.size() > 1) {
+        throw new IllegalStateException("Multiple PCIs found for package name, one expected.")
+      }
+      return results.get(0);
+    }
   }
 
 //  void "Scenario 1: Fully delete one PCI chain with no other references"() {
