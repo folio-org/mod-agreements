@@ -160,34 +160,9 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
         pci = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""").get(0);
       }
 
-      // FIXME: add helper for creating agreement and move to baseSpec
-      Map agreementResp = doPost("/erm/sas/", {
-        'periods' ([{
-                      'startDate' today.toString()
-                      'endDate' tomorrow.toString()
-                    }])
-        'name' "matts_agreement"
-        'agreementStatus' "active"
-      })
-
-      log.info("Agreement response", agreementResp.toMapString())
-      log.info("Agreement response", agreementResp)
-
-      String agreement_id;
-      withTenant {
-        agreement_id = SubscriptionAgreement.executeQuery("""SELECT agreement.id FROM SubscriptionAgreement agreement""").get(0);
-      }
-
-
-      doPut("/erm/sas/${agreement_id}", {
-          items ([
-            {
-              resource {
-                id pci.pti.id
-              }
-            }
-        ])
-      })
+      String agreement_name = "matts_agreement"
+      Map agreementResp = createAgreement(agreement_name)
+      addEntitlementForAgreement(agreement_name, pci.pti.id)
 
       def requestBody = [pCIIds: pcisToDelete]
 

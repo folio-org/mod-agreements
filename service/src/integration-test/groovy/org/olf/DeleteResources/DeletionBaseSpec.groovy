@@ -3,6 +3,7 @@ package org.olf.DeleteResources
 import grails.testing.mixin.integration.Integration
 import org.olf.BaseSpec
 import org.olf.ErmResourceService
+import org.olf.erm.SubscriptionAgreement
 import org.olf.kb.ErmResource
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.PackageContentItem
@@ -10,12 +11,61 @@ import org.olf.kb.Work
 import org.olf.kb.metadata.PackageIngressMetadata
 import spock.lang.Ignore
 import spock.lang.Stepwise
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import groovy.json.JsonOutput
 
 @Integration
 @Stepwise
 class DeletionBaseSpec extends BaseSpec {
 
   ErmResourceService ermResourceService;
+
+  @Ignore
+  Map createAgreement(String name="test_agreement") {
+    def today = LocalDate.now()
+    def tomorrow = today.plusDays(1)
+
+    def payload = [
+        periods: [
+            [
+                startDate: today.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                endDate: tomorrow.format(DateTimeFormatter.ISO_LOCAL_DATE)
+            ]
+        ],
+        name: name,
+        agreementStatus: "active"
+    ]
+
+    def response = doPost("/erm/sas/", payload)
+
+    return response as Map
+  }
+
+  @Ignore
+  Map addEntitlementForAgreement(String agreementName, String resourceId) {
+    String agreement_id;
+    withTenant {
+      String hql = """
+            SELECT agreement.id 
+            FROM SubscriptionAgreement agreement 
+            WHERE agreement.name = :agreementName 
+        """
+      List results = SubscriptionAgreement.executeQuery(hql, [agreementName: agreementName])
+      agreement_id = results.get(0)
+    }
+
+
+    return doPut("/erm/sas/${agreement_id}", {
+      items ([
+          {
+            resource {
+              id resourceId
+            }
+          }
+      ])
+    }) as Map
+  }
 
 //  void "Scenario 1: Fully delete one PCI chain with no other references"() {
 //    when: 'We check what resources are in the system'

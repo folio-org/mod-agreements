@@ -235,6 +235,7 @@ public class ErmResourceService {
 
       // Find PTIs for PCI.
       // FIXME: This HQL does not work - AND pci.pti.id NOT IN :ptiIdsForDeletion  - ptiIdsForDeletion:markForDeletion.get("pti")
+      // Workaround for this bug: https://stackoverflow.com/questions/66137299/hibernate-not-in-empty-list-evaluates-to-false
       PlatformTitleInstance.executeQuery("""
         SELECT pci.pti.id FROM PackageContentItem pci
         WHERE pci.id = :pciId 
