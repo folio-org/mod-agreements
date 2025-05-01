@@ -158,7 +158,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
         pci = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""").get(0);
       }
 
-      String agreement_name = "matts_agreement"
+      String agreement_name = "test_agreement"
       Map agreementResp = createAgreement(agreement_name)
       addEntitlementForAgreement(agreement_name, pci.pti.id)
 
@@ -183,6 +183,10 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       deleteResp.pti.size() == 0
       deleteResp.ti.size() == 0
       deleteResp.work.size() == 0
+
+      // Does agreement line item->resource id match pci.pti.id
+      findAgreementByName("test_agreement").items.resource.get(0).id == pci.pti.id
+
     cleanup:
       log.info("--- Running Cleanup ---")
       clearResources()
@@ -198,7 +202,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
         pci = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""").get(0);
       }
 
-      String agreement_name = "matts_agreement"
+      String agreement_name = "test_agreement"
       Map agreementResp = createAgreement(agreement_name)
       addEntitlementForAgreement(agreement_name, pci.id)
 
@@ -220,6 +224,9 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       deleteResp.pti.size() == 0
       deleteResp.ti.size() == 0
       deleteResp.work.size() == 0
+
+    // Does agreement line item->resource id match pci2.pti.id
+    findAgreementByName("test_agreement").items.resource.get(0).id == pci.id
 
     cleanup:
       log.info("--- Running Cleanup ---")
@@ -298,9 +305,6 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
     PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002")
 
-    log.info(pci1.toString())
-    log.info(pci2.toString())
-
     def requestBody = [pCIIds: pcisToDelete]
 
     when: "A delete request is made."
@@ -347,7 +351,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
     PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // Attached to Agreement Line
 
-    String agreement_name = "matts_agreement"
+    String agreement_name = "test_agreement"
     Map agreementResp = createAgreement(agreement_name)
     addEntitlementForAgreement(agreement_name, pci2.id)
 
@@ -373,7 +377,8 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     deleteResp.work.size() == 1
     pci1.pti.titleInstance.work.id == deleteResp.work[0]
 
-    // FIXME: Also need to fetch agreement line and check ID on item->resource matches pci2.id
+    // Does agreement line item->resource id match pci2.pti.id
+    findAgreementByName("test_agreement").items.resource.get(0).id == pci2.id
 
     cleanup:
     log.info("--- Running Cleanup ---")
@@ -400,7 +405,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
     PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // Attached to Agreement Line
 
-    String agreement_name = "matts_agreement"
+    String agreement_name = "test_agreement"
     Map agreementResp = createAgreement(agreement_name)
     addEntitlementForAgreement(agreement_name, pci2.pti.id)
 
@@ -426,7 +431,8 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     deleteResp.work.size() == 1
     pci1.pti.titleInstance.work.id == deleteResp.work[0]
 
-    // FIXME: Also need to fetch agreement line and check ID on item->resource matches pci2.id
+    // Does agreement line item->resource id match pci2.pti.id
+    findAgreementByName("test_agreement").items.resource.get(0).id == pci2.pti.id
 
     cleanup:
     log.info("--- Running Cleanup ---")

@@ -69,6 +69,18 @@ class DeletionBaseSpec extends BaseSpec {
     }) as Map
   }
 
+  SubscriptionAgreement findAgreementByName(String agreementName) {
+    withTenant {
+      String hql = """
+            SELECT agreement
+            FROM SubscriptionAgreement agreement 
+            WHERE agreement.name = :agreementName 
+        """
+      List results = SubscriptionAgreement.executeQuery(hql, [agreementName: agreementName])
+      return results.get(0)
+    } as SubscriptionAgreement
+  }
+
   PackageContentItem findPCIByPackageName(String packageName) {
     withTenant {
       String hql = """
