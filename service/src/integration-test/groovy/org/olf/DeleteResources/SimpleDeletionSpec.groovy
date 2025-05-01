@@ -126,9 +126,9 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       deleteResp.work[0] == pci.pti.titleInstance.work.id;
 
     cleanup:
-      log.info("--- Manually running cleanup for feature two ---")
+      log.info("--- Running Cleanup ---")
       clearResources()
-      log.info("--- Manual cleanup complete for feature two ---")
+      log.info("--- Running Cleanup ---")
   }
 
   void "Scenario 2: Nothing marked for deletion with one PCI chain."() {
@@ -144,12 +144,10 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       log.info(e.toString())
       assert e.message == "Unprocessable Entity"
 
-//    cleanup:
-//    log.info("--- Manually running cleanup for feature two ---")
-//    withTenant { // May need explicit tenant ID if setup changed it
-//      clearResources()
-//    }
-//    log.info("--- Manual cleanup complete for feature two ---")
+    cleanup:
+      log.info("--- Running Cleanup ---")
+      clearResources()
+      log.info("--- Running Cleanup ---")
   }
 
   void "Scenario 3: Single PCI marked for deletion when PTI is attached to agreement line."() {
@@ -185,6 +183,85 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       deleteResp.pti.size() == 0
       deleteResp.ti.size() == 0
       deleteResp.work.size() == 0
+    cleanup:
+      log.info("--- Running Cleanup ---")
+      clearResources()
+      log.info("--- Running Cleanup ---")
 
+  }
+
+  void "Scenario 4: Single PCI marked for deletion when PCI is attached to agreement line."() {
+    given: "A PCI that is attached to an agreement line is marked for deletion."
+    List<String> pcisToDelete = [pciIds.get(0)]
+    PackageContentItem pci;
+    withTenant {
+      pci = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""").get(0);
+    }
+
+    String agreement_name = "matts_agreement"
+    Map agreementResp = createAgreement(agreement_name)
+    addEntitlementForAgreement(agreement_name, pci.id)
+
+    def requestBody = [pCIIds: pcisToDelete]
+
+    when: "A delete request is made."
+    Map deleteResp = doPost("/erm/pci/hdelete", requestBody)
+    Map sasStatsResp = doGet("/erm/statistics/sasCount")
+    log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
+
+    then: "Nothing is marked for deletion."
+    // Should this be tested for the Stats controller separately?
+    sasStatsResp
+    sasStatsResp.get("SubscriptionAgreement") == 1
+    sasStatsResp.get("Entitlement") == 1
+
+    deleteResp
+    deleteResp.pci.size() == 0
+    deleteResp.pti.size() == 0
+    deleteResp.ti.size() == 0
+    deleteResp.work.size() == 0
+
+    cleanup:
+      log.info("--- Running Cleanup ---")
+      clearResources()
+      log.info("--- Running Cleanup ---")
+  }
+
+  void "Scenario 5: Two single-chain PCIs marked for deletion."() {
+    given: "Two single-chain PCIs are marked for deletion."
+    Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
+    doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
+    List pciResp = doGet("/erm/pci")
+    pciIds = []
+    pciResp?.forEach { Map item ->
+      if (item?.id) {
+        pciIds.add(item.id.toString())
+      }
+    }
+
+    visualiseHierarchy(pciIds)
+
+    List<String> pcisToDelete = [pciIds.get(0), pciIds.get(1)]
+
+    def requestBody = [pCIIds: pcisToDelete]
+
+    when: "A delete request is made."
+    Map deleteResp = doPost("/erm/pci/hdelete", requestBody)
+
+    then: "All resources are marked for deletion"
+    deleteResp
+    deleteResp.pci
+    deleteResp.pci.size() == 2
+
+    deleteResp.pti.size() == 2
+
+    deleteResp.ti.size() == 4
+
+    deleteResp.work.size() == 2
+
+    cleanup:
+    log.info("--- Running Cleanup ---")
+    clearResources()
+    log.info("--- Running Cleanup ---")
   }
 }

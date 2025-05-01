@@ -98,6 +98,19 @@ class DeletionBaseSpec extends BaseSpec {
 
         IdentifierOccurrence.executeUpdate("DELETE FROM IdentifierOccurrence")
 
+
+        ErmResource.executeUpdate(
+            """DELETE FROM Period"""
+        )
+
+        ErmResource.executeUpdate(
+            """DELETE FROM Entitlement"""
+        )
+
+        ErmResource.executeUpdate(
+            """DELETE FROM SubscriptionAgreement"""
+        )
+
         ErmResource.executeUpdate(
             """DELETE FROM PackageContentItem"""
         )
@@ -120,14 +133,6 @@ class DeletionBaseSpec extends BaseSpec {
 
         ErmResource.executeUpdate(
             """DELETE FROM ErmTitleList"""
-        )
-
-        ErmResource.executeUpdate(
-            """DELETE FROM SubscriptionAgreement"""
-        )
-
-        ErmResource.executeUpdate(
-            """DELETE FROM Entitlement"""
         )
       }
     }
