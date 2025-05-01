@@ -101,7 +101,7 @@ class DeletionBaseSpec extends BaseSpec {
 
   @Ignore
   List loadSingleChainDeletion() {
-    importPackageFromFileViaService('hierarchicalDeletion/simple_deletion.json')
+    importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
     List resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
     return resp
   }

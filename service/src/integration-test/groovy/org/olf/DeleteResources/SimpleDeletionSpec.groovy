@@ -29,7 +29,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     log.info("--- Running Setup for test: ${specificationContext.currentIteration?.name ?: specificationContext.currentFeature?.name} ---")
 
     // Load Single Chain PCI
-    importPackageFromFileViaService('hierarchicalDeletion/simple_deletion.json')
+    importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
     List resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
     log.info(resp.toListString())
     pkg_id = resp[0].id
@@ -72,7 +72,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
   void "Load Packages"() {
 
     when: 'File loaded'
-      Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion.json')
+      Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
 
     then: 'Package imported'
       result.packageImported == true
@@ -273,5 +273,164 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       log.info("--- Running Cleanup ---")
       clearResources()
       log.info("--- Running Cleanup ---")
+  }
+
+  void "Scenario 6: Two single-chain PCIs but only one is marked for deletion."() {
+    given: "Two single-chain PCIs exist but only one is marked for deletion."
+    Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
+    doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
+    List pciResp = doGet("/erm/pci")
+    pciIds = []
+    List<String> pcisToDelete = new ArrayList<>();
+    pciResp?.forEach { Map item ->
+      if (item?.id) {
+        pciIds.add(item.id.toString())
+      }
+      log.info(item.toString())
+
+      if (item?.pkg?.name.toString() == "K-Int Deletion Test Package 001") {
+        pcisToDelete.add(item.id.toString())
+      }
+    }
+
+    visualiseHierarchy(pciIds)
+
+    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+    PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002")
+
+    log.info(pci1.toString())
+    log.info(pci2.toString())
+
+    def requestBody = [pCIIds: pcisToDelete]
+
+    when: "A delete request is made."
+    Map deleteResp = doPost("/erm/pci/hdelete", requestBody)
+
+    then: "One single-chain PCI is marked for deletion."
+    deleteResp
+    deleteResp.pci
+    deleteResp.pci.size() == 1
+    pci1.id == deleteResp.pci[0]
+
+    deleteResp.pti.size() == 1
+    pci1.pti.id == deleteResp.pti[0]
+
+    deleteResp.ti.size() == 2
+    // FIXME: need to extend this to find all TI ids
+    (pci1.pti.titleInstance.id in deleteResp.ti)
+
+    deleteResp.work.size() == 1
+    pci1.pti.titleInstance.work.id == deleteResp.work[0]
+
+    cleanup:
+    log.info("--- Running Cleanup ---")
+    clearResources()
+    log.info("--- Running Cleanup ---")
+  }
+
+  void "Scenario 7: Two single-chain PCIs marked for deletion but one pci is attached to an agreement line."() {
+    given: "Two single-chain PCIs are marked for deletion but one is attached."
+    Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
+    doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
+    List pciResp = doGet("/erm/pci")
+    pciIds = []
+    List<String> pcisToDelete = new ArrayList<>();
+    pciResp?.forEach { Map item ->
+      if (item?.id) {
+        pciIds.add(item.id.toString())
+        pcisToDelete.add(item.id.toString())
+      }
+    }
+
+    visualiseHierarchy(pciIds)
+
+    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+    PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // Attached to Agreement Line
+
+    String agreement_name = "matts_agreement"
+    Map agreementResp = createAgreement(agreement_name)
+    addEntitlementForAgreement(agreement_name, pci2.id)
+
+    def requestBody = [pCIIds: pcisToDelete]
+
+    when: "A delete request is made."
+    Map deleteResp = doPost("/erm/pci/hdelete", requestBody)
+
+    then: "Only one PCI chain is marked for deletion."
+    pcisToDelete.size() == 2
+    deleteResp
+    deleteResp.pci
+    deleteResp.pci.size() == 1
+    pci1.id == deleteResp.pci[0]
+
+    deleteResp.pti.size() == 1
+    pci1.pti.id == deleteResp.pti[0]
+
+    deleteResp.ti.size() == 2
+    // FIXME: need to extend this to find all TI ids
+    (pci1.pti.titleInstance.id in deleteResp.ti)
+
+    deleteResp.work.size() == 1
+    pci1.pti.titleInstance.work.id == deleteResp.work[0]
+
+    // FIXME: Also need to fetch agreement line and check ID on item->resource matches pci2.id
+
+    cleanup:
+    log.info("--- Running Cleanup ---")
+    clearResources()
+    log.info("--- Running Cleanup ---")
+  }
+
+  void "Scenario 8: Two single-chain PCIs marked for deletion but one PCI's PTI is attached to an agreement line."() {
+    given: "Two single-chain PCIs are marked for deletion but one has a PTI which is attached."
+    Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
+    doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
+    List pciResp = doGet("/erm/pci")
+    pciIds = []
+    List<String> pcisToDelete = new ArrayList<>();
+    pciResp?.forEach { Map item ->
+      if (item?.id) {
+        pciIds.add(item.id.toString())
+        pcisToDelete.add(item.id.toString())
+      }
+    }
+
+    visualiseHierarchy(pciIds)
+
+    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+    PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // Attached to Agreement Line
+
+    String agreement_name = "matts_agreement"
+    Map agreementResp = createAgreement(agreement_name)
+    addEntitlementForAgreement(agreement_name, pci2.pti.id)
+
+    def requestBody = [pCIIds: pcisToDelete]
+
+    when: "A delete request is made."
+    Map deleteResp = doPost("/erm/pci/hdelete", requestBody)
+
+    then: "One full PCI chain is marked for deletion, and one single PCI id is marked for deletion."
+    pcisToDelete.size() == 2
+    deleteResp
+    deleteResp.pci
+    deleteResp.pci.size() == 2
+    (pci1.id in deleteResp.pci) && (pci2.id in deleteResp.pci)
+
+    deleteResp.pti.size() == 1
+    pci1.pti.id == deleteResp.pti[0]
+
+    deleteResp.ti.size() == 2
+    // FIXME: need to extend this to find all TI ids
+    (pci1.pti.titleInstance.id in deleteResp.ti)
+
+    deleteResp.work.size() == 1
+    pci1.pti.titleInstance.work.id == deleteResp.work[0]
+
+    // FIXME: Also need to fetch agreement line and check ID on item->resource matches pci2.id
+
+    cleanup:
+    log.info("--- Running Cleanup ---")
+    clearResources()
+    log.info("--- Running Cleanup ---")
   }
 }
