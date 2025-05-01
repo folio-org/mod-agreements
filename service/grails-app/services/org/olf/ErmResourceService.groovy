@@ -219,7 +219,6 @@ public class ErmResourceService {
     markForDeletion.get('pci').addAll(markForDeletePCI((Set) ids)); // FIXME with the above, this may be unnecessary, this feels gross
     log.info("LOG DEBUG - PCIs marked for deletion {}", markForDeletion.get("pci"))
 
-    // TODO get all unique PTIs from PCI markForDeletion
     Set<String> ptisForDeleteCheck = PlatformTitleInstance.executeQuery(
       """
         SELECT DISTINCT pci.pti.id FROM PackageContentItem pci
@@ -229,61 +228,26 @@ public class ErmResourceService {
     ) as Set
     log.info("LOG DEBUG - PTIs for delete checking {}", ptisForDeleteCheck)
 
+    // TODO consider case where user has sent PCI: [1,2,3], PTI: [4,5].
+    // We could either run through PCIs to end of process then PTIs etc and use the Set to handle distinct
+    // Or run _just_ PCI check, then add the PTI outcomes to the user ones and run all PTIs etc etc
+
     markForDeletion.get('pti').addAll(markForDeletePTI(ptisForDeleteCheck, markForDeletion.get('pci')));
     log.info("LOG DEBUG - PTIs marked for deletion {}", markForDeletion.get("pti"))
 
     // TODO Check zero-case
 
+    Set<String> tisForDeleteCheck = TitleInstance.executeQuery(
+      """
+        SELECT DISTINCT pti.titleInstance.id FROM PlatformTitleInstance pti
+        WHERE pti.id IN :ptisForDelete 
+      """.toString(),
+      [ptisForDelete:markForDeletion.get("pti")]
+    ) as Set
 
-    markForDeletion.get("pti").forEach{ String ptiId -> {
-      // Find TIs that belongs to the PTI marked for deletion.
-      TitleInstance.executeQuery("""
-        SELECT pti.titleInstance.id from PlatformTitleInstance pti
-        WHERE pti.id = :ptiId
-      """.toString(), [ptiId:ptiId]).forEach{ String tiId -> {
-        log.info("LOG DEBUG tis found - {}", tiId);
-
-        // Find any other PTIs that have not been marked for deletion that exist for the TIs.
-        Set<String> ptisForTi = PlatformTitleInstance.executeQuery("""
-          SELECT pti.id FROM PlatformTitleInstance pti
-          WHERE pti.titleInstance.id = :tiId
-          AND pti.id NOT IN :ptisForDeletion
-        """.toString(), [tiId:tiId, ptisForDeletion:markForDeletion.get("pti")], [max:1])  as Set
-
-        if (ptisForTi.size() == 0) {
-          tisMarkedForWorkChecking.add(tiId);
-        }
-      }}
-    }}
-
-    // Work Checking
-    tisMarkedForWorkChecking.forEach{ String tiId -> {
-
-      String workId = TitleInstance.executeQuery("""
-        SELECT ti.work.id FROM TitleInstance ti
-        WHERE ti.id = :tiId
-      """.toString(), [tiId: tiId])[0] //FIXME WHAT IF I DON@T EXIST
-
-
-      Set<String> tisForWork = Work.executeQuery("""
-          SELECT ti.id from TitleInstance ti
-          WHERE ti.work.id = :workId
-        """.toString(), [workId:workId]) as Set
-
-      Set<String> ptisForWork = Work.executeQuery("""
-        SELECT pti from PlatformTitleInstance pti
-        WHERE pti.id NOT IN :ptisForDeletion
-        AND pti.titleInstance.id in :tisForWork
-      """.toString(), [ptisForDeletion: markForDeletion.get("pti"), tisForWork: tisForWork], [max:1]) as Set
-
-      // Do we want to log when a work can't be deleted because PTIs exist? E.g.
-//        log.info("LOG WARNING work could not be deleted: Work ID- {}, PTIs for Work- {}", workId, ptisForWork);
-
-      if (ptisForWork.size() == 0) {
-        markForDeletion.get('work').add(workId);
-        markForDeletion.get('ti').addAll(tisForWork);
-      }
-    }}
+    Tuple2<Set<String>, Set<String>> tisAndWorksForDeletion = markForDeleteTI(tisForDeleteCheck, markForDeletion.get("pti"));
+    markForDeletion.get('ti').addAll(tisAndWorksForDeletion.v1);
+    markForDeletion.get('work').addAll(tisAndWorksForDeletion.v2);
 
     log.info("LOG DEBUG markForDeletion - {}", markForDeletion);
     return markForDeletion
@@ -352,6 +316,62 @@ public class ErmResourceService {
       })
       .filter({id -> id != null })
       .collect(Collectors.toSet());
+  }
+
+
+  // Outputs a list of TIs to mark for deletion AND a list of works to mark for deletion
+  public Tuple2<Set<String>, Set<String>> markForDeleteTI(Set<String> ids, Set<String> ignorePtis) {
+    Set<String> worksToDelete = ids
+      .stream()
+      .map(id -> {
+        // Find any other PTIs that have not been marked for deletion that exist for the TIs.
+        Set<String> ptisForTi = PlatformTitleInstance.executeQuery("""
+          SELECT pti.id FROM PlatformTitleInstance pti
+          WHERE pti.titleInstance.id = :tiId
+          AND pti.id NOT IN :ignorePtis
+        """.toString(), [tiId:id, ignorePtis:ignorePtis], [max:1])  as Set
+
+        if (ptisForTi.size() != 0) {
+          return null
+        }
+
+        // FIXME WHAT IF I DON@T EXIST
+        String workId = TitleInstance.executeQuery("""
+          SELECT ti.work.id FROM TitleInstance ti
+          WHERE ti.id = :tiId
+        """.toString(), [tiId: id])[0]
+
+          Set<String> ptisForWork = Work.executeQuery("""
+          SELECT pti from PlatformTitleInstance pti
+          WHERE pti.id NOT IN :ignorePtis
+          AND pti.titleInstance.work.id = :workId
+        """.toString(), [ignorePtis: ignorePtis, workId: workId], [max:1]) as Set
+
+        // Do we want to log when a work can't be deleted because PTIs exist? E.g.
+//        log.info("LOG WARNING work could not be deleted: Work ID- {}, PTIs for Work- {}", workId, ptisForWork);
+
+        if (ptisForWork.size() != 0) {
+          return null
+        }
+
+        return workId // FIXME THEN ADD tisForWork
+      })
+      .filter({id -> id != null })
+      .collect(Collectors.toSet());
+
+    Set<String> tisToDelete = worksToDelete
+      .stream()
+      .flatMap(id -> {
+        Set<String> tisForWork = Work.executeQuery("""
+          SELECT ti.id from TitleInstance ti
+          WHERE ti.work.id = :workId
+        """.toString(), [workId:id]) as Set
+
+        return tisForWork.stream()
+      })
+      .collect(Collectors.toSet());
+
+    return Tuple.tuple(tisToDelete, worksToDelete);
   }
 }
 
