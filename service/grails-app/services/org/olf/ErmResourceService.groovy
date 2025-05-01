@@ -225,12 +225,26 @@ public class ErmResourceService {
 
     // Check zero-case
     markForDeletion.get("pci").forEach{ String id -> {
+      log.info("LOG DEBUG - PTIs marked for deletion {}", markForDeletion.get("pti"))
+
+      log.info(PlatformTitleInstance.executeQuery("""
+        SELECT pci.pti.id FROM PackageContentItem pci
+        WHERE pci.id = :pciId 
+        AND pci.pti.id NOT IN :ptiIdsForDeletion
+      """.toString(), [pciId:id, ptiIdsForDeletion: (markForDeletion.get("pti").size() > 0 ? markForDeletion.get("pti") : ['dummyPti'])]).collect{it.toString()}.toString())
+
       // Find PTIs for PCI.
+      // FIXME: This HQL does not work - AND pci.pti.id NOT IN :ptiIdsForDeletion  - ptiIdsForDeletion:markForDeletion.get("pti")
       PlatformTitleInstance.executeQuery("""
         SELECT pci.pti.id FROM PackageContentItem pci
-        WHERE pci.id = :pciId
+        WHERE pci.id = :pciId 
         AND pci.pti.id NOT IN :ptiIdsForDeletion
-      """.toString(), [pciId:id, ptiIdsForDeletion:markForDeletion.get("pti")]).forEach{ String ptiId -> {
+      """.toString(), [pciId:id, ptiIdsForDeletion: (markForDeletion.get("pti").size() > 0 ? markForDeletion.get("pti") : ['dummyPti'])]).forEach{ String ptiId -> {
+//        if (markForDeletion.get("pti").any{String ptiIdForDeletion -> ptiIdForDeletion == ptiId}) {
+//          log.info("PTI {} already marked for deletion - skipping", ptiId)
+//          return;
+//        }
+        log.info("LOG DEBUG - PTIs found {}", ptiId)
         // Find agreement lines for PTI.
         List<String> linesForResource = Entitlement.executeQuery(
             """

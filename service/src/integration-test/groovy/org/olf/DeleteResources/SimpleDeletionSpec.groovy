@@ -3,6 +3,7 @@ package org.olf.DeleteResources
 import grails.testing.mixin.integration.Integration
 import groovy.util.logging.Slf4j
 import org.olf.ErmResourceService
+import org.olf.erm.SubscriptionAgreement
 import org.olf.kb.ErmResource
 import org.olf.kb.PackageContentItem
 import groovyx.net.http.HttpException
@@ -28,20 +29,21 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     log.info("--- Running Setup for test: ${specificationContext.currentIteration?.name ?: specificationContext.currentFeature?.name} ---")
 
     // Load Single Chain PCI
-    resp = loadSingleChainDeletion();
+    importPackageFromFileViaService('hierarchicalDeletion/simple_deletion.json')
+    List resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
     log.info(resp.toListString())
     pkg_id = resp[0].id
 
     // Fetch PCIs and save IDs to list
     Map kbStatsResp = doGet("/erm/statistics/kbCount")
     Map sasStatsResp = doGet("/erm/statistics/sasCount")
-    List resp = doGet("/erm/pci")
+    List pciResp = doGet("/erm/pci")
 
     log.info("KB Counts (in setup): {}", kbStatsResp?.toString()) // Use safe navigation ?. just in case
     log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
 
     pciIds = []
-    resp?.forEach { Map item ->
+    pciResp?.forEach { Map item ->
       if (item?.id) {
         pciIds.add(item.id.toString())
       }
@@ -70,7 +72,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
   void "Load Packages"() {
 
     when: 'File loaded'
-    Map result = importPackageFromFileViaService('hierarchicalDeletion/deletion_service_pkg.json')
+    Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion.json')
 
     then: 'Package imported'
     result.packageImported == true
@@ -151,7 +153,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
   }
 
   void "Scenario 3: Single PCI marked for deletion when PTI is attached to agreement line."() {
-    given: "A PCI that references a PTI attached to an agreement line."
+    given: "A PCI that references a PTI attached to an agreement line is marked for deletion."
       List<String> pcisToDelete = [pciIds.get(0)]
       PackageContentItem pci;
       withTenant {
@@ -159,28 +161,47 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       }
 
       // FIXME: add helper for creating agreement and move to baseSpec
-      doPost("/erm/sas/", {})
+      Map agreementResp = doPost("/erm/sas/", {
+        'periods' ([{
+                      'startDate' today.toString()
+                      'endDate' tomorrow.toString()
+                    }])
+        'name' "matts_agreement"
+        'agreementStatus' "active"
+      })
+
+      log.info("Agreement response", agreementResp.toMapString())
+      log.info("Agreement response", agreementResp)
+
+      String agreement_id;
+      withTenant {
+        agreement_id = SubscriptionAgreement.executeQuery("""SELECT agreement.id FROM SubscriptionAgreement agreement""").get(0);
+      }
 
 
-      doPut("/erm/sas/", {
-          items [
+      doPut("/erm/sas/${agreement_id}", {
+          items ([
             {
               resource {
                 id pci.pti.id
               }
             }
-        ]
+        ])
       })
-
-      Map sasStatsResp = doGet("/erm/statistics/sasCount")
-      log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
 
       def requestBody = [pCIIds: pcisToDelete]
 
-    when: "A hierarchical delete request is made with the empty list."
+    when: "A delete request is made."
       Map deleteResp = doPost("/erm/pci/hdelete", requestBody)
+      Map sasStatsResp = doGet("/erm/statistics/sasCount")
+      log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
 
     then: "Only the PCI is marked for deletion."
+      // Should this be tested for the Stats controller separately?
+      sasStatsResp
+      sasStatsResp.get("SubscriptionAgreement") == 1
+      sasStatsResp.get("Entitlement") == 1
+
       deleteResp
       deleteResp.pci
       deleteResp.pci.size() == 1

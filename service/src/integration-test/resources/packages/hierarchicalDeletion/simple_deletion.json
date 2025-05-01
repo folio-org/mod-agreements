@@ -24,11 +24,15 @@
       "namespace": "eissn",
       "value": "2212-6988"
     }],
+    "siblingInstanceIdentifiers": [{
+      "namespace": "issn",
+      "value": "2212-697X"
+    }],
     "embargo": null,
     "coverage": [],
-    "url": "http://testpackage.com/journal/index.php?journalID=packageD",
+    "url": "http://testpackageSimple.com/journal/index.php?journalID=packageD",
     "platformName": "K-Int D",
-    "sourceIdentifierNamespace": "K-Int D",
+    "sourceIdentifierNamespace": "K-Int",
     "sourceIdentifier": "ddd-000"
   }
 ]
