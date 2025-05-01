@@ -75,6 +75,21 @@ public class ErmResourceService {
     resourceList
   }
 
+  public Set<String> entitlementsForResource(String resourceId, int max) {
+    Map options = [:]
+    if (max) {
+      options.max = max
+    }
+    return Entitlement.executeQuery(
+      """
+            SELECT ent.id FROM Entitlement ent
+            WHERE ent.resource.id = :resId
+          """.toString(),
+      [resId:resourceId],
+      options
+    ) as Set
+  }
+
   // TODO this is helpful but raw, potentially either comment out or refine
   String visualizePciHierarchy(String pciId, String initialIndent = "") {
 
@@ -259,12 +274,7 @@ public class ErmResourceService {
         .map( id -> {
           log.debug("LOG DEBUG CHECKING PCI ID: {}", id)
           // Find agreement lines for PCI.
-          Set<String> linesForResource = Entitlement.executeQuery(
-              """
-                SELECT ent.id FROM Entitlement ent
-                WHERE ent.resource.id = :resId
-              """.toString(), [resId:id], [max:1]) as Set
-
+          Set<String> linesForResource = entitlementsForResource(id, 1)
           log.debug("LOG DEBUG linesForResource: {}", linesForResource)
 
           // If no agreement lines exist for PCI, mark for deletion.
@@ -283,15 +293,7 @@ public class ErmResourceService {
     return ids
       .stream()
       .map(id -> {
-        Set<String> linesForResource = Entitlement.executeQuery(
-          """
-            SELECT ent.id FROM Entitlement ent
-            WHERE ent.resource.id = :resId
-          """.toString(),
-          [resId:id],
-          [max:1]
-        ) as Set
-
+        Set<String> linesForResource = entitlementsForResource(id, 1)
         if (linesForResource.size() != 0) {
           return null;
         }
@@ -335,7 +337,7 @@ public class ErmResourceService {
           return null
         }
 
-        // FIXME WHAT IF I DON@T EXIST
+        // FIXME WHAT IF I DON'T EXIST
         String workId = TitleInstance.executeQuery("""
           SELECT ti.work.id FROM TitleInstance ti
           WHERE ti.id = :tiId
