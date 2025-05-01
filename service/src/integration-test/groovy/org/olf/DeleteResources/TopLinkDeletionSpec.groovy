@@ -98,7 +98,7 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
     assert pciIds != null: "pciIds should have been initialized by setup()"
     assert !pciIds.isEmpty(): "Setup() must find at least one PCI for this test"
     when: "The first PCI found during setup is marked for deletion"
-    List<String> pcisToDelete = [pciIds.get(0), pciIds.get(1)]
+    Set<String> pcisToDelete = new HashSet([pciIds.get(0), pciIds.get(1)]) // FIXME Matt -- this might need re-jigging slightly and neatening, currently creating a Set from a list from ids in a specific order
     log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
 
     Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
@@ -118,7 +118,8 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
     deleteResp
     deleteResp.pci
     deleteResp.pci.size() == 2
-    deleteResp.pci[0] == pcisToDelete.get(0)
+
+    new HashSet(deleteResp.pci).equals(pcisToDelete) // FIXME this may need reflecting elsewhere... Sets not Lists so no ordering
 
     deleteResp.pti.size() == 1
     deleteResp.pti[0] == pci.pti.id

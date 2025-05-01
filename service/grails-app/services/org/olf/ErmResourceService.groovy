@@ -204,77 +204,36 @@ public class ErmResourceService {
   }
 
   // FIXME this is currently ONLY the mark for delete at the PCI level...
-  Map<String, List<String>> markForDelete(List<String> ids) {
+  // TODO should probs be Set in, what happens if a user passes input with duplicates and we cast to Set?
+  public Map<String, Set<String>> markForDelete(List<String> ids) {
     log.info("LOG DEBUG - markForDelete({})", ids);
 
-    Map<String, List<String>> markForDeletion = new HashMap<>();
-    markForDeletion.put('pci', new ArrayList<>());
-    markForDeletion.put('pti', new ArrayList<>());
-    markForDeletion.put('ti', new ArrayList<>());
-    markForDeletion.put('work', new ArrayList<>());
+    Map<String, Set<String>> markForDeletion = new HashMap<>();
+    markForDeletion.put('pci', new HashSet<String>());
+    markForDeletion.put('pti', new HashSet<String>());
+    markForDeletion.put('ti', new HashSet<String>());
+    markForDeletion.put('work', new HashSet<String>());
 
-    List<String> tisMarkedForWorkChecking = new ArrayList<>();
+    Set<String> tisMarkedForWorkChecking = new HashSet<String>();
 
-    markForDeletion.get('pci').addAll(markForDeletePCI(ids));
+    markForDeletion.get('pci').addAll(markForDeletePCI((Set) ids)); // FIXME with the above, this may be unnecessary, this feels gross
     log.info("LOG DEBUG - PCIs marked for deletion {}", markForDeletion.get("pci"))
 
-//    ids.forEach { String id -> {
-//      // Find agreement lines for PCI.
-//      List<String> linesForResource = Entitlement.executeQuery(
-//          """
-//                SELECT ent.id FROM Entitlement ent
-//                WHERE ent.resource.id = :resId
-//                """.toString(), [resId:id], [max:1])
-//
-//      // If no agreement lines exist for PCI, mark for deletion.
-//      if (linesForResource.size() == 0) {
-//        markForDeletion.get('pci').add(id);
-//      }
-//    }}
+    // TODO get all unique PTIs from PCI markForDeletion
+    Set<String> ptisForDeleteCheck = PlatformTitleInstance.executeQuery(
+      """
+        SELECT DISTINCT pci.pti.id FROM PackageContentItem pci
+        WHERE pci.id IN :pcisForDelete 
+      """.toString(),
+      [pcisForDelete:markForDeletion.get("pci")]
+    ) as Set
+    log.info("LOG DEBUG - PTIs for delete checking {}", ptisForDeleteCheck)
+
+    markForDeletion.get('pti').addAll(markForDeletePTI(ptisForDeleteCheck, markForDeletion.get('pci')));
+    log.info("LOG DEBUG - PTIs marked for deletion {}", markForDeletion.get("pti"))
 
     // TODO Check zero-case
-    markForDeletion.get("pci").forEach{ String id -> {
-      log.info("LOG DEBUG - PTIs marked for deletion {}", markForDeletion.get("pti"))
 
-      log.info(PlatformTitleInstance.executeQuery("""
-        SELECT pci.pti.id FROM PackageContentItem pci
-        WHERE pci.id = :pciId 
-        AND pci.pti.id NOT IN :ptiIdsForDeletion
-      """.toString(), [pciId:id, ptiIdsForDeletion: (markForDeletion.get("pti").size() > 0 ? markForDeletion.get("pti") : ['dummyPti'])]).collect{it.toString()}.toString())
-
-      // Find PTIs for PCI.
-      // FIXME: This HQL does not work - AND pci.pti.id NOT IN :ptiIdsForDeletion  - ptiIdsForDeletion:markForDeletion.get("pti")
-      // Workaround for this bug: https://stackoverflow.com/questions/66137299/hibernate-not-in-empty-list-evaluates-to-false
-      PlatformTitleInstance.executeQuery("""
-        SELECT pci.pti.id FROM PackageContentItem pci
-        WHERE pci.id = :pciId 
-        AND pci.pti.id NOT IN :ptiIdsForDeletion
-      """.toString(), [pciId:id, ptiIdsForDeletion: (markForDeletion.get("pti").size() > 0 ? markForDeletion.get("pti") : ['dummyPti'])]).forEach{ String ptiId -> {
-//        if (markForDeletion.get("pti").any{String ptiIdForDeletion -> ptiIdForDeletion == ptiId}) {
-//          log.info("PTI {} already marked for deletion - skipping", ptiId)
-//          return;
-//        }
-        log.info("LOG DEBUG - PTIs found {}", ptiId)
-        // Find agreement lines for PTI.
-        List<String> linesForResource = Entitlement.executeQuery(
-            """
-                SELECT ent.id FROM Entitlement ent
-                WHERE ent.resource.id = :resId
-                """.toString(), [resId:ptiId], [max:1])
-
-        // Find any other PCIs that have not been marked for deletion that exist for the PTI.
-        List<String> pcisForPti = PackageContentItem.executeQuery("""
-          SELECT pci.id FROM PackageContentItem pci
-          WHERE pci.pti.id = :ptiId
-          AND pci.id NOT IN :pcisForDeletion
-        """.toString(), [ptiId:ptiId, pcisForDeletion:markForDeletion.get("pci")], [max:1])
-
-        // If no agreement lines and no other non-deletable PCIs exist for the PTI, mark for deletion.
-        if (linesForResource.size() == 0 && pcisForPti.size() == 0) {
-          markForDeletion.get('pti').add(ptiId);
-        }
-      }}
-    }}
 
     markForDeletion.get("pti").forEach{ String ptiId -> {
       // Find TIs that belongs to the PTI marked for deletion.
@@ -285,11 +244,11 @@ public class ErmResourceService {
         log.info("LOG DEBUG tis found - {}", tiId);
 
         // Find any other PTIs that have not been marked for deletion that exist for the TIs.
-        List<String> ptisForTi = PlatformTitleInstance.executeQuery("""
+        Set<String> ptisForTi = PlatformTitleInstance.executeQuery("""
           SELECT pti.id FROM PlatformTitleInstance pti
           WHERE pti.titleInstance.id = :tiId
           AND pti.id NOT IN :ptisForDeletion
-        """.toString(), [tiId:tiId, ptisForDeletion:markForDeletion.get("pti")], [max:1])
+        """.toString(), [tiId:tiId, ptisForDeletion:markForDeletion.get("pti")], [max:1])  as Set
 
         if (ptisForTi.size() == 0) {
           tisMarkedForWorkChecking.add(tiId);
@@ -306,16 +265,16 @@ public class ErmResourceService {
       """.toString(), [tiId: tiId])[0] //FIXME WHAT IF I DON@T EXIST
 
 
-      List<String> tisForWork = Work.executeQuery("""
+      Set<String> tisForWork = Work.executeQuery("""
           SELECT ti.id from TitleInstance ti
           WHERE ti.work.id = :workId
-        """.toString(), [workId:workId])
+        """.toString(), [workId:workId]) as Set
 
-      List<String> ptisForWork = Work.executeQuery("""
+      Set<String> ptisForWork = Work.executeQuery("""
         SELECT pti from PlatformTitleInstance pti
         WHERE pti.id NOT IN :ptisForDeletion
         AND pti.titleInstance.id in :tisForWork
-      """.toString(), [ptisForDeletion: markForDeletion.get("pti"), tisForWork: tisForWork], [max:1])
+      """.toString(), [ptisForDeletion: markForDeletion.get("pti"), tisForWork: tisForWork], [max:1]) as Set
 
       // Do we want to log when a work can't be deleted because PTIs exist? E.g.
 //        log.info("LOG WARNING work could not be deleted: Work ID- {}, PTIs for Work- {}", workId, ptisForWork);
@@ -330,30 +289,69 @@ public class ErmResourceService {
     return markForDeletion
   }
 
-  List<String> markForDeletePCI(List<String> ids) {
+  public Set<String> markForDeletePCI(Set<String> ids) {
     return ids
         .stream()
         .map( id -> {
           log.debug("LOG DEBUG CHECKING PCI ID: {}", id)
           // Find agreement lines for PCI.
-          List<String> linesForResource = Entitlement.executeQuery(
+          Set<String> linesForResource = Entitlement.executeQuery(
               """
                 SELECT ent.id FROM Entitlement ent
                 WHERE ent.resource.id = :resId
-              """.toString(), [resId:id], [max:1])
+              """.toString(), [resId:id], [max:1]) as Set
 
           log.debug("LOG DEBUG linesForResource: {}", linesForResource)
 
-
           // If no agreement lines exist for PCI, mark for deletion.
-          if (linesForResource.size() == 0) {
-            return id
+          if (linesForResource.size() != 0) {
+            return null
           }
 
-          return null;
+          return id;
         })
         .filter({id -> id != null })
-        .collect(Collectors.toList());
+        .collect(Collectors.toSet());
+  }
+
+  // ignorePcis is for any PCIs which would otherwise block PTI deletion but we can safely ignore and allow for delete
+  public Set<String> markForDeletePTI(Set<String> ids, Set<String> ignorePcis) {
+    return ids
+      .stream()
+      .map(id -> {
+        Set<String> linesForResource = Entitlement.executeQuery(
+          """
+            SELECT ent.id FROM Entitlement ent
+            WHERE ent.resource.id = :resId
+          """.toString(),
+          [resId:id],
+          [max:1]
+        ) as Set
+
+        if (linesForResource.size() != 0) {
+          return null;
+        }
+
+        // Find any other PCIs that have not been marked for deletion that exist for the PTI.
+        Set<String> pcisForPti = PackageContentItem.executeQuery(
+          """
+            SELECT pci.id FROM PackageContentItem pci
+            WHERE pci.pti.id = :ptiId
+            AND pci.id NOT IN :ignorePcis
+          """.toString(),
+          [ptiId:id, ignorePcis:ignorePcis],
+          [max:1]
+        ) as Set
+
+        // If no agreement lines and no other non-deletable PCIs exist for the PTI, mark for deletion.
+        if (pcisForPti.size() != 0) {
+          return null
+        }
+
+        return id;
+      })
+      .filter({id -> id != null })
+      .collect(Collectors.toSet());
   }
 }
 
