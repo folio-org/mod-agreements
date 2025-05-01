@@ -11,7 +11,7 @@ import spock.lang.Stepwise
 @Integration
 @Stepwise
 @Slf4j
-class WorkLinkDeletionSpec extends DeletionBaseSpec{
+class TiLinkDeletionSpec extends DeletionBaseSpec{
 
   ErmResourceService ermResourceService;
 
@@ -32,11 +32,11 @@ class WorkLinkDeletionSpec extends DeletionBaseSpec{
       return;
     }
     log.info("--- Running Setup for test: ${specificationContext.currentIteration?.name ?: specificationContext.currentFeature?.name} ---")
-    importPackageFromFileViaService('hierarchicalDeletion/work_link_deletion_1.json')
-    importPackageFromFileViaService('hierarchicalDeletion/work_link_deletion_2.json')
+    importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_1.json')
+    importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_2.json')
 
-    resp = doGet("/erm/packages", [filters: ['name==K-Int Work Link - Deletion Test Package 001']])
-    resp2 = doGet("/erm/packages", [filters: ['name==K-Int Work Link - Deletion Test Package 002']])
+    resp = doGet("/erm/packages", [filters: ['name==K-Int TI Link - Deletion Test Package 001']])
+    resp2 = doGet("/erm/packages", [filters: ['name==K-Int TI Link - Deletion Test Package 002']])
 
     // Fetch PCIs and save IDs to list
     Map kbStatsResp = doGet("/erm/statistics/kbCount")
@@ -87,15 +87,15 @@ class WorkLinkDeletionSpec extends DeletionBaseSpec{
   void "Load Packages"() {
 
     when: 'File loaded'
-    Map result = importPackageFromFileViaService('hierarchicalDeletion/work_link_deletion_1.json')
-    importPackageFromFileViaService('hierarchicalDeletion/work_link_deletion_2.json')
+    Map result =  importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_1.json')
+    importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_2.json')
 
     then: 'Package imported'
     result.packageImported == true
 
     when: "Looked up package with name"
-    List resp = doGet("/erm/packages", [filters: ['name==K-Int Work Link - Deletion Test Package 001']])
-    List resp2 = doGet("/erm/packages", [filters: ['name==K-Int Work Link - Deletion Test Package 002']])
+    List resp = doGet("/erm/packages", [filters: ['name==K-Int TI Link - Deletion Test Package 001']])
+    List resp2 = doGet("/erm/packages", [filters: ['name==K-Int TI Link - Deletion Test Package 002']])
     log.info(resp.toString())
     log.info(resp[0].toString())
     pkg_id = resp[0].id
