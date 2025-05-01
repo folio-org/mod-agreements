@@ -3,6 +3,8 @@ package org.olf
 import org.olf.erm.Entitlement
 import org.olf.kb.Work
 
+import java.util.stream.Collectors
+
 import static org.springframework.transaction.annotation.Propagation.MANDATORY
 
 import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
@@ -73,6 +75,7 @@ public class ErmResourceService {
     resourceList
   }
 
+  // TODO this is helpful but raw, potentially either comment out or refine
   String visualizePciHierarchy(String pciId, String initialIndent = "") {
 
     PackageContentItem pci = PackageContentItem.executeQuery("""
@@ -200,7 +203,10 @@ public class ErmResourceService {
     }
   }
 
-  def heirarchicalDeletePCI(List<String> ids) {
+  // FIXME this is currently ONLY the mark for delete at the PCI level...
+  Map<String, List<String>> markForDelete(List<String> ids) {
+    log.info("LOG DEBUG - markForDelete({})", ids);
+
     Map<String, List<String>> markForDeletion = new HashMap<>();
     markForDeletion.put('pci', new ArrayList<>());
     markForDeletion.put('pti', new ArrayList<>());
@@ -209,21 +215,24 @@ public class ErmResourceService {
 
     List<String> tisMarkedForWorkChecking = new ArrayList<>();
 
-    ids.forEach { String id -> {
-      // Find agreement lines for PCI.
-      List<String> linesForResource = Entitlement.executeQuery(
-          """
-                SELECT ent.id FROM Entitlement ent
-                WHERE ent.resource.id = :resId
-                """.toString(), [resId:id], [max:1])
+    markForDeletion.get('pci').addAll(markForDeletePCI(ids));
+    log.info("LOG DEBUG - PCIs marked for deletion {}", markForDeletion.get("pci"))
 
-      // If no agreement lines exist for PCI, mark for deletion.
-      if (linesForResource.size() == 0) {
-        markForDeletion.get('pci').add(id);
-      }
-    }}
+//    ids.forEach { String id -> {
+//      // Find agreement lines for PCI.
+//      List<String> linesForResource = Entitlement.executeQuery(
+//          """
+//                SELECT ent.id FROM Entitlement ent
+//                WHERE ent.resource.id = :resId
+//                """.toString(), [resId:id], [max:1])
+//
+//      // If no agreement lines exist for PCI, mark for deletion.
+//      if (linesForResource.size() == 0) {
+//        markForDeletion.get('pci').add(id);
+//      }
+//    }}
 
-    // Check zero-case
+    // TODO Check zero-case
     markForDeletion.get("pci").forEach{ String id -> {
       log.info("LOG DEBUG - PTIs marked for deletion {}", markForDeletion.get("pti"))
 
@@ -319,6 +328,32 @@ public class ErmResourceService {
 
     log.info("LOG DEBUG markForDeletion - {}", markForDeletion);
     return markForDeletion
+  }
+
+  List<String> markForDeletePCI(List<String> ids) {
+    return ids
+        .stream()
+        .map( id -> {
+          log.debug("LOG DEBUG CHECKING PCI ID: {}", id)
+          // Find agreement lines for PCI.
+          List<String> linesForResource = Entitlement.executeQuery(
+              """
+                SELECT ent.id FROM Entitlement ent
+                WHERE ent.resource.id = :resId
+              """.toString(), [resId:id], [max:1])
+
+          log.debug("LOG DEBUG linesForResource: {}", linesForResource)
+
+
+          // If no agreement lines exist for PCI, mark for deletion.
+          if (linesForResource.size() == 0) {
+            return id
+          }
+
+          return null;
+        })
+        .filter({id -> id != null })
+        .collect(Collectors.toList());
   }
 }
 

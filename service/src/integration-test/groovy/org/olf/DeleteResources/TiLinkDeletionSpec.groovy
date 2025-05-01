@@ -114,8 +114,8 @@ class TiLinkDeletionSpec extends DeletionBaseSpec{
     List<String> pcisToDelete = [pciIds.get(0), pciIds.get(1)]
     log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
 
-    Map deleteResp = doPost("/erm/pci/hdelete", {
-      'pCIIds' pcisToDelete
+    Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
+      'pci' pcisToDelete
     })
     log.info("Delete Response: {}", deleteResp.toString())
 

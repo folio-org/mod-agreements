@@ -101,8 +101,8 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
     List<String> pcisToDelete = [pciIds.get(0), pciIds.get(1)]
     log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
 
-    Map deleteResp = doPost("/erm/pci/hdelete", {
-      'pCIIds' pcisToDelete
+    Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
+      'pcis' pcisToDelete
     })
     log.info("Delete Response: {}", deleteResp.toString())
 

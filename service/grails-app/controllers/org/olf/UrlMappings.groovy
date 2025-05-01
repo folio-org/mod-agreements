@@ -111,7 +111,7 @@ class UrlMappings {
     }
 
     "/erm/pci"(resources:'packageContentItem') // Note that we still technically allow single deletes
-    "/erm/pci/hdelete"(controller: 'packageContentItem', action: 'heirarchicalDeletePCIs', method: 'POST')
+
     "/erm/platforms"(resources:'platform')
     "/erm/entitlements"(resources:'entitlement', excludes: ['patch']) {
       collection {
@@ -217,5 +217,7 @@ class UrlMappings {
     // Statistics endpoints. I think that we should be able to do this in a better mapping, but I can't figure it out rn
     "/erm/statistics/kbCount" (controller: 'statistics', action: 'kbCount', method: 'GET')
     "/erm/statistics/sasCount" (controller: 'statistics', action: 'agreementCount', method: 'GET')
+
+    "/erm/hierarchicalDelete/markForDelete" (controller: 'resource', action: 'markForDelete', method: 'POST')
   }
 }

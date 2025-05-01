@@ -18,6 +18,9 @@ import org.hibernate.criterion.Projections
 import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
+import org.olf.kb.http.request.body.MarkForDeleteBody
+import org.springframework.http.HttpStatus
+
 import java.time.Duration
 import java.time.Instant
 
@@ -26,6 +29,7 @@ import static org.olf.general.Constants.Queries.*
 @Slf4j
 @CurrentTenant
 class ResourceController extends OkapiTenantAwareController<ErmResource> {
+  ErmResourceService ermResourceService
 
   ResourceController() {
     // True means read only. This should block post and puts to this.
@@ -455,6 +459,54 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
       })
     })
     log.debug("completed in ${Duration.between(start, Instant.now()).toSeconds()} seconds")
+  }
+
+
+  def markForDelete(MarkForDeleteBody deleteBody) {
+    log.info("ResourceController::markForDelete({})", deleteBody.toString())
+
+    if (deleteBody == null || deleteBody.hasErrors()) {
+      log.warn("Validation failed for markForDelete body: {}", deleteBody?.errors)
+      response.status = HttpStatus.BAD_REQUEST.value()
+      respond(deleteBody?.errors)
+      return
+    }
+
+    List<String> idsToDelete = []
+
+    // TODO handle the "hierarchical" element here, what if we're passed only PCIs, what about PCIs and PTIs? etc etc
+    // Actually I'd probably let the service handle ALL the business logic and then just try catch there.
+
+    // TODO do we need to do this? We could instead validate UUID by UUID later on
+//    if (deleteBody.pcis) {
+//      idsToDelete = deleteBody.pcis.findAll { String idStr ->
+//        idStr != null && !idStr.trim().isEmpty()
+//      }
+    //}
+
+//    if (idsToDelete.isEmpty()) {
+//      log.warn("No valid non-empty PCI IDs provided in the list.")
+//      response.status = HttpStatus.BAD_REQUEST.value() // 400
+//      // TODO check whether to use render vs respond here... not sure what our "best practice" is or even if we have one
+//      render(contentType: 'application/json') { [message: "No valid IDs provided in the list."] }
+//      return
+//    }
+
+
+    try {
+      // TODO this should pass the full body,
+      // maybe broken down into multiple List<String> instead of using MarkForDeleteBody in the service
+
+      respond ermResourceService.markForDelete(deleteBody.pcis);
+    } catch (Exception e) {
+      log.error("Error during markForDelete for IDs {}: {}", idsToDelete, e.message, e)
+      response.status = HttpStatus.INTERNAL_SERVER_ERROR.value()
+      render(contentType: 'application/json') {
+        [error: "Internal Server Error", message: "Failed to delete package content items: ${e.message}"]
+      }
+    }
+    return
+
   }
 }
 
