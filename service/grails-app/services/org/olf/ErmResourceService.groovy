@@ -239,6 +239,10 @@ public class ErmResourceService {
     markForDeletion.get('pci').addAll(markForDeletePCI(ids));
     log.info("LOG DEBUG - PCIs marked for deletion {}", markForDeletion.get("pci"))
 
+    if (markForDeletion.get('pci').isEmpty()) {
+      return markForDeletion;
+    }
+
     Set<String> ptisForDeleteCheck = PlatformTitleInstance.executeQuery(
       """
         SELECT DISTINCT pci.pti.id FROM PackageContentItem pci
@@ -255,7 +259,9 @@ public class ErmResourceService {
     markForDeletion.get('pti').addAll(markForDeletePTI(ptisForDeleteCheck, markForDeletion.get('pci')));
     log.info("LOG DEBUG - PTIs marked for deletion {}", markForDeletion.get("pti"))
 
-    // TODO Check zero-case
+    if (markForDeletion.get('pti').isEmpty()) {
+      return markForDeletion;
+    }
 
     Set<String> tisForDeleteCheck = TitleInstance.executeQuery(
       """
