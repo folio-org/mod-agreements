@@ -338,7 +338,7 @@ public class ErmResourceService {
           return null
         }
 
-        String workIdList = TitleInstance.executeQuery("""
+        List<String> workIdList = TitleInstance.executeQuery("""
           SELECT ti.work.id FROM TitleInstance ti
           WHERE ti.id = :tiId
         """.toString(), [tiId: id], [max: 1])
@@ -363,7 +363,7 @@ public class ErmResourceService {
           return null
         }
 
-        return workId // FIXME THEN ADD tisForWork
+        return workId
       })
       .filter({id -> id != null })
       .collect(Collectors.toSet());
