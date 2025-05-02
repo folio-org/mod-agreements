@@ -68,6 +68,29 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
 //    }
 //  }
 
+  private void verifySetSizes(deleteResp,
+                              int pciSize = 1,
+                              int ptiSize = 1,
+                              int tiSize = 2,
+                              int workSize = 1) {
+    assert deleteResp?.pci?.size() == pciSize;
+    assert deleteResp?.pti?.size() == ptiSize;
+    assert deleteResp?.ti?.size() == tiSize;
+    assert deleteResp?.work?.size() == workSize;
+  }
+
+  private void verifyPciIds(deleteResp, Set<String> resourceIdsToDelete) {
+    assert deleteResp?.pci as Set == resourceIdsToDelete as Set
+  }
+  private void verifyPtiIds(deleteResp, Set<String> resourceIdsToDelete) {
+    assert deleteResp?.pti as Set == resourceIdsToDelete as Set
+  }
+  private void verifyTiIds(deleteResp, Set<String> resourceIdsToDelete) {
+    assert deleteResp?.ti as Set == resourceIdsToDelete as Set
+  }
+  private void verifyWorkIds(deleteResp, Set<String> resourceIdsToDelete) {
+    assert deleteResp?.work as Set == resourceIdsToDelete as Set
+  }
 
   void "Load Packages"() {
 
@@ -103,62 +126,35 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       log.info("Delete Response: {}", deleteResp.toString())
 
       // Get PCI for assertions
-      PackageContentItem pci;
-      withTenant {
-        pci = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""").get(0);
-      }
+    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+    Set<PackageContentItem> pciSet = [pci1] as Set
 
-      log.info(deleteResp.toString())
+    Map resourceMap = getAllResourcesForPCIs(pciSet);
+    Map resourceIds = collectResourceIds(resourceMap)
+
+    log.info(resourceIds.toString())
+    log.info(deleteResp.toString())
 
     then:
-      deleteResp?.pci?.size() == 1
-      deleteResp?.pci?.get(0) == pcisToDelete.get(0)
-      // TODO null safe the rest
-      deleteResp.pti.size() == 1
-      deleteResp.pti[0] == pci.pti.id
-
-      deleteResp.ti.size() == 2
-      deleteResp.ti.any { ti -> ti == pci.pti.titleInstance.id }
-
-      deleteResp.work.size() == 1
-      deleteResp.work[0] == pci.pti.titleInstance.work.id;
-
+      verifySetSizes(deleteResp)
+      verifyPciIds(deleteResp, resourceIds.get("pci"))
+      verifyPtiIds(deleteResp, resourceIds.get("pti"))
+      verifyTiIds(deleteResp, resourceIds.get("ti"))
+      verifyWorkIds(deleteResp, resourceIds.get("work"))
     cleanup:
       log.info("--- Running Cleanup ---")
       clearResources()
       log.info("--- Running Cleanup ---")
   }
 
-//  void "Scenario 2: Nothing marked for deletion with one PCI chain."() {
-//    given: "An empty list of PCI IDs is prepared"
-//      List<String> pcisToDelete = new ArrayList<>()
-//      def requestBody = [pcis: pcisToDelete]
-//
-//    when: "A hierarchical delete request is made with the empty list"
-//      doPost("/erm/hierarchicalDelete/markForDelete", requestBody)
-//
-//    then: "An HttpException indicating an Unprocessable Entity (422) error is thrown"
-//      def e = thrown(HttpException)
-//      log.info(e.toString())
-//      assert e.message == "Unprocessable Entity"
-//
-//    cleanup:
-//      log.info("--- Running Cleanup ---")
-//      clearResources()
-//      log.info("--- Running Cleanup ---")
-//  }
-
   void "Scenario 3: Single PCI marked for deletion when PTI is attached to agreement line."() {
     given: "A PCI that references a PTI attached to an agreement line is marked for deletion."
-      List<String> pcisToDelete = [pciIds.get(0)]
-      PackageContentItem pci;
-      withTenant {
-        pci = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""").get(0);
-      }
+      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+      List<String> pcisToDelete = [pci1.id]
 
-      String agreement_name = "test_agreement"
+    String agreement_name = "test_agreement"
       Map agreementResp = createAgreement(agreement_name)
-      addEntitlementForAgreement(agreement_name, pci.pti.id)
+      addEntitlementForAgreement(agreement_name, pci1.pti.id)
 
       def requestBody = [pcis: pcisToDelete]
 
@@ -173,17 +169,11 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       sasStatsResp.get("SubscriptionAgreement") == 1
       sasStatsResp.get("Entitlement") == 1
 
-      deleteResp
-      deleteResp.pci
-      deleteResp.pci.size() == 1
-      deleteResp.pci[0] == pcisToDelete.get(0)
-
-      deleteResp.pti.size() == 0
-      deleteResp.ti.size() == 0
-      deleteResp.work.size() == 0
+      verifySetSizes(deleteResp, 1, 0, 0, 0)
+      verifyPciIds(deleteResp, pcisToDelete.toSet())
 
       // Does agreement line item->resource id match pci.pti.id
-      findAgreementByName("test_agreement").items.resource.get(0).id == pci.pti.id
+      findAgreementByName("test_agreement").items.resource.get(0).id == pci1.pti.id
 
     cleanup:
       log.info("--- Running Cleanup ---")
@@ -195,14 +185,12 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
   void "Scenario 4: Single PCI marked for deletion when PCI is attached to agreement line."() {
     given: "A PCI that is attached to an agreement line is marked for deletion."
       List<String> pcisToDelete = [pciIds.get(0)]
-      PackageContentItem pci;
-      withTenant {
-        pci = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""").get(0);
-      }
+      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
 
-      String agreement_name = "test_agreement"
+
+    String agreement_name = "test_agreement"
       Map agreementResp = createAgreement(agreement_name)
-      addEntitlementForAgreement(agreement_name, pci.id)
+      addEntitlementForAgreement(agreement_name, pci1.id)
 
       def requestBody = [pcis: pcisToDelete]
 
@@ -218,13 +206,11 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       sasStatsResp.get("Entitlement") == 1
 
       deleteResp
-      deleteResp.pci.size() == 0
-      deleteResp.pti.size() == 0
-      deleteResp.ti.size() == 0
-      deleteResp.work.size() == 0
+      verifySetSizes(deleteResp, 0, 0, 0, 0)
+
 
     // Does agreement line item->resource id match pci2.pti.id
-    findAgreementByName("test_agreement").items.resource.get(0).id == pci.id
+    findAgreementByName("test_agreement").items.resource.get(0).id == pci1.id
 
     cleanup:
       log.info("--- Running Cleanup ---")
@@ -257,22 +243,20 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
 
     when: "A delete request is made."
       Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", requestBody)
+      Set<PackageContentItem> pciSet = [pci1, pci2] as Set
+
+      Map resourceMap = getAllResourcesForPCIs(pciSet);
+      Map resourceIds = collectResourceIds(resourceMap)
+
 
     then: "All resources are marked for deletion"
       deleteResp
       deleteResp.pci
-      deleteResp.pci.size() == 2
-      (pci1.id in deleteResp.pci) && (pci2.id in deleteResp.pci)
-
-      deleteResp.pti.size() == 2
-      (pci1.pti.id in deleteResp.pti) && (pci2.pti.id in deleteResp.pti)
-
-      deleteResp.ti.size() == 4
-      // FIXME: need to extend this to find all TI ids
-      (pci1.pti.titleInstance.id in deleteResp.ti) && (pci2.pti.titleInstance.id in deleteResp.ti)
-
-      deleteResp.work.size() == 2
-      (pci1.pti.titleInstance.work.id in deleteResp.work) && (pci2.pti.titleInstance.work.id in deleteResp.work)
+      verifySetSizes(deleteResp, 2, 2, 4, 2)
+      verifyPciIds(deleteResp, resourceIds.get("pci"))
+      verifyPtiIds(deleteResp, resourceIds.get("pti"))
+      verifyTiIds(deleteResp, resourceIds.get("ti"))
+      verifyWorkIds(deleteResp, resourceIds.get("work"))
 
     cleanup:
       log.info("--- Running Cleanup ---")

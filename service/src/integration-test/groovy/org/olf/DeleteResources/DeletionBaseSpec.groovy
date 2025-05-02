@@ -8,6 +8,8 @@ import org.olf.erm.SubscriptionAgreement
 import org.olf.kb.ErmResource
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.PackageContentItem
+import org.olf.kb.PlatformTitleInstance
+import org.olf.kb.TitleInstance
 import org.olf.kb.Work
 import org.olf.kb.metadata.PackageIngressMetadata
 import spock.lang.Ignore
@@ -22,6 +24,17 @@ import groovy.json.JsonOutput
 class DeletionBaseSpec extends BaseSpec {
 
   ErmResourceService ermResourceService;
+
+  class ResourceIdMap {
+    List<String> ptis;
+    List<String> pcis;
+    List<String> tis;
+    List<String> works;
+
+    ResourceIdMap() {
+
+    }
+  }
 
   @Ignore
   Map createAgreement(String name="test_agreement") {
@@ -93,6 +106,68 @@ class DeletionBaseSpec extends BaseSpec {
         throw new IllegalStateException("Multiple PCIs found for package name, one expected.")
       }
       return results.get(0);
+    }
+  }
+
+  List<TitleInstance> findTisByWorkId(Set<String> workIds) {
+    withTenant {
+      String hql = """
+            SELECT ti
+            FROM TitleInstance ti
+            WHERE ti.work.id IN :workIds
+        """
+      List results = PackageContentItem.executeQuery(hql, [workIds: workIds])
+      return results
+    }
+  }
+
+    List<PlatformTitleInstance> findPTIsByTiIds(List<String> tiIds) {
+      withTenant {
+        String hql = """
+            SELECT pti
+            FROM PlatformTitleInstance pti
+            WHERE pti.titleInstance.id IN :tiIds
+        """
+        List results = PackageContentItem.executeQuery(hql, [tiIds: tiIds])
+        return results
+    }
+  }
+
+  List<PlatformTitleInstance> findPCIsByPtiIds(List<String> ptiIds) {
+    withTenant {
+      String hql = """
+            SELECT pci
+            FROM PackageContentItem pci
+            WHERE pci.pti.id IN :ptiIds
+        """
+      List results = PackageContentItem.executeQuery(hql, [ptiIds: ptiIds])
+      return results
+    }
+  }
+
+
+   Map getAllResourcesForPCIs(Set<PackageContentItem> pciset) {
+    Set<String> workIds = pciset.collect(pci -> pci.pti.titleInstance.work.id)
+    List<String> works = pciset.collect(pci -> pci.pti.titleInstance.work)
+
+    List<TitleInstance> tis = findTisByWorkId(workIds);
+    List<PlatformTitleInstance> ptis = findPTIsByTiIds(tis.collect { titleInstance -> titleInstance.id });
+    List<PackageContentItem> pcis = findPCIsByPtiIds(ptis.collect {platformTitleInstance -> platformTitleInstance.id });
+
+
+    Map resources = new HashMap();
+    resources.put("pci", pcis)
+    resources.put("pti", ptis);
+    resources.put("ti", tis);
+    resources.put("work", works);
+
+    return resources
+  }
+
+  Map<String, Set<String>> collectResourceIds(Map<String, List<? extends ErmResource>> resourcesMap) {
+    return resourcesMap.collectEntries { String resourceType, List<? extends ErmResource> resourceList ->
+      Set<String> ids = resourceList*.id as Set
+      [resourceType, ids]
     }
   }
 
