@@ -496,8 +496,12 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     try {
       // TODO this should pass the full body,
       // maybe broken down into multiple List<String> instead of using MarkForDeleteBody in the service
+      Map resourceIdMap = new HashMap<String, List<String>>();
+      resourceIdMap.put("pcis", deleteBody.pcis)
+      resourceIdMap.put("ptis", deleteBody.ptis)
+      resourceIdMap.put("tis", deleteBody.tis)
 
-      respond ermResourceService.markForDelete(deleteBody.pcis);
+      respond ermResourceService.markForDelete(resourceIdMap);
     } catch (Exception e) {
       log.error("Error during markForDelete for IDs {}: {}", idsToDelete, e.message, e)
       response.status = HttpStatus.INTERNAL_SERVER_ERROR.value()

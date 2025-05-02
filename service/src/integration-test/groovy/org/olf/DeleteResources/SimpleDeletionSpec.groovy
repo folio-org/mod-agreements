@@ -19,6 +19,8 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
   String pkg_id
 
   List<String> pciIds;
+  List<String> ptiIds;
+  List<String> tiIds;
 
   List resp;
 
@@ -38,6 +40,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     Map kbStatsResp = doGet("/erm/statistics/kbCount")
     Map sasStatsResp = doGet("/erm/statistics/sasCount")
     List pciResp = doGet("/erm/pci")
+    List ptiResp = doGet("/erm/pti")
 
     log.info("KB Counts (in setup): {}", kbStatsResp?.toString()) // Use safe navigation ?. just in case
     log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
@@ -48,7 +51,15 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
         pciIds.add(item.id.toString())
       }
     }
+
+    ptiIds = []
+    ptiResp?.forEach { Map item ->
+      if (item?.id) {
+        ptiIds.add(item.id.toString())
+      }
+    }
     log.info("Found PCI IDs (in setup): {}", pciIds)
+    log.info("Found PTI IDs (in setup): {}", ptiIds)
 
     if (!pciIds.isEmpty()) {
       visualiseHierarchy(pciIds)
@@ -405,6 +416,44 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     // Does agreement line item->resource id match pci2.pti.id
     findAgreementByName("test_agreement").items.resource.get(0).id == pci2.pti.id
 
+    cleanup:
+    log.info("--- Running Cleanup ---")
+    clearResources()
+    log.info("--- Running Cleanup ---")
+  }
+
+  void "Scenario: One single chain PCI and user marks a PTI for deletion."() {
+    given: "Setup has found PCI IDs"
+      assert ptiIds != null: "pciIds should have been initialized by setup()"
+      assert !ptiIds.isEmpty(): "Setup() must find at least one PCI for this test"
+    when: "The first PCI found during setup is marked for deletion"
+      List<String> ptisToDelete = [ptiIds.get(0)]
+      log.info("Attempting to delete PTI IDs: {}", ptisToDelete)
+
+      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
+        'ptis' ptisToDelete
+      })
+      log.info("Delete Response: {}", deleteResp.toString())
+
+      // Get PCI for assertions
+      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+      Set<PackageContentItem> pciSet = [pci1] as Set
+
+      Map resourceMap = getAllResourcesForPCIs(pciSet);
+      Map resourceIds = collectResourceIds(resourceMap)
+
+      log.info(resourceIds.toString())
+      log.info(deleteResp.toString())
+
+    then:
+    /* FIXME: What do we expect to happen here? Can we delete a PTI when there is still a parent PCI related to it that
+     was not marked for deletion? If not, then we expect nothing to be marked for deletion.
+     If we can, then we expect everything beneath the PCI to be marked for deletion. */
+    verifySetSizes(deleteResp)
+    verifyPciIds(deleteResp, resourceIds.get("pci"))
+    verifyPtiIds(deleteResp, resourceIds.get("pti"))
+    verifyTiIds(deleteResp, resourceIds.get("ti"))
+    verifyWorkIds(deleteResp, resourceIds.get("work"))
     cleanup:
     log.info("--- Running Cleanup ---")
     clearResources()

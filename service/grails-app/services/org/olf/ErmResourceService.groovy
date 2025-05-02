@@ -220,11 +220,19 @@ public class ErmResourceService {
 
   // FIXME this is currently ONLY the mark for delete at the PCI level...
   // TODO should probs be Set in, what happens if a user passes input with duplicates and we cast to Set?
-  public Map<String, Set<String>> markForDelete(List<String> idsList) {
-    log.info("LOG DEBUG - markForDelete({})", idsList);
-    Set<String> ids = new HashSet<>(idsList); // This is also compatible with Java and removes duplicates.
+  public Map<String, Set<String>> markForDelete(Map<String, List<String>> resourceMap) {
+    log.info("LOG DEBUG - markForDelete({})", resourceMap);
+    List<String> pciList = resourceMap.get("pcis");
+    Set<String> pciIds = (pciList != null) ? new HashSet<String>(pciList) : new HashSet<String>();
 
-    if (idsList.isEmpty()) {
+    List<String> ptiList = resourceMap.get("ptis");
+    Set<String> ptiIds = (ptiList != null) ? new HashSet<String>(ptiList) : new HashSet<String>();
+
+    List<String> tiList = resourceMap.get("tis");
+    Set<String> tiIds = (tiList != null) ? new HashSet<String>(tiList) : new HashSet<String>();
+
+
+    if (pciIds.isEmpty() && ptiIds.isEmpty() && tiIds.isEmpty()) {
       throw new Exception("Id list cannot be empty.");
     }
 
@@ -236,12 +244,8 @@ public class ErmResourceService {
 
     Set<String> tisMarkedForWorkChecking = new HashSet<String>();
 
-    markForDeletion.get('pci').addAll(markForDeletePCI(ids));
+    markForDeletion.get('pci').addAll(markForDeletePCI(pciIds));
     log.info("LOG DEBUG - PCIs marked for deletion {}", markForDeletion.get("pci"))
-
-    if (markForDeletion.get('pci').isEmpty()) {
-      return markForDeletion;
-    }
 
     Set<String> ptisForDeleteCheck = PlatformTitleInstance.executeQuery(
       """
@@ -250,6 +254,7 @@ public class ErmResourceService {
       """.toString(),
       [pcisForDelete:markForDeletion.get("pci")]
     ) as Set
+    ptisForDeleteCheck.addAll(ptiIds)
     log.info("LOG DEBUG - PTIs for delete checking {}", ptisForDeleteCheck)
 
     // TODO consider case where user has sent PCI: [1,2,3], PTI: [4,5].
@@ -259,10 +264,6 @@ public class ErmResourceService {
     markForDeletion.get('pti').addAll(markForDeletePTI(ptisForDeleteCheck, markForDeletion.get('pci')));
     log.info("LOG DEBUG - PTIs marked for deletion {}", markForDeletion.get("pti"))
 
-    if (markForDeletion.get('pti').isEmpty()) {
-      return markForDeletion;
-    }
-
     Set<String> tisForDeleteCheck = TitleInstance.executeQuery(
       """
         SELECT DISTINCT pti.titleInstance.id FROM PlatformTitleInstance pti
@@ -270,6 +271,7 @@ public class ErmResourceService {
       """.toString(),
       [ptisForDelete:markForDeletion.get("pti")]
     ) as Set
+    tisForDeleteCheck.addAll(tiIds)
 
     Tuple2<Set<String>, Set<String>> tisAndWorksForDeletion = markForDeleteTI(tisForDeleteCheck, markForDeletion.get("pti"));
     markForDeletion.get('ti').addAll(tisAndWorksForDeletion.v1);
