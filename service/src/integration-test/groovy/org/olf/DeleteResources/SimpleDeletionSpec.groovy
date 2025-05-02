@@ -251,7 +251,6 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
 
     then: "All resources are marked for deletion"
       deleteResp
-      deleteResp.pci
       verifySetSizes(deleteResp, 2, 2, 4, 2)
       verifyPciIds(deleteResp, resourceIds.get("pci"))
       verifyPtiIds(deleteResp, resourceIds.get("pti"))
@@ -275,8 +274,6 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       if (item?.id) {
         pciIds.add(item.id.toString())
       }
-      log.info(item.toString())
-
       if (item?.pkg?.name.toString() == "K-Int Deletion Test Package 001") {
         pcisToDelete.add(item.id.toString())
       }
@@ -284,8 +281,13 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
 
     visualiseHierarchy(pciIds)
 
-    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001") // Marked for deletion
     PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002")
+
+    Set<PackageContentItem> pciSet = [pci1] as Set
+
+    Map resourceMap = getAllResourcesForPCIs(pciSet);
+    Map resourceIds = collectResourceIds(resourceMap)
 
     def requestBody = [pcis: pcisToDelete]
 
@@ -294,19 +296,11 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
 
     then: "One single-chain PCI is marked for deletion."
     deleteResp
-    deleteResp.pci
-    deleteResp.pci.size() == 1
-    pci1.id == deleteResp.pci[0]
-
-    deleteResp.pti.size() == 1
-    pci1.pti.id == deleteResp.pti[0]
-
-    deleteResp.ti.size() == 2
-    // FIXME: need to extend this to find all TI ids
-    (pci1.pti.titleInstance.id in deleteResp.ti)
-
-    deleteResp.work.size() == 1
-    pci1.pti.titleInstance.work.id == deleteResp.work[0]
+    verifySetSizes(deleteResp)
+    verifyPciIds(deleteResp, resourceIds.get("pci"))
+    verifyPtiIds(deleteResp, resourceIds.get("pti"))
+    verifyTiIds(deleteResp, resourceIds.get("ti"))
+    verifyWorkIds(deleteResp, resourceIds.get("work"))
 
     cleanup:
     log.info("--- Running Cleanup ---")
@@ -333,6 +327,11 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
     PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // Attached to Agreement Line
 
+    Set<PackageContentItem> pciSet = [pci1] as Set
+
+    Map resourceMap = getAllResourcesForPCIs(pciSet);
+    Map resourceIds = collectResourceIds(resourceMap)
+
     String agreement_name = "test_agreement"
     Map agreementResp = createAgreement(agreement_name)
     addEntitlementForAgreement(agreement_name, pci2.id)
@@ -345,19 +344,11 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     then: "Only one PCI chain is marked for deletion."
     pcisToDelete.size() == 2
     deleteResp
-    deleteResp.pci
-    deleteResp.pci.size() == 1
-    pci1.id == deleteResp.pci[0]
-
-    deleteResp.pti.size() == 1
-    pci1.pti.id == deleteResp.pti[0]
-
-    deleteResp.ti.size() == 2
-    // FIXME: need to extend this to find all TI ids
-    (pci1.pti.titleInstance.id in deleteResp.ti)
-
-    deleteResp.work.size() == 1
-    pci1.pti.titleInstance.work.id == deleteResp.work[0]
+    verifySetSizes(deleteResp)
+    verifyPciIds(deleteResp, resourceIds.get("pci"))
+    verifyPtiIds(deleteResp, resourceIds.get("pti"))
+    verifyTiIds(deleteResp, resourceIds.get("ti"))
+    verifyWorkIds(deleteResp, resourceIds.get("work"))
 
     // Does agreement line item->resource id match pci2.pti.id
     findAgreementByName("test_agreement").items.resource.get(0).id == pci2.id
@@ -385,11 +376,17 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     visualiseHierarchy(pciIds)
 
     PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
-    PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // Attached to Agreement Line
+    PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // PTI attached to Agreement Line
 
     String agreement_name = "test_agreement"
     Map agreementResp = createAgreement(agreement_name)
     addEntitlementForAgreement(agreement_name, pci2.pti.id)
+
+    Set<PackageContentItem> pciSet = [pci1] as Set
+
+    Map resourceMap = getAllResourcesForPCIs(pciSet);
+    Map resourceIds = collectResourceIds(resourceMap)
+    resourceIds.get("pci").add(pci2.id) // Add pci2 id as expected for deletion.
 
     def requestBody = [pcis: pcisToDelete]
 
@@ -399,19 +396,11 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     then: "One full PCI chain is marked for deletion, and one single PCI id is marked for deletion."
     pcisToDelete.size() == 2
     deleteResp
-    deleteResp.pci
-    deleteResp.pci.size() == 2
-    (pci1.id in deleteResp.pci) && (pci2.id in deleteResp.pci)
-
-    deleteResp.pti.size() == 1
-    pci1.pti.id == deleteResp.pti[0]
-
-    deleteResp.ti.size() == 2
-    // FIXME: need to extend this to find all TI ids
-    (pci1.pti.titleInstance.id in deleteResp.ti)
-
-    deleteResp.work.size() == 1
-    pci1.pti.titleInstance.work.id == deleteResp.work[0]
+    verifySetSizes(deleteResp, 2)
+    verifyPciIds(deleteResp, resourceIds.get("pci"))
+    verifyPtiIds(deleteResp, resourceIds.get("pti"))
+    verifyTiIds(deleteResp, resourceIds.get("ti"))
+    verifyWorkIds(deleteResp, resourceIds.get("work"))
 
     // Does agreement line item->resource id match pci2.pti.id
     findAgreementByName("test_agreement").items.resource.get(0).id == pci2.pti.id

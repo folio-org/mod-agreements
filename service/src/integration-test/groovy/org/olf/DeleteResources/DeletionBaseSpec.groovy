@@ -147,6 +147,10 @@ class DeletionBaseSpec extends BaseSpec {
 
 
    Map getAllResourcesForPCIs(Set<PackageContentItem> pciset) {
+     /* Given a set of PCIs, traverse down to the work level and back up,
+     finding and returning a map of lists of all resources related to the
+     original set of PCIs.
+      */
     Set<String> workIds = pciset.collect(pci -> pci.pti.titleInstance.work.id)
     List<String> works = pciset.collect(pci -> pci.pti.titleInstance.work)
 
@@ -165,6 +169,9 @@ class DeletionBaseSpec extends BaseSpec {
   }
 
   Map<String, Set<String>> collectResourceIds(Map<String, List<? extends ErmResource>> resourcesMap) {
+    /* Given a map of lists of resources (created using getAllResourcesForPCIs())
+    return the ids of the resources in the Map instead of the objects.
+      */
     return resourcesMap.collectEntries { String resourceType, List<? extends ErmResource> resourceList ->
       Set<String> ids = resourceList*.id as Set
       [resourceType, ids]
