@@ -334,14 +334,23 @@ public class ErmResourceService {
         """.toString(), [tiId:id, ignorePtis:ignorePtis], [max:1])  as Set
 
         if (ptisForTi.size() != 0) {
+          log.info("LOG WARNING: PTIs that have not been marked for deletion exist for TI: TI ID- {}, PTIs found- {}", id, ptisForTi);
           return null
         }
 
-        // FIXME WHAT IF I DON'T EXIST
-        String workId = TitleInstance.executeQuery("""
+        String workIdList = TitleInstance.executeQuery("""
           SELECT ti.work.id FROM TitleInstance ti
           WHERE ti.id = :tiId
-        """.toString(), [tiId: id])[0]
+        """.toString(), [tiId: id], [max: 1])
+
+        String workId;
+
+        if (workIdList.size() == 1) {
+          workId = workIdList.get(0);
+        } else {
+          // No work ID exists or multiple works returned for one TI.
+          return null;
+        }
 
           Set<String> ptisForWork = Work.executeQuery("""
           SELECT pti from PlatformTitleInstance pti
@@ -349,10 +358,8 @@ public class ErmResourceService {
           AND pti.titleInstance.work.id = :workId
         """.toString(), [ignorePtis: ignorePtis, workId: workId], [max:1]) as Set
 
-        // Do we want to log when a work can't be deleted because PTIs exist? E.g.
-//        log.info("LOG WARNING work could not be deleted: Work ID- {}, PTIs for Work- {}", workId, ptisForWork);
-
         if (ptisForWork.size() != 0) {
+          log.info("LOG WARNING: PTIs that have not been marked for deletion exist for work: Work ID- {}, PTIs found- {}", workId, ptisForWork);
           return null
         }
 
