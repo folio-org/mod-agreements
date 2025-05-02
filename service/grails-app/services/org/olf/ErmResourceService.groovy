@@ -220,8 +220,9 @@ public class ErmResourceService {
 
   // FIXME this is currently ONLY the mark for delete at the PCI level...
   // TODO should probs be Set in, what happens if a user passes input with duplicates and we cast to Set?
-  public Map<String, Set<String>> markForDelete(List<String> ids) {
-    log.info("LOG DEBUG - markForDelete({})", ids);
+  public Map<String, Set<String>> markForDelete(List<String> idsList) {
+    log.info("LOG DEBUG - markForDelete({})", idsList);
+    Set<String> ids = new HashSet<>(idsList); // This is also compatible with Java and removes duplicates.
 
     Map<String, Set<String>> markForDeletion = new HashMap<>();
     markForDeletion.put('pci', new HashSet<String>());
@@ -231,7 +232,7 @@ public class ErmResourceService {
 
     Set<String> tisMarkedForWorkChecking = new HashSet<String>();
 
-    markForDeletion.get('pci').addAll(markForDeletePCI((Set) ids)); // FIXME with the above, this may be unnecessary, this feels gross
+    markForDeletion.get('pci').addAll(markForDeletePCI(ids));
     log.info("LOG DEBUG - PCIs marked for deletion {}", markForDeletion.get("pci"))
 
     Set<String> ptisForDeleteCheck = PlatformTitleInstance.executeQuery(
