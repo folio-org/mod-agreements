@@ -224,6 +224,10 @@ public class ErmResourceService {
     log.info("LOG DEBUG - markForDelete({})", idsList);
     Set<String> ids = new HashSet<>(idsList); // This is also compatible with Java and removes duplicates.
 
+    if (idsList.isEmpty()) {
+      throw new Exception("Id list cannot be empty.");
+    }
+
     Map<String, Set<String>> markForDeletion = new HashMap<>();
     markForDeletion.put('pci', new HashSet<String>());
     markForDeletion.put('pti', new HashSet<String>());
