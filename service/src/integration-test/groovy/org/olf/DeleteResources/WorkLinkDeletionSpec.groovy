@@ -4,6 +4,7 @@ import grails.testing.mixin.integration.Integration
 import groovy.util.logging.Slf4j
 import org.olf.ErmResourceService
 import org.olf.kb.PackageContentItem
+import org.olf.kb.TitleInstance
 import org.olf.kb.Work
 import spock.lang.Shared
 import spock.lang.Stepwise
@@ -54,27 +55,33 @@ class WorkLinkDeletionSpec extends DeletionBaseSpec{
     }
 
     // Re-attached TI to work.
-    PackageContentItem pci1;
-    PackageContentItem pci2;
     List<PackageContentItem> pcis;
     //
-    withTenant {
-      pcis = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""");
-    }
-    pci1 = pcis.get(0)
-    pci2 = pcis.get(1)
-    pci2.pti.titleInstance.work = pci1.pti.titleInstance.work
+    PackageContentItem pci1 = findPCIByPackageName("K-Int Work Link - Deletion Test Package 001") // Use the work from this package as base.
+    PackageContentItem pci2 = findPCIByPackageName("K-Int Work Link - Deletion Test Package 002")
+
+    String targetWorkId = pci1.pti.titleInstance.work.id
+    String titleInstanceIdToUpdate = pci2.pti.titleInstance.id
 
     log.info("Found PCI IDs (in setup): {}", pciIds)
     withTenant {
-      List<String> workIds = Work.executeQuery("""
-        SELECT work.id FROM Work work
-      """.toString())
+      Work targetWork = Work.get(targetWorkId)
+      if (!targetWork) {
+        log.error("Could not find target Work with ID {}.", targetWorkId)
+        throw new IllegalStateException("Test setup error: Work ${targetWorkId} not found.")
+      }
 
-      pciIds.forEach { String id -> log.info(ermResourceService.visualizePciHierarchy(id)) }
-
-      workIds.forEach { String id -> log.info(ermResourceService.visualizeWorkHierarchy(id)) }
+      int rowsAffected = TitleInstance.executeUpdate(
+        """
+            UPDATE TitleInstance ti 
+            SET ti.work = :newWork 
+            WHERE ti.id = :tiId
+            """.toString(),
+        [ newWork: targetWork, tiId: titleInstanceIdToUpdate ]
+      )
     }
+
+
     visualiseHierarchy(pciIds)
     if (!pciIds.isEmpty()) {
       visualiseHierarchy(pciIds)

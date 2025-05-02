@@ -11,13 +11,13 @@
     "_intenalId": 276432871385,
     "startDate": "2015-01-01T00:00:00Z",
     "endDate": "2020-12-31T00:00:00Z",
-    "packageSlug": "deletion_test_package_link_1",
+    "packageSlug": "deletion_test_package_work_link_2",
     "availabilityScope": "Global",
     "lifecycleStatus": "Current",
     "syncContentsFromSource": true
   },
   "packageContents": [{
-    "title": "Test aaa-000",
+    "title": "Test bbb-000",
     "instanceMedium": "electronic",
     "instanceMedia": "journal",
     "instanceIdentifiers": [{
@@ -31,9 +31,9 @@
     "embargo": null,
     "coverage": [],
     "url": "http://testpackageA.com/journal/index.php?journalID=packageA",
-    "platformName": "K-Int",
+    "platformName": "K-Int A",
     "sourceIdentifierNamespace": "K-Int",
-    "sourceIdentifier": "aaa-000"
+    "sourceIdentifier": "bbb-000"
   }
 ]
 }
