@@ -23,6 +23,9 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
   List<String> pciIds;
   List<String> ptiIds;
   List<String> tiIds;
+  String packageName1 = "K-Int Deletion Test Package 001";
+  String packageName2 = "K-Int Deletion Test Package 002"
+  String agreementName = "test_agreement"
 
   def setup() {
     SpecificationContext currentSpecInfo = specificationContext;
@@ -91,18 +94,16 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     given: "Setup has found PCI IDs"
       assert pciIds != null: "pciIds should have been initialized by setup()"
       assert !pciIds.isEmpty(): "Setup() must find at least one PCI for this test"
-    when: "The first PCI found during setup is marked for deletion"
-      List<String> pcisToDelete = [pciIds.get(0)]
+    when: "The PCI created during setup is marked for deletion"
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+      Set<PackageContentItem> pciSet = [pci1] as Set
+      List<String> pcisToDelete = [pci1.id];
       log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
 
       Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
         'pcis' pcisToDelete
       })
       log.info("Delete Response: {}", deleteResp.toString())
-
-      // Get PCI for assertions
-      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
-      Set<PackageContentItem> pciSet = [pci1] as Set
 
       Map resourceMap = getAllResourcesForPCIs(pciSet);
       Map resourceIds = collectResourceIds(resourceMap)
@@ -121,10 +122,10 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
 
   void "Scenario 3: Single PCI marked for deletion when PTI is attached to agreement line."() {
     given: "A PCI that references a PTI attached to an agreement line is marked for deletion."
-      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
       List<String> pcisToDelete = [pci1.id]
 
-    String agreement_name = "test_agreement"
+    String agreement_name = agreementName
       Map agreementResp = createAgreement(agreement_name)
       addEntitlementForAgreement(agreement_name, pci1.pti.id)
 
@@ -136,7 +137,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
 
     then: "Only the PCI is marked for deletion."
-      // Should this be tested for the Stats controller separately?
+      // FIXME: Should this be tested for the Stats controller separately?
       sasStatsResp
       sasStatsResp.get("SubscriptionAgreement") == 1
       sasStatsResp.get("Entitlement") == 1
@@ -145,16 +146,16 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       verifyPciIds(deleteResp, pcisToDelete.toSet())
 
       // Does agreement line item->resource id match pci.pti.id
-      findAgreementByName("test_agreement").items.resource.get(0).id == pci1.pti.id
+      findAgreementByName(agreementName).items.resource.get(0).id == pci1.pti.id
 
   }
 
   void "Scenario 4: Single PCI marked for deletion when PCI is attached to agreement line."() {
     given: "A PCI that is attached to an agreement line is marked for deletion."
       List<String> pcisToDelete = [pciIds.get(0)]
-      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
 
-      String agreement_name = "test_agreement"
+      String agreement_name = agreementName
       Map agreementResp = createAgreement(agreement_name)
       addEntitlementForAgreement(agreement_name, pci1.id)
 
@@ -166,7 +167,6 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
 
     then: "Nothing is marked for deletion."
-      // Should this be tested for the Stats controller separately?
       sasStatsResp
       sasStatsResp.get("SubscriptionAgreement") == 1
       sasStatsResp.get("Entitlement") == 1
@@ -175,29 +175,17 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       verifySetSizes(deleteResp, 0, 0, 0, 0)
 
       // Does agreement line item->resource id match pci2.pti.id
-      findAgreementByName("test_agreement").items.resource.get(0).id == pci1.id
+      findAgreementByName(agreementName).items.resource.get(0).id == pci1.id
   }
 
   void "Scenario 5: Two single-chain PCIs marked for deletion."() {
     given: "Two single-chain PCIs are marked for deletion."
       Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
       doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
-      List pciResp = doGet("/erm/pci")
-      pciIds = []
-      pciResp?.forEach { Map item ->
-        if (item?.id) {
-          pciIds.add(item.id.toString())
-        }
-      }
-
-      visualiseHierarchy(pciIds)
-
-      List<String> pcisToDelete = [pciIds.get(0), pciIds.get(1)]
-      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
-      PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002")
-
-      log.info(pci1.toString())
-      log.info(pci2.toString())
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+      PackageContentItem pci2 = findPCIByPackageName(packageName2)
+      List<String> pcisToDelete = [pci1.id, pci2.id]
+      visualiseHierarchy(pcisToDelete)
 
       def requestBody = [pcis: pcisToDelete]
 
@@ -223,22 +211,10 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     given: "Two single-chain PCIs exist but only one is marked for deletion."
       Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
       doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
-      List pciResp = doGet("/erm/pci")
-      pciIds = []
-      List<String> pcisToDelete = new ArrayList<>();
-      pciResp?.forEach { Map item ->
-        if (item?.id) {
-          pciIds.add(item.id.toString())
-        }
-        if (item?.pkg?.name.toString() == "K-Int Deletion Test Package 001") {
-          pcisToDelete.add(item.id.toString())
-        }
-      }
-
-      visualiseHierarchy(pciIds)
-
-      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001") // Marked for deletion
-      PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002")
+    PackageContentItem pci1 = findPCIByPackageName(packageName1)
+    PackageContentItem pci2 = findPCIByPackageName(packageName2) // PTI attached to Agreement Line
+    List<String> pcisToDelete = [pci1.id]
+    visualiseHierarchy(pcisToDelete)
 
       Set<PackageContentItem> pciSet = [pci1] as Set
 
@@ -263,27 +239,17 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     given: "Two single-chain PCIs are marked for deletion but one is attached."
       Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
       doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
-      List pciResp = doGet("/erm/pci")
-      pciIds = []
-      List<String> pcisToDelete = new ArrayList<>();
-      pciResp?.forEach { Map item ->
-        if (item?.id) {
-          pciIds.add(item.id.toString())
-          pcisToDelete.add(item.id.toString())
-        }
-      }
 
-      visualiseHierarchy(pciIds)
-
-      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
-      PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // Attached to Agreement Line
-
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+      PackageContentItem pci2 = findPCIByPackageName(packageName2) // PTI attached to Agreement Line
+      List<String> pcisToDelete = [pci1.id, pci2.id]
+      visualiseHierarchy(pcisToDelete)
       Set<PackageContentItem> pciSet = [pci1] as Set
 
       Map resourceMap = getAllResourcesForPCIs(pciSet);
       Map resourceIds = collectResourceIds(resourceMap)
 
-      String agreement_name = "test_agreement"
+      String agreement_name = agreementName
       Map agreementResp = createAgreement(agreement_name)
       addEntitlementForAgreement(agreement_name, pci2.id)
 
@@ -302,29 +268,20 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       verifyWorkIds(deleteResp, resourceIds.get("work"))
 
       // Does agreement line item->resource id match pci2.pti.id
-      findAgreementByName("test_agreement").items.resource.get(0).id == pci2.id
+      findAgreementByName(agreementName).items.resource.get(0).id == pci2.id
   }
 
   void "Scenario 8: Two single-chain PCIs marked for deletion but one PCI's PTI is attached to an agreement line."() {
     given: "Two single-chain PCIs are marked for deletion but one has a PTI which is attached."
       Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
       doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
-      List pciResp = doGet("/erm/pci")
-      pciIds = []
-      List<String> pcisToDelete = new ArrayList<>();
-      pciResp?.forEach { Map item ->
-        if (item?.id) {
-          pciIds.add(item.id.toString())
-          pcisToDelete.add(item.id.toString())
-        }
-      }
 
-      visualiseHierarchy(pciIds)
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+      PackageContentItem pci2 = findPCIByPackageName(packageName2) // PTI attached to Agreement Line
+      List<String> pcisToDelete = [pci1.id, pci2.id]
+      visualiseHierarchy(pcisToDelete)
 
-      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
-      PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // PTI attached to Agreement Line
-
-      String agreement_name = "test_agreement"
+    String agreement_name = agreementName
       Map agreementResp = createAgreement(agreement_name)
       addEntitlementForAgreement(agreement_name, pci2.pti.id)
 
@@ -349,7 +306,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       verifyWorkIds(deleteResp, resourceIds.get("work"))
 
       // Does agreement line item->resource id match pci2.pti.id
-      findAgreementByName("test_agreement").items.resource.get(0).id == pci2.pti.id
+      findAgreementByName(agreementName).items.resource.get(0).id == pci2.pti.id
   }
 
   void "Scenario: One single chain PCI and user marks a PTI for deletion."() {
@@ -357,7 +314,9 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       assert ptiIds != null: "ptiIds should have been initialized by setup()"
       assert !ptiIds.isEmpty(): "Setup() must find at least one PTI for this test"
     when: "The first PTI found during setup is marked for deletion"
-      List<String> ptisToDelete = [ptiIds.get(0)]
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+
+      List<String> ptisToDelete = [pci1.pti.id]
       log.info("Attempting to delete PTI IDs: {}", ptisToDelete)
 
       Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
@@ -365,8 +324,6 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       })
       log.info("Delete Response: {}", deleteResp.toString())
 
-      // Get PCI for assertions
-      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
       Set<PackageContentItem> pciSet = [pci1] as Set
 
       Map resourceMap = getAllResourcesForPCIs(pciSet);
@@ -386,8 +343,9 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       assert !ptiIds.isEmpty(): "Setup() must find at least one PTI for this test"
       assert !pciIds.isEmpty(): "Setup() must find at least one PCI for this test"
     when: "The first PCI found during setup is marked for deletion"
-      List<String> ptisToDelete = [ptiIds.get(0)]
-      List<String> pcisToDelete = [pciIds.get(0)]
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+      List<String> ptisToDelete = [pci1.pti.id]
+      List<String> pcisToDelete = [pci1.id]
       log.info("Attempting to delete PTI IDs: {}", ptisToDelete)
       log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
 
@@ -397,8 +355,6 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       })
       log.info("Delete Response: {}", deleteResp.toString())
 
-      // Get PCI for assertions
-      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
       Set<PackageContentItem> pciSet = [pci1] as Set
 
       Map resourceMap = getAllResourcesForPCIs(pciSet);
