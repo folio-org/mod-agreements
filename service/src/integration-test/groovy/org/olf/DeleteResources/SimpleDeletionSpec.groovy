@@ -111,7 +111,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       log.info(deleteResp.toString())
 
     then:
-      verifySetSizes(deleteResp)
+      verifySetSizes(deleteResp, 1, 1, 2, 1)
       verifyPciIds(deleteResp, resourceIds.get("pci"))
       verifyPtiIds(deleteResp, resourceIds.get("pti"))
       verifyTiIds(deleteResp, resourceIds.get("ti"))
@@ -252,7 +252,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
 
     then: "One single-chain PCI is marked for deletion."
       deleteResp
-      verifySetSizes(deleteResp)
+      verifySetSizes(deleteResp, 1, 1, 2, 1)
       verifyPciIds(deleteResp, resourceIds.get("pci"))
       verifyPtiIds(deleteResp, resourceIds.get("pti"))
       verifyTiIds(deleteResp, resourceIds.get("ti"))
@@ -295,7 +295,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     then: "Only one PCI chain is marked for deletion."
       pcisToDelete.size() == 2
       deleteResp
-      verifySetSizes(deleteResp)
+      verifySetSizes(deleteResp, 1, 1, 2, 1)
       verifyPciIds(deleteResp, resourceIds.get("pci"))
       verifyPtiIds(deleteResp, resourceIds.get("pti"))
       verifyTiIds(deleteResp, resourceIds.get("ti"))
@@ -342,7 +342,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     then: "One full PCI chain is marked for deletion, and one single PCI id is marked for deletion."
       pcisToDelete.size() == 2
       deleteResp
-      verifySetSizes(deleteResp, 2)
+      verifySetSizes(deleteResp, 2, 1, 2, 1)
       verifyPciIds(deleteResp, resourceIds.get("pci"))
       verifyPtiIds(deleteResp, resourceIds.get("pti"))
       verifyTiIds(deleteResp, resourceIds.get("ti"))
