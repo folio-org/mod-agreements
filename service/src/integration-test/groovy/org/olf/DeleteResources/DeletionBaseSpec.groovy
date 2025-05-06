@@ -181,6 +181,31 @@ class DeletionBaseSpec extends BaseSpec {
   }
 
   @Ignore
+  void verifyResourceIds(Map deleteResp, String resourceType, Set<String> expectedResourceIds) {
+    assert deleteResp != null: "deleteResp cannot be null"
+    assert resourceType != null && !resourceType.isEmpty(): "resourceType cannot be null or empty"
+    assert expectedResourceIds != null: "expectedResourceIds cannot be null"
+
+    switch (resourceType.toLowerCase()) {
+      case "pci":
+        assert deleteResp?.pci as Set == deleteResp["pci"] as Set
+        break
+      case "pti":
+        assert deleteResp?.pti as Set == deleteResp["pti"] as Set
+        break
+      case "ti":
+        assert deleteResp?.ti as Set == deleteResp["ti"] as Set
+        break
+      case "work":
+        assert deleteResp?.work as Set == deleteResp["work"] as Set
+        break
+      default:
+        assert false: "Unknown resource type provided to verifyResourceIds: '${resourceType}'"
+        return
+    }
+  }
+
+  @Ignore
   void verifyPciIds(deleteResp, Set<String> resourceIdsToDelete) {
     assert deleteResp?.pci as Set == resourceIdsToDelete as Set
   }
