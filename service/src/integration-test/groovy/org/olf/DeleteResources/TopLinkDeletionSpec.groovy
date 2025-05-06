@@ -100,25 +100,18 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
 
   void "Scenario: Two PCIs which reference the same PTI both marked for deletion."() {
     given: "Setup has found PCI IDs"
-      assert pciIds != null: "pciIds should have been initialized by setup()"
-      assert !pciIds.isEmpty(): "Setup() must find at least one PCI for this test"
-    when: "Both PCIs found during setup is marked for deletion"
       PackageContentItem pci1 = findPCIByPackageName(packageName1)
       PackageContentItem pci2 = findPCIByPackageName(packageName2)
       Set<PackageContentItem> pciSet = [pci1, pci2] as Set
       Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
-
-      Map resourceMap = getAllResourcesForPCIs(pciSet);
-      Map resourceIds = collectResourceIds(resourceMap)
-
+      Map resourceIds = collectResourceIds(getAllResourcesForPCIs(pciSet));
+    when: "Both PCIs found during setup is marked for deletion"
       log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-
       Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
         'pcis' pcisToDelete
       })
       log.info("Delete Response: {}", deleteResp.toString())
       log.info(resourceIds.toString())
-      log.info(deleteResp.toString())
 
     then: "All resources are deleted."
       verifySetSizes(deleteResp, 2, 1, 2, 1)
@@ -130,22 +123,14 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
 
   void "Scenario: Only one PCI marked for deletion."() {
     given: "Setup has found PCI IDs"
-      assert pciIds != null: "pciIds should have been initialized by setup()"
-      assert !pciIds.isEmpty(): "Setup() must find at least one PCI for this test"
-    when: "Only one PCI found during setup is marked for deletion"
       PackageContentItem pci1 = findPCIByPackageName(packageName1)
-      PackageContentItem pci2 = findPCIByPackageName(packageName2)
-      Set<PackageContentItem> pciSet = [pci1, pci2] as Set
       Set<String> pcisToDelete = [pci1.id] as Set
-
+    when: "Only one PCI found during setup is marked for deletion"
       log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-
       Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
         'pcis' pcisToDelete
       })
-
       log.info("Delete Response: {}", deleteResp.toString())
-      log.info(deleteResp.toString())
 
     then: "Only one PCI resource is deleted."
       verifySetSizes(deleteResp, 1, 0, 0,0)
@@ -154,9 +139,6 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
 
   void "Scenario: Both PCIs marked for deletion but one has an agreement line attached."() {
     given: "Setup has found PCI IDs"
-      assert pciIds != null: "pciIds should have been initialized by setup()"
-      assert !pciIds.isEmpty(): "Setup() must find at least one PCI for this test"
-    when: "Only one PCI found during setup is marked for deletion"
       PackageContentItem pci1 = findPCIByPackageName(packageName1) // Attached to agreement line
       PackageContentItem pci2 = findPCIByPackageName(packageName2)
       Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
@@ -164,15 +146,12 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
       String agreement_name = agreementName
       Map agreementResp = createAgreement(agreement_name)
       addEntitlementForAgreement(agreement_name, pci1.id)
-
+    when: "Only one PCI found during setup is marked for deletion"
       log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-
       Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
         'pcis' pcisToDelete
       })
-
       log.info("Delete Response: {}", deleteResp.toString())
-      log.info(deleteResp.toString())
 
     then: "Only one PCI resource is deleted."
       verifySetSizes(deleteResp, 1, 0, 0,0)
