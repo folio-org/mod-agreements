@@ -170,10 +170,10 @@ class DeletionBaseSpec extends BaseSpec {
 
   @Ignore
   void verifySetSizes(deleteResp,
-                              int expectedPciSize = 1,
-                              int expectedPtiSize = 1,
-                              int expectedTiSize = 2,
-                              int expectedWorkSize = 1) {
+                              int expectedPciSize,
+                              int expectedPtiSize,
+                              int expectedTiSize,
+                              int expectedWorkSize) {
     assert deleteResp?.pci?.size() == expectedPciSize;
     assert deleteResp?.pti?.size() == expectedPtiSize;
     assert deleteResp?.ti?.size() == expectedTiSize;
