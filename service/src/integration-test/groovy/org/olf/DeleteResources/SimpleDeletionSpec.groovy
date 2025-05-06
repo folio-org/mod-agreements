@@ -7,6 +7,8 @@ import org.olf.erm.SubscriptionAgreement
 import org.olf.kb.ErmResource
 import org.olf.kb.PackageContentItem
 import groovyx.net.http.HttpException
+import org.spockframework.runtime.SpecificationContext
+import org.spockframework.runtime.model.SpecInfo
 import spock.lang.Shared
 import spock.lang.Stepwise
 
@@ -69,15 +71,22 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     log.info("--- Setup Complete ---")
   }
 
-//  def cleanup() {
-//    if (specificationContext.currentFeature.specification.name == SimpleDeletionSpec.name) {
-//      log.info("--- Running Cleanup specifically for test: ${specificationContext.currentIteration?.name ?: specificationContext.currentFeature?.name} in ${SimpleDeletionSpec.name} ---")
-//      withTenant { clearResources() } // Assuming withTenant needs a specific context
-//      log.info("--- ${SimpleDeletionSpec.name} Cleanup Complete ---")
-//    } else {
-//      log.info("--- Skipping SimpleDeletionSpec cleanup for BaseSpec feature: ${specificationContext.currentFeature?.name} ---")
-//    }
-//  }
+  def cleanup() {
+    // Used to clear resources from DB between tests.
+    // Specification logic is needed to ensure clearResources is not run for BaseSpec tests (which will cause it to fail).
+    SpecificationContext currentSpecInfo = specificationContext;
+    if (currentSpecInfo.currentSpec.name == SimpleDeletionSpec.name) {
+      log.info("--- Running Cleanup specifically for test: ${currentSpecInfo.currentIteration?.name ?: currentSpecInfo.currentFeature?.name ?: currentSpecInfo.currentSpec.name} in ${SimpleDeletionSpec.simpleName} ---")
+      try {
+        clearResources()
+      } catch (Exception e) {
+        log.error("--- Error during SimpleDeletionSpec cleanup: ${e.message}", e)
+      }
+      log.info("--- ${SimpleDeletionSpec.simpleName} Cleanup Complete ---")
+    } else {
+      log.info("--- Skipping SimpleDeletionSpec-specific cleanup for BaseSpec feature run in: ${currentSpecInfo.currentSpec.displayName} (Feature: ${currentSpecInfo.currentFeature?.name}) ---")
+    }
+  }
 
   private void verifySetSizes(deleteResp,
                               int expectedPciSize = 1,
@@ -137,14 +146,14 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       log.info("Delete Response: {}", deleteResp.toString())
 
       // Get PCI for assertions
-    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
-    Set<PackageContentItem> pciSet = [pci1] as Set
+      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+      Set<PackageContentItem> pciSet = [pci1] as Set
 
-    Map resourceMap = getAllResourcesForPCIs(pciSet);
-    Map resourceIds = collectResourceIds(resourceMap)
+      Map resourceMap = getAllResourcesForPCIs(pciSet);
+      Map resourceIds = collectResourceIds(resourceMap)
 
-    log.info(resourceIds.toString())
-    log.info(deleteResp.toString())
+      log.info(resourceIds.toString())
+      log.info(deleteResp.toString())
 
     then:
       verifySetSizes(deleteResp)
@@ -152,10 +161,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       verifyPtiIds(deleteResp, resourceIds.get("pti"))
       verifyTiIds(deleteResp, resourceIds.get("ti"))
       verifyWorkIds(deleteResp, resourceIds.get("work"))
-    cleanup:
-      log.info("--- Running Cleanup ---")
-      clearResources()
-      log.info("--- Running Cleanup ---")
+
   }
 
   void "Scenario 3: Single PCI marked for deletion when PTI is attached to agreement line."() {
@@ -186,11 +192,6 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       // Does agreement line item->resource id match pci.pti.id
       findAgreementByName("test_agreement").items.resource.get(0).id == pci1.pti.id
 
-    cleanup:
-      log.info("--- Running Cleanup ---")
-      clearResources()
-      log.info("--- Running Cleanup ---")
-
   }
 
   void "Scenario 4: Single PCI marked for deletion when PCI is attached to agreement line."() {
@@ -198,8 +199,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       List<String> pcisToDelete = [pciIds.get(0)]
       PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
 
-
-    String agreement_name = "test_agreement"
+      String agreement_name = "test_agreement"
       Map agreementResp = createAgreement(agreement_name)
       addEntitlementForAgreement(agreement_name, pci1.id)
 
@@ -219,14 +219,8 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       deleteResp
       verifySetSizes(deleteResp, 0, 0, 0, 0)
 
-
-    // Does agreement line item->resource id match pci2.pti.id
-    findAgreementByName("test_agreement").items.resource.get(0).id == pci1.id
-
-    cleanup:
-      log.info("--- Running Cleanup ---")
-      clearResources()
-      log.info("--- Running Cleanup ---")
+      // Does agreement line item->resource id match pci2.pti.id
+      findAgreementByName("test_agreement").items.resource.get(0).id == pci1.id
   }
 
   void "Scenario 5: Two single-chain PCIs marked for deletion."() {
@@ -268,158 +262,139 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       verifyTiIds(deleteResp, resourceIds.get("ti"))
       verifyWorkIds(deleteResp, resourceIds.get("work"))
 
-    cleanup:
-      log.info("--- Running Cleanup ---")
-      clearResources()
-      log.info("--- Running Cleanup ---")
   }
 
   void "Scenario 6: Two single-chain PCIs but only one is marked for deletion."() {
     given: "Two single-chain PCIs exist but only one is marked for deletion."
-    Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
-    doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
-    List pciResp = doGet("/erm/pci")
-    pciIds = []
-    List<String> pcisToDelete = new ArrayList<>();
-    pciResp?.forEach { Map item ->
-      if (item?.id) {
-        pciIds.add(item.id.toString())
+      Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
+      doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
+      List pciResp = doGet("/erm/pci")
+      pciIds = []
+      List<String> pcisToDelete = new ArrayList<>();
+      pciResp?.forEach { Map item ->
+        if (item?.id) {
+          pciIds.add(item.id.toString())
+        }
+        if (item?.pkg?.name.toString() == "K-Int Deletion Test Package 001") {
+          pcisToDelete.add(item.id.toString())
+        }
       }
-      if (item?.pkg?.name.toString() == "K-Int Deletion Test Package 001") {
-        pcisToDelete.add(item.id.toString())
-      }
-    }
 
-    visualiseHierarchy(pciIds)
+      visualiseHierarchy(pciIds)
 
-    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001") // Marked for deletion
-    PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002")
+      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001") // Marked for deletion
+      PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002")
 
-    Set<PackageContentItem> pciSet = [pci1] as Set
+      Set<PackageContentItem> pciSet = [pci1] as Set
 
-    Map resourceMap = getAllResourcesForPCIs(pciSet);
-    Map resourceIds = collectResourceIds(resourceMap)
+      Map resourceMap = getAllResourcesForPCIs(pciSet);
+      Map resourceIds = collectResourceIds(resourceMap)
 
-    def requestBody = [pcis: pcisToDelete]
+      def requestBody = [pcis: pcisToDelete]
 
     when: "A delete request is made."
-    Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", requestBody)
+      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", requestBody)
 
     then: "One single-chain PCI is marked for deletion."
-    deleteResp
-    verifySetSizes(deleteResp)
-    verifyPciIds(deleteResp, resourceIds.get("pci"))
-    verifyPtiIds(deleteResp, resourceIds.get("pti"))
-    verifyTiIds(deleteResp, resourceIds.get("ti"))
-    verifyWorkIds(deleteResp, resourceIds.get("work"))
-
-    cleanup:
-    log.info("--- Running Cleanup ---")
-    clearResources()
-    log.info("--- Running Cleanup ---")
+      deleteResp
+      verifySetSizes(deleteResp)
+      verifyPciIds(deleteResp, resourceIds.get("pci"))
+      verifyPtiIds(deleteResp, resourceIds.get("pti"))
+      verifyTiIds(deleteResp, resourceIds.get("ti"))
+      verifyWorkIds(deleteResp, resourceIds.get("work"))
   }
 
   void "Scenario 7: Two single-chain PCIs marked for deletion but one pci is attached to an agreement line."() {
     given: "Two single-chain PCIs are marked for deletion but one is attached."
-    Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
-    doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
-    List pciResp = doGet("/erm/pci")
-    pciIds = []
-    List<String> pcisToDelete = new ArrayList<>();
-    pciResp?.forEach { Map item ->
-      if (item?.id) {
-        pciIds.add(item.id.toString())
-        pcisToDelete.add(item.id.toString())
+      Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
+      doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
+      List pciResp = doGet("/erm/pci")
+      pciIds = []
+      List<String> pcisToDelete = new ArrayList<>();
+      pciResp?.forEach { Map item ->
+        if (item?.id) {
+          pciIds.add(item.id.toString())
+          pcisToDelete.add(item.id.toString())
+        }
       }
-    }
 
-    visualiseHierarchy(pciIds)
+      visualiseHierarchy(pciIds)
 
-    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
-    PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // Attached to Agreement Line
+      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+      PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // Attached to Agreement Line
 
-    Set<PackageContentItem> pciSet = [pci1] as Set
+      Set<PackageContentItem> pciSet = [pci1] as Set
 
-    Map resourceMap = getAllResourcesForPCIs(pciSet);
-    Map resourceIds = collectResourceIds(resourceMap)
+      Map resourceMap = getAllResourcesForPCIs(pciSet);
+      Map resourceIds = collectResourceIds(resourceMap)
 
-    String agreement_name = "test_agreement"
-    Map agreementResp = createAgreement(agreement_name)
-    addEntitlementForAgreement(agreement_name, pci2.id)
+      String agreement_name = "test_agreement"
+      Map agreementResp = createAgreement(agreement_name)
+      addEntitlementForAgreement(agreement_name, pci2.id)
 
-    def requestBody = [pcis: pcisToDelete]
+      def requestBody = [pcis: pcisToDelete]
 
     when: "A delete request is made."
-    Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", requestBody)
+      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", requestBody)
 
     then: "Only one PCI chain is marked for deletion."
-    pcisToDelete.size() == 2
-    deleteResp
-    verifySetSizes(deleteResp)
-    verifyPciIds(deleteResp, resourceIds.get("pci"))
-    verifyPtiIds(deleteResp, resourceIds.get("pti"))
-    verifyTiIds(deleteResp, resourceIds.get("ti"))
-    verifyWorkIds(deleteResp, resourceIds.get("work"))
+      pcisToDelete.size() == 2
+      deleteResp
+      verifySetSizes(deleteResp)
+      verifyPciIds(deleteResp, resourceIds.get("pci"))
+      verifyPtiIds(deleteResp, resourceIds.get("pti"))
+      verifyTiIds(deleteResp, resourceIds.get("ti"))
+      verifyWorkIds(deleteResp, resourceIds.get("work"))
 
-    // Does agreement line item->resource id match pci2.pti.id
-    findAgreementByName("test_agreement").items.resource.get(0).id == pci2.id
-
-    cleanup:
-    log.info("--- Running Cleanup ---")
-    clearResources()
-    log.info("--- Running Cleanup ---")
+      // Does agreement line item->resource id match pci2.pti.id
+      findAgreementByName("test_agreement").items.resource.get(0).id == pci2.id
   }
 
   void "Scenario 8: Two single-chain PCIs marked for deletion but one PCI's PTI is attached to an agreement line."() {
     given: "Two single-chain PCIs are marked for deletion but one has a PTI which is attached."
-    Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
-    doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
-    List pciResp = doGet("/erm/pci")
-    pciIds = []
-    List<String> pcisToDelete = new ArrayList<>();
-    pciResp?.forEach { Map item ->
-      if (item?.id) {
-        pciIds.add(item.id.toString())
-        pcisToDelete.add(item.id.toString())
+      Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_2.json')
+      doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 002']])
+      List pciResp = doGet("/erm/pci")
+      pciIds = []
+      List<String> pcisToDelete = new ArrayList<>();
+      pciResp?.forEach { Map item ->
+        if (item?.id) {
+          pciIds.add(item.id.toString())
+          pcisToDelete.add(item.id.toString())
+        }
       }
-    }
 
-    visualiseHierarchy(pciIds)
+      visualiseHierarchy(pciIds)
 
-    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
-    PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // PTI attached to Agreement Line
+      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+      PackageContentItem pci2 = findPCIByPackageName("K-Int Deletion Test Package 002") // PTI attached to Agreement Line
 
-    String agreement_name = "test_agreement"
-    Map agreementResp = createAgreement(agreement_name)
-    addEntitlementForAgreement(agreement_name, pci2.pti.id)
+      String agreement_name = "test_agreement"
+      Map agreementResp = createAgreement(agreement_name)
+      addEntitlementForAgreement(agreement_name, pci2.pti.id)
 
-    Set<PackageContentItem> pciSet = [pci1] as Set
+      Set<PackageContentItem> pciSet = [pci1] as Set
 
-    Map resourceMap = getAllResourcesForPCIs(pciSet);
-    Map resourceIds = collectResourceIds(resourceMap)
-    resourceIds.get("pci").add(pci2.id) // Add pci2 id as expected for deletion.
+      Map resourceMap = getAllResourcesForPCIs(pciSet);
+      Map resourceIds = collectResourceIds(resourceMap)
+      resourceIds.get("pci").add(pci2.id) // Add pci2 id as expected for deletion.
 
-    def requestBody = [pcis: pcisToDelete]
+      def requestBody = [pcis: pcisToDelete]
 
     when: "A delete request is made."
-    Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", requestBody)
+      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", requestBody)
 
     then: "One full PCI chain is marked for deletion, and one single PCI id is marked for deletion."
-    pcisToDelete.size() == 2
-    deleteResp
-    verifySetSizes(deleteResp, 2)
-    verifyPciIds(deleteResp, resourceIds.get("pci"))
-    verifyPtiIds(deleteResp, resourceIds.get("pti"))
-    verifyTiIds(deleteResp, resourceIds.get("ti"))
-    verifyWorkIds(deleteResp, resourceIds.get("work"))
+      pcisToDelete.size() == 2
+      deleteResp
+      verifySetSizes(deleteResp, 2)
+      verifyPciIds(deleteResp, resourceIds.get("pci"))
+      verifyPtiIds(deleteResp, resourceIds.get("pti"))
+      verifyTiIds(deleteResp, resourceIds.get("ti"))
+      verifyWorkIds(deleteResp, resourceIds.get("work"))
 
-    // Does agreement line item->resource id match pci2.pti.id
-    findAgreementByName("test_agreement").items.resource.get(0).id == pci2.pti.id
-
-    cleanup:
-    log.info("--- Running Cleanup ---")
-    clearResources()
-    log.info("--- Running Cleanup ---")
+      // Does agreement line item->resource id match pci2.pti.id
+      findAgreementByName("test_agreement").items.resource.get(0).id == pci2.pti.id
   }
 
   void "Scenario: One single chain PCI and user marks a PTI for deletion."() {
@@ -446,50 +421,42 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       log.info(deleteResp.toString())
 
     then:
-    verifySetSizes(deleteResp, 0, 0, 0, 0)
-
-    cleanup:
-    log.info("--- Running Cleanup ---")
-    clearResources()
-    log.info("--- Running Cleanup ---")
+      verifySetSizes(deleteResp, 0, 0, 0, 0)
   }
 
   void "Scenario: One single chain PCI and user marks PCI and PTI for deletion."() {
     given: "Setup has found PCI IDs"
-    assert ptiIds != null: "ptiIds should have been initialized by setup()"
-    assert pciIds != null: "pciIds should have been initialized by setup()"
-    assert !ptiIds.isEmpty(): "Setup() must find at least one PTI for this test"
-    assert !pciIds.isEmpty(): "Setup() must find at least one PCI for this test"
+      assert ptiIds != null: "ptiIds should have been initialized by setup()"
+      assert pciIds != null: "pciIds should have been initialized by setup()"
+      assert !ptiIds.isEmpty(): "Setup() must find at least one PTI for this test"
+      assert !pciIds.isEmpty(): "Setup() must find at least one PCI for this test"
     when: "The first PCI found during setup is marked for deletion"
-    List<String> ptisToDelete = [ptiIds.get(0)]
-    List<String> pcisToDelete = [pciIds.get(0)]
-    log.info("Attempting to delete PTI IDs: {}", ptisToDelete)
+      List<String> ptisToDelete = [ptiIds.get(0)]
+      List<String> pcisToDelete = [pciIds.get(0)]
+      log.info("Attempting to delete PTI IDs: {}", ptisToDelete)
+      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
 
-    Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
-      'ptis' ptisToDelete
-      'pcis' pcisToDelete
-    })
-    log.info("Delete Response: {}", deleteResp.toString())
+      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
+        'ptis' ptisToDelete
+        'pcis' pcisToDelete
+      })
+      log.info("Delete Response: {}", deleteResp.toString())
 
-    // Get PCI for assertions
-    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
-    Set<PackageContentItem> pciSet = [pci1] as Set
+      // Get PCI for assertions
+      PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+      Set<PackageContentItem> pciSet = [pci1] as Set
 
-    Map resourceMap = getAllResourcesForPCIs(pciSet);
-    Map resourceIds = collectResourceIds(resourceMap)
+      Map resourceMap = getAllResourcesForPCIs(pciSet);
+      Map resourceIds = collectResourceIds(resourceMap)
 
-    log.info(resourceIds.toString())
-    log.info(deleteResp.toString())
+      log.info(resourceIds.toString())
+      log.info(deleteResp.toString())
 
     then:
-    verifySetSizes(deleteResp, 1, 1, 2, 1)
-    verifyPciIds(deleteResp, resourceIds.get("pci"))
-    verifyPtiIds(deleteResp, resourceIds.get("pti"))
-    verifyTiIds(deleteResp, resourceIds.get("ti"))
-    verifyWorkIds(deleteResp, resourceIds.get("work"))
-    cleanup:
-    log.info("--- Running Cleanup ---")
-    clearResources()
-    log.info("--- Running Cleanup ---")
+      verifySetSizes(deleteResp, 1, 1, 2, 1)
+      verifyPciIds(deleteResp, resourceIds.get("pci"))
+      verifyPtiIds(deleteResp, resourceIds.get("pti"))
+      verifyTiIds(deleteResp, resourceIds.get("ti"))
+      verifyWorkIds(deleteResp, resourceIds.get("work"))
   }
 }
