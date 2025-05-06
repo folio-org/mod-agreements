@@ -281,7 +281,7 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       List<String> pcisToDelete = [pci1.id, pci2.id]
       visualiseHierarchy(pcisToDelete)
 
-    String agreement_name = agreementName
+      String agreement_name = agreementName
       Map agreementResp = createAgreement(agreement_name)
       addEntitlementForAgreement(agreement_name, pci2.pti.id)
 
