@@ -24,8 +24,6 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
   List<String> ptiIds;
   List<String> tiIds;
 
-  List resp;
-
   def setup() {
     SpecificationContext currentSpecInfo = specificationContext;
     if (!specificationContext.currentFeature?.name.contains("Scenario")) {
@@ -87,30 +85,6 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
     } else {
       log.info("--- Skipping SimpleDeletionSpec-specific cleanup for BaseSpec feature run in: ${currentSpecInfo.currentSpec.displayName} (Feature: ${currentSpecInfo.currentFeature?.name}) ---")
     }
-  }
-
-  private void verifySetSizes(deleteResp,
-                              int expectedPciSize = 1,
-                              int expectedPtiSize = 1,
-                              int expectedTiSize = 2,
-                              int expectedWorkSize = 1) {
-    assert deleteResp?.pci?.size() == expectedPciSize;
-    assert deleteResp?.pti?.size() == expectedPtiSize;
-    assert deleteResp?.ti?.size() == expectedTiSize;
-    assert deleteResp?.work?.size() == expectedWorkSize;
-  }
-
-  private void verifyPciIds(deleteResp, Set<String> resourceIdsToDelete) {
-    assert deleteResp?.pci as Set == resourceIdsToDelete as Set
-  }
-  private void verifyPtiIds(deleteResp, Set<String> resourceIdsToDelete) {
-    assert deleteResp?.pti as Set == resourceIdsToDelete as Set
-  }
-  private void verifyTiIds(deleteResp, Set<String> resourceIdsToDelete) {
-    assert deleteResp?.ti as Set == resourceIdsToDelete as Set
-  }
-  private void verifyWorkIds(deleteResp, Set<String> resourceIdsToDelete) {
-    assert deleteResp?.work as Set == resourceIdsToDelete as Set
   }
 
   void "Scenario 1: Fully delete one PCI chain with no other references"() {

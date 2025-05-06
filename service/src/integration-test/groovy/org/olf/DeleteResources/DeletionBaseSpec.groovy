@@ -25,17 +25,6 @@ class DeletionBaseSpec extends BaseSpec {
 
   ErmResourceService ermResourceService;
 
-  class ResourceIdMap {
-    List<String> ptis;
-    List<String> pcis;
-    List<String> tis;
-    List<String> works;
-
-    ResourceIdMap() {
-
-    }
-  }
-
   @Ignore
   Map createAgreement(String name="test_agreement") {
     def today = LocalDate.now()
@@ -145,29 +134,30 @@ class DeletionBaseSpec extends BaseSpec {
     }
   }
 
+  @Ignore
+  Map getAllResourcesForPCIs(Set<PackageContentItem> pciset) {
+   /* Given a set of PCIs, traverse down to the work level and back up,
+   finding and returning a map of lists ({pci: [], pti: [], ti: [], work: []}) of all resources related to the
+   original set of PCIs.
+    */
+  Set<String> workIds = pciset.collect(pci -> pci.pti.titleInstance.work.id)
+  List<String> works = pciset.collect(pci -> pci.pti.titleInstance.work)
 
-   Map getAllResourcesForPCIs(Set<PackageContentItem> pciset) {
-     /* Given a set of PCIs, traverse down to the work level and back up,
-     finding and returning a map of lists ({pci: [], pti: [], ti: [], work: []}) of all resources related to the
-     original set of PCIs.
-      */
-    Set<String> workIds = pciset.collect(pci -> pci.pti.titleInstance.work.id)
-    List<String> works = pciset.collect(pci -> pci.pti.titleInstance.work)
-
-    List<TitleInstance> tis = findTisByWorkId(workIds);
-    List<PlatformTitleInstance> ptis = findPTIsByTiIds(tis.collect { titleInstance -> titleInstance.id });
-    List<PackageContentItem> pcis = findPCIsByPtiIds(ptis.collect {platformTitleInstance -> platformTitleInstance.id });
+  List<TitleInstance> tis = findTisByWorkId(workIds);
+  List<PlatformTitleInstance> ptis = findPTIsByTiIds(tis.collect { titleInstance -> titleInstance.id });
+  List<PackageContentItem> pcis = findPCIsByPtiIds(ptis.collect {platformTitleInstance -> platformTitleInstance.id });
 
 
-    Map resources = new HashMap();
-    resources.put("pci", pcis)
-    resources.put("pti", ptis);
-    resources.put("ti", tis);
-    resources.put("work", works);
+  Map resources = new HashMap();
+  resources.put("pci", pcis)
+  resources.put("pti", ptis);
+  resources.put("ti", tis);
+  resources.put("work", works);
 
-    return resources
+  return resources
   }
 
+  @Ignore
   Map<String, Set<String>> collectResourceIds(Map<String, List<? extends ErmResource>> resourcesMap) {
     /* Given a map of lists of resources (returned from getAllResourcesForPCIs())
     return the ids of the resources in the Map instead of the ErmResource objects.
@@ -176,6 +166,38 @@ class DeletionBaseSpec extends BaseSpec {
       Set<String> ids = resourceList*.id as Set
       [resourceType, ids]
     }
+  }
+
+  @Ignore
+  void verifySetSizes(deleteResp,
+                              int expectedPciSize = 1,
+                              int expectedPtiSize = 1,
+                              int expectedTiSize = 2,
+                              int expectedWorkSize = 1) {
+    assert deleteResp?.pci?.size() == expectedPciSize;
+    assert deleteResp?.pti?.size() == expectedPtiSize;
+    assert deleteResp?.ti?.size() == expectedTiSize;
+    assert deleteResp?.work?.size() == expectedWorkSize;
+  }
+
+  @Ignore
+  void verifyPciIds(deleteResp, Set<String> resourceIdsToDelete) {
+    assert deleteResp?.pci as Set == resourceIdsToDelete as Set
+  }
+
+  @Ignore
+  void verifyPtiIds(deleteResp, Set<String> resourceIdsToDelete) {
+    assert deleteResp?.pti as Set == resourceIdsToDelete as Set
+  }
+
+  @Ignore
+  void verifyTiIds(deleteResp, Set<String> resourceIdsToDelete) {
+    assert deleteResp?.ti as Set == resourceIdsToDelete as Set
+  }
+
+  @Ignore
+  void verifyWorkIds(deleteResp, Set<String> resourceIdsToDelete) {
+    assert deleteResp?.work as Set == resourceIdsToDelete as Set
   }
 
   @Ignore
