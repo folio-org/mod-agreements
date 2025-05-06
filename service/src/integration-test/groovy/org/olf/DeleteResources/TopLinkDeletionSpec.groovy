@@ -137,7 +137,7 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
       verifyPciIds(deleteResp, pcisToDelete)
   }
 
-  void "Scenario: Both PCIs marked for deletion but one has an agreement line attached."() {
+  void "Scenario: Both PCIs marked for deletion and one has an agreement line attached."() {
     given: "Setup has found PCI IDs"
       PackageContentItem pci1 = findPCIByPackageName(packageName1) // Attached to agreement line
       PackageContentItem pci2 = findPCIByPackageName(packageName2)
@@ -146,7 +146,7 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
       String agreement_name = agreementName
       Map agreementResp = createAgreement(agreement_name)
       addEntitlementForAgreement(agreement_name, pci1.id)
-    when: "Only one PCI found during setup is marked for deletion"
+    when: "Both PCIs found during setup is marked for deletion"
       log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
       Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
         'pcis' pcisToDelete
@@ -156,5 +156,69 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
     then: "Only one PCI resource is deleted."
       verifySetSizes(deleteResp, 1, 0, 0,0)
       verifyPciIds(deleteResp, [pci2.id] as Set) // Mark PCI NOT attached to agreement line for deletion.
+  }
+
+  void "Scenario: Both PCIs marked for deletion and both have an agreement line attached."() {
+    given: "Setup has found PCI IDs"
+      PackageContentItem pci1 = findPCIByPackageName(packageName1) // Attached to agreement line
+      PackageContentItem pci2 = findPCIByPackageName(packageName2) // Attached to agreement line
+      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+
+      String agreement_name = agreementName
+      Map agreementResp = createAgreement(agreement_name)
+      addEntitlementForAgreement(agreement_name, pci1.id)
+      addEntitlementForAgreement(agreement_name, pci2.id)
+
+    when: "Both PCIs found during setup is marked for deletion"
+      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
+      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
+        'pcis' pcisToDelete
+      })
+      log.info("Delete Response: {}", deleteResp.toString())
+
+    then: "No resources are deleted."
+      verifySetSizes(deleteResp, 0, 0, 0,0)
+  }
+
+  void "Scenario: Only one PCI and the PTI marked for deletion."() {
+    given: "Setup has found PCI IDs"
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+      Set<String> pcisToDelete = [pci1.id] as Set
+      Set<String> ptisToDelete = [pci1.pti.id] as Set
+    when: "Only one PCI found during setup is marked for deletion"
+      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
+      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
+        'pcis' pcisToDelete
+        'ptis' ptisToDelete
+      })
+      log.info("Delete Response: {}", deleteResp.toString())
+
+    then: "Only one PCI resource is deleted."
+      verifySetSizes(deleteResp, 1, 0, 0,0)
+      verifyPciIds(deleteResp, pcisToDelete)
+  }
+
+  void "Scenario: Both PCIs and the PTI marked for deletion."() {
+    given: "Setup has found PCI IDs"
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+      PackageContentItem pci2 = findPCIByPackageName(packageName2)
+      Set<PackageContentItem> pciSet = [pci1, pci2] as Set
+      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+      Set<String> ptisToDelete = [pci1.pti.id] as Set
+      Map resourceIds = collectResourceIds(getAllResourcesForPCIs(pciSet));
+    when: "Only one PCI found during setup is marked for deletion"
+      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
+      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
+        'pcis' pcisToDelete
+        'ptis' ptisToDelete
+      })
+      log.info("Delete Response: {}", deleteResp.toString())
+
+    then: "All resources are deleted."
+      verifySetSizes(deleteResp, 2, 1, 2,1)
+      verifyPciIds(deleteResp, resourceIds.get("pci"))
+      verifyPtiIds(deleteResp, resourceIds.get("pti"))
+      verifyTiIds(deleteResp, resourceIds.get("ti"))
+      verifyWorkIds(deleteResp, resourceIds.get("work"))
   }
 }
