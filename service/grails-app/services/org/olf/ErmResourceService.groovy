@@ -218,6 +218,11 @@ public class ErmResourceService {
     }
   }
 
+  Set<String> handleEmptyListMapping(Set<String> resourceSet) {
+    // Workaround for HQL 'NOT IN' bug: https://stackoverflow.com/questions/36879116/hibernate-hql-not-in-clause-doesnt-seem-to-work
+    return (resourceSet.size() == 0 ? ["PLACEHOLDER_RESOURCE"] : resourceSet) as Set<String>
+  }
+
   // FIXME this is currently ONLY the mark for delete at the PCI level...
   // TODO should probs be Set in, what happens if a user passes input with duplicates and we cast to Set?
   public Map<String, Set<String>> markForDelete(Map<String, List<String>> resourceMap) {
@@ -318,7 +323,7 @@ public class ErmResourceService {
             WHERE pci.pti.id = :ptiId
             AND pci.id NOT IN :ignorePcis
           """.toString(),
-          [ptiId:id, ignorePcis:ignorePcis],
+          [ptiId:id, ignorePcis:handleEmptyListMapping(ignorePcis)],
           [max:1]
         ) as Set
 
@@ -344,7 +349,7 @@ public class ErmResourceService {
           SELECT pti.id FROM PlatformTitleInstance pti
           WHERE pti.titleInstance.id = :tiId
           AND pti.id NOT IN :ignorePtis
-        """.toString(), [tiId:id, ignorePtis:ignorePtis], [max:1])  as Set
+        """.toString(), [tiId:id, ignorePtis:handleEmptyListMapping(ignorePtis)], [max:1])  as Set
 
         if (ptisForTi.size() != 0) {
           log.info("LOG WARNING: PTIs that have not been marked for deletion exist for TI: TI ID- {}, PTIs found- {}", id, ptisForTi);
@@ -369,7 +374,7 @@ public class ErmResourceService {
           SELECT pti from PlatformTitleInstance pti
           WHERE pti.id NOT IN :ignorePtis
           AND pti.titleInstance.work.id = :workId
-        """.toString(), [ignorePtis: ignorePtis, workId: workId], [max:1]) as Set
+        """.toString(), [ignorePtis:handleEmptyListMapping(ignorePtis), workId: workId], [max:1]) as Set
 
         if (ptisForWork.size() != 0) {
           log.info("LOG WARNING: PTIs that have not been marked for deletion exist for work: Work ID- {}, PTIs found- {}", workId, ptisForWork);

@@ -80,14 +80,14 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
 //  }
 
   private void verifySetSizes(deleteResp,
-                              int pciSize = 1,
-                              int ptiSize = 1,
-                              int tiSize = 2,
-                              int workSize = 1) {
-    assert deleteResp?.pci?.size() == pciSize;
-    assert deleteResp?.pti?.size() == ptiSize;
-    assert deleteResp?.ti?.size() == tiSize;
-    assert deleteResp?.work?.size() == workSize;
+                              int expectedPciSize = 1,
+                              int expectedPtiSize = 1,
+                              int expectedTiSize = 2,
+                              int expectedWorkSize = 1) {
+    assert deleteResp?.pci?.size() == expectedPciSize;
+    assert deleteResp?.pti?.size() == expectedPtiSize;
+    assert deleteResp?.ti?.size() == expectedTiSize;
+    assert deleteResp?.work?.size() == expectedWorkSize;
   }
 
   private void verifyPciIds(deleteResp, Set<String> resourceIdsToDelete) {
@@ -423,10 +423,10 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
   }
 
   void "Scenario: One single chain PCI and user marks a PTI for deletion."() {
-    given: "Setup has found PCI IDs"
-      assert ptiIds != null: "pciIds should have been initialized by setup()"
-      assert !ptiIds.isEmpty(): "Setup() must find at least one PCI for this test"
-    when: "The first PCI found during setup is marked for deletion"
+    given: "Setup has found PTI IDs"
+      assert ptiIds != null: "ptiIds should have been initialized by setup()"
+      assert !ptiIds.isEmpty(): "Setup() must find at least one PTI for this test"
+    when: "The first PTI found during setup is marked for deletion"
       List<String> ptisToDelete = [ptiIds.get(0)]
       log.info("Attempting to delete PTI IDs: {}", ptisToDelete)
 
@@ -446,10 +446,43 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
       log.info(deleteResp.toString())
 
     then:
-    /* FIXME: What do we expect to happen here? Can we delete a PTI when there is still a parent PCI related to it that
-     was not marked for deletion? If not, then we expect nothing to be marked for deletion.
-     If we can, then we expect everything beneath the PCI to be marked for deletion. */
-    verifySetSizes(deleteResp)
+    verifySetSizes(deleteResp, 0, 0, 0, 0)
+
+    cleanup:
+    log.info("--- Running Cleanup ---")
+    clearResources()
+    log.info("--- Running Cleanup ---")
+  }
+
+  void "Scenario: One single chain PCI and user marks PCI and PTI for deletion."() {
+    given: "Setup has found PCI IDs"
+    assert ptiIds != null: "ptiIds should have been initialized by setup()"
+    assert pciIds != null: "pciIds should have been initialized by setup()"
+    assert !ptiIds.isEmpty(): "Setup() must find at least one PTI for this test"
+    assert !pciIds.isEmpty(): "Setup() must find at least one PCI for this test"
+    when: "The first PCI found during setup is marked for deletion"
+    List<String> ptisToDelete = [ptiIds.get(0)]
+    List<String> pcisToDelete = [pciIds.get(0)]
+    log.info("Attempting to delete PTI IDs: {}", ptisToDelete)
+
+    Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
+      'ptis' ptisToDelete
+      'pcis' pcisToDelete
+    })
+    log.info("Delete Response: {}", deleteResp.toString())
+
+    // Get PCI for assertions
+    PackageContentItem pci1 = findPCIByPackageName("K-Int Deletion Test Package 001")
+    Set<PackageContentItem> pciSet = [pci1] as Set
+
+    Map resourceMap = getAllResourcesForPCIs(pciSet);
+    Map resourceIds = collectResourceIds(resourceMap)
+
+    log.info(resourceIds.toString())
+    log.info(deleteResp.toString())
+
+    then:
+    verifySetSizes(deleteResp, 1, 1, 2, 1)
     verifyPciIds(deleteResp, resourceIds.get("pci"))
     verifyPtiIds(deleteResp, resourceIds.get("pti"))
     verifyTiIds(deleteResp, resourceIds.get("ti"))
