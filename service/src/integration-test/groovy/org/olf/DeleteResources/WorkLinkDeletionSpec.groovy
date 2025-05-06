@@ -54,9 +54,6 @@ class WorkLinkDeletionSpec extends DeletionBaseSpec{
       }
     }
 
-    // Re-attached TI to work.
-    List<PackageContentItem> pcis;
-    //
     PackageContentItem pci1 = findPCIByPackageName("K-Int Work Link - Deletion Test Package 001") // Use the work from this package as base.
     PackageContentItem pci2 = findPCIByPackageName("K-Int Work Link - Deletion Test Package 002")
 

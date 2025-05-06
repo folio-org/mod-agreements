@@ -27,56 +27,56 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
   List resp;
 
   def setup() {
-    if (!pkg_id) {
-      return;
-    }
-    log.info("--- Running Setup for test: ${specificationContext.currentIteration?.name ?: specificationContext.currentFeature?.name} ---")
+    SpecificationContext currentSpecInfo = specificationContext;
+    if (specificationContext.currentFeature?.name.contains("Scenario")) {
+      log.info("--- Running Setup for test: ${specificationContext.currentIteration?.name ?: specificationContext.currentFeature?.name} ---")
 
-    // Load Single Chain PCI
-    importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
-    List resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
-    log.info(resp.toListString())
-    pkg_id = resp[0].id
+      // Load Single Chain PCI
+      importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
+      List resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
+      pkg_id = resp[0].id
 
-    // Fetch PCIs and save IDs to list
-    Map kbStatsResp = doGet("/erm/statistics/kbCount")
-    Map sasStatsResp = doGet("/erm/statistics/sasCount")
-    List pciResp = doGet("/erm/pci")
-    List ptiResp = doGet("/erm/pti")
+      Map kbStatsResp = doGet("/erm/statistics/kbCount")
+      Map sasStatsResp = doGet("/erm/statistics/sasCount")
 
-    log.info("KB Counts (in setup): {}", kbStatsResp?.toString()) // Use safe navigation ?. just in case
-    log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
+      // Fetch PCIs and save IDs to list
+      List pciResp = doGet("/erm/pci")
+      List ptiResp = doGet("/erm/pti")
 
-    pciIds = []
-    pciResp?.forEach { Map item ->
-      if (item?.id) {
-        pciIds.add(item.id.toString())
+      pciIds = []
+      pciResp?.forEach { Map item ->
+        if (item?.id) {
+          pciIds.add(item.id.toString())
+        }
       }
-    }
 
-    ptiIds = []
-    ptiResp?.forEach { Map item ->
-      if (item?.id) {
-        ptiIds.add(item.id.toString())
+      ptiIds = []
+      ptiResp?.forEach { Map item ->
+        if (item?.id) {
+          ptiIds.add(item.id.toString())
+        }
       }
-    }
-    log.info("Found PCI IDs (in setup): {}", pciIds)
-    log.info("Found PTI IDs (in setup): {}", ptiIds)
 
-    if (!pciIds.isEmpty()) {
-      visualiseHierarchy(pciIds)
+      log.info("Found PCI IDs (in setup): {}", pciIds)
+      log.info("Found PTI IDs (in setup): {}", ptiIds)
+      log.info("KB Counts (in setup): {}", kbStatsResp?.toString())
+      log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
+
+      if (!pciIds.isEmpty()) {
+        visualiseHierarchy(pciIds)
+      }
+      log.info("--- Setup Complete ---")
     } else {
-      log.warn("No PCI IDs found during setup, visualization skipped.")
+      log.info("--- Skipping Setup for tenant setup tests: ${currentSpecInfo.currentSpec.displayName} (Feature: ${currentSpecInfo.currentFeature?.name}) ---")
     }
-    log.info("--- Setup Complete ---")
   }
 
   def cleanup() {
     // Used to clear resources from DB between tests.
     // Specification logic is needed to ensure clearResources is not run for BaseSpec tests (which will cause it to fail).
     SpecificationContext currentSpecInfo = specificationContext;
-    if (currentSpecInfo.currentSpec.name == SimpleDeletionSpec.name) {
-      log.info("--- Running Cleanup specifically for test: ${currentSpecInfo.currentIteration?.name ?: currentSpecInfo.currentFeature?.name ?: currentSpecInfo.currentSpec.name} in ${SimpleDeletionSpec.simpleName} ---")
+    if (specificationContext.currentFeature?.name.contains("Scenario")) {
+      log.info("--- Running Cleanup for test: ${currentSpecInfo.currentIteration?.name ?: currentSpecInfo.currentFeature?.name ?: currentSpecInfo.currentSpec.name} in ${SimpleDeletionSpec.simpleName} ---")
       try {
         clearResources()
       } catch (Exception e) {
@@ -111,26 +111,6 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
   private void verifyWorkIds(deleteResp, Set<String> resourceIdsToDelete) {
     assert deleteResp?.work as Set == resourceIdsToDelete as Set
   }
-
-  void "Load Packages"() {
-
-    when: 'File loaded'
-      Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
-
-    then: 'Package imported'
-      result.packageImported == true
-
-    when: "Looked up package with name"
-      resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
-      log.info(resp.toString())
-      log.info(resp[0].toString())
-      pkg_id = resp[0].id
-
-    then: "Package found"
-      resp.size() == 1
-      resp[0].id != null
-  }
-
 
   void "Scenario 1: Fully delete one PCI chain with no other references"() {
     given: "Setup has found PCI IDs"
