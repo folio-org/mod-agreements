@@ -148,7 +148,7 @@ class DeletionBaseSpec extends BaseSpec {
 
    Map getAllResourcesForPCIs(Set<PackageContentItem> pciset) {
      /* Given a set of PCIs, traverse down to the work level and back up,
-     finding and returning a map of lists of all resources related to the
+     finding and returning a map of lists ({pci: [], pti: [], ti: [], work: []}) of all resources related to the
      original set of PCIs.
       */
     Set<String> workIds = pciset.collect(pci -> pci.pti.titleInstance.work.id)
@@ -169,29 +169,14 @@ class DeletionBaseSpec extends BaseSpec {
   }
 
   Map<String, Set<String>> collectResourceIds(Map<String, List<? extends ErmResource>> resourcesMap) {
-    /* Given a map of lists of resources (created using getAllResourcesForPCIs())
-    return the ids of the resources in the Map instead of the objects.
-      */
+    /* Given a map of lists of resources (returned from getAllResourcesForPCIs())
+    return the ids of the resources in the Map instead of the ErmResource objects.
+     */
     return resourcesMap.collectEntries { String resourceType, List<? extends ErmResource> resourceList ->
       Set<String> ids = resourceList*.id as Set
       [resourceType, ids]
     }
   }
-
-//  void "Scenario 1: Fully delete one PCI chain with no other references"() {
-//    when: 'We check what resources are in the system'
-//    Map kbStatsResp = doGet("/erm/statistics/kbCount")
-//    Map sasStatsResp = doGet("/erm/statistics/sasCount")
-//    then:
-//    kbStatsResp.ErmResource == 0
-//    kbStatsResp.PackageContentItems == 0
-//    kbStatsResp.PlatformTitleInstance == 0
-//    kbStatsResp.TitleInstance == 0
-//    kbStatsResp.Work == 0
-//
-//    sasStatsResp.SubscriptionAgreement == 0
-//    sasStatsResp.Entitlement == 0
-//  }
 
   @Ignore
   List loadSingleChainDeletion() {
@@ -247,49 +232,6 @@ class DeletionBaseSpec extends BaseSpec {
         )
       }
     }
-  }
-
-  String PCI_HQL = """
-    SELECT pci
-    FROM PackageContentItem AS pci
-    """.toString()
-
-  String PTI_HQL = """
-    SELECT pti
-    FROM PlatformTitleInstance AS pti
-    """.toString()
-
-  String TI_HQL = """
-    SELECT ti
-    FROM TitleInstance AS ti
-    """.toString()
-
-  List<ErmResource> getAllResource(String hqlForResource) {
-    List<PackageContentItem> results = []
-
-    withTenant {
-      log.debug("Executing query within tenant context: {}", tenantId)
-      results = ErmResource.executeQuery(hqlForResource)
-      log.debug("Query returned {} results", results?.size() ?: 0)
-    }
-
-    return results
-  }
-
-  List<ErmResource> getPCIByName(String name) {
-    String HQL = """
-    SELECT pci
-    FROM PackageContentItem AS pci
-    WHERE pci.name = '${name}'
-    """.toString()
-
-    List<PackageContentItem> results = []
-
-    withTenant {
-      results = ErmResource.executeQuery(HQL)
-    }
-
-    return results
   }
 
   @Ignore
