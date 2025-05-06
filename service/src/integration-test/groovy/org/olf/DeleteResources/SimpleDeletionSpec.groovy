@@ -28,47 +28,48 @@ class SimpleDeletionSpec extends DeletionBaseSpec {
 
   def setup() {
     SpecificationContext currentSpecInfo = specificationContext;
-    if (specificationContext.currentFeature?.name.contains("Scenario")) {
-      log.info("--- Running Setup for test: ${specificationContext.currentIteration?.name ?: specificationContext.currentFeature?.name} ---")
-
-      // Load Single Chain PCI
-      importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
-      List resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
-      pkg_id = resp[0].id
-
-      Map kbStatsResp = doGet("/erm/statistics/kbCount")
-      Map sasStatsResp = doGet("/erm/statistics/sasCount")
-
-      // Fetch PCIs and save IDs to list
-      List pciResp = doGet("/erm/pci")
-      List ptiResp = doGet("/erm/pti")
-
-      pciIds = []
-      pciResp?.forEach { Map item ->
-        if (item?.id) {
-          pciIds.add(item.id.toString())
-        }
-      }
-
-      ptiIds = []
-      ptiResp?.forEach { Map item ->
-        if (item?.id) {
-          ptiIds.add(item.id.toString())
-        }
-      }
-
-      log.info("Found PCI IDs (in setup): {}", pciIds)
-      log.info("Found PTI IDs (in setup): {}", ptiIds)
-      log.info("KB Counts (in setup): {}", kbStatsResp?.toString())
-      log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
-
-      if (!pciIds.isEmpty()) {
-        visualiseHierarchy(pciIds)
-      }
-      log.info("--- Setup Complete ---")
-    } else {
+    if (!specificationContext.currentFeature?.name.contains("Scenario")) {
+      // If not in a SimpleDeletionSpec Scenario (i.e. in a tenant purge/ensure test tenant), don't try to load packages yet.
       log.info("--- Skipping Setup for tenant setup tests: ${currentSpecInfo.currentSpec.displayName} (Feature: ${currentSpecInfo.currentFeature?.name}) ---")
+      return;
     }
+    log.info("--- Running Setup for test: ${specificationContext.currentIteration?.name ?: specificationContext.currentFeature?.name} ---")
+
+    // Load Single Chain PCI
+    importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
+    List resp = doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
+    pkg_id = resp[0].id
+
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    Map sasStatsResp = doGet("/erm/statistics/sasCount")
+
+    // Fetch PCIs and save IDs to list
+    List pciResp = doGet("/erm/pci")
+    List ptiResp = doGet("/erm/pti")
+
+    pciIds = []
+    pciResp?.forEach { Map item ->
+      if (item?.id) {
+        pciIds.add(item.id.toString())
+      }
+    }
+
+    ptiIds = []
+    ptiResp?.forEach { Map item ->
+      if (item?.id) {
+        ptiIds.add(item.id.toString())
+      }
+    }
+
+    log.info("Found PCI IDs (in setup): {}", pciIds)
+    log.info("Found PTI IDs (in setup): {}", ptiIds)
+    log.info("KB Counts (in setup): {}", kbStatsResp?.toString())
+    log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
+
+    if (!pciIds.isEmpty()) {
+      visualiseHierarchy(pciIds)
+    }
+    log.info("--- Setup Complete ---")
   }
 
   def cleanup() {
