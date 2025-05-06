@@ -134,6 +134,27 @@ class DeletionBaseSpec extends BaseSpec {
     }
   }
 
+  Map getPCIs() {
+    return doGet("/erm/pci?stats=true&perPage=25") as Map
+  }
+
+  Map getPTIs() {
+    return doGet("/erm/pti?stats=true&perPage=25") as Map
+  }
+
+  Map getTIs() {
+    return doGet("/erm/titles?stats=true&perPage=25") as Map
+  }
+
+  Set<String> getWorkIds() {
+    Map res = doGet("/erm/titles?stats=true&perPage=25") as Map
+    return res.get("results").collect({Map titleInstance -> titleInstance.get("work").get("id")}) as Set
+  }
+
+  Set<String> collectIDs(Map resourceGetResponse) {
+    return resourceGetResponse.get("results").collect({Map resource -> resource.id}) as Set
+  }
+
   @Ignore
   Map getAllResourcesForPCIs(Set<PackageContentItem> pciset) {
    /* Given a set of PCIs, traverse down to the work level and back up,
@@ -142,6 +163,8 @@ class DeletionBaseSpec extends BaseSpec {
     */
   Set<String> workIds = pciset.collect(pci -> pci.pti.titleInstance.work.id)
   List<String> works = pciset.collect(pci -> pci.pti.titleInstance.work)
+
+
 
   List<TitleInstance> tis = findTisByWorkId(workIds);
   List<PlatformTitleInstance> ptis = findPTIsByTiIds(tis.collect { titleInstance -> titleInstance.id });

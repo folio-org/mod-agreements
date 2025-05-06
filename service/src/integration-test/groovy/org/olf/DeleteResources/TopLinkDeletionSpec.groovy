@@ -29,7 +29,17 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
   List<String> ptiIds;
   List<String> tiIds;
 
+  @Shared
+  String pci1Id;
+  @Shared
+  String pci2Id;
+  @Shared
+  String pti1Id;
+
+  @Shared
   String packageName1 = "K-Int Link - Deletion Test Package 001";
+
+  @Shared
   String packageName2 = "K-Int Link - Deletion Test Package 002"
   String agreementName = "test_agreement"
 
@@ -99,68 +109,79 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
     }
   }
 
-  void "Scenario: Two PCIs which reference the same PTI both marked for deletion."() {
-    given: "Setup has found PCI IDs"
-      PackageContentItem pci1 = findPCIByPackageName(packageName1)
-      PackageContentItem pci2 = findPCIByPackageName(packageName2)
-      Set<PackageContentItem> pciSet = [pci1, pci2] as Set
-      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
-      Map resourceIds = collectResourceIds(getAllResourcesForPCIs(pciSet));
-    when: "Both PCIs found during setup is marked for deletion"
-      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
-        'pcis' pcisToDelete
-      })
-      log.info("Delete Response: {}", deleteResp.toString())
-      log.info(resourceIds.toString())
-
-    then: "All resources are deleted."
-      verifySetSizes(deleteResp, 2, 1, 2, 1)
-      verifyPciIds(deleteResp, resourceIds.get("pci"))
-      verifyPtiIds(deleteResp, resourceIds.get("pti"))
-      verifyTiIds(deleteResp, resourceIds.get("ti"))
-      verifyWorkIds(deleteResp, resourceIds.get("work"))
-  }
+//  void "Scenario: Two PCIs which reference the same PTI both marked for deletion."() {
+//    given: "Setup has found PCI IDs"
+//      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+//      PackageContentItem pci2 = findPCIByPackageName(packageName2)
+//      Set<PackageContentItem> pciSet = [pci1, pci2] as Set
+//      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+//      Map resourceIds = collectResourceIds(getAllResourcesForPCIs(pciSet));
+//    when: "Both PCIs found during setup is marked for deletion"
+//      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
+//      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
+//        'pcis' pcisToDelete
+//      })
+//      log.info("Delete Response: {}", deleteResp.toString())
+//      log.info(resourceIds.toString())
+//
+//    then: "All resources are deleted."
+//      verifySetSizes(deleteResp, 2, 1, 2, 1)
+//      verifyPciIds(deleteResp, resourceIds.get("pci"))
+//      verifyPtiIds(deleteResp, resourceIds.get("pti"))
+//      verifyTiIds(deleteResp, resourceIds.get("ti"))
+//      verifyWorkIds(deleteResp, resourceIds.get("work"))
+//  }
 
   void "Scenario: Two PCIs which reference the same PTI are correctly processed when marked for deletion or deleted"(
-    boolean doDelete, String resourceType, int expectationCount
+    boolean doDelete, String resourceType, int expectationCount, List<String> markedForDeletion, List<String> agreementLines
   ) {
-    given: "Two specific PCIs sharing a PTI are identified, and their expected related resource IDs are collected"
 
+//    setup:
+//      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+//      PackageContentItem pci2 = findPCIByPackageName(packageName2)
+//      pti1Id = pci1.pti.id;
+//      pci1Id = pci1.id;
+//      pci2Id = pci2.id;
+
+    given: "Two specific PCIs sharing a PTI are identified, and their expected related resource IDs are collected"
     PackageContentItem pci1 = findPCIByPackageName(packageName1)
     PackageContentItem pci2 = findPCIByPackageName(packageName2)
-
+    pti1Id = pci1.pti.id;
+    pci1Id = pci1.id;
+    pci2Id = pci2.id;
     assert pci1 != null : "PCI for package '$packageName1' must exist"
     assert pci2 != null : "PCI for package '$packageName2' must exist"
     assert pci1.pti.id == pci2.pti.id : "PCIs must share the same PTI for this scenario (pti1_id: ${pci1.pti.id}, pti2_id: ${pci2.pti.id})"
 
-    Set<PackageContentItem> pciSet = [pci1, pci2] as Set
     Set<String> pcisToProcess = [pci1.id, pci2.id] as Set
 
-    Map<String, Set<String>> allExpectedResourceIds = collectResourceIds(getAllResourcesForPCIs(pciSet))
-
-    // 'when' and 'then' blocks run FOR EACH 'where' iteration.
     when: "A request is made to either mark for delete or delete these PCIs based on 'doDelete' flag"
       String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
-      log.info("WHEN: Iteration: doDelete={}, resourceType={}, expectationCount={}. Posting to URL: {}",
-        doDelete, resourceType, expectationCount, url)
+      log.info("WHEN: Iteration: doDelete={}, resourceType={}, expectationCount={}, markedForDeleting={}. Posting to URL: {}",
+        doDelete, resourceType, expectationCount, markedForDeletion, url)
 
       Map markForDeletionResponse = doPost(url, [pcis: pcisToProcess])
       log.info("markForDeletionResponse: {}", markForDeletionResponse)
+      Set<String> expectedIdsForThisResourceType = new ArrayList<>();
+      if (resourceType == "pci") expectedIdsForThisResourceType = collectIDs(getPCIs())
+      if (resourceType == "pti") expectedIdsForThisResourceType = collectIDs(getPTIs())
+      if (resourceType == "ti") expectedIdsForThisResourceType = collectIDs(getTIs())
+      if (resourceType == "work") expectedIdsForThisResourceType = getWorkIds()
 
     then: "The resource IDs marked for deletion match the expected resource IDs"
-      Set<String> expectedIdsForThisResourceType = allExpectedResourceIds.get(resourceType)
-
       expectedIdsForThisResourceType.size() == expectationCount
+
+      markForDeletionResponse.get(resourceType).size() == markedForDeletionCount
 
       verifyResourceIds(markForDeletionResponse, resourceType, expectedIdsForThisResourceType)
 
     where: "The operation (mark/delete), resource type, and expected count are varied"
-      doDelete | resourceType | expectationCount
-      false    | "pci"        | 2
-      false    | "pti"        | 1
-      false    | "ti"         | 2
-      false    | "work"       | 1
+    doDelete | resourceType | expectationCount | markedForDeletionCount | markedForDeletion   | agreementLines
+    //-------------------------------------------------------------------------------------------------------------
+    false    | "pci"        | 2                | 2                      | [pci1Id, pci2Id] | []
+    false    | "pti"        | 1                | 1                      | [pci1Id, pci2Id] | []
+    false    | "ti"         | 2                | 2                      | [pci1Id, pci2Id] | []
+    false    | "work"       | 1                | 1                      | [pci1Id, pci2Id] | []
 //    true     | "pci"        | 2
 //    true     | "pti"        | 1
     // true     | "ti"         | 2
