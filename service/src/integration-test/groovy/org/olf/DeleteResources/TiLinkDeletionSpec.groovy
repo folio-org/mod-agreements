@@ -5,6 +5,7 @@ import groovy.util.logging.Slf4j
 import org.olf.ErmResourceService
 import org.olf.kb.PackageContentItem
 import org.olf.kb.Work
+import org.spockframework.runtime.SpecificationContext
 import spock.lang.Shared
 import spock.lang.Stepwise
 
@@ -13,142 +14,350 @@ import spock.lang.Stepwise
 @Slf4j
 class TiLinkDeletionSpec extends DeletionBaseSpec{
 
-  ErmResourceService ermResourceService;
+  @Shared
+  String packageName1 = "K-Int TI Link - Deletion Test Package 001";
 
   @Shared
-  String pkg_id
-
-  @Shared
-  String pkg_id2
-
-
-  List<String> pciIds;
-
-  List resp;
-  List resp2;
+  String packageName2 = "K-Int TI Link - Deletion Test Package 002"
+  String agreementName = "test_agreement"
 
   def setup() {
-    if (!pkg_id) {
+    SpecificationContext currentSpecInfo = specificationContext;
+    if (!specificationContext.currentFeature?.name.contains("Scenario")) {
+      // If not in a SimpleDeletionSpec Scenario (i.e. in a tenant purge/ensure test tenant), don't try to load packages yet.
+      log.info("--- Skipping Setup for tenant setup tests: ${currentSpecInfo.currentSpec.displayName} (Feature: ${currentSpecInfo.currentFeature?.name}) ---")
       return;
     }
     log.info("--- Running Setup for test: ${specificationContext.currentIteration?.name ?: specificationContext.currentFeature?.name} ---")
+
     importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_1.json')
     importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_2.json')
 
-    resp = doGet("/erm/packages", [filters: ['name==K-Int TI Link - Deletion Test Package 001']])
-    resp2 = doGet("/erm/packages", [filters: ['name==K-Int TI Link - Deletion Test Package 002']])
+    List resp = doGet("/erm/packages", [filters: ['name==K-Int TI Link - Deletion Test Package 001']])
+    List resp2 = doGet("/erm/packages", [filters: ['name==K-Int TI Link - Deletion Test Package 002']])
 
-    // Fetch PCIs and save IDs to list
     Map kbStatsResp = doGet("/erm/statistics/kbCount")
     Map sasStatsResp = doGet("/erm/statistics/sasCount")
-    List pciResp = doGet("/erm/pci")
 
-    log.info("KB Counts (in setup): {}", kbStatsResp?.toString()) // Use safe navigation ?. just in case
-    log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
-
-    pciIds = []
-    pciResp?.forEach { Map item ->
-      if (item?.id) {
-        pciIds.add(item.id.toString())
-      }
-    }
-
-    // Re-attached TI to work.
-    PackageContentItem pci1;
-    PackageContentItem pci2;
-    List<PackageContentItem> pcis;
-    //
-    withTenant {
-      pcis = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""");
-    }
-    pci1 = pcis.get(0)
-    pci2 = pcis.get(1)
-    pci2.pti.titleInstance.work = pci1.pti.titleInstance.work
+    // Fetch PCIs and save IDs to list
+    Set<String> pciIds = collectIDs(getPCIs())
+    Set<String> ptiIds = collectIDs(getPTIs())
 
     log.info("Found PCI IDs (in setup): {}", pciIds)
-    withTenant {
-      List<String> workIds = Work.executeQuery("""
-        SELECT work.id FROM Work work
-      """.toString())
+    log.info("Found PTI IDs (in setup): {}", ptiIds)
+    log.info("KB Counts (in setup): {}", kbStatsResp?.toString())
+    log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
 
-      pciIds.forEach { String id -> log.info(ermResourceService.visualizePciHierarchy(id)) }
-
-      workIds.forEach { String id -> log.info(ermResourceService.visualizeWorkHierarchy(id)) }
-    }
     visualiseHierarchy(pciIds)
-    if (!pciIds.isEmpty()) {
-      visualiseHierarchy(pciIds)
-    } else {
-      log.warn("No PCI IDs found during setup, visualization skipped.")
-    }
+
     log.info("--- Setup Complete ---")
   }
 
-  void "Load Packages"() {
-
-    when: 'File loaded'
-    Map result =  importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_1.json')
-    importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_2.json')
-
-    then: 'Package imported'
-    result.packageImported == true
-
-    when: "Looked up package with name"
-    List resp = doGet("/erm/packages", [filters: ['name==K-Int TI Link - Deletion Test Package 001']])
-    List resp2 = doGet("/erm/packages", [filters: ['name==K-Int TI Link - Deletion Test Package 002']])
-    log.info(resp.toString())
-    log.info(resp[0].toString())
-    pkg_id = resp[0].id
-    pkg_id2 = resp2[0].id
-
-    then: "Package found"
-    resp.size() == 1
-    resp[0].id != null
+  def cleanup() {
+    // Used to clear resources from DB between tests.
+    // Specification logic is needed to ensure clearResources is not run for BaseSpec tests (which will cause it to fail).
+    SpecificationContext currentSpecInfo = specificationContext;
+    if (specificationContext.currentFeature?.name.contains("Scenario")) {
+      log.info("--- Running Cleanup for test: ${currentSpecInfo.currentIteration?.name ?: currentSpecInfo.currentFeature?.name ?: currentSpecInfo.currentSpec.name} in ${SimpleDeletionSpec.simpleName} ---")
+      try {
+        clearResources()
+      } catch (Exception e) {
+        log.error("--- Error during SimpleDeletionSpec cleanup: ${e.message}", e)
+      }
+      log.info("--- ${SimpleDeletionSpec.simpleName} Cleanup Complete ---")
+    } else {
+      log.info("--- Skipping SimpleDeletionSpec-specific cleanup for BaseSpec feature run in: ${currentSpecInfo.currentSpec.displayName} (Feature: ${currentSpecInfo.currentFeature?.name}) ---")
+    }
   }
 
-  void "Scenario 1: Two PCIs which reference the same PTI both marked for deletion."() {
+  void "[Scenario] Structure: Ti-Link, Marked: [PCI1, PCI2], Agreement Lines: []"(String actionDescription, boolean doDelete) {
     given: "Setup has found PCI IDs"
-    assert pciIds != null: "pciIds should have been initialized by setup()"
-    assert !pciIds.isEmpty(): "Setup() must find at least one PCI for this test"
-    when: "The first PCI found during setup is marked for deletion"
-    List<String> pcisToDelete = [pciIds.get(0), pciIds.get(1)]
+    PackageContentItem pci1 = findPCIByPackageName(packageName1)
+    PackageContentItem pci2 = findPCIByPackageName(packageName2)
+    Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+
+    when: "Both PCIs found during setup is marked for deletion"
     log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
+    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost(url, ['pcis': pcisToDelete])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
 
-    Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
-      'pci' pcisToDelete
-    })
-    log.info("Delete Response: {}", deleteResp.toString())
-
-    // Get PCI for assertions
-    PackageContentItem pci;
-    withTenant {
-      pci = PackageContentItem.executeQuery("""SELECT pci FROM PackageContentItem pci""").get(0);
+    then: "All resources are deleted."
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 0,0,0,0)
+    } else {
+      verifySetSizes(operationResponse, 2, 2, 2, 1)
+      verifyIds(operationResponse, collectIDs(getPCIs()), collectIDs(getPTIs()), collectIDs(getTIs()), getWorkIds())
+      verifyKbStats(kbStatsResp, 2, 2, 2, 1)
     }
 
-    log.info(deleteResp.toString())
-
-    then:
-    deleteResp
-    deleteResp.pci
-    deleteResp.pci.size() == 2
-    deleteResp.pci[0] == pcisToDelete.get(0)
-
-    deleteResp.pti.size() == 1
-    deleteResp.pti[0] == pci.pti.id
-
-    deleteResp.ti.size() == 2
-    deleteResp.ti.any { ti -> ti == pci.pti.titleInstance.id }
-
-    deleteResp.work.size() == 1
-    deleteResp.work[0] == pci.pti.titleInstance.work.id;
-
-    cleanup:
-    log.info("--- Manually running cleanup for feature two ---")
-    withTenant { // May need explicit tenant ID if setup changed it
-      clearResources()
-    }
-    log.info("--- Manual cleanup complete for feature two ---")
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
   }
 
+  void "[Scenario] Structure: Ti-Link, Marked: [PCI1], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+    given: "Setup has found PCI IDs"
+    PackageContentItem pci1 = findPCIByPackageName(packageName1)
+    Set<String> pcisToDelete = [pci1.id] as Set
+    when: "Only one PCI found during setup is marked for deletion"
+    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost(url, ['pcis': pcisToDelete])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
 
+    then: "One PCI and it's child PTI are deleted."
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 1,1,2,1)
+    } else {
+      verifySetSizes(operationResponse, 1, 1, 0, 0)
+      verifyIds(operationResponse, pcisToDelete, [pci1.pti.id] as Set)
+      verifyKbStats(kbStatsResp, 2, 2, 2, 1)
+    }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
+  }
+
+  void "[Scenario] Structure: Ti-Link, Marked: [PTI1], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+    given:
+    PackageContentItem pci1 = findPCIByPackageName(packageName1)
+    Set<String> ptisToDelete = [pci1.pti.id] as Set
+    when: "One PTI is marked for deletion"
+    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost(url, ['ptis': ptisToDelete])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
+
+    then: "Nothing is deleted."
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 2,2,2,1)
+    } else {
+      verifySetSizes(operationResponse, 0, 0, 0, 0)
+      verifyIds(operationResponse)
+      verifyKbStats(kbStatsResp, 2, 2, 2, 1)
+    }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
+  }
+
+  void "[Scenario] Structure: Ti-Link, Marked: [PTI1, PTI2], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+    given:
+    PackageContentItem pci1 = findPCIByPackageName(packageName1)
+    PackageContentItem pci2 = findPCIByPackageName(packageName2)
+    Set<String> ptisToDelete = [pci1.pti.id, pci2.pti.id] as Set
+    when: "Both PTIs is marked for deletion"
+    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost(url, ['ptis': ptisToDelete])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
+
+    then: "Nothing is deleted."
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 2,2,2,1)
+    } else {
+      verifySetSizes(operationResponse, 0, 0, 0, 0)
+      verifyIds(operationResponse)
+      verifyKbStats(kbStatsResp, 2, 2, 2, 1)
+    }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
+  }
+
+  void "[Scenario] Structure: Ti-Link, Marked: [PCI1, PTI2], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+    given:
+    PackageContentItem pci1 = findPCIByPackageName(packageName1)
+    PackageContentItem pci2 = findPCIByPackageName(packageName2)
+    Set<String> pcisToDelete = [pci1.id] as Set
+    Set<String> ptisToDelete = [pci2.pti.id] as Set
+
+    when: "Both PCIs is marked for deletion"
+    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost(url, ['pcis': pcisToDelete,
+                                         'ptis': ptisToDelete])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
+
+    then: "Nothing is deleted."
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 1,1,2,1)
+    } else {
+      verifySetSizes(operationResponse, 1, 1, 0, 0)
+      verifyIds(operationResponse, [pci1.id] as Set, [pci1.pti.id] as Set)
+      verifyKbStats(kbStatsResp, 2, 2, 2, 1)
+    }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
+  }
+
+  void "[Scenario] Structure: Ti-Link, Marked: [PCI1, PTI1, PCI2, PTI2], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+    given:
+    PackageContentItem pci1 = findPCIByPackageName(packageName1)
+    PackageContentItem pci2 = findPCIByPackageName(packageName2)
+    Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+    Set<String> ptisToDelete = [pci1.pti.id, pci2.pti.id] as Set
+
+    when: "Both PCIs is marked for deletion"
+    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost(url, ['pcis': pcisToDelete,
+                                         'ptis': ptisToDelete])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
+
+    then: "Nothing is deleted."
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 0,0,0,0)
+    } else {
+      verifySetSizes(operationResponse, 2, 2, 2, 1)
+      verifyIds(operationResponse,collectIDs(getPCIs()), collectIDs(getPTIs()), collectIDs(getTIs()), getWorkIds())
+      verifyKbStats(kbStatsResp, 2, 2, 2, 1)
+    }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
+  }
+
+  void "[Scenario] Structure: Ti-Link, Marked: [PCI1, PCI2], Agreement Lines: [PCI1]"(String actionDescription, boolean doDelete) {
+    given:
+    PackageContentItem pci1 = findPCIByPackageName(packageName1) // has Agreement Line attached
+    PackageContentItem pci2 = findPCIByPackageName(packageName2)
+    Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+    String agreement_name = agreementName
+    Map agreementResp = createAgreement(agreement_name)
+    addEntitlementForAgreement(agreement_name, pci1.id)
+    when: "Both PCIs is marked for deletion"
+    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost(url, ['pcis': pcisToDelete])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
+
+    then: "One PCI and it's child PTI are deleted."
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 1,1,2,1)
+    } else {
+      verifySetSizes(operationResponse, 1, 1, 0, 0)
+      verifyIds(operationResponse, [pci2.id] as Set, [pci2.pti.id] as Set)
+      verifyKbStats(kbStatsResp, 2, 2, 2, 1)
+    }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
+  }
+
+  void "[Scenario] Structure: Ti-Link, Marked: [PCI1, PCI2], Agreement Lines: [PCI1, PCI2]"(String actionDescription, boolean doDelete) {
+    given:
+    PackageContentItem pci1 = findPCIByPackageName(packageName1) // has Agreement Line attached
+    PackageContentItem pci2 = findPCIByPackageName(packageName2) // has Agreement Line attached
+    Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+    String agreement_name = agreementName
+    Map agreementResp = createAgreement(agreement_name)
+    addEntitlementForAgreement(agreement_name, pci1.id)
+    addEntitlementForAgreement(agreement_name, pci2.id)
+    when: "Both PCIs is marked for deletion"
+    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost(url, ['pcis': pcisToDelete])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
+
+    then: "Nothing is deleted."
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 2,2,2,1)
+    } else {
+      verifySetSizes(operationResponse, 0, 0, 0, 0)
+      verifyIds(operationResponse)
+      verifyKbStats(kbStatsResp, 2, 2, 2, 1)
+    }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
+  }
+
+  void "[Scenario] Structure: Ti-Link, Marked: [PCI1, PCI2], Agreement Lines: [PTI1, PTI2]"(String actionDescription, boolean doDelete) {
+    given:
+    PackageContentItem pci1 = findPCIByPackageName(packageName1)
+    PackageContentItem pci2 = findPCIByPackageName(packageName2)
+    Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+    String agreement_name = agreementName
+    Map agreementResp = createAgreement(agreement_name)
+    addEntitlementForAgreement(agreement_name, pci1.pti.id)
+    addEntitlementForAgreement(agreement_name, pci2.pti.id)
+    when: "Both PCIs is marked for deletion"
+    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost(url, ['pcis': pcisToDelete])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
+
+    then: "Both PCIs are deleted."
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 0,2,2,1)
+    } else {
+      verifySetSizes(operationResponse, 2, 0, 0, 0)
+      verifyIds(operationResponse, pcisToDelete)
+      verifyKbStats(kbStatsResp, 2, 2, 2, 1)
+    }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
+  }
+
+  void "[Scenario] Structure: Ti-Link, Marked: [PTI1, PTI2], Agreement Lines: [PTI1, PTI2]"(String actionDescription, boolean doDelete) {
+    given:
+    PackageContentItem pci1 = findPCIByPackageName(packageName1)
+    PackageContentItem pci2 = findPCIByPackageName(packageName2)
+    Set<String> ptisToDelete = [pci1.pti.id, pci2.pti.id] as Set
+    String agreement_name = agreementName
+    Map agreementResp = createAgreement(agreement_name)
+    addEntitlementForAgreement(agreement_name, pci1.pti.id)
+    addEntitlementForAgreement(agreement_name, pci2.pti.id)
+    when: "Both PCIs is marked for deletion"
+    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost(url, ['ptis': ptisToDelete])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
+
+    then: "Nothing is deleted."
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 2,2,2,1)
+    } else {
+      verifySetSizes(operationResponse, 0, 0, 0, 0)
+      verifyIds(operationResponse)
+      verifyKbStats(kbStatsResp, 2, 2, 2, 1)
+    }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
+  }
 }
