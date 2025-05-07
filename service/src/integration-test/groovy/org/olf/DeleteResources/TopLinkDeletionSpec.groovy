@@ -14,28 +14,6 @@ import spock.lang.Stepwise
 @Stepwise
 @Slf4j
 class TopLinkDeletionSpec extends DeletionBaseSpec{
-
-  ErmResourceService ermResourceService;
-
-  @Shared
-  String pkg_id
-
-  @Shared
-  String pkg_id2
-
-  List resp;
-  List resp2;
-  List<String> pciIds;
-  List<String> ptiIds;
-  List<String> tiIds;
-
-  @Shared
-  String pci1Id;
-  @Shared
-  String pci2Id;
-  @Shared
-  String pti1Id;
-
   @Shared
   String packageName1 = "K-Int Link - Deletion Test Package 001";
 
@@ -55,40 +33,23 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
     importPackageFromFileViaService('hierarchicalDeletion/top_link_deletion.json')
     importPackageFromFileViaService('hierarchicalDeletion/top_link_deletion_link.json')
 
-    resp = doGet("/erm/packages", [filters: ['name==K-Int Link - Deletion Test Package 001']])
-    resp2 = doGet("/erm/packages", [filters: ['name==K-Int Link - Deletion Test Package 002']])
-    pkg_id = resp[0].id
-    pkg_id2 = resp[0].id
+    List resp = doGet("/erm/packages", [filters: ['name==K-Int Link - Deletion Test Package 001']])
+    List resp2 = doGet("/erm/packages", [filters: ['name==K-Int Link - Deletion Test Package 002']])
 
     Map kbStatsResp = doGet("/erm/statistics/kbCount")
     Map sasStatsResp = doGet("/erm/statistics/sasCount")
 
     // Fetch PCIs and save IDs to list
-    List pciResp = doGet("/erm/pci")
-    List ptiResp = doGet("/erm/pti")
-
-    pciIds = []
-    pciResp?.forEach { Map item ->
-      if (item?.id) {
-        pciIds.add(item.id.toString())
-      }
-    }
-
-    ptiIds = []
-    ptiResp?.forEach { Map item ->
-      if (item?.id) {
-        ptiIds.add(item.id.toString())
-      }
-    }
+    Set<String> pciIds = collectIDs(getPCIs())
+    Set<String> ptiIds = collectIDs(getPTIs())
 
     log.info("Found PCI IDs (in setup): {}", pciIds)
     log.info("Found PTI IDs (in setup): {}", ptiIds)
     log.info("KB Counts (in setup): {}", kbStatsResp?.toString())
     log.info("SAS Counts (in setup): {}", sasStatsResp?.toString())
 
-    if (!pciIds.isEmpty()) {
-      visualiseHierarchy(pciIds)
-    }
+    visualiseHierarchy(pciIds)
+
     log.info("--- Setup Complete ---")
   }
 
@@ -109,247 +70,242 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
     }
   }
 
-//  void "Scenario: Two PCIs which reference the same PTI both marked for deletion."() {
-//    given: "Setup has found PCI IDs"
-//      PackageContentItem pci1 = findPCIByPackageName(packageName1)
-//      PackageContentItem pci2 = findPCIByPackageName(packageName2)
-//      Set<PackageContentItem> pciSet = [pci1, pci2] as Set
-//      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
-//      Map resourceIds = collectResourceIds(getAllResourcesForPCIs(pciSet));
-//    when: "Both PCIs found during setup is marked for deletion"
-//      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-//      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
-//        'pcis' pcisToDelete
-//      })
-//      log.info("Delete Response: {}", deleteResp.toString())
-//      log.info(resourceIds.toString())
-//
-//    then: "All resources are deleted."
-//      verifySetSizes(deleteResp, 2, 1, 2, 1)
-//      verifyPciIds(deleteResp, resourceIds.get("pci"))
-//      verifyPtiIds(deleteResp, resourceIds.get("pti"))
-//      verifyTiIds(deleteResp, resourceIds.get("ti"))
-//      verifyWorkIds(deleteResp, resourceIds.get("work"))
-//  }
-
-  void "Scenario: Two PCIs which reference the same PTI are correctly processed when marked for deletion or deleted"(
-    boolean doDelete, String resourceType, int expectationCount, List<String> markedForDeletion, List<String> agreementLines
-  ) {
-
-//    setup:
-//      PackageContentItem pci1 = findPCIByPackageName(packageName1)
-//      PackageContentItem pci2 = findPCIByPackageName(packageName2)
-//      pti1Id = pci1.pti.id;
-//      pci1Id = pci1.id;
-//      pci2Id = pci2.id;
-
-    given: "Two specific PCIs sharing a PTI are identified, and their expected related resource IDs are collected"
+  void "[Scenario] Structure: Top-Link, Marked: [PCI1, PCI2], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+    given: "Setup has found PCI IDs"
     PackageContentItem pci1 = findPCIByPackageName(packageName1)
     PackageContentItem pci2 = findPCIByPackageName(packageName2)
-    pti1Id = pci1.pti.id;
-    pci1Id = pci1.id;
-    pci2Id = pci2.id;
-    assert pci1 != null : "PCI for package '$packageName1' must exist"
-    assert pci2 != null : "PCI for package '$packageName2' must exist"
-    assert pci1.pti.id == pci2.pti.id : "PCIs must share the same PTI for this scenario (pti1_id: ${pci1.pti.id}, pti2_id: ${pci2.pti.id})"
+    Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
 
-    Set<String> pcisToProcess = [pci1.id, pci2.id] as Set
+    when: "Both PCIs found during setup is marked for deletion"
+    log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
+    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost(url, ['pcis': pcisToDelete])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
 
-    when: "A request is made to either mark for delete or delete these PCIs based on 'doDelete' flag"
-      String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
-      log.info("WHEN: Iteration: doDelete={}, resourceType={}, expectationCount={}, markedForDeleting={}. Posting to URL: {}",
-        doDelete, resourceType, expectationCount, markedForDeletion, url)
+    then: "All resources are deleted."
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 0,0,0,0)
+    } else {
+      verifySetSizes(operationResponse, 2, 1, 2, 1)
+      verifyIds(operationResponse, collectIDs(getPCIs()), collectIDs(getPTIs()), collectIDs(getTIs()), getWorkIds())
+      verifyKbStats(kbStatsResp, 2, 1, 2, 1)
+    }
 
-      Map markForDeletionResponse = doPost(url, [pcis: pcisToProcess])
-      log.info("markForDeletionResponse: {}", markForDeletionResponse)
-      Set<String> expectedIdsForThisResourceType = new ArrayList<>();
-      if (resourceType == "pci") expectedIdsForThisResourceType = collectIDs(getPCIs())
-      if (resourceType == "pti") expectedIdsForThisResourceType = collectIDs(getPTIs())
-      if (resourceType == "ti") expectedIdsForThisResourceType = collectIDs(getTIs())
-      if (resourceType == "work") expectedIdsForThisResourceType = getWorkIds()
-
-    then: "The resource IDs marked for deletion match the expected resource IDs"
-      expectedIdsForThisResourceType.size() == expectationCount
-
-      markForDeletionResponse.get(resourceType).size() == markedForDeletionCount
-
-      verifyResourceIds(markForDeletionResponse, resourceType, expectedIdsForThisResourceType)
-
-    where: "The operation (mark/delete), resource type, and expected count are varied"
-    doDelete | resourceType | expectationCount | markedForDeletionCount | markedForDeletion   | agreementLines
-    //-------------------------------------------------------------------------------------------------------------
-    false    | "pci"        | 2                | 2                      | [pci1Id, pci2Id] | []
-    false    | "pti"        | 1                | 1                      | [pci1Id, pci2Id] | []
-    false    | "ti"         | 2                | 2                      | [pci1Id, pci2Id] | []
-    false    | "work"       | 1                | 1                      | [pci1Id, pci2Id] | []
-//    true     | "pci"        | 2
-//    true     | "pti"        | 1
-    // true     | "ti"         | 2
-    // true     | "work"       | 1
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
   }
-//
-//  void "Scenario: Only one PCI marked for deletion."() {
-//    given: "Setup has found PCI IDs"
-//      PackageContentItem pci1 = findPCIByPackageName(packageName1)
-//      Set<String> pcisToDelete = [pci1.id] as Set
-//    when: "Only one PCI found during setup is marked for deletion"
-//      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-//      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
-//        'pcis' pcisToDelete
-//      })
-//      log.info("Delete Response: {}", deleteResp.toString())
-//
-//    then: "Only one PCI resource is deleted."
-//      verifySetSizes(deleteResp, 1, 0, 0,0)
-//      verifyPciIds(deleteResp, pcisToDelete)
-//  }
-//
-//  void "Scenario: Both PCIs marked for deletion and one has an agreement line attached."() {
-//    given: "Setup has found PCI IDs"
-//      PackageContentItem pci1 = findPCIByPackageName(packageName1) // Attached to agreement line
-//      PackageContentItem pci2 = findPCIByPackageName(packageName2)
-//      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
-//
-//      String agreement_name = agreementName
-//      Map agreementResp = createAgreement(agreement_name)
-//      addEntitlementForAgreement(agreement_name, pci1.id)
-//    when: "Both PCIs found during setup is marked for deletion"
-//      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-//      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
-//        'pcis' pcisToDelete
-//      })
-//      log.info("Delete Response: {}", deleteResp.toString())
-//
-//    then: "Only one PCI resource is deleted."
-//      verifySetSizes(deleteResp, 1, 0, 0,0)
-//      verifyPciIds(deleteResp, [pci2.id] as Set) // Mark PCI NOT attached to agreement line for deletion.
-//  }
-//
-//  void "Scenario: Both PCIs marked for deletion and both have an agreement line attached."() {
-//    given: "Setup has found PCI IDs"
-//      PackageContentItem pci1 = findPCIByPackageName(packageName1) // Attached to agreement line
-//      PackageContentItem pci2 = findPCIByPackageName(packageName2) // Attached to agreement line
-//      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
-//
-//      String agreement_name = agreementName
-//      Map agreementResp = createAgreement(agreement_name)
-//      addEntitlementForAgreement(agreement_name, pci1.id)
-//      addEntitlementForAgreement(agreement_name, pci2.id)
-//
-//    when: "Both PCIs found during setup is marked for deletion"
-//      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-//      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
-//        'pcis' pcisToDelete
-//      })
-//      log.info("Delete Response: {}", deleteResp.toString())
-//
-//    then: "No resources are deleted."
-//      verifySetSizes(deleteResp, 0, 0, 0,0)
-//  }
-//
-//  void "Scenario: Only one PCI and the PTI marked for deletion."() {
-//    given: "Setup has found PCI IDs"
-//      PackageContentItem pci1 = findPCIByPackageName(packageName1)
-//      Set<String> pcisToDelete = [pci1.id] as Set
-//      Set<String> ptisToDelete = [pci1.pti.id] as Set
-//    when: "Only one PCI found during setup is marked for deletion"
-//      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-//      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
-//        'pcis' pcisToDelete
-//        'ptis' ptisToDelete
-//      })
-//      log.info("Delete Response: {}", deleteResp.toString())
-//
-//    then: "Only one PCI resource is deleted."
-//      verifySetSizes(deleteResp, 1, 0, 0,0)
-//      verifyPciIds(deleteResp, pcisToDelete)
-//  }
-//
-//  void "Scenario: Both PCIs and the PTI marked for deletion."() {
-//    given: "Setup has found PCI IDs"
-//      PackageContentItem pci1 = findPCIByPackageName(packageName1)
-//      PackageContentItem pci2 = findPCIByPackageName(packageName2)
-//      Set<PackageContentItem> pciSet = [pci1, pci2] as Set
-//      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
-//      Set<String> ptisToDelete = [pci1.pti.id] as Set
-//      Map resourceIds = collectResourceIds(getAllResourcesForPCIs(pciSet));
-//    when: "Only one PCI found during setup is marked for deletion"
-//      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-//      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
-//        'pcis' pcisToDelete
-//        'ptis' ptisToDelete
-//      })
-//      log.info("Delete Response: {}", deleteResp.toString())
-//
-//    then: "All resources are deleted."
-//      verifySetSizes(deleteResp, 2, 1, 2,1)
-//      verifyPciIds(deleteResp, resourceIds.get("pci"))
-//      verifyPtiIds(deleteResp, resourceIds.get("pti"))
-//      verifyTiIds(deleteResp, resourceIds.get("ti"))
-//      verifyWorkIds(deleteResp, resourceIds.get("work"))
-//  }
-//
-//  void "Scenario: Combined with Single Chain package import, only top-link chain deleted."() {
-//    given: "Setup has found PCI IDs"
-//      Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
-//      doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
-//      PackageContentItem pci1 = findPCIByPackageName(packageName1)
-//      PackageContentItem pci2 = findPCIByPackageName(packageName2)
-//      PackageContentItem pci_simple = findPCIByPackageName("K-Int Deletion Test Package 001")
-//
-//      Set<PackageContentItem> pciSet = [pci1, pci2] as Set
-//      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
-//      Map resourceIds = collectResourceIds(getAllResourcesForPCIs(pciSet));
-//      when: "Only one PCI found during setup is marked for deletion"
-//      log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-//      Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
-//        'pcis' pcisToDelete
-//      })
-//      log.info("Delete Response: {}", deleteResp.toString())
-//      Map kbStatsResp = doGet("/erm/statistics/kbCount")
-//      log.info(kbStatsResp.toMapString())
-//
-//    then: "Top-Link resources are deleted, but simple resources remain."
-//      kbStatsResp.get("Work") == 2
-//      kbStatsResp.get("PackageContentItem") == 3
-//      kbStatsResp.get("PlatformTitleInstance") == 2
-//      kbStatsResp.get("TitleInstance") == 4
-//      verifySetSizes(deleteResp, 2, 1, 2,1)
-//      verifyPciIds(deleteResp, resourceIds.get("pci"))
-//      verifyPtiIds(deleteResp, resourceIds.get("pti"))
-//      verifyTiIds(deleteResp, resourceIds.get("ti"))
-//      verifyWorkIds(deleteResp, resourceIds.get("work"))
-//  }
-//
-//  void "Scenario: Combined with Single Chain package import, all PCIs marked for deletion."() {
-//    given: "Setup has found PCI IDs"
-//    Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
-//    doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
-//    PackageContentItem pci1 = findPCIByPackageName(packageName1)
-//    PackageContentItem pci2 = findPCIByPackageName(packageName2)
-//    PackageContentItem pci_simple = findPCIByPackageName("K-Int Deletion Test Package 001")
-//
-//    Set<PackageContentItem> pciSet = [pci1, pci2, pci_simple] as Set
-//    Set<String> pcisToDelete = [pci1.id, pci2.id, pci_simple.id] as Set
-//    Map resourceIds = collectResourceIds(getAllResourcesForPCIs(pciSet));
-//    when: "Only one PCI found during setup is marked for deletion"
-//    log.info("Attempting to delete PCI IDs: {}", pcisToDelete)
-//    Map deleteResp = doPost("/erm/hierarchicalDelete/markForDelete", {
-//      'pcis' pcisToDelete
-//    })
-//    log.info("Delete Response: {}", deleteResp.toString())
-//    Map kbStatsResp = doGet("/erm/statistics/kbCount")
-//    log.info(kbStatsResp.toMapString())
-//
-//    then: "Top-Link resources are deleted, but simple resources remain."
-//    kbStatsResp.get("Work") == 2
-//    kbStatsResp.get("PackageContentItem") == 3
-//    kbStatsResp.get("PlatformTitleInstance") == 2
-//    kbStatsResp.get("TitleInstance") == 4
-//    verifySetSizes(deleteResp, 3, 2, 4,2)
-//    verifyPciIds(deleteResp, resourceIds.get("pci"))
-//    verifyPtiIds(deleteResp, resourceIds.get("pti"))
-//    verifyTiIds(deleteResp, resourceIds.get("ti"))
-//    verifyWorkIds(deleteResp, resourceIds.get("work"))
-//  }
+
+  void "[Scenario] Structure: Top-Link, Marked: [PCI1], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+    given: "Setup has found PCI IDs"
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+      Set<String> pcisToDelete = [pci1.id] as Set
+    when: "Only one PCI found during setup is marked for deletion"
+      String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+      Map operationResponse = doPost(url, ['pcis': pcisToDelete])
+      Map kbStatsResp = doGet("/erm/statistics/kbCount")
+      log.info("Operation Response: ${operationResponse}")
+      log.info("KB Stats: ${kbStatsResp}")
+
+    then: "Only one PCI resource is deleted."
+      if (doDelete) {
+        verifyKbStats(kbStatsResp, 1,1,2,1)
+      } else {
+        verifySetSizes(operationResponse, 1, 0, 0, 0)
+        verifyIds(operationResponse, pcisToDelete)
+        verifyKbStats(kbStatsResp, 2, 1, 2, 1)
+      }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
+  }
+
+  void "[Scenario] Structure: Top-Link, Marked: [PCI1, PCI2], Agreement Lines: [PCI1]"(String actionDescription, boolean doDelete) {
+    given: "Setup has found PCI IDs"
+      PackageContentItem pci1 = findPCIByPackageName(packageName1) // Attached to agreement line
+      PackageContentItem pci2 = findPCIByPackageName(packageName2)
+      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+
+      String agreement_name = agreementName
+      Map agreementResp = createAgreement(agreement_name)
+      addEntitlementForAgreement(agreement_name, pci1.id)
+    when: "Both PCIs found during setup is marked for deletion"
+      String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+      Map operationResponse = doPost(url, ['pcis': pcisToDelete])
+      Map kbStatsResp = doGet("/erm/statistics/kbCount")
+      log.info("Operation Response: ${operationResponse}")
+      log.info("KB Stats: ${kbStatsResp}")
+
+    then: "Only one PCI resource is deleted."
+      if (doDelete) {
+        verifyKbStats(kbStatsResp, 1,1,2,1)
+      } else {
+        verifySetSizes(operationResponse, 1, 0, 0, 0)
+        verifyIds(operationResponse, [pci2.id] as Set)
+        verifyKbStats(kbStatsResp, 2, 1, 2, 1)
+      }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+//    "Deleted in database"  | true
+  }
+
+  void "[Scenario] Structure: Top-Link, Marked: [PCI1, PCI2], Agreement Lines: [PCI1, PCI2]"(String actionDescription, boolean doDelete) {
+    given: "Setup has found PCI IDs"
+      PackageContentItem pci1 = findPCIByPackageName(packageName1) // Attached to agreement line
+      PackageContentItem pci2 = findPCIByPackageName(packageName2) // Attached to agreement line
+      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+
+      String agreement_name = agreementName
+      Map agreementResp = createAgreement(agreement_name)
+      addEntitlementForAgreement(agreement_name, pci1.id)
+      addEntitlementForAgreement(agreement_name, pci2.id)
+
+    when: "Both PCIs found during setup is marked for deletion"
+      String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+      Map operationResponse = doPost(url, ['pcis': pcisToDelete])
+      Map kbStatsResp = doGet("/erm/statistics/kbCount")
+      log.info("Operation Response: ${operationResponse}")
+      log.info("KB Stats: ${kbStatsResp}")
+    then: "No resources are deleted."
+      if (doDelete) {
+        verifyKbStats(kbStatsResp, 2,1,2,1)
+      } else {
+        verifySetSizes(operationResponse, 0, 0, 0,0)
+        verifyIds(operationResponse) // Empty
+        verifyKbStats(kbStatsResp, 2, 1, 2, 1)
+      }
+
+    where:
+      actionDescription   | doDelete
+      "Marked for Deletion" | false
+  //    "Deleted in database"  | true
+  }
+
+  void "[Scenario]  Structure: Top-Link, Marked: [PCI1, PTI1], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+    given: "Setup has found PCI IDs"
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+      Set<String> pcisToDelete = [pci1.id] as Set
+      Set<String> ptisToDelete = [pci1.pti.id] as Set
+    when: "Only one PCI found during setup is marked for deletion"
+      String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+      Map operationResponse = doPost(url, {
+        'pcis' pcisToDelete
+        'ptis' ptisToDelete
+      })
+      Map kbStatsResp = doGet("/erm/statistics/kbCount")
+      log.info("Operation Response: ${operationResponse}")
+      log.info("KB Stats: ${kbStatsResp}")
+    then: "Only one PCI resource is deleted."
+      if (doDelete) {
+        verifyKbStats(kbStatsResp, 1,1,2,1)
+      } else {
+        verifySetSizes(operationResponse, 1, 0, 0,0)
+        verifyIds(operationResponse, pcisToDelete)
+        verifyKbStats(kbStatsResp, 2, 1, 2, 1)
+      }
+
+    where:
+    actionDescription   | doDelete
+    "Marked for Deletion" | false
+    //    "Deleted in database"  | true
+  }
+
+  void "[Scenario]  Structure: Top-Link, Marked: [PCI1, PCI2, PTI1/2], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+    given: "Setup has found PCI IDs"
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+      PackageContentItem pci2 = findPCIByPackageName(packageName2)
+      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+      Set<String> ptisToDelete = [pci1.pti.id] as Set
+    when: "Only one PCI found during setup is marked for deletion"
+      String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+      Map operationResponse = doPost(url, {
+        'pcis' pcisToDelete
+        'ptis' ptisToDelete
+      })
+      Map kbStatsResp = doGet("/erm/statistics/kbCount")
+      log.info("Operation Response: ${operationResponse}")
+      log.info("KB Stats: ${kbStatsResp}")
+
+    then: "All resources are deleted."
+      if (doDelete) {
+        verifyKbStats(kbStatsResp, 0,0,0,0)
+      } else {
+        verifySetSizes(operationResponse, 2, 1, 2,1)
+        verifyIds(operationResponse, collectIDs(getPCIs()), collectIDs(getPTIs()), collectIDs(getTIs()), getWorkIds())
+        verifyKbStats(kbStatsResp, 2, 1, 2,1)
+      }
+    where:
+      actionDescription   | doDelete
+      "Marked for Deletion" | false
+      //    "Deleted in database"  | true
+  }
+
+  void "[Scenario]  Structure: Top-Link + Simple, Marked: [PCI1, PCI2], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+    given: "Setup has found PCI IDs"
+      Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
+      doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
+      PackageContentItem pci1 = findPCIByPackageName(packageName1)
+      PackageContentItem pci2 = findPCIByPackageName(packageName2)
+      PackageContentItem pci_simple = findPCIByPackageName("K-Int Deletion Test Package 001")
+
+      Set<PackageContentItem> pciSet = [pci1, pci2] as Set
+      Set<String> pcisToDelete = [pci1.id, pci2.id] as Set
+      Map resourceIds = collectResourceIds(getAllResourcesForPCIs(pciSet)); // APIs are too broad (only want to fetch top-link resources) so use HQL.
+    when: "Only one PCI found during setup is marked for deletion"
+      String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+      Map operationResponse = doPost(url, ['pcis': pcisToDelete])
+      Map kbStatsResp = doGet("/erm/statistics/kbCount")
+      log.info("Operation Response: ${operationResponse}")
+      log.info("KB Stats: ${kbStatsResp}")
+
+    then: "Top-Link resources are deleted, but simple resources remain."
+      if (doDelete) {
+        verifyKbStats(kbStatsResp, 1,1,2,1)
+      } else {
+        verifyKbStats(kbStatsResp, 3, 2, 4, 2)
+        verifySetSizes(operationResponse, 2, 1, 2, 1)
+        verifyIds(operationResponse, resourceIds.get("pci"), resourceIds.get("pti"), resourceIds.get("ti"), resourceIds.get("work"))
+      }
+    where:
+      actionDescription   | doDelete
+      "Marked for Deletion" | false
+      //    "Deleted in database"  | true
+  }
+
+  void "[Scenario]  Structure: Top-Link + Simple, Marked: [PCI_TopLink_1, PCI_TopLink_2, PCI_Simple_3], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+    given: "Setup has found PCI IDs"
+    Map result = importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
+    doGet("/erm/packages", [filters: ['name==K-Int Deletion Test Package 001']])
+    PackageContentItem pci1 = findPCIByPackageName(packageName1)
+    PackageContentItem pci2 = findPCIByPackageName(packageName2)
+    PackageContentItem pci_simple = findPCIByPackageName("K-Int Deletion Test Package 001")
+    Set<String> pcisToDelete = [pci1.id, pci2.id, pci_simple.id] as Set
+
+    when: "Only one PCI found during setup is marked for deletion"
+      String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+      Map operationResponse = doPost(url, ['pcis': pcisToDelete])
+      Map kbStatsResp = doGet("/erm/statistics/kbCount")
+      log.info("Operation Response: ${operationResponse}")
+      log.info("KB Stats: ${kbStatsResp}")
+
+    then: "All resources are deleted"
+    if (doDelete) {
+      verifyKbStats(kbStatsResp, 0,0,0,0)
+    } else {
+      verifyKbStats(kbStatsResp, 3, 2, 4, 2)
+      verifySetSizes(operationResponse, 3, 2, 4, 2)
+      verifyIds(operationResponse, collectIDs(getPCIs()), collectIDs(getPTIs()), collectIDs(getTIs()), getWorkIds())
+    }
+    where:
+      actionDescription   | doDelete
+      "Marked for Deletion" | false
+      //    "Deleted in database"  | true
+  }
 }

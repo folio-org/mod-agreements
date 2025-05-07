@@ -155,6 +155,28 @@ class DeletionBaseSpec extends BaseSpec {
     return resourceGetResponse.get("results").collect({Map resource -> resource.id}) as Set
   }
 
+  void verifyIds(Map deleteResp,
+                 Set<String> expectedPciIds = new HashSet<String>(),
+                 Set<String> expectedPtiIds = new HashSet<String>(),
+                 Set<String> expectedTiIds = new HashSet<String>(),
+                 Set<String> expectedWorkIds = new HashSet<String>()) {
+    assert deleteResp?.pci as Set == expectedPciIds as Set
+    assert deleteResp?.pti as Set == expectedPtiIds as Set
+    assert deleteResp?.ti as Set == expectedTiIds as Set
+    assert deleteResp?.work as Set == expectedWorkIds as Set
+  }
+
+  void verifyKbStats(Map kbStatsResp,
+                     int expectedPciSize,
+                     int expectedPtiSize,
+                     int expectedTiSize,
+                     int expectedWorkSize) {
+    assert kbStatsResp.get("PackageContentItem") == expectedPciSize
+    assert kbStatsResp.get("PlatformTitleInstance") == expectedPtiSize
+    assert kbStatsResp.get("TitleInstance") == expectedTiSize
+    assert kbStatsResp.get("Work") == expectedWorkSize
+  }
+
   @Ignore
   Map getAllResourcesForPCIs(Set<PackageContentItem> pciset) {
    /* Given a set of PCIs, traverse down to the work level and back up,
@@ -305,8 +327,9 @@ class DeletionBaseSpec extends BaseSpec {
   }
 
   @Ignore
-  void visualiseHierarchy(List<String> pciIds) {
+  void visualiseHierarchy(Set<String> pciIds) {
     log.info("PCI ids in test: {}", pciIds.toListString());
+    if (pciIds.isEmpty()) return;
 
     withTenant {
       List<String> workIds = Work.executeQuery("""
