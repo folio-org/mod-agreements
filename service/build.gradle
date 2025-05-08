@@ -125,6 +125,8 @@ dependencies {
 
   //testImplementation("org.grails:views-json-testing-support")
   //testImplementation("org.spockframework:spock-core")
+  testImplementation 'org.apache.commons:commons-csv:1.10.0'
+
 
   /*  ---- Manually installed dependencies ---- */
 	implementation 'com.k_int.grails:web-toolkit-ce:10.1.0'
