@@ -4,14 +4,9 @@ import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
 import org.olf.DeleteResources.Scenario
 
-import java.nio.file.Paths // For more modern file path handling
-
-// Assume your Scenario class is accessible or defined here too
-// For simplicity, let's assume it's defined in AutomatedDeletionSpec as static
 
 class ScenarioCsvReader {
   static List<Scenario> loadScenarios(String filePath) {
-    // Use system property for base path or make filePath absolute
     File inputFile = new File(filePath)
     if (!inputFile.exists()) {
       // Try classloader
@@ -43,6 +38,17 @@ class ScenarioCsvReader {
     return scenarios
   }
 
+  private static Map<String, Integer> processKBInput(String kbInput) {
+    List<String> parsedInput = kbInput?.split(',')?.collect { it.trim() }?.findAll { !it.isEmpty() } ?: []
+    Map<String, Integer> output = new HashMap<>();
+    output.put("pci", parsedInput[0].toInteger());
+    output.put("pti", parsedInput[1].toInteger())
+    output.put("ti", parsedInput[2].toInteger())
+    output.put("work", parsedInput[3].toInteger())
+
+    return output;
+  }
+
   private static void populateScenarios(Reader reader, List<Scenario> scenarios) {
     CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT
       .withHeader()
@@ -51,10 +57,16 @@ class ScenarioCsvReader {
       .withSkipHeaderRecord())
 
     for (record in csvParser) {
-      def scenario = new Scenario() // Assuming Scenario is defined/imported
+      def scenario = new Scenario()
       scenario.description = record.get("scenario_description") ?: "CSV Row ${record.getRecordNumber()}"
       scenario.inputResources = record.get("input_resources")?.split(',')?.collect { it.trim() }?.findAll { !it.isEmpty() } ?: []
-      // ... populate other fields ...
+      scenario.agreementLines = record.get("agreement_lines")?.split(',')?.collect { it.trim() }?.findAll { !it.isEmpty() } ?: []
+      scenario.structure = record.get("structure")
+      scenario.markExpectedIds = record.get("mark_expected_ids")?.split(',')?.collect { it.trim() }?.findAll { !it.isEmpty() } ?: []
+      scenario.expectedKbMarkForDelete = processKBInput(record.get("mark_expected_kb_stats"))
+      scenario.expectedKbDelete = processKBInput(record.get("delete_expected_kb_stats"))
+
+
       scenarios.add(scenario)
     }
     System.out.println("Static (ScenarioCsvReader): Loaded ${scenarios.size()} scenarios.")

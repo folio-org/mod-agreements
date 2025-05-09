@@ -6,8 +6,8 @@ class Scenario {
   List<String> agreementLines
   String structure
   List<String> markExpectedIds
-  List<String> expectedKbMarkForDelete
-  List<String> expectedKbDelete
+  Map<String, Integer> expectedKbMarkForDelete
+  Map<String, Integer> expectedKbDelete
 
   Scenario() {}
 

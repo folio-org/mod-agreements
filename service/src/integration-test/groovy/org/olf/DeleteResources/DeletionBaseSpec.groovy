@@ -41,8 +41,10 @@ class DeletionBaseSpec extends BaseSpec {
         agreementStatus: "active"
     ]
 
-    def response = doPost("/erm/sas/", payload)
+    log.info("LOG DEBUG: PAYLOAD, {}", payload)
 
+    def response = doPost("/erm/sas/", payload)
+    log.info("LOG DEBUG: {}", response)
     return response as Map
   }
 

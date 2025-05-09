@@ -4,13 +4,8 @@ import grails.gorm.transactions.Rollback
 import grails.testing.mixin.integration.Integration
 import groovy.util.logging.Slf4j
 import org.olf.kb.ErmResource
-import org.olf.kb.PackageContentItem
-import org.spockframework.runtime.SpecificationContext
 import spock.lang.Shared
 import spock.lang.Stepwise
-import org.apache.commons.csv.CSVFormat
-import org.apache.commons.csv.CSVParser
-import groovy.json.JsonOutput
 import spock.lang.Unroll
 
 @Integration
@@ -104,6 +99,7 @@ class AutomatedDeletionSpec extends DeletionBaseSpec {
   }
 
   def findInputResourceIds(Scenario testCase) {
+    log.info("Test case in findInputResourceIds: {}", testCase.toString())
     Map<String, Set<String>> allResources = new HashMap<String, Set<String>>();
     allResources.put("pci", new HashSet<String>());
     allResources.put("pti", new HashSet<String>());
@@ -171,24 +167,6 @@ class AutomatedDeletionSpec extends DeletionBaseSpec {
     return allResources;
   }
 
-  def runTestCase(Scenario testCase) {
-    seedDatabaseWithStructure(testCase.toString())
-    Map<String, Set<String>> idsMarkedForProcessing = findInputResourceIds(testCase)
-    Map<String, Set<String>> idsExpectedFromMarkForDelete = findExpectedResourceIds(testCase)
-    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(testCase)
-
-    log.info(testCase.description.toString())
-    log.info("Ids marked for processing: {}", idsMarkedForProcessing.toMapString())
-    log.info("Ids expected for markForDelete: {}", idsExpectedFromMarkForDelete.toMapString())
-    log.info("Ids with agreement lines: {}", idsForAgreementLines.toMapString())
-  }
-
-  @Shared
-  String pkg_id
-
-  List<String> pciIds;
-  List<String> ptiIds;
-  List<String> tiIds;
   String packageNameSimple1 = "K-Int Deletion Test Package 001"
   String packageNameTopLink1 = "K-Int Link - Deletion Test Package 001";
   String packageNameTopLink2 = "K-Int Link - Deletion Test Package 002"
@@ -196,115 +174,79 @@ class AutomatedDeletionSpec extends DeletionBaseSpec {
   String packageNameTiLink2 = "K-Int TI Link - Deletion Test Package 002"
   String agreementName = "test_agreement"
 
-//  setupSpec() {
-//    testCaseData = readTestCases()
-//  }
-
-//  setup() {
-//    SpecificationContext currentSpecInfo = specificationContext;
-//    if (!specificationContext.currentFeature?.name.contains("Scenario")) {
-//      // If not in a SimpleDeletionSpec Scenario (i.e. in a tenant purge/ensure test tenant), don't try to load packages yet.
-//      log.info("--- Skipping Setup for tenant setup tests: ${currentSpecInfo.currentSpec.displayName} (Feature: ${currentSpecInfo.currentFeature?.name}) ---")
-//      return;
-//    }
-//  }
-
-  static {
-    if (allTestScenarios == null) {
-      System.err.println("AutomatedDeletionSpec: allTestScenarios is NULL after loading!")
-    } else {
-      System.out.println("AutomatedDeletionSpec: Loaded ${allTestScenarios.size()} scenarios into allTestScenarios.")
-      if (allTestScenarios.isEmpty()) {
-        System.err.println("AutomatedDeletionSpec: allTestScenarios IS EMPTY after loading!")
-      } else {
-        System.out.println("AutomatedDeletionSpec: First scenario description: ${allTestScenarios.first().description}")
-      }
-    }
-  }
-
-  def setup() {
-    log.info("Current Scenario in setup: ${currentScenario}")
-    if (currentScenario) {
-      log.info("Current Scenario description in setup: ${currentScenario.description}")
-    } else {
-      log.warn("currentScenario IS NULL in setup()")
-    }
-    if (!currentScenario) {
-      return
-    }
-    log.info("--- setup: Preparing for scenario: ${currentScenario.description} ---")
-    log.info("--- Seeding DB for structure: ${currentScenario.structure} ---")
-    seedDatabaseWithStructure(currentScenario.structure)
-  }
-
-//  void "readFile"() {
-//    given:
-//
-//    when:
-//    readTestCases();
-//
-//    then:
-//    true
-//  }
-
-  @Unroll // This will create a separate test report entry for each scenario
+  @Unroll // Create a separate test report entry for each scenario
   void "Scenario: #currentScenario.description"() {
-    given: "The database is seeded for the current scenario's structure"
-    // This is now handled by the `setup()` method automatically by Spock
-    log.info("Executing test for scenario: ${currentScenario.description}")
-    log.info("Input Resources from CSV: ${currentScenario.inputResources}")
-    log.info("Agreement Lines from CSV: ${currentScenario.agreementLines}")
-    log.info("Expected Mark IDs from CSV: ${currentScenario.markExpectedIds}")
+    setup:
+      log.info("Current Scenario in setup: ${currentScenario}")
+      if (currentScenario) {
+        log.info("Current Scenario description in setup: ${currentScenario.description}")
+      } else {
+        log.warn("currentScenario IS NULL in setup()")
+      }
+      if (!currentScenario) {
+        return
+      }
+      log.info("--- setup: Preparing for scenario: ${currentScenario.description} ---")
+      log.info("--- Seeding DB for structure: ${currentScenario.structure} ---")
+      seedDatabaseWithStructure(currentScenario.structure)
 
-    and: "Input parameters are determined"
+
+
+    when: "The mark for delete action is performed (simulated)"
     Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentScenario)
+    visualiseHierarchy(idsForProcessing.get("pci"))
     Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentScenario)
+
+    String agreement_name = agreementName
+    Map agreementResp = createAgreement(agreement_name)
+    idsForAgreementLines.keySet().forEach{String resourceKey -> {
+      if (!idsForAgreementLines.get(resourceKey).isEmpty()) {
+        idsForAgreementLines.get(resourceKey).forEach{String id -> {
+          log.info("agreemtn line resource id: {}", id)
+          addEntitlementForAgreement(agreement_name, id)
+        }}
+      }
+    }}
 
     log.info("IDs for processing: ${idsForProcessing}")
     log.info("IDs for agreement lines: ${idsForAgreementLines}")
-
-    when: "The mark for delete action is performed (simulated)"
     log.info("Simulating mark for delete action...")
+    // TODO: Implement "doDelete" in where block.
+//    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti']])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
 
     then: "The expected resources are marked and KB stats are correct"
     Map<String, Set<String>> expectedMarkedResourceIds = findExpectedResourceIds(currentScenario)
-    List<Integer> expectedKbStatsAfterMark = currentScenario.expectedKbMarkForDelete.collect { it.toInteger() }
 
     log.info("Expected marked resource IDs: ${expectedMarkedResourceIds}")
-    log.info("Expected KB stats after mark: ${expectedKbStatsAfterMark}")
+    log.info("Expected KB stats after mark: ${currentScenario.expectedKbMarkForDelete}")
 
-    // TODO: Add actual assertions against the database state or service results
-    // Example:
-    // def actualMarkedResources = getCurrentlyMarkedResourcesFromDB() // Implement this
-    // assertMapsOfSetsEqual(actualMarkedResources, expectedMarkedResourceIds)
-    //
-    // def actualKbStats = getActualKbStatsFromDB() // Implement this
-    // actualKbStats.pci == expectedKbStatsAfterMark[0]
-    // actualKbStats.pti == expectedKbStatsAfterMark[1]
-    // actualKbStats.ti == expectedKbStatsAfterMark[2]
-    // actualKbStats.work == expectedKbStatsAfterMark[3]
+    assert kbStatsResp.get("PackageContentItem") == currentScenario.expectedKbMarkForDelete.get("pci")
+    assert kbStatsResp.get("PlatformTitleInstance") == currentScenario.expectedKbMarkForDelete.get("pti")
+    assert kbStatsResp.get("TitleInstance") == currentScenario.expectedKbMarkForDelete.get("ti")
+    assert kbStatsResp.get("Work") == currentScenario.expectedKbMarkForDelete.get("work")
+    assert operationResponse.get("pci") as Set == expectedMarkedResourceIds.get("pci") as Set
+    assert operationResponse.get("pti") as Set == expectedMarkedResourceIds.get("pti") as Set
+    assert operationResponse.get("ti") as Set == expectedMarkedResourceIds.get("ti") as Set
+    assert operationResponse.get("work") as Set == expectedMarkedResourceIds.get("work") as Set
 
-    // Placeholder assertion
-    1 == 1 // Replace with real assertions
-
-    // If testing the actual deletion as well:
     when: "The delete action is performed (simulated)"
     log.info("Simulating delete action...")
-    // yourService.deleteMarkedItems() // Actual call
 
     then: "The KB stats reflect the deletion"
-    List<Integer> expectedKbStatsAfterDelete = currentScenario.expectedKbDelete.collect { it.toInteger() }
-    log.info("Expected KB stats after delete: ${expectedKbStatsAfterDelete}")
+    log.info("Expected KB stats after delete: ${currentScenario.expectedKbDelete}")
 
     // TODO: Add actual assertions for deletion
-    // def actualKbStatsAfterDelete = getActualKbStatsFromDB()
-    // actualKbStatsAfterDelete.pci == expectedKbStatsAfterDelete[0]
-    // ...
 
-    // Placeholder assertion
-    1 == 1 // Replace with real assertions
+
+    cleanup:
+    clearResources()
 
     where:
     currentScenario << allTestScenarios // Spock iterates here, injecting currentScenario
+
   }
 }
