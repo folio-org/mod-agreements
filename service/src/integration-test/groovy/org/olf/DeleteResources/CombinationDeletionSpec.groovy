@@ -210,8 +210,29 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     log.info("CURRENT ITERATION:")
     log.info(currentInputResources.toListString())
     log.info(currentAgreementLines.toListString())
-    log.info(findInputResourceIds(currentInputResources, "simple").toMapString())
-    log.info(findAgreementLineResourceIds(currentAgreementLines, "simple").toMapString())
+    Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, "simple")
+    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, "simple")
+    visualiseHierarchy(idsForProcessing.get("pci"))
+
+    String agreement_name = agreementName
+    Map agreementResp = createAgreement(agreement_name)
+    idsForAgreementLines.keySet().forEach{String resourceKey -> {
+      if (!idsForAgreementLines.get(resourceKey).isEmpty()) {
+        idsForAgreementLines.get(resourceKey).forEach{String id -> {
+          log.info("agreement line resource id: {}", id)
+          addEntitlementForAgreement(agreement_name, id)
+        }}
+      }
+    }}
+    log.info("IDs for processing: ${idsForProcessing}")
+    log.info("IDs for agreement lines: ${idsForAgreementLines}")
+
+    // TODO: Implement "doDelete" in where block.
+//    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Map operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti']])
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
 
     then:
       assert true
