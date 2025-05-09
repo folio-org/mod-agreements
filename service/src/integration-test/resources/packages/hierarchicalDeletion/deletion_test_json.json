@@ -1,0 +1,4554 @@
+{
+    "Ti-Link": {
+        "PCI1,PCI2": [
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "All"
+                ],
+                "description": "Both PCIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 0,
+                    "ti": 0,
+                    "work": 0,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "PCI2",
+                    "PTI2"
+                ],
+                "description": "Both PCIs + One PCI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PCIs + Both PCI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI2"
+                ],
+                "description": "Both PCIs + One PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "description": "Both PCIs + Both PTIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI2",
+                    "PTI2"
+                ],
+                "description": "Both PCIs + One PCI, Same PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI2"
+                ],
+                "description": "Both PCIs + One PCI, Opposite PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI2"
+                ],
+                "description": "Both PCIs + One PCI, Both PTIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PCIs + Both PCIs, One PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PCIs + Both PCIs, Both PTIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PCI1": [
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI + Same PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI + Same PCI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI + Opposite PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI + Opposite PCI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI + Both PCI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI + Both PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI + Same PCI, Opposite PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI + Opposite PCI, Same PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI + Same PCI, Both PTIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI + Opposite PCI, Both PTIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI + Both PCIs, Same PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI + Both PCIs, Opposite PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI + Both PCIs, Both PTIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PTI1": [
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Same PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Same PCI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Opposite PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Opposite PCI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Both PCI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Both PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Same PCI, Opposite PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Opposite PCI, Same PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Same PCI, Both PTIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Opposite PCI, Both PTIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Both PCIs, Same PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Both PCIs, Opposite PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI + Both PCIs, Both PTIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PTI1,PTI2": [
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PTIs + One PCI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PTIs + Both PCIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PTIs + One PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PTIs + Both PTIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PTIs + One PCI, Same PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PTIs + One PCI, Opposite PTI PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PTIs + One PCI, Both PTIs Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PTIs + Both PCIs, One PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PTIs + Both PCIs, Both PTI Ag.",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PCI1,PTI1": [
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI, Same PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI, Same PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI, Same PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI, Same PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI, Same PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Same PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Same PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Same PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Same PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Same PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PCI1,PTI2": [
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Opposite PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PCI1,PCI2,PTI1": [
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "All"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 0,
+                    "ti": 0,
+                    "work": 0,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI2"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "PCI2",
+                    "PTI2"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1",
+                    "PCI2"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI2"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI2"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PCIs, One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PCI1,PTI1,PTI2": [
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PCI, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PCI1,PCI2,PTI1,PTI2": [
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "All"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 0,
+                    "ti": 0,
+                    "work": 0,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI2"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "PCI2",
+                    "PTI2"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1",
+                    "PCI2"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI2"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI2"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Ti-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1",
+                    "PTI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "Both PCIs, Both PTIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 2,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ]
+    },
+    "Simple": {
+        "PCI1": [
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "All"
+                ],
+                "description": "One PCI",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 0,
+                    "ti": 0,
+                    "work": 0,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "simple - 1pci - 1pci",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "simple - 1pci - 1pti",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "simple - 1pci - 1pci, 1pti",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 0,
+                    "ti": 0,
+                    "work": 0,
+                    "pci": 0
+                }
+            }
+        ],
+        "PTI1": [
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "simple - 1pti - 1pci",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "simple - 1pti - 1pti",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "simple - 1pti - 1pci, 1pti",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            }
+        ],
+        "PCI1,PTI1": [
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "All"
+                ],
+                "description": "One PCI, Same PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 0,
+                    "ti": 0,
+                    "work": 0,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 124",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "CSV Row 125",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Simple",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 126",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            }
+        ]
+    },
+    "Top-Link": {
+        "PCI1": [
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 132",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "CSV Row 133",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "CSV Row 134",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 135",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "CSV Row 136",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 137",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 138",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PTI1": [
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "One PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 139",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 140",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 141",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 142",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 143",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 144",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 145",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PCI1,PTI1": [
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "One PCI, Shared PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 146",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "CSV Row 147",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "CSV Row 148",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 149",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "CSV Row 150",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 151",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 152",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PCI1,PCI2": [
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "All"
+                ],
+                "description": "Both PCIs",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 0,
+                    "ti": 0,
+                    "work": 0,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "PCI2"
+                ],
+                "description": "CSV Row 153",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "CSV Row 154",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "description": "CSV Row 155",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI2"
+                ],
+                "description": "CSV Row 156",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "CSV Row 157",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 158",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 159",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ],
+        "PCI1,PCI2,PTI1": [
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "None"
+                ],
+                "markExpectedIds": [
+                    "All"
+                ],
+                "description": "Both PCIs, Shared PTI",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 0,
+                    "ti": 0,
+                    "work": 0,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1"
+                ],
+                "markExpectedIds": [
+                    "PCI2"
+                ],
+                "description": "CSV Row 160",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "CSV Row 161",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "description": "CSV Row 162",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 0
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI2"
+                ],
+                "description": "CSV Row 163",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "PCI1"
+                ],
+                "description": "CSV Row 164",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 1
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 165",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            },
+            {
+                "structure": "Top-Link",
+                "inputResources": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "agreementLines": [
+                    "PCI1",
+                    "PCI2",
+                    "PTI1"
+                ],
+                "markExpectedIds": [
+                    "None"
+                ],
+                "description": "CSV Row 166",
+                "expectedKbMarkForDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                },
+                "expectedKbDelete": {
+                    "pti": 1,
+                    "ti": 2,
+                    "work": 1,
+                    "pci": 2
+                }
+            }
+        ]
+    }
+}

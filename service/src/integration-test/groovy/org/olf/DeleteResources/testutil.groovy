@@ -1,5 +1,7 @@
 package org.olf.DeleteResources
 
+import grails.plugin.json.builder.JsonOutput
+import groovy.json.JsonBuilder
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
 import org.olf.DeleteResources.Scenario
@@ -36,6 +38,52 @@ class ScenarioCsvReader {
       populateScenarios(reader, scenarios)
     }
     return scenarios
+  }
+
+  private static Map<String, Map<String, List<Scenario>>> transformToNestedStructure(List<Scenario> scenarios) {
+    // Group by 'structure'
+    Map<String, List<Scenario>> groupedByStructure = scenarios.groupBy {
+      it.structure ?: "UNKNOWN_STRUCTURE" // Handle null structure values
+    }
+
+    // Further group by 'inputResources' within each structure group
+    Map<String, Map<String, List<Scenario>>> nestedScenarios = [:]
+    groupedByStructure.each { structureKey, scenariosInStructure ->
+      Map<String, List<Scenario>> groupedByInputResources = scenariosInStructure.groupBy { scenario ->
+        // Create a canonical key from the inputResources list: sort and join
+        // Handle null or empty inputResources
+        def resources = scenario.inputResources ?: []
+        resources.sort(false).join(',') // sort(false) creates a new sorted list
+      }
+      nestedScenarios[structureKey] = groupedByInputResources
+    }
+    return nestedScenarios
+  }
+
+  static String loadScenariosAsJson(String filePath, boolean prettyPrint = false) {
+    List<Scenario> scenarios = loadScenarios(filePath)
+    Map<String, Map<String, List<Scenario>>> nestedData = transformToNestedStructure(scenarios)
+    if (prettyPrint) {
+      return new JsonBuilder(nestedData).toPrettyString()
+    } else {
+      return JsonOutput.toJson(nestedData)
+    }
+  }
+
+  static void saveScenariosAsJsonFile(String csvInputPath, String jsonOutputPath, boolean prettyPrint = false) {
+    String jsonString = loadScenariosAsJson(csvInputPath, prettyPrint)
+    File outputFile = new File(jsonOutputPath)
+
+    try {
+      // Ensure parent directories exist
+      outputFile.getParentFile()?.mkdirs()
+
+      outputFile.write(jsonString, 'UTF-8') // Write string to file, specifying encoding
+      System.out.println("Static (ScenarioCsvReader): Successfully saved scenarios to JSON file: ${outputFile.absolutePath}")
+    } catch (IOException e) {
+      System.err.println("Static (ScenarioCsvReader): Error saving JSON to file ${outputFile.absolutePath}: ${e.getMessage()}")
+      throw e // Re-throw the exception if you want the caller to handle it
+    }
   }
 
   private static Map<String, Integer> processKBInput(String kbInput) {
