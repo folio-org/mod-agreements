@@ -98,6 +98,21 @@ class DeletionBaseSpec extends BaseSpec {
     }
   }
 
+  PackageContentItem findPCIById(String id) {
+    withTenant {
+      String hql = """
+            SELECT pci
+            FROM PackageContentItem pci
+            WHERE pci.id = :id
+        """
+      List results = PackageContentItem.executeQuery(hql, [id: id])
+      if (results.size() > 1) {
+        throw new IllegalStateException("Multiple PCIs found for package name, one expected.")
+      }
+      return results.get(0);
+    }
+  }
+
   List<TitleInstance> findTisByWorkId(Set<String> workIds) {
     withTenant {
       String hql = """
@@ -322,6 +337,32 @@ class DeletionBaseSpec extends BaseSpec {
         ErmResource.executeUpdate(
             """DELETE FROM ErmTitleList"""
         )
+      }
+    }
+  }
+
+  @Ignore
+  void clearAgreements() {
+    withTenant {
+      ErmResource.withTransaction {
+        PackageIngressMetadata.executeUpdate("DELETE FROM PackageIngressMetadata")
+
+
+        IdentifierOccurrence.executeUpdate("DELETE FROM IdentifierOccurrence")
+
+
+        ErmResource.executeUpdate(
+          """DELETE FROM Period"""
+        )
+
+        ErmResource.executeUpdate(
+          """DELETE FROM Entitlement"""
+        )
+
+        ErmResource.executeUpdate(
+          """DELETE FROM SubscriptionAgreement"""
+        )
+
       }
     }
   }
