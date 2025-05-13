@@ -247,8 +247,6 @@ public class ErmResourceService {
     markForDeletion.put('ti', new HashSet<String>());
     markForDeletion.put('work', new HashSet<String>());
 
-    Set<String> tisMarkedForWorkChecking = new HashSet<String>();
-
     markForDeletion.get('pci').addAll(markForDeletePCI(pciIds));
     log.info("LOG DEBUG - PCIs marked for deletion {}", markForDeletion.get("pci"))
 
@@ -278,7 +276,10 @@ public class ErmResourceService {
     ) as Set
     tisForDeleteCheck.addAll(tiIds)
 
+    log.info("TIs for delete check - {}", tisForDeleteCheck.toListString())
+
     Tuple2<Set<String>, Set<String>> tisAndWorksForDeletion = markForDeleteTI(tisForDeleteCheck, markForDeletion.get("pti"));
+    log.info("LOG DEBUG - TIS and Works for Deletion - {}", tisAndWorksForDeletion.toListString())
     markForDeletion.get('ti').addAll(tisAndWorksForDeletion.v1);
     markForDeletion.get('work').addAll(tisAndWorksForDeletion.v2);
 
@@ -341,7 +342,7 @@ public class ErmResourceService {
 
   // Outputs a list of TIs to mark for deletion AND a list of works to mark for deletion
   public Tuple2<Set<String>, Set<String>> markForDeleteTI(Set<String> ids, Set<String> ignorePtis) {
-    Set<String> worksToDelete = ids
+    Set<String> tisToDelete = ids
       .stream()
       .map(id -> {
         // Find any other PTIs that have not been marked for deletion that exist for the TIs.
@@ -355,11 +356,33 @@ public class ErmResourceService {
           log.info("LOG WARNING: PTIs that have not been marked for deletion exist for TI: TI ID- {}, PTIs found- {}", id, ptisForTi);
           return null
         }
+        return id }
+      ).filter({id -> id != null })
+      .collect(Collectors.toSet())
+
+    Set<String> worksToDelete = ids
+      .stream()
+      .map(id -> {
+        // Find any other PTIs that have not been marked for deletion that exist for the TIs.
+        Set<String> ptisForTi = PlatformTitleInstance.executeQuery("""
+          SELECT pti.id FROM PlatformTitleInstance pti
+          WHERE pti.titleInstance.id = :tiId
+          AND pti.id NOT IN :ignorePtis
+        """.toString(), [tiId:id, ignorePtis:handleEmptyListMapping(ignorePtis)], [max:1])  as Set
+
+        log.info("PTIs for TI ({}): {}", id, ptisForTi.toListString())
+
+        if (ptisForTi.size() != 0) {
+          log.info("LOG WARNING: PTIs that have not been marked for deletion exist for TI: TI ID- {}, PTIs found- {}", id, ptisForTi);
+          return null
+        }
 
         List<String> workIdList = TitleInstance.executeQuery("""
           SELECT ti.work.id FROM TitleInstance ti
           WHERE ti.id = :tiId
         """.toString(), [tiId: id], [max: 1])
+
+        log.info("Work ID List: {}", workIdList.toListString())
 
         String workId;
 
@@ -376,6 +399,8 @@ public class ErmResourceService {
           AND pti.titleInstance.work.id = :workId
         """.toString(), [ignorePtis:handleEmptyListMapping(ignorePtis), workId: workId], [max:1]) as Set
 
+        log.info("Ptis for Work: {}", ptisForWork.toListString())
+
         if (ptisForWork.size() != 0) {
           log.info("LOG WARNING: PTIs that have not been marked for deletion exist for work: Work ID- {}, PTIs found- {}", workId, ptisForWork);
           return null
@@ -386,7 +411,9 @@ public class ErmResourceService {
       .filter({id -> id != null })
       .collect(Collectors.toSet());
 
-    Set<String> tisToDelete = worksToDelete
+    log.info("LOG DEBUG - Attemping to delete works: {}", worksToDelete.toListString())
+
+    Set<String> tisToDeleteFromWork = worksToDelete
       .stream()
       .flatMap(id -> {
         Set<String> tisForWork = Work.executeQuery("""
@@ -397,6 +424,8 @@ public class ErmResourceService {
         return tisForWork.stream()
       })
       .collect(Collectors.toSet());
+
+    tisToDelete.addAll(tisToDeleteFromWork)
 
     return Tuple.tuple(tisToDelete, worksToDelete);
   }
