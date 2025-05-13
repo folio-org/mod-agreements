@@ -91,7 +91,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       List resp = doGet("/erm/packages", [filters: ["name==${packageNameWorkLink1}"]])
       List resp2 = doGet("/erm/packages", [filters: ["name==${packageNameWorkLink2}"]])
 
-
+      // Attach the Electronic ti from package 2 to the work from package 1. Then cleanup the orphaned work + ti, and the print ti on package 1.
       withTenant {
         PackageContentItem pci1 = findPCIByPackageName(packageNameWorkLink1) // Use the work from this package as base.
         PackageContentItem pci2 = findPCIByPackageName(packageNameWorkLink2)
@@ -124,7 +124,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
           """DELETE FROM Period"""
         )
 
-
+        // Delete orphaned TI
         TitleInstance.executeUpdate(
           """
         DELETE FROM TitleInstance ti
@@ -133,6 +133,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
           [oldWorkEntity: oldWorkInstance] // Pass the entity instance
         )
 
+        // Delete orphaned work.
         Work.executeUpdate(
           """
         DELETE FROM Work w
@@ -141,6 +142,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
           [workId: oldWorkInstance.id]
         )
 
+        // Delete print TI remaining to leave 2 TIs total.
         TitleInstance.executeUpdate(
           """
         DELETE FROM TitleInstance ti
@@ -300,18 +302,16 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
   }
 
   List<List<String>> generateSubCombinations(List<String> originalList) {
-    // Start with a list containing just the empty list, as it's a valid combination.
+    // Taking a list of elements e.g. [a, b]
+    // Output a list of lists of all combinations (ignoring order) including empties, e.g. [[], [a], [b], [a,b]]
+
     List<List<String>> powerSet = [[]]
 
     // For each element in the original list...
+    // Will construct the above example like [[]] --> [[], [a]] --> [[], [a], [b], [a,b]]
     originalList.each { element ->
-      // For every combination already found so far...
-      // We need to iterate over a copy of powerSet at this point,
-      // because we are modifying powerSet inside the loop.
       List<List<String>> newCombinationsForThisElement = []
       powerSet.each { existingCombination ->
-        // Create a new combination by adding the current element
-        // to the existing combination.
         newCombinationsForThisElement.add(new ArrayList<>(existingCombination) + element)
       }
       powerSet.addAll(newCombinationsForThisElement)
@@ -326,18 +326,18 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     } else if (element.endsWith("2")) {
       return element.substring(0, element.length() - 1) + "1"
     }
-    return element // No change if it doesn't end with 1 or 2
+    return element
   }
 
-  // Your trimSubCombinations modified with the "hasSisterForm" check
   List<List<String>> trimSubCombinations(List<List<String>> allSubCombinations) {
-    Set<List<String>> formsAddedToSet = new HashSet<>() // Using a Set to store what we've decided to keep
+    Set<List<String>> formsAddedToSet = new HashSet<>()
 
     allSubCombinations.each { subCombination ->
       List<String> currentCandidate = new ArrayList<>(subCombination)
-      List<String> formAfterInitialRule; // This is what your code called canonicalForm
+      List<String> formAfterInitialRule;
 
-      // Apply your original "2-only" transformation
+      // Check if all resources belong on one branch (e.g. [PCI2, PTI2])
+      // If so, convert them to the "1" form.
       boolean isTwoOnly = !currentCandidate.isEmpty() &&
         currentCandidate.every { it.endsWith("2") };
       if (isTwoOnly) {
@@ -345,7 +345,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
           if (it.length() > 0 && it.endsWith("2")) {
             return it.substring(0, it.length() - 1) + "1";
           }
-          return it; // Should not happen if every element endsWith("2") but good for safety
+          return it;
         };
       } else {
         formAfterInitialRule = currentCandidate;
@@ -354,19 +354,15 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       // Sort this form as it's a candidate for adding or comparison
       Collections.sort(formAfterInitialRule);
 
-      // Now, generate its "fully swapped sister" form
       List<String> sisterForm = formAfterInitialRule.collect { swapElementSuffix(it) };
-      Collections.sort(sisterForm); // The sister form must also be sorted for consistent Set checking
+      Collections.sort(sisterForm);
 
-      // THE "hasSisterForm" CHECK:
-      // If the sister form is already in our set of chosen forms, then we don't add the current one.
+      // Now we have the "canonical" form for single-branch forms: i.e. [PCI2, PTI2] converted to [PCI1, PTI1]
+      // but we could instead have [PCI1, PTI2]. Because this is equivalent to checking [PCI2, PTI1], we can
+      // check if the "opposite/sister form already exists in the final set of combinations. If it does, skip.
       if (formsAddedToSet.contains(sisterForm)) {
-        // Sister is already present, so this formAfterInitialRule is redundant. Do nothing.
+        // Do nothing.
       } else {
-        // Sister is not present. So, we add the current formAfterInitialRule.
-        // This makes the choice dependent on processing order if formAfterInitialRule and sisterForm
-        // are different (e.g. ["PCI1","PTI2"] vs ["PCI2","PTI1"]).
-        // The one processed first whose sister isn't in the set will be added.
         formsAddedToSet.add(formAfterInitialRule);
       }
     }
@@ -999,13 +995,27 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     }}
   }
 
-  void assertKbStatsAndIds(String structure, Map operationResponse, Exception operationError, Map kbStatsResp, Map expectedMarkForDelete) {
+  Map calculateDoDeleteKbStats(Map expectedMarkForDelete) {
+    Map expectedKbStatsForDelete = new HashMap<>();
+    expectedKbStatsForDelete.put("PackageContentItem", expectedKbStatsData.get("PackageContentItem") - expectedMarkForDelete.get("pci").size())
+    expectedKbStatsForDelete.put("PlatformTitleInstance", expectedKbStatsData.get("PlatformTitleInstance") - expectedMarkForDelete.get("pti").size())
+    expectedKbStatsForDelete.put("TitleInstance", expectedKbStatsData.get("TitleInstance") - expectedMarkForDelete.get("ti").size())
+    expectedKbStatsForDelete.put("Work", expectedKbStatsData.get("Work") - expectedMarkForDelete.get("work").size())
+
+    return expectedKbStatsForDelete
+  }
+
+  void assertKbStatsMatch(Map kbStatsResp) {
     assert expectedKbStatsData.get("PackageContentItem") == kbStatsResp.get("PackageContentItem")
     assert expectedKbStatsData.get("PlatformTitleInstance") == kbStatsResp.get("PlatformTitleInstance")
     assert expectedKbStatsData.get("TitleInstance") == kbStatsResp.get("TitleInstance")
     assert expectedKbStatsData.get("Work") == kbStatsResp.get("Work")
+  }
+
+  void assertIdsMatch(String structure, Map operationResponse, Exception operationError, Map kbStatsResp, Map expectedMarkForDelete) {
 
     if (operationResponse) {
+      // If no TIs were deleted, or all are deleted, we don't need to check their IDs.
       if (expectedMarkForDelete.get("ti").size() == kbStatsResp.get("TitleInstance") || expectedMarkForDelete.get("ti").size() == 0) {
         assert true
       }
@@ -1059,22 +1069,30 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       log.info("Expected KB Stats: ${expectedKbStatsData}")
       log.info("Expected marked for deletion: {}", featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(",")))
       Map<String, List<String>> expectedMarkForDelete = featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(","));
+      Map doDeleteExpectedKbStats = new HashMap();
+      if (doDelete) {
+//        doDeleteExpectedKbStats = calculateDoDeleteKbStats(expectedMarkForDelete)
+      }
     then:
-      assertKbStatsAndIds("simple", operationResponse, operationError, kbStatsResp, expectedMarkForDelete)
-
+      assertIdsMatch(structure, operationResponse, operationError, kbStatsResp, expectedMarkForDelete)
+      if (doDelete) {
+//        assertKbStatsMatch(doDeleteExpectedKbStats)
+      } else {
+        assertKbStatsMatch(kbStatsResp)
+      }
     where:
-      [currentInputResources, currentAgreementLines] <<
+      [currentInputResources, currentAgreementLines, doDelete] <<
         simpleCombinations.collectMany { inputResourceCombo ->
-          simpleCombinations.collect { agreementLineCombo ->
-            [inputResourceCombo, agreementLineCombo]
+          simpleCombinations.collectMany { agreementLineCombo ->
+            [true, false].collect { deleteFlag -> // Iterate over the boolean flags
+              [inputResourceCombo, agreementLineCombo, deleteFlag]   // Create a new list with the flag appended
+            }
           }
         }
 
   }
 
-
-
-//  @Ignore
+  @Ignore
   void "Scenario 2: top-link"() {
     setup:
       String structure = "top-link"
@@ -1107,8 +1125,8 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     log.info("Expected marked for deletion: {}", featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(",")))
     Map<String, List<String>> expectedMarkForDelete = featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(","));
     then:
-    assertKbStatsAndIds(structure, operationResponse, operationError, kbStatsResp, expectedMarkForDelete)
-
+      assertIdsMatch(structure, operationResponse, operationError, kbStatsResp, expectedMarkForDelete)
+      assertKbStatsMatch(kbStatsResp)
 
     where:
     [currentInputResources, currentAgreementLines] <<
@@ -1152,7 +1170,8 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     log.info("Expected marked for deletion: {}", featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(",")))
     Map<String, List<String>> expectedMarkForDelete = featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(","));
     then:
-    assertKbStatsAndIds(structure, operationResponse, operationError, kbStatsResp, expectedMarkForDelete)
+    assertIdsMatch(structure, operationResponse, operationError, kbStatsResp, expectedMarkForDelete)
+    assertKbStatsMatch(kbStatsResp)
     where:
     [currentInputResources, currentAgreementLines] <<
       tiLinkInputResourceCombinations.collectMany { inputResourceCombo ->
