@@ -21,5 +21,13 @@
     "PlatformTitleInstance":1,
     "TitleInstance":2,
     "Work":1
+  },
+  "work-link": {
+    "ErmResource":8,
+    "Pkg":2,
+    "PackageContentItem":2,
+    "PlatformTitleInstance":2,
+    "TitleInstance":2,
+    "Work":1
   }
 }

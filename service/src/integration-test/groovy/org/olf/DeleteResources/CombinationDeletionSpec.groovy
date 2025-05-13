@@ -6,10 +6,12 @@ import groovy.util.logging.Slf4j
 import org.olf.erm.Entitlement
 import org.olf.erm.SubscriptionAgreement
 import org.olf.kb.ErmResource
+import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.PackageContentItem
 import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.TitleInstance
 import org.olf.kb.Work
+import org.olf.kb.metadata.PackageIngressMetadata
 import org.spockframework.runtime.SpecificationContext
 import spock.lang.Ignore
 import spock.lang.Shared
@@ -52,6 +54,14 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
   @Shared
   List<List<String>> workLinkAgreementLineCombinations;
 
+  @Shared
+  Map<String, Integer> expectedKbStatsData;
+
+  @Shared
+  Map<String, Map<String, List<String>>> featureScenarios;
+
+
+
   def seedDatabaseWithStructure(String structure) {
     if (structure == "simple") {
       importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
@@ -81,13 +91,14 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       List resp = doGet("/erm/packages", [filters: ["name==${packageNameWorkLink1}"]])
       List resp2 = doGet("/erm/packages", [filters: ["name==${packageNameWorkLink2}"]])
 
-      PackageContentItem pci1 = findPCIByPackageName(packageNameWorkLink1) // Use the work from this package as base.
-      PackageContentItem pci2 = findPCIByPackageName(packageNameWorkLink2)
-
-      String targetWorkId = pci1.pti.titleInstance.work.id
-      String titleInstanceIdToUpdate = pci2.pti.titleInstance.id
 
       withTenant {
+        PackageContentItem pci1 = findPCIByPackageName(packageNameWorkLink1) // Use the work from this package as base.
+        PackageContentItem pci2 = findPCIByPackageName(packageNameWorkLink2)
+        String targetWorkId = pci1.pti.titleInstance.work.id
+        String titleInstanceIdToUpdate = pci2.pti.titleInstance.id
+        Work oldWorkInstance = pci2.pti.titleInstance.work
+
         Work targetWork = Work.get(targetWorkId)
         if (!targetWork) {
           log.error("Could not find target Work with ID {}.", targetWorkId)
@@ -102,6 +113,46 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
             """.toString(),
           [ newWork: targetWork, tiId: titleInstanceIdToUpdate ]
         )
+
+        PackageIngressMetadata.executeUpdate("DELETE FROM PackageIngressMetadata")
+
+
+        IdentifierOccurrence.executeUpdate("DELETE FROM IdentifierOccurrence")
+
+
+        ErmResource.executeUpdate(
+          """DELETE FROM Period"""
+        )
+
+
+        TitleInstance.executeUpdate(
+          """
+        DELETE FROM TitleInstance ti
+        WHERE ti.work = :oldWorkEntity
+        """.toString(),
+          [oldWorkEntity: oldWorkInstance] // Pass the entity instance
+        )
+
+        Work.executeUpdate(
+          """
+        DELETE FROM Work w
+        WHERE w.id = :workId
+        """.toString(),
+          [workId: oldWorkInstance.id]
+        )
+
+        TitleInstance.executeUpdate(
+          """
+        DELETE FROM TitleInstance ti
+        WHERE ti.id NOT IN (
+            SELECT pti.titleInstance.id 
+            FROM PlatformTitleInstance pti 
+            WHERE pti.titleInstance.id IS NOT NULL 
+        )
+        """.toString()
+            )
+
+
       }
     }
   }
@@ -770,7 +821,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       }
   }
 
-//  @Ignore
+  @Ignore
   void "Scenario 1d: work-link-populate"() {
     setup:
     seedDatabaseWithStructure("work-link")
@@ -849,13 +900,16 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       }
 
       try {
-        operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti']])
+        operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti'], 'tis': idsForProcessing['ti']])
 
       } catch (Exception e) {
         log.info(e.toString())
       }
 
+      Map kbStatsResp = doGet("/erm/statistics/kbCount")
       log.info("Operation Response: ${operationResponse}")
+      log.info("KB Stats: ${kbStatsResp}")
+
       operationResponse.each { key, value ->
         if (key == 'pci') {
           operationResponse[key] = value.collect { pciId ->
@@ -907,8 +961,8 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
 
   }
 
-//  @Ignore
-  void "Scenario 4: Save JSON "() {
+  @Ignore
+  void "Scenario 2: Save JSON "() {
     setup:
     log.info("In setup")
     when:
@@ -920,39 +974,74 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       true
   }
 
-  @Ignore
+  void setupDataForTest(String structure) {
+    seedDatabaseWithStructure(structure)
+    File jsonFile = new File("src/integration-test/resources/packages/hierarchicalDeletion/expectedKbStats.json")
+    File scenarios = new File("src/integration-test/resources/packages/hierarchicalDeletion/nestedScenarios.json")
+    def jsonSlurper = new JsonSlurper()
+
+    // Parse JSON into a nested Map
+    expectedKbStatsData = jsonSlurper.parse(jsonFile).get(structure)
+    Map<String, Map<String, Map<String, List<String>>>> nestedScenarios = jsonSlurper.parse(scenarios)
+    featureScenarios = nestedScenarios.get(structure)
+  }
+
+  void createAgreementLines(Map<String, Set<String>> idsForAgreementLines) {
+    String agreement_name = agreementName
+    Map agreementResp = createAgreement(agreement_name)
+    idsForAgreementLines.keySet().forEach{String resourceKey -> {
+      if (!idsForAgreementLines.get(resourceKey).isEmpty()) {
+        idsForAgreementLines.get(resourceKey).forEach{String id -> {
+          log.info("agreement line resource id: {}", id)
+          addEntitlementForAgreement(agreement_name, id)
+        }}
+      }
+    }}
+  }
+
+  void assertKbStatsAndIds(String structure, Map operationResponse, Exception operationError, Map kbStatsResp, Map expectedMarkForDelete) {
+    assert expectedKbStatsData.get("PackageContentItem") == kbStatsResp.get("PackageContentItem")
+    assert expectedKbStatsData.get("PlatformTitleInstance") == kbStatsResp.get("PlatformTitleInstance")
+    assert expectedKbStatsData.get("TitleInstance") == kbStatsResp.get("TitleInstance")
+    assert expectedKbStatsData.get("Work") == kbStatsResp.get("Work")
+
+    if (operationResponse) {
+      if (expectedMarkForDelete.get("ti").size() == kbStatsResp.get("TitleInstance") || expectedMarkForDelete.get("ti").size() == 0) {
+        assert true
+      }
+
+      if (expectedMarkForDelete.get("work").size() == kbStatsResp.get("Work") || expectedMarkForDelete.get("work").size() == 0) {
+        assert true
+      }
+
+      Map<String, Set<String>>  expectedPcis = findInputResourceIds(expectedMarkForDelete.get("pci"), structure)
+      Map<String, Set<String>>  expectedPtis = findInputResourceIds(expectedMarkForDelete.get("pti"), structure)
+      assert expectedPcis.get("pci") == operationResponse.get("pci") as Set
+      assert expectedPtis.get("pti") == operationResponse.get("pti") as Set
+    }
+
+    if (operationError) {
+      log.info("Exception message: {}", operationError.message)
+      operationError.message == "Id list cannot be empty."
+    }
+  }
+
+//  @Ignore
   void "Scenario 1: simple"() {
     setup:
-      seedDatabaseWithStructure("simple")
-      File jsonFile = new File("src/integration-test/resources/packages/hierarchicalDeletion/expectedKbStats.json")
-      File scenarios = new File("src/integration-test/resources/packages/hierarchicalDeletion/nestedScenarios.json")
-      def jsonSlurper = new JsonSlurper()
-
-      // Parse JSON into a nested Map
-      Map<String, Integer> expectedKbStatsData = jsonSlurper.parse(jsonFile).get("simple")
-      Map<String, Map<String, Map<String, List<String>>>> nestedScenarios = jsonSlurper.parse(scenarios)
-      Map<String, Map<String, List<String>>> simpleScenarios = nestedScenarios.get("simple")
+      String structure = "simple"
+      setupDataForTest(structure)
 
     when: "The PCI created during setup is marked for deletion"
-      log.info("Nested scenarios: {}", nestedScenarios.toMapString())
-      log.info("CURRENT ITERATION:")
-      log.info(currentInputResources.toListString())
-      log.info(currentAgreementLines.toListString())
-      Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, "simple")
-      Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, "simple")
+      log.info("CURRENT ITERATION: inputs - {} agreements - {}", currentInputResources.toListString(), currentAgreementLines.toListString())
+      Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, structure)
+      Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, structure)
+
       visualiseHierarchy(idsForProcessing.get("pci"))
-      String agreement_name = agreementName
-      Map agreementResp = createAgreement(agreement_name)
-      idsForAgreementLines.keySet().forEach{String resourceKey -> {
-        if (!idsForAgreementLines.get(resourceKey).isEmpty()) {
-          idsForAgreementLines.get(resourceKey).forEach{String id -> {
-            log.info("agreement line resource id: {}", id)
-            addEntitlementForAgreement(agreement_name, id)
-          }}
-        }
-      }}
-      log.info("IDs for processing: ${idsForProcessing}")
-      log.info("IDs for agreement lines: ${idsForAgreementLines}")
+      createAgreementLines(idsForAgreementLines)
+
+      log.info("IDs found for processing: ${idsForProcessing}")
+      log.info("IDs found for agreement lines: ${idsForAgreementLines}")
 
       // TODO: Implement "doDelete" in where block.
   //    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
@@ -968,43 +1057,10 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       log.info("Operation Response: ${operationResponse}")
       log.info("KB Stats: ${kbStatsResp}")
       log.info("Expected KB Stats: ${expectedKbStatsData}")
-      log.info("Expected marked for deletion: {}", simpleScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(",")))
-      Map<String, List<String>> expectedMarkForDelete = simpleScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(","));
+      log.info("Expected marked for deletion: {}", featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(",")))
+      Map<String, List<String>> expectedMarkForDelete = featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(","));
     then:
-      expectedKbStatsData.get("PackageContentItem") == kbStatsResp.get("PackageContentItem")
-      expectedKbStatsData.get("PlatformTitleInstance") == kbStatsResp.get("PlatformTitleInstance")
-      expectedKbStatsData.get("TitleInstance") == kbStatsResp.get("TitleInstance")
-      expectedKbStatsData.get("Work") == kbStatsResp.get("Work")
-
-      if (operationResponse) {
-        Map<String, Set<String>>  expectedPcis = findInputResourceIds(expectedMarkForDelete.get("pci"), "simple")
-        Map<String, Set<String>>  expectedPtis = findInputResourceIds(expectedMarkForDelete.get("pti"), "simple")
-        expectedPcis.get("pci") == operationResponse.get("pci") as Set
-        expectedPtis.get("pti") == operationResponse.get("pti") as Set
-
-        // Works and Tis are either all deleted or all kept, so no need to check IDs. Can assert false if this is not true.
-        if (expectedMarkForDelete.get("ti").size() == kbStatsResp.get("TitleInstance") || expectedMarkForDelete.get("ti").size() == 0) {
-          assert true
-        } else {
-          assert false
-        }
-
-        if (expectedMarkForDelete.get("work").size() == kbStatsResp.get("Work") || expectedMarkForDelete.get("work").size() == 0) {
-          assert true
-        } else {
-          assert false
-        }
-
-        if (operationError) {
-          log.info("Exception message: {}", operationError.message)
-          operationError.message == "Id list cannot be empty."
-        }
-
-        log.info("PCIS {}", expectedPcis.toMapString())
-        log.info("PTIS {}", expectedPtis.toMapString())
-      }
-
-
+      assertKbStatsAndIds("simple", operationResponse, operationError, kbStatsResp, expectedMarkForDelete)
 
     where:
       [currentInputResources, currentAgreementLines] <<
@@ -1016,69 +1072,43 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
 
   }
 
-  @Ignore
+
+
+//  @Ignore
   void "Scenario 2: top-link"() {
     setup:
-    seedDatabaseWithStructure("top-link")
-    File jsonFile = new File("src/integration-test/resources/packages/hierarchicalDeletion/expectedKbStats.json")
-    File scenarios = new File("src/integration-test/resources/packages/hierarchicalDeletion/nestedScenarios.json")
-    def jsonSlurper = new JsonSlurper()
-
-    // Parse JSON into a nested Map
-    Map<String, Integer> expectedKbStatsData = jsonSlurper.parse(jsonFile).get("top-link")
-    Map<String, Map<String, Map<String, List<String>>>> nestedScenarios = jsonSlurper.parse(scenarios)
-    Map<String, Map<String, List<String>>> topLinkScenarios = nestedScenarios.get("top-link")
+      String structure = "top-link"
+      setupDataForTest(structure)
 
     when: "The PCI created during setup is marked for deletion"
-    log.info("Nested scenarios: {}", nestedScenarios.toMapString())
-    log.info("CURRENT ITERATION:")
-    log.info(currentInputResources.toListString())
-    log.info(currentAgreementLines.toListString())
-    Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, "top-link")
-    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, "top-link")
-    visualiseHierarchy(idsForProcessing.get("pci"))
-    String agreement_name = agreementName
-    Map agreementResp = createAgreement(agreement_name)
-    idsForAgreementLines.keySet().forEach{String resourceKey -> {
-      if (!idsForAgreementLines.get(resourceKey).isEmpty()) {
-        idsForAgreementLines.get(resourceKey).forEach{String id -> {
-          log.info("agreement line resource id: {}", id)
-          addEntitlementForAgreement(agreement_name, id)
-        }}
-      }
-    }}
-    log.info("IDs for processing: ${idsForProcessing}")
-    log.info("IDs for agreement lines: ${idsForAgreementLines}")
+      log.info("CURRENT ITERATION: inputs - {} agreements - {}", currentInputResources.toListString(), currentAgreementLines.toListString())
+      Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, structure)
+      Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, structure)
+
+      visualiseHierarchy(idsForProcessing.get("pci"))
+      createAgreementLines(idsForAgreementLines)
+
+      log.info("IDs found for processing: ${idsForProcessing}")
+      log.info("IDs found for agreement lines: ${idsForAgreementLines}")
 
     // TODO: Implement "doDelete" in where block.
     //    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
-    Map operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti']])
+    Exception operationError;
+    Map operationResponse;
+    try {
+      operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti']])
+    } catch (Exception e) {
+      operationError = e;
+    }
     Map kbStatsResp = doGet("/erm/statistics/kbCount")
     log.info("Operation Response: ${operationResponse}")
     log.info("KB Stats: ${kbStatsResp}")
     log.info("Expected KB Stats: ${expectedKbStatsData}")
-    log.info("Expected marked for deletion: {}", topLinkScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(",")))
-    Map<String, List<String>> expectedMarkForDelete = topLinkScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(","));
+    log.info("Expected marked for deletion: {}", featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(",")))
+    Map<String, List<String>> expectedMarkForDelete = featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(","));
     then:
-    expectedKbStatsData.get("PackageContentItem") == kbStatsResp.get("PackageContentItem")
-    expectedKbStatsData.get("PlatformTitleInstance") == kbStatsResp.get("PlatformTitleInstance")
-    expectedKbStatsData.get("TitleInstance") == kbStatsResp.get("TitleInstance")
-    expectedKbStatsData.get("Work") == kbStatsResp.get("Work")
+    assertKbStatsAndIds(structure, operationResponse, operationError, kbStatsResp, expectedMarkForDelete)
 
-    if (expectedMarkForDelete.get("ti").size() == expectedKbStatsData.get("TitleInstance") || expectedMarkForDelete.get("ti").size() == 0) {
-      assert true
-    }
-
-    if (expectedMarkForDelete.get("work").size() == expectedKbStatsData.get("Work") || expectedMarkForDelete.get("work").size() == 0) {
-      assert true
-    }
-
-    Map<String, Set<String>>  expectedPcis = findInputResourceIds(expectedMarkForDelete.get("pci"), "top-link")
-    Map<String, Set<String>>  expectedPtis = findInputResourceIds(expectedMarkForDelete.get("pti"), "top-link")
-    expectedPcis.get("pci") == operationResponse.get("pci") as Set
-    expectedPtis.get("pti") == operationResponse.get("pti") as Set
-    log.info("PCIS {}", expectedPcis.toMapString())
-    log.info("PTIS {}", expectedPtis.toMapString())
 
     where:
     [currentInputResources, currentAgreementLines] <<
@@ -1090,68 +1120,84 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
   }
 
   @Ignore
-  void "Scenario 3: work-link"() {
+  void "Scenario 3 ti-link"() {
     setup:
-    seedDatabaseWithStructure("work-link")
-    File jsonFile = new File("src/integration-test/resources/packages/hierarchicalDeletion/expectedKbStats.json")
-    File scenarios = new File("src/integration-test/resources/packages/hierarchicalDeletion/nestedScenarios.json")
-    def jsonSlurper = new JsonSlurper()
-
-    // Parse JSON into a nested Map
-    Map<String, Integer> expectedKbStatsData = jsonSlurper.parse(jsonFile).get("work-link")
-    Map<String, Map<String, Map<String, List<String>>>> nestedScenarios = jsonSlurper.parse(scenarios)
-    Map<String, Map<String, List<String>>> workLinkScenarios = nestedScenarios.get("work-link")
+    String structure = "ti-link"
+    setupDataForTest(structure)
 
     when: "The PCI created during setup is marked for deletion"
-    log.info("Nested scenarios: {}", nestedScenarios.toMapString())
-    log.info("CURRENT ITERATION:")
-    log.info(currentInputResources.toListString())
-    log.info(currentAgreementLines.toListString())
-    Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, "work-link")
-    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, "work-link")
+    log.info("CURRENT ITERATION: inputs - {} agreements - {}", currentInputResources.toListString(), currentAgreementLines.toListString())
+    Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, structure)
+    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, structure)
+
     visualiseHierarchy(idsForProcessing.get("pci"))
-    String agreement_name = agreementName
-    Map agreementResp = createAgreement(agreement_name)
-    idsForAgreementLines.keySet().forEach{String resourceKey -> {
-      if (!idsForAgreementLines.get(resourceKey).isEmpty()) {
-        idsForAgreementLines.get(resourceKey).forEach{String id -> {
-          log.info("agreement line resource id: {}", id)
-          addEntitlementForAgreement(agreement_name, id)
-        }}
-      }
-    }}
-    log.info("IDs for processing: ${idsForProcessing}")
-    log.info("IDs for agreement lines: ${idsForAgreementLines}")
+    createAgreementLines(idsForAgreementLines)
+
+    log.info("IDs found for processing: ${idsForProcessing}")
+    log.info("IDs found for agreement lines: ${idsForAgreementLines}")
 
     // TODO: Implement "doDelete" in where block.
     //    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
-    Map operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti']])
+    Exception operationError;
+    Map operationResponse;
+    try {
+      operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti']])
+    } catch (Exception e) {
+      operationError = e;
+    }
     Map kbStatsResp = doGet("/erm/statistics/kbCount")
     log.info("Operation Response: ${operationResponse}")
     log.info("KB Stats: ${kbStatsResp}")
     log.info("Expected KB Stats: ${expectedKbStatsData}")
-    log.info("Expected marked for deletion: {}", workLinkScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(",")))
-    Map<String, List<String>> expectedMarkForDelete = workLinkScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(","));
+    log.info("Expected marked for deletion: {}", featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(",")))
+    Map<String, List<String>> expectedMarkForDelete = featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(","));
     then:
-    expectedKbStatsData.get("PackageContentItem") == kbStatsResp.get("PackageContentItem")
-    expectedKbStatsData.get("PlatformTitleInstance") == kbStatsResp.get("PlatformTitleInstance")
-    expectedKbStatsData.get("TitleInstance") == kbStatsResp.get("TitleInstance")
-    expectedKbStatsData.get("Work") == kbStatsResp.get("Work")
+    assertKbStatsAndIds(structure, operationResponse, operationError, kbStatsResp, expectedMarkForDelete)
+    where:
+    [currentInputResources, currentAgreementLines] <<
+      tiLinkInputResourceCombinations.collectMany { inputResourceCombo ->
+        tiLinkAgreementLineCombinations.collect { agreementLineCombo ->
+          [inputResourceCombo, agreementLineCombo]
+        }
+      }
 
-    if (expectedMarkForDelete.get("ti").size() == expectedKbStatsData.get("TitleInstance") || expectedMarkForDelete.get("ti").size() == 0) {
-      assert true
+  }
+
+  @Ignore
+  void "Scenario 4: work-link"() {
+    setup:
+      String structure = "work-link"
+      setupDataForTest(structure)
+
+    when: "The PCI created during setup is marked for deletion"
+    log.info("CURRENT ITERATION: inputs - {} agreements - {}", currentInputResources.toListString(), currentAgreementLines.toListString())
+    Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, structure)
+    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, structure)
+
+    visualiseHierarchy(idsForProcessing.get("pci"))
+    createAgreementLines(idsForAgreementLines)
+
+    log.info("IDs found for processing: ${idsForProcessing}")
+    log.info("IDs found for agreement lines: ${idsForAgreementLines}")
+
+    // TODO: Implement "doDelete" in where block.
+    //    String url = doDelete ? "/erm/hierarchicalDelete/delete" : "/erm/hierarchicalDelete/markForDelete"
+    Exception operationError;
+    Map operationResponse;
+    try {
+      operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti'], 'tis': idsForProcessing['ti']])
+    } catch (Exception e) {
+      operationError = e;
     }
 
-    if (expectedMarkForDelete.get("work").size() == expectedKbStatsData.get("Work") || expectedMarkForDelete.get("work").size() == 0) {
-      assert true
-    }
-
-    Map<String, Set<String>>  expectedPcis = findInputResourceIds(expectedMarkForDelete.get("pci"), "top-link")
-    Map<String, Set<String>>  expectedPtis = findInputResourceIds(expectedMarkForDelete.get("pti"), "top-link")
-    expectedPcis.get("pci") == operationResponse.get("pci") as Set
-    expectedPtis.get("pti") == operationResponse.get("pti") as Set
-    log.info("PCIS {}", expectedPcis.toMapString())
-    log.info("PTIS {}", expectedPtis.toMapString())
+    Map kbStatsResp = doGet("/erm/statistics/kbCount")
+    log.info("Operation Response: ${operationResponse}")
+    log.info("KB Stats: ${kbStatsResp}")
+    log.info("Expected KB Stats: ${expectedKbStatsData}")
+    log.info("Expected marked for deletion: {}", featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(",")))
+    Map<String, List<String>> expectedMarkForDelete = featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(","));
+    then:
+    assertKbStatsAndIds(structure, operationResponse, operationError, kbStatsResp, expectedMarkForDelete)
 
     where:
     [currentInputResources, currentAgreementLines] <<
@@ -1162,26 +1208,4 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       }
 
   }
-
-//
-//  void "Scenario 3 ti-link"() {
-//    setup:
-//    seedDatabaseWithStructure("ti-link")
-//    when: "The PCI created during setup is marked for deletion"
-//    log.info("CURRENT ITERATION:")
-//    log.info(currentInputResources.toListString())
-//    log.info(currentAgreementLines.toListString())
-//    then:
-//    assert true
-//
-//    where:
-//    [currentInputResources, currentAgreementLines] <<
-//      tiLinkCombinations.collectMany { inputResourceCombo ->
-//        tiLinkCombinations.collect { agreementLineCombo ->
-//          [inputResourceCombo, agreementLineCombo]
-//        }
-//      }
-//
-//  }
-
 }
