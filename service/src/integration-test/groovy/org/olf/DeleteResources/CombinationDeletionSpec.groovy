@@ -407,7 +407,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
      true
   }
 
-  @Ignore
+//  @Ignore
   void "Scenario 1a: simple-populate"() {
     setup:
     seedDatabaseWithStructure("simple")
@@ -525,10 +525,23 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
 
     }
     }
+    if (operationResponse.isEmpty()) {
+      operationResponse.put("pci", [])
+      operationResponse.put("pti", [])
+      operationResponse.put("ti", [])
+      operationResponse.put("work", [])
+    }
+
     nestedScenarios
       .computeIfAbsent("simple", { [:] })
+      .computeIfAbsent("inputResource", { [:] })
       .computeIfAbsent(inputResourcesIdentifier, { [:] })
-      .put(agreementLinesIdentifier, operationResponse)
+      .computeIfAbsent("agreementLine", { [:] })
+      .put(agreementLinesIdentifier, ["expectedValue": operationResponse])
+//    nestedScenarios
+//      .computeIfAbsent("simple", { [:] })
+//      .computeIfAbsent(inputResourcesIdentifier, { [:] })
+//      .put(agreementLinesIdentifier, operationResponse)
     then:
     log.info(nestedScenarios.toMapString())
 
@@ -957,7 +970,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
 
   }
 
-  @Ignore
+//  @Ignore
   void "Scenario 2: Save JSON "() {
     setup:
     log.info("In setup")
@@ -1036,7 +1049,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     }
   }
 
-//  @Ignore
+  @Ignore
   void "Scenario 1: simple"() {
     setup:
       String structure = "simple"
