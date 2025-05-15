@@ -677,8 +677,10 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     }
     nestedScenarios
       .computeIfAbsent("ti-link", { [:] })
+      .computeIfAbsent("inputResource", { [:] })
       .computeIfAbsent(inputResourcesIdentifier, { [:] })
-      .put(agreementLinesIdentifier, operationResponse)
+      .computeIfAbsent("agreementLine", { [:] })
+      .put(agreementLinesIdentifier, ["expectedValue": operationResponse])
     then:
     log.info(nestedScenarios.toMapString())
 
@@ -814,8 +816,10 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     }
     nestedScenarios
       .computeIfAbsent("top-link", { [:] })
+      .computeIfAbsent("inputResource", { [:] })
       .computeIfAbsent(inputResourcesIdentifier, { [:] })
-      .put(agreementLinesIdentifier, operationResponse)
+      .computeIfAbsent("agreementLine", { [:] })
+      .put(agreementLinesIdentifier, ["expectedValue": operationResponse])
     then:
     log.info(nestedScenarios.toMapString())
 
@@ -842,8 +846,8 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     log.info(currentAgreementLines.toListString())
     Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, "work-link")
     Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, "work-link")
-    String inputResourcesIdentifier = currentInputResources.sort(false).join(",")
-    String agreementLinesIdentifier = currentAgreementLines.sort(false).join(",")
+    String inputResourcesIdentifier = currentInputResources.isEmpty() ? "Empty" : currentInputResources.sort(false).join(",")
+    String agreementLinesIdentifier = currentAgreementLines.isEmpty() ? "Empty" : currentAgreementLines.sort(false).join(",")
 
 
     visualiseHierarchy(idsForProcessing.get("pci"))
@@ -951,10 +955,13 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
 
     }
     }
+
     nestedScenarios
       .computeIfAbsent("work-link", { [:] })
+      .computeIfAbsent("inputResource", { [:] })
       .computeIfAbsent(inputResourcesIdentifier, { [:] })
-      .put(agreementLinesIdentifier, operationResponse)
+      .computeIfAbsent("agreementLine", { [:] })
+      .put(agreementLinesIdentifier, ["expectedValue": operationResponse])
     then:
     log.info(nestedScenarios.toMapString())
 
@@ -1080,8 +1087,10 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       log.info("Operation Response: ${operationResponse}")
       log.info("KB Stats: ${kbStatsResp}")
       log.info("Expected KB Stats: ${expectedKbStatsData}")
-      log.info("Expected marked for deletion: {}", featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(",")))
-      Map<String, List<String>> expectedMarkForDelete = featureScenarios.get(currentInputResources.sort(false).join(",")).get(currentAgreementLines.sort(false).join(","));
+      log.info("Expected marked for deletion: {}", featureScenarios.get("inputResource").get(currentInputResources.sort(false).join(",")).get("agreementLine").get(currentAgreementLines.sort(false).join(",")).get("expectedValue"))
+    String currentInputResourcesKey = currentInputResources.isEmpty() ? "Empty" : currentInputResources.sort(false).join(",")
+    String currentAgreementLinesKey = currentAgreementLines.isEmpty() ? "Empty" : currentAgreementLines.sort(false).join(",")
+    Map<String, List<String>> expectedMarkForDelete = featureScenarios.get("inputResource").get(currentInputResourcesKey).get("agreementLine").get(currentAgreementLinesKey).get("expectedValue");
       Map doDeleteExpectedKbStats = new HashMap();
       if (doDelete) {
 //        doDeleteExpectedKbStats = calculateDoDeleteKbStats(expectedMarkForDelete)

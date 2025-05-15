@@ -33,8 +33,8 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
     importPackageFromFileViaService('hierarchicalDeletion/top_link_deletion.json')
     importPackageFromFileViaService('hierarchicalDeletion/top_link_deletion_link.json')
 
-    List resp = doGet("/erm/packages", [filters: ['name==K-Int Link - Deletion Test Package 001']])
-    List resp2 = doGet("/erm/packages", [filters: ['name==K-Int Link - Deletion Test Package 002']])
+    List resp = doGet("/erm/packages", [filters: ["name==$packageName1}"]])
+    List resp2 = doGet("/erm/packages", [filters: ["name==$packageName2}"]])
 
     Map kbStatsResp = doGet("/erm/statistics/kbCount")
     Map sasStatsResp = doGet("/erm/statistics/sasCount")
@@ -70,7 +70,8 @@ class TopLinkDeletionSpec extends DeletionBaseSpec{
     }
   }
 
-  void "[Scenario] Structure: Top-Link, Marked: [PCI1, PCI2], Agreement Lines: []"(String actionDescription, boolean doDelete) {
+  void """[Scenario] 'Everything is deleted when two PCIs selected and no agreement lines' -
+       Structure: Top-Link, Marked: [PCI1, PCI2], Agreement Lines: []"""(String actionDescription, boolean doDelete) {
     given: "Setup has found PCI IDs"
     PackageContentItem pci1 = findPCIByPackageName(packageName1)
     PackageContentItem pci2 = findPCIByPackageName(packageName2)
