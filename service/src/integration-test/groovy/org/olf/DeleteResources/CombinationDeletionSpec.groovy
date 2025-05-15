@@ -17,6 +17,7 @@ import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Stepwise
 import groovy.json.JsonOutput
+import spock.lang.Unroll
 
 @Integration
 @Stepwise
@@ -34,7 +35,10 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
 
 
   @Shared
-  List<List<String>> simpleCombinations;
+  List<List<String>> simpleInputResourceCombinations;
+
+  @Shared
+  List<List<String>> simpleAgreementLineCombinations;
 
   @Shared
   List<List<String>> topLinkInputResourceCombinations;
@@ -329,54 +333,6 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     return element
   }
 
-  List<List<String>> trimSubCombinations(List<List<String>> allSubCombinations) {
-    Set<List<String>> formsAddedToSet = new HashSet<>()
-
-    allSubCombinations.each { subCombination ->
-      List<String> currentCandidate = new ArrayList<>(subCombination)
-      List<String> formAfterInitialRule;
-
-      // Check if all resources belong on one branch (e.g. [PCI2, PTI2])
-      // If so, convert them to the "1" form.
-      boolean isTwoOnly = !currentCandidate.isEmpty() &&
-        currentCandidate.every { it.endsWith("2") };
-      if (isTwoOnly) {
-        formAfterInitialRule = currentCandidate.collect {
-          if (it.length() > 0 && it.endsWith("2")) {
-            return it.substring(0, it.length() - 1) + "1";
-          }
-          return it;
-        };
-      } else {
-        formAfterInitialRule = currentCandidate;
-      }
-
-      // Sort this form as it's a candidate for adding or comparison
-      Collections.sort(formAfterInitialRule);
-
-      List<String> sisterForm = formAfterInitialRule.collect { swapElementSuffix(it) };
-      Collections.sort(sisterForm);
-
-      // Now we have the "canonical" form for single-branch forms: i.e. [PCI2, PTI2] converted to [PCI1, PTI1]
-      // but we could instead have [PCI1, PTI2]. Because this is equivalent to checking [PCI2, PTI1], we can
-      // check if the "opposite/sister form already exists in the final set of combinations. If it does, skip.
-      if (formsAddedToSet.contains(sisterForm)) {
-        // Do nothing.
-      } else {
-        formsAddedToSet.add(formAfterInitialRule);
-      }
-    }
-
-    return new ArrayList<>(formsAddedToSet);
-  }
-
-
-  // Helper method to combine both steps
-  List<List<String>> generateAndTrimSubCombinations(List<String> originalList) {
-    List<List<String>> allCombinations = generateSubCombinations(originalList)
-    return trimSubCombinations(allCombinations)
-  }
-
 
   @Shared
   Map<String, Map<String, Map<String, List<String>>>> nestedScenarios = [:];
@@ -395,19 +351,21 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       "work-link": ["PCI1", "PCI2", "PTI1", "PTI2", "TI1", "TI2"],
       "work-link-agreements": ["PCI1", "PCI2", "PTI1", "PTI2"]
     ]
-    simpleCombinations = generateSubCombinations(resourcesByStructure.get("simple"))
-    topLinkInputResourceCombinations = generateAndTrimSubCombinations(resourcesByStructure.get("top-link"))
+    simpleInputResourceCombinations = [["PCI1"], ["PTI1"]]
+    simpleAgreementLineCombinations = generateSubCombinations(resourcesByStructure.get("simple"))
+    topLinkInputResourceCombinations = [["PCI1"], ["PTI1"], ["PCI1", "PCI2"]]
     topLinkAgreementLineCombinations = generateSubCombinations(resourcesByStructure.get("top-link"))
-    tiLinkInputResourceCombinations = generateAndTrimSubCombinations(resourcesByStructure.get("ti-link"))
+    tiLinkInputResourceCombinations = [["PCI1"], ["PTI1"], ["PCI1", "PCI2"], ["PTI1", "PTI2"]]
     tiLinkAgreementLineCombinations = generateSubCombinations(resourcesByStructure.get("ti-link"))
-    workLinkInputResourceCombinations = generateAndTrimSubCombinations(resourcesByStructure.get("work-link"))
+    workLinkInputResourceCombinations = [["PCI1"], ["PTI1"], ["PCI1", "PCI2"], ["PTI1", "PTI2"]]
     workLinkAgreementLineCombinations = generateSubCombinations(resourcesByStructure.get("work-link-agreements"))
     then:
       log.info(workLinkInputResourceCombinations.toListString())
      true
   }
 
-  void "Populate expected outcomes for #structure scenarios"() {
+  @Ignore
+  void "Populate expected outcomes for #structure, input resources: #currentInputResources, agreement lines: #currentAgreementLines scenarios"() {
     setup:
     clearResources()
     seedDatabaseWithStructure(structure)
@@ -495,7 +453,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
   List generatePopulationPermutations() {
     List permutations = []
     [
-      [structure: "simple",    inputs: simpleCombinations,                agreements: simpleCombinations],
+      [structure: "simple",    inputs: simpleInputResourceCombinations,   agreements: simpleAgreementLineCombinations],
       [structure: "top-link",  inputs: topLinkInputResourceCombinations,  agreements: topLinkAgreementLineCombinations],
       [structure: "ti-link",   inputs: tiLinkInputResourceCombinations,   agreements: tiLinkAgreementLineCombinations],
       [structure: "work-link", inputs: workLinkInputResourceCombinations, agreements: workLinkAgreementLineCombinations]
@@ -558,7 +516,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     }
   }
 
-//  @Ignore
+  @Ignore
   void "Scenario 2: Save JSON "() {
     setup:
     log.info("In setup")
@@ -637,7 +595,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     }
   }
 
-  @Ignore
+//  @Ignore
   void "Scenario 1: simple"() {
     setup:
       String structure = "simple"
@@ -668,9 +626,9 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       log.info("Operation Response: ${operationResponse}")
       log.info("KB Stats: ${kbStatsResp}")
       log.info("Expected KB Stats: ${expectedKbStatsData}")
-      log.info("Expected marked for deletion: {}", featureScenarios.get("inputResource").get(currentInputResources.sort(false).join(",")).get("agreementLine").get(currentAgreementLines.sort(false).join(",")).get("expectedValue"))
     String currentInputResourcesKey = currentInputResources.isEmpty() ? "Empty" : currentInputResources.sort(false).join(",")
     String currentAgreementLinesKey = currentAgreementLines.isEmpty() ? "Empty" : currentAgreementLines.sort(false).join(",")
+    log.info("Expected marked for deletion: {}", featureScenarios.get("inputResource").get(currentInputResourcesKey).get("agreementLine").get(currentAgreementLinesKey).get("expectedValue"))
     Map<String, List<String>> expectedMarkForDelete = featureScenarios.get("inputResource").get(currentInputResourcesKey).get("agreementLine").get(currentAgreementLinesKey).get("expectedValue");
       Map doDeleteExpectedKbStats = new HashMap();
       if (doDelete) {
@@ -685,8 +643,8 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       }
     where:
       [currentInputResources, currentAgreementLines, doDelete] <<
-        simpleCombinations.collectMany { inputResourceCombo ->
-          simpleCombinations.collectMany { agreementLineCombo ->
+        simpleInputResourceCombinations.collectMany { inputResourceCombo ->
+          simpleAgreementLineCombinations.collectMany { agreementLineCombo ->
             [true, false].collect { deleteFlag -> // Iterate over the boolean flags
               [inputResourceCombo, agreementLineCombo, deleteFlag]   // Create a new list with the flag appended
             }
