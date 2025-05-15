@@ -407,574 +407,155 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
      true
   }
 
-//  @Ignore
-  void "Scenario 1a: simple-populate"() {
+  void "Populate expected outcomes for #structure scenarios"() {
     setup:
-    seedDatabaseWithStructure("simple")
+    clearResources()
+    seedDatabaseWithStructure(structure)
 
-
-    when: "The PCI created during setup is marked for deletion"
-    log.info("CURRENT ITERATION:")
-    log.info(currentInputResources.toListString())
-    log.info(currentAgreementLines.toListString())
-    Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, "simple")
-    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, "simple")
-    String inputResourcesIdentifier = currentInputResources.sort(false).join(",")
-    String agreementLinesIdentifier = currentAgreementLines.sort(false).join(",")
-
-
-    visualiseHierarchy(idsForProcessing.get("pci"))
-    Map operationResponse = new HashMap();
-
-    String agreement_name = agreementName
-    Map agreementResp = createAgreement(agreement_name)
-    Set<String> pciIds = [findPCIByPackageName("K-Int Deletion Test Package 001").id]
-    Map<String, String> tiMap = [:]
-    Map<String, String> workMap = [:]
+    // Determine pciIds for mapping based on structure
+    Set<String> pciIdsForMapping
+    switch (structure) {
+      case "simple":
+        pciIdsForMapping = [findPCIByPackageName(packageNameSimple1).id]
+        break
+      case "top-link":
+        pciIdsForMapping = [findPCIByPackageName(packageNameTopLink1).id, findPCIByPackageName(packageNameTopLink2).id]
+        break
+      case "ti-link":
+        pciIdsForMapping = [findPCIByPackageName(packageNameTiLink1).id, findPCIByPackageName(packageNameTiLink2).id]
+        break
+      case "work-link":
+        pciIdsForMapping = [findPCIByPackageName(packageNameWorkLink1).id, findPCIByPackageName(packageNameWorkLink2).id]
+        break
+      default:
+        throw new IllegalArgumentException("Unknown structure: $structure")
+    }
     Map<String, String> pciMap = [:]
     Map<String, String> ptiMap = [:]
-
-//            pciIds.eachWithIndex { pciId, index ->
-//              pciMap[pciId] = "PCI${index + 1}"
-//            }
-    pciIds.eachWithIndex {String id, Integer index -> {
-      PackageContentItem pci = findPCIById(id)
-      pciMap[id] = "PCI${index + 1}"
-      if (!ptiMap[pci.pti.id]) {
-        ptiMap[pci.pti.id] = "PTI${index + 1}"
-      }
-      if (!tiMap[pci.pti.titleInstance.id]) {
-        tiMap[pci.pti.titleInstance.id] = "TI${index + 1}"
-      }
-      if (!workMap[pci.pti.titleInstance.work.id]) {
-        workMap[pci.pti.titleInstance.work.id] = "Work${index + 1}"
-      }
-
-      List<TitleInstance> titleInstanceList = findTisByWorkId([pci.pti.titleInstance.work.id] as Set)
-      titleInstanceList.forEach {TitleInstance ti -> {
-        int startIndex = tiMap.keySet().size();
-        if (!tiMap[ti.id]) {
-          tiMap[ti.id] = "TI${startIndex + 1}"
-          startIndex += 1
-        }
-      }}
-
-
-
-      idsForAgreementLines.keySet().forEach{String resourceKey -> {
-        if (!idsForAgreementLines.get(resourceKey).isEmpty()) {
-          idsForAgreementLines.get(resourceKey).forEach{String resourceId -> {
-            log.info("agreement line resource id: {}", resourceId)
-            addEntitlementForAgreement(agreement_name, resourceId)
-          }}
-        }
-      }}
-
-
-
-      log.info("PCI Map: ${pciMap}")
-      log.info("PTI Map: ${ptiMap}")
-      log.info("TI Map: ${tiMap}")
-      log.info("Work Map: ${workMap}")
-
-      log.info("IDs for processing: ${idsForProcessing}")
-      log.info("IDs for agreement lines: ${idsForAgreementLines}")
-
-      if (idsForProcessing.isEmpty()) {
-        operationResponse = new HashMap();
-        return
-      }
-
-      try {
-        operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti']])
-
-      } catch (Exception e) {
-        log.info(e.toString())
-      }
-
-      log.info("Operation Response: ${operationResponse}")
-      operationResponse.each { key, value ->
-        if (key == 'pci') {
-          operationResponse[key] = value.collect { pciId ->
-            pciMap[pciId] ?: pciId
-          }
-        }
-
-        if (key == 'pti') {
-          operationResponse[key] = value.collect { ptiId ->
-            ptiMap[ptiId] ?: ptiId
-          }
-        }
-
-        if (key == 'ti') {
-          operationResponse[key] = value.collect { tiId ->
-            tiMap[tiId] ?: tiId
-          }
-        }
-
-        if (key == 'work') {
-          operationResponse[key] = value.collect { workId ->
-            workMap[workId] ?: workId
-          }
-        }
-
-
-      }
-      log.info("Operation Response: ${operationResponse}")
-
-
-    }
-    }
-    if (operationResponse.isEmpty()) {
-      operationResponse.put("pci", [])
-      operationResponse.put("pti", [])
-      operationResponse.put("ti", [])
-      operationResponse.put("work", [])
-    }
-
-    nestedScenarios
-      .computeIfAbsent("simple", { [:] })
-      .computeIfAbsent("inputResource", { [:] })
-      .computeIfAbsent(inputResourcesIdentifier, { [:] })
-      .computeIfAbsent("agreementLine", { [:] })
-      .put(agreementLinesIdentifier, ["expectedValue": operationResponse])
-//    nestedScenarios
-//      .computeIfAbsent("simple", { [:] })
-//      .computeIfAbsent(inputResourcesIdentifier, { [:] })
-//      .put(agreementLinesIdentifier, operationResponse)
-    then:
-    log.info(nestedScenarios.toMapString())
-
-    assert true
-
-    where:
-    [currentInputResources, currentAgreementLines] <<
-      simpleCombinations.collectMany { inputResourceCombo ->
-        simpleCombinations.collect { agreementLineCombo ->
-          [inputResourceCombo, agreementLineCombo]
-        }
-      }
-
-  }
-
-  @Ignore
-  void "Scenario 1b: ti-link-populate"() {
-    setup:
-    seedDatabaseWithStructure("ti-link")
-
-
-    when: "The PCI created during setup is marked for deletion"
-    log.info("CURRENT ITERATION:")
-    log.info(currentInputResources.toListString())
-    log.info(currentAgreementLines.toListString())
-    Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, "ti-link")
-    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, "ti-link")
-    String inputResourcesIdentifier = currentInputResources.sort(false).join(",")
-    String agreementLinesIdentifier = currentAgreementLines.sort(false).join(",")
-
-
-    visualiseHierarchy(idsForProcessing.get("pci"))
-    Map operationResponse = new HashMap();
-
-    String agreement_name = agreementName
-    Map agreementResp = createAgreement(agreement_name)
-    Set<String> pciIds = [findPCIByPackageName("K-Int TI Link - Deletion Test Package 001").id, findPCIByPackageName("K-Int TI Link - Deletion Test Package 002").id]
     Map<String, String> tiMap = [:]
     Map<String, String> workMap = [:]
-    Map<String, String> pciMap = [:]
-    Map<String, String> ptiMap = [:]
 
-//            pciIds.eachWithIndex { pciId, index ->
-//              pciMap[pciId] = "PCI${index + 1}"
-//            }
-    pciIds.eachWithIndex {String id, Integer index -> {
-      PackageContentItem pci = findPCIById(id)
-      pciMap[id] = "PCI${index + 1}"
-      if (!ptiMap[pci.pti.id]) {
-        ptiMap[pci.pti.id] = "PTI${index + 1}"
-      }
-      if (!tiMap[pci.pti.titleInstance.id]) {
-        tiMap[pci.pti.titleInstance.id] = "TI${index + 1}"
-      }
-      if (!workMap[pci.pti.titleInstance.work.id]) {
-        workMap[pci.pti.titleInstance.work.id] = "Work${index + 1}"
-      }
+    // Build the resource name maps (PCI1, PTI1, etc.)
+    buildResourceNameMaps(pciIdsForMapping, pciMap, ptiMap, tiMap, workMap)
 
-      List<TitleInstance> titleInstanceList = findTisByWorkId([pci.pti.titleInstance.work.id] as Set)
-      titleInstanceList.forEach {TitleInstance ti -> {
-        int startIndex = tiMap.keySet().size();
-        if (!tiMap[ti.id]) {
-          tiMap[ti.id] = "TI${startIndex + 1}"
-          startIndex += 1
-        }
-      }}
-
-
-
-      idsForAgreementLines.keySet().forEach{String resourceKey -> {
-        if (!idsForAgreementLines.get(resourceKey).isEmpty()) {
-          idsForAgreementLines.get(resourceKey).forEach{String resourceId -> {
-            log.info("agreement line resource id: {}", resourceId)
-            addEntitlementForAgreement(agreement_name, resourceId)
-          }}
-        }
-      }}
-
-
-
-      log.info("PCI Map: ${pciMap}")
-      log.info("PTI Map: ${ptiMap}")
-      log.info("TI Map: ${tiMap}")
-      log.info("Work Map: ${workMap}")
-
-      log.info("IDs for processing: ${idsForProcessing}")
-      log.info("IDs for agreement lines: ${idsForAgreementLines}")
-
-      if (idsForProcessing.isEmpty()) {
-        operationResponse = new HashMap();
-        return
-      }
-
-      try {
-        operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti']])
-
-      } catch (Exception e) {
-        log.info(e.toString())
-      }
-
-      log.info("Operation Response: ${operationResponse}")
-      operationResponse.each { key, value ->
-        if (key == 'pci') {
-          operationResponse[key] = value.collect { pciId ->
-            pciMap[pciId] ?: pciId
-          }
-        }
-
-        if (key == 'pti') {
-          operationResponse[key] = value.collect { ptiId ->
-            ptiMap[ptiId] ?: ptiId
-          }
-        }
-
-        if (key == 'ti') {
-          operationResponse[key] = value.collect { tiId ->
-            tiMap[tiId] ?: tiId
-          }
-        }
-
-        if (key == 'work') {
-          operationResponse[key] = value.collect { workId ->
-            workMap[workId] ?: workId
-          }
-        }
-
-
-      }
-      log.info("Operation Response: ${operationResponse}")
-
-
-    }
-    }
-    nestedScenarios
-      .computeIfAbsent("ti-link", { [:] })
-      .computeIfAbsent("inputResource", { [:] })
-      .computeIfAbsent(inputResourcesIdentifier, { [:] })
-      .computeIfAbsent("agreementLine", { [:] })
-      .put(agreementLinesIdentifier, ["expectedValue": operationResponse])
-    then:
-    log.info(nestedScenarios.toMapString())
-
-    assert true
-
-    where:
-    [currentInputResources, currentAgreementLines] <<
-      tiLinkInputResourceCombinations.collectMany { inputResourceCombo ->
-        tiLinkAgreementLineCombinations.collect { agreementLineCombo ->
-          [inputResourceCombo, agreementLineCombo]
-        }
-      }
-
-  }
-
-  @Ignore
-  void "Scenario 1c: top-link-populate"() {
-    setup:
-    seedDatabaseWithStructure("top-link")
-
-
-    when: "The PCI created during setup is marked for deletion"
-    log.info("CURRENT ITERATION:")
-    log.info(currentInputResources.toListString())
-    log.info(currentAgreementLines.toListString())
-    Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, "top-link")
-    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, "top-link")
-    String inputResourcesIdentifier = currentInputResources.sort(false).join(",")
-    String agreementLinesIdentifier = currentAgreementLines.sort(false).join(",")
-
-
-    visualiseHierarchy(idsForProcessing.get("pci"))
-    Map operationResponse = new HashMap();
-
-    String agreement_name = agreementName
-    Map agreementResp = createAgreement(agreement_name)
-    Set<String> pciIds = [findPCIByPackageName("K-Int Link - Deletion Test Package 001").id, findPCIByPackageName("K-Int Link - Deletion Test Package 002").id]
-    Map<String, String> tiMap = [:]
-    Map<String, String> workMap = [:]
-    Map<String, String> pciMap = [:]
-    Map<String, String> ptiMap = [:]
-
-//            pciIds.eachWithIndex { pciId, index ->
-//              pciMap[pciId] = "PCI${index + 1}"
-//            }
-    pciIds.eachWithIndex {String id, Integer index -> {
-      PackageContentItem pci = findPCIById(id)
-      pciMap[id] = "PCI${index + 1}"
-      if (!ptiMap[pci.pti.id]) {
-        ptiMap[pci.pti.id] = "PTI${index + 1}"
-      }
-      if (!tiMap[pci.pti.titleInstance.id]) {
-        tiMap[pci.pti.titleInstance.id] = "TI${index + 1}"
-      }
-      if (!workMap[pci.pti.titleInstance.work.id]) {
-        workMap[pci.pti.titleInstance.work.id] = "Work${index + 1}"
-      }
-
-      List<TitleInstance> titleInstanceList = findTisByWorkId([pci.pti.titleInstance.work.id] as Set)
-      titleInstanceList.forEach {TitleInstance ti -> {
-        int startIndex = tiMap.keySet().size();
-        if (!tiMap[ti.id]) {
-          tiMap[ti.id] = "TI${startIndex + 1}"
-          startIndex += 1
-        }
-      }}
-
-
-
-      idsForAgreementLines.keySet().forEach{String resourceKey -> {
-        if (!idsForAgreementLines.get(resourceKey).isEmpty()) {
-          idsForAgreementLines.get(resourceKey).forEach{String resourceId -> {
-            log.info("agreement line resource id: {}", resourceId)
-            addEntitlementForAgreement(agreement_name, resourceId)
-          }}
-        }
-      }}
-
-
-
-      log.info("PCI Map: ${pciMap}")
-      log.info("PTI Map: ${ptiMap}")
-      log.info("TI Map: ${tiMap}")
-      log.info("Work Map: ${workMap}")
-
-      log.info("IDs for processing: ${idsForProcessing}")
-      log.info("IDs for agreement lines: ${idsForAgreementLines}")
-
-      if (idsForProcessing.isEmpty()) {
-        operationResponse = new HashMap();
-        return
-      }
-
-      try {
-        operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti']])
-
-      } catch (Exception e) {
-        log.info(e.toString())
-      }
-
-      log.info("Operation Response: ${operationResponse}")
-      operationResponse.each { key, value ->
-        if (key == 'pci') {
-          operationResponse[key] = value.collect { pciId ->
-            pciMap[pciId] ?: pciId
-          }
-        }
-
-        if (key == 'pti') {
-          operationResponse[key] = value.collect { ptiId ->
-            ptiMap[ptiId] ?: ptiId
-          }
-        }
-
-        if (key == 'ti') {
-          operationResponse[key] = value.collect { tiId ->
-            tiMap[tiId] ?: tiId
-          }
-        }
-
-        if (key == 'work') {
-          operationResponse[key] = value.collect { workId ->
-            workMap[workId] ?: workId
-          }
-        }
-
-
-      }
-      log.info("Operation Response: ${operationResponse}")
-
-
-    }
-    }
-    nestedScenarios
-      .computeIfAbsent("top-link", { [:] })
-      .computeIfAbsent("inputResource", { [:] })
-      .computeIfAbsent(inputResourcesIdentifier, { [:] })
-      .computeIfAbsent("agreementLine", { [:] })
-      .put(agreementLinesIdentifier, ["expectedValue": operationResponse])
-    then:
-    log.info(nestedScenarios.toMapString())
-
-    assert true
-
-    where:
-    [currentInputResources, currentAgreementLines] <<
-      topLinkInputResourceCombinations.collectMany { inputResourceCombo ->
-        topLinkAgreementLineCombinations.collect { agreementLineCombo ->
-          [inputResourceCombo, agreementLineCombo]
-        }
-      }
-  }
-
-  @Ignore
-  void "Scenario 1d: work-link-populate"() {
-    setup:
-    seedDatabaseWithStructure("work-link")
-
-
-    when: "The PCI created during setup is marked for deletion"
-    log.info("CURRENT ITERATION:")
-    log.info(currentInputResources.toListString())
-    log.info(currentAgreementLines.toListString())
-    Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, "work-link")
-    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, "work-link")
+    when:
+    log.info("POPULATING: Structure: ${structure}, Inputs: ${currentInputResources.toListString()}, Agreements: ${currentAgreementLines.toListString()}")
+    Map<String, Set<String>> idsForProcessing = findInputResourceIds(currentInputResources, structure)
+    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(currentAgreementLines, structure)
     String inputResourcesIdentifier = currentInputResources.isEmpty() ? "Empty" : currentInputResources.sort(false).join(",")
     String agreementLinesIdentifier = currentAgreementLines.isEmpty() ? "Empty" : currentAgreementLines.sort(false).join(",")
 
-
-    visualiseHierarchy(idsForProcessing.get("pci"))
-    Map operationResponse = new HashMap();
-
-    String agreement_name = agreementName
-    Map agreementResp = createAgreement(agreement_name)
-    Set<String> pciIds = [findPCIByPackageName(packageNameWorkLink1).id, findPCIByPackageName(packageNameWorkLink2).id]
-    Map<String, String> tiMap = [:]
-    Map<String, String> workMap = [:]
-    Map<String, String> pciMap = [:]
-    Map<String, String> ptiMap = [:]
-
-//            pciIds.eachWithIndex { pciId, index ->
-//              pciMap[pciId] = "PCI${index + 1}"
-//            }
-    pciIds.eachWithIndex {String id, Integer index -> {
-      PackageContentItem pci = findPCIById(id)
-      pciMap[id] = "PCI${index + 1}"
-      if (!ptiMap[pci.pti.id]) {
-        ptiMap[pci.pti.id] = "PTI${index + 1}"
-      }
-      if (!tiMap[pci.pti.titleInstance.id]) {
-        tiMap[pci.pti.titleInstance.id] = "TI${index + 1}"
-      }
-      if (!workMap[pci.pti.titleInstance.work.id]) {
-        workMap[pci.pti.titleInstance.work.id] = "Work${index + 1}"
-      }
-
-      List<TitleInstance> titleInstanceList = findTisByWorkId([pci.pti.titleInstance.work.id] as Set)
-      titleInstanceList.forEach {TitleInstance ti -> {
-        int startIndex = tiMap.keySet().size();
-        if (!tiMap[ti.id]) {
-          tiMap[ti.id] = "TI${startIndex + 1}"
-          startIndex += 1
-        }
-      }}
-
-
-
-      idsForAgreementLines.keySet().forEach{String resourceKey -> {
-        if (!idsForAgreementLines.get(resourceKey).isEmpty()) {
-          idsForAgreementLines.get(resourceKey).forEach{String resourceId -> {
-            log.info("agreement line resource id: {}", resourceId)
-            addEntitlementForAgreement(agreement_name, resourceId)
-          }}
-        }
-      }}
-
-
-
-      log.info("PCI Map: ${pciMap}")
-      log.info("PTI Map: ${ptiMap}")
-      log.info("TI Map: ${tiMap}")
-      log.info("Work Map: ${workMap}")
-
-      log.info("IDs for processing: ${idsForProcessing}")
-      log.info("IDs for agreement lines: ${idsForAgreementLines}")
-
-      if (idsForProcessing.isEmpty()) {
-        operationResponse = new HashMap();
-        return
-      }
-
-      try {
-        operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", ['pcis': idsForProcessing['pci'], 'ptis': idsForProcessing['pti'], 'tis': idsForProcessing['ti']])
-
-      } catch (Exception e) {
-        log.info(e.toString())
-      }
-
-      Map kbStatsResp = doGet("/erm/statistics/kbCount")
-      log.info("Operation Response: ${operationResponse}")
-      log.info("KB Stats: ${kbStatsResp}")
-
-      operationResponse.each { key, value ->
-        if (key == 'pci') {
-          operationResponse[key] = value.collect { pciId ->
-            pciMap[pciId] ?: pciId
-          }
-        }
-
-        if (key == 'pti') {
-          operationResponse[key] = value.collect { ptiId ->
-            ptiMap[ptiId] ?: ptiId
-          }
-        }
-
-        if (key == 'ti') {
-          operationResponse[key] = value.collect { tiId ->
-            tiMap[tiId] ?: tiId
-          }
-        }
-
-        if (key == 'work') {
-          operationResponse[key] = value.collect { workId ->
-            workMap[workId] ?: workId
-          }
-        }
-
-
-      }
-      log.info("Operation Response: ${operationResponse}")
-
-
+    try {
+      createAgreement(agreementName)
+    } catch (Exception e) {
+      log.info(e.toString())
     }
+    idsForAgreementLines.values().flatten().each { String resourceId ->
+      if (resourceId) addEntitlementForAgreement(agreementName, resourceId)
+    }
+
+    Map operationResponse = [:]
+    if (idsForProcessing.values().any { !it.isEmpty() } ) { // Only call if there's something to process
+      try {
+        List<String> tisToProcess = (structure == "work-link") ? idsForProcessing['ti'] : [] // Only work-link uses TIs directly
+        operationResponse = doPost("/erm/hierarchicalDelete/markForDelete", [
+          'pcis': idsForProcessing['pci'],
+          'ptis': idsForProcessing['pti'],
+          'tis' : tisToProcess // Pass TIs only if applicable
+        ])
+        mapResponseIdsToNames(operationResponse, pciMap, ptiMap, tiMap, workMap)
+      } catch (Exception e) {
+        log.error("Error during markForDelete for structure ${structure}: ${e.toString()}", e)
+        // Decide how to handle errors in population phase, maybe store error info
+        operationResponse = [error: e.getMessage()]
+      }
+    } else {
+      // Ensure consistent empty response structure
+      operationResponse = [pci: [], pti: [], ti: [], work: []]
     }
 
     nestedScenarios
-      .computeIfAbsent("work-link", { [:] })
+      .computeIfAbsent(structure, { [:] })
       .computeIfAbsent("inputResource", { [:] })
       .computeIfAbsent(inputResourcesIdentifier, { [:] })
       .computeIfAbsent("agreementLine", { [:] })
       .put(agreementLinesIdentifier, ["expectedValue": operationResponse])
-    then:
-    log.info(nestedScenarios.toMapString())
 
-    assert true
+    then:
+    log.info("Stored for ${structure} [${inputResourcesIdentifier}] / [${agreementLinesIdentifier}]: ${operationResponse}")
+    true // Assert success of this population step
 
     where:
-    [currentInputResources, currentAgreementLines] <<
-      workLinkInputResourceCombinations.collectMany { inputResourceCombo ->
-        workLinkAgreementLineCombinations.collect { agreementLineCombo ->
-          [inputResourceCombo, agreementLineCombo]
+    // This combines all previous where blocks
+    // Note: The .collectMany structure can be complex. Consider a helper if it gets too nested.
+    [structure, currentInputResources, currentAgreementLines] << generatePopulationPermutations()
+  }
+
+// Helper to generate the permutations for the population step
+  List generatePopulationPermutations() {
+    List permutations = []
+    [
+      [structure: "simple",    inputs: simpleCombinations,                agreements: simpleCombinations],
+      [structure: "top-link",  inputs: topLinkInputResourceCombinations,  agreements: topLinkAgreementLineCombinations],
+      [structure: "ti-link",   inputs: tiLinkInputResourceCombinations,   agreements: tiLinkAgreementLineCombinations],
+      [structure: "work-link", inputs: workLinkInputResourceCombinations, agreements: workLinkAgreementLineCombinations]
+    ].each { config ->
+      config.inputs.each { inputCombo ->
+        config.agreements.each { agreementCombo ->
+          permutations.add([config.structure, inputCombo, agreementCombo])
         }
       }
+    }
+    return permutations
+  }
 
+// Helper to build the PCI1, PTI1, etc. maps
+  private void buildResourceNameMaps(Set<String> pciIds, Map pciMap, Map ptiMap, Map tiMap, Map workMap) {
+    pciIds.eachWithIndex { String id, Integer index ->
+      PackageContentItem pci = findPCIById(id)
+      if (!pci) {
+        log.warn("Could not find PCI with id ${id} for mapping")
+        return // or throw error
+      }
+      String suffix = (index + 1).toString()
+
+      pciMap[id] = "PCI${suffix}"
+      if (pci.pti) {
+        ptiMap[pci.pti.id] = "PTI${suffix}"
+        if (pci.pti.titleInstance) {
+          tiMap[pci.pti.titleInstance.id] = "TI${suffix}"
+          if (pci.pti.titleInstance.work) {
+            workMap[pci.pti.titleInstance.work.id] = "Work${suffix}"
+
+
+            List<TitleInstance> allTisForWork = findTisByWorkId([pci.pti.titleInstance.work.id] as Set)
+            allTisForWork.eachWithIndex { TitleInstance tiInstance, tiIndex ->
+              if (!tiMap.containsKey(tiInstance.id)) {
+                tiMap[tiInstance.id] = "TI${tiIndex + 1}" // If we add multiple works, may need Work${suffix}_
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+// Helper to map API response IDs back to PCI1, PTI1 style names
+  private void mapResponseIdsToNames(Map operationResponse, Map pciMap, Map ptiMap, Map tiMap, Map workMap) {
+    operationResponse.each { key, value ->
+      if (value instanceof List) {
+        operationResponse[key] = value.collect { id ->
+          switch (key) {
+            case 'pci': return pciMap[id] ?: id
+            case 'pti': return ptiMap[id] ?: id
+            case 'ti': return tiMap[id] ?: id
+            case 'work': return workMap[id] ?: id
+            default: return id
+          }
+        }.sort() // Sort for consistent comparison
+      }
+    }
   }
 
 //  @Ignore

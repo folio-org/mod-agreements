@@ -92,7 +92,7 @@ class DeletionBaseSpec extends BaseSpec {
         """
       List results = PackageContentItem.executeQuery(hql, [packageName: packageName])
       if (results.size() > 1) {
-        throw new IllegalStateException("Multiple PCIs found for package name, one expected.")
+        throw new IllegalStateException("Multiple PCIs found for package name ${packageName}, one expected.")
       }
       return results.get(0);
     }
