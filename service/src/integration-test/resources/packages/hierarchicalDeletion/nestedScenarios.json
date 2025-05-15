@@ -1,6 +1,74 @@
 {
     "simple": {
         "inputResource": {
+            "Empty": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    }
+                }
+            },
             "PCI1": {
                 "agreementLine": {
                     "Empty": {
@@ -142,6 +210,138 @@
     },
     "top-link": {
         "inputResource": {
+            "Empty": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    }
+                }
+            },
             "PCI1": {
                 "agreementLine": {
                     "Empty": {
@@ -274,7 +474,7 @@
                     }
                 }
             },
-            "PTI1": {
+            "PCI2": {
                 "agreementLine": {
                     "Empty": {
                         "expectedValue": {
@@ -288,7 +488,7 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
@@ -304,7 +504,7 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
@@ -352,7 +552,7 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
@@ -368,7 +568,7 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
@@ -540,11 +740,403 @@
                         }
                     }
                 }
+            },
+            "PTI1": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    }
+                }
             }
         }
     },
     "ti-link": {
         "inputResource": {
+            "Empty": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1,PTI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
+                        }
+                    }
+                }
+            },
             "PCI1": {
                 "agreementLine": {
                     "Empty": {
@@ -805,12 +1397,12 @@
                     }
                 }
             },
-            "PTI1": {
+            "PCI2": {
                 "agreementLine": {
                     "Empty": {
                         "expectedValue": {
                             "pti": [
-                                
+                                "PTI2"
                             ],
                             "ti": [
                                 
@@ -819,14 +1411,14 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
                     "PCI1": {
                         "expectedValue": {
                             "pti": [
-                                
+                                "PTI2"
                             ],
                             "ti": [
                                 
@@ -835,7 +1427,7 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
@@ -874,7 +1466,7 @@
                     "PTI1": {
                         "expectedValue": {
                             "pti": [
-                                
+                                "PTI2"
                             ],
                             "ti": [
                                 
@@ -883,14 +1475,14 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
                     "PCI1,PTI1": {
                         "expectedValue": {
                             "pti": [
-                                
+                                "PTI2"
                             ],
                             "ti": [
                                 
@@ -899,7 +1491,7 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
@@ -947,7 +1539,7 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
@@ -963,7 +1555,7 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
@@ -1011,7 +1603,7 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
@@ -1027,7 +1619,7 @@
                                 
                             ],
                             "pci": [
-                                
+                                "PCI2"
                             ]
                         }
                     },
@@ -1331,6 +1923,526 @@
                     }
                 }
             },
+            "PTI1": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    }
+                }
+            },
+            "PTI2": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    }
+                }
+            },
             "PTI1,PTI2": {
                 "agreementLine": {
                     "Empty": {
@@ -1595,170 +2707,782 @@
     },
     "work-link": {
         "inputResource": {
-            "PCI1": {
+            "Empty": {
                 "agreementLine": {
                     "Empty": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PCI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI2,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI2,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI2,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pci": [
+                                
+                            ],
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ]
                         }
                     }
                 }
             },
-            "PTI1": {
+            "PCI1": {
                 "agreementLine": {
                     "Empty": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                "PTI1"
+                            ],
+                            "ti": [
+                                "TI1"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                "PTI1"
+                            ],
+                            "ti": [
+                                "TI1"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1,PCI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI2,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                "PTI1"
+                            ],
+                            "ti": [
+                                "TI1"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI2,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                "PTI1"
+                            ],
+                            "ti": [
+                                "TI1"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI2,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    }
+                }
+            },
+            "PCI2": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pti": [
+                                "PTI2"
+                            ],
+                            "ti": [
+                                "TI2"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pti": [
+                                "PTI2"
+                            ],
+                            "ti": [
+                                "TI2"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
+                        }
+                    },
+                    "PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                "PTI2"
+                            ],
+                            "ti": [
+                                "TI2"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                "PTI2"
+                            ],
+                            "ti": [
+                                "TI2"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
+                        }
+                    },
+                    "PCI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
+                        }
+                    },
+                    "PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     }
                 }
@@ -1767,82 +3491,784 @@
                 "agreementLine": {
                     "Empty": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                "PTI1",
+                                "PTI2"
+                            ],
+                            "ti": [
+                                "TI1",
+                                "TI2"
+                            ],
+                            "work": [
+                                "Work2"
+                            ],
+                            "pci": [
+                                "PCI1",
+                                "PCI2"
+                            ]
                         }
                     },
                     "PCI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                "PTI2"
+                            ],
+                            "ti": [
+                                "TI2"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
                         }
                     },
                     "PCI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                "PTI1"
+                            ],
+                            "ti": [
+                                "TI1"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1,PCI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                "PTI2"
+                            ],
+                            "ti": [
+                                "TI2"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1",
+                                "PCI2"
+                            ]
                         }
                     },
                     "PCI1,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                "PTI2"
+                            ],
+                            "ti": [
+                                "TI2"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
                         }
                     },
                     "PCI2,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                "PTI1"
+                            ],
+                            "ti": [
+                                "TI1"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1",
+                                "PCI2"
+                            ]
                         }
                     },
                     "PCI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
                         }
                     },
                     "PCI2,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                "PTI1"
+                            ],
+                            "ti": [
+                                "TI1"
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1",
+                                "PCI2"
+                            ]
                         }
                     },
                     "PCI1,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI2"
+                            ]
                         }
                     },
                     "PCI2,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                "PCI1"
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    }
+                }
+            },
+            "PTI1": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    }
+                }
+            },
+            "PTI2": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     }
                 }
@@ -1851,82 +4277,1038 @@
                 "agreementLine": {
                     "Empty": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PCI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI2,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI1": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI2,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI2,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     },
                     "PCI1,PCI2,PTI1,PTI2": {
                         "expectedValue": {
-                            "error": "Cannot cast object '[]' with class 'java.util.HashSet' to class 'java.util.List' due to: groovy.lang.GroovyRuntimeException: Could not find matching constructor for: java.util.List()"
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    }
+                }
+            },
+            "TI1": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    }
+                }
+            },
+            "TI2": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    }
+                }
+            },
+            "TI1,TI2": {
+                "agreementLine": {
+                    "Empty": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
+                        }
+                    },
+                    "PCI1,PCI2,PTI1,PTI2": {
+                        "expectedValue": {
+                            "pti": [
+                                
+                            ],
+                            "ti": [
+                                
+                            ],
+                            "work": [
+                                
+                            ],
+                            "pci": [
+                                
+                            ]
                         }
                     }
                 }

@@ -1,6 +1,7 @@
 package org.olf
 
 import grails.converters.JSON
+import grails.validation.Validateable
 import org.hibernate.Hibernate
 import org.hibernate.sql.JoinType
 
@@ -461,6 +462,63 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.debug("completed in ${Duration.between(start, Instant.now()).toSeconds()} seconds")
   }
 
+  def markPcisForDelete(MarkForDeleteBody deleteBody) {
+    handleMarkForDelete(deleteBody, "PCIs") { ids ->
+      ermResourceService.markPcisForDelete(ids)
+    }
+  }
+
+  // Action for /erm/hierarchicalDelete/markForDelete/ptis
+  def markPtisForDelete(MarkForDeleteBody deleteBody) {
+    handleMarkForDelete(deleteBody, "PTIs") { ids ->
+      ermResourceService.markPtisForDelete(ids)
+    }
+  }
+
+  // Action for /erm/hierarchicalDelete/markForDelete/tis
+  def markTisForDelete(MarkForDeleteBody deleteBody) {
+    handleMarkForDelete(deleteBody, "TIs") { ids ->
+      ermResourceService.markTisForDelete(ids)
+    }
+  }
+
+  /**
+   * Private helper method to handle the common logic for markForDelete actions.
+   * @param deleteBody The deleteBody object (must implement Validateable and have a resources property corresponding to ErmResource IDs)
+   * @param resourceTypeName A descriptive name for the resource type (e.g., "PCIs", "PTIs") for logging/error messages.
+   * @param serviceCall A closure that takes a List<String> of IDs and calls the appropriate service method.
+   */
+  private void handleMarkForDelete(Validateable deleteBody, String resourceTypeName, Closure serviceCall) {
+    // deleteBody passes resources property
+    List<String> idsToProcess = deleteBody.resources
+
+    log.info("ResourceController::handleMarkForDelete for {} with IDs: {}", resourceTypeName, idsToProcess)
+
+    if (deleteBody == null || deleteBody.hasErrors()) {
+      log.warn("Validation failed for mark {} for delete body: {}", resourceTypeName, deleteBody?.errors)
+      response.status = HttpStatus.BAD_REQUEST.value()
+      respond deleteBody?.errors
+      return
+    }
+
+    try {
+      Map result = serviceCall.call(idsToProcess) // Pass the extracted IDs to the pci/pti/ti service call using the closure
+      respond result
+    } catch (IllegalArgumentException iae) {
+      log.warn("Bad request during mark {} for delete for IDs {}: {}", resourceTypeName, idsToProcess, iae.message)
+      response.status = HttpStatus.BAD_REQUEST.value()
+      render(contentType: 'application/json') {
+        [error: "Bad Request", message: iae.message]
+      }
+    } catch (Exception e) {
+      log.error("Error during mark {} for delete for IDs {}: {}", resourceTypeName, idsToProcess, e.message, e)
+      response.status = HttpStatus.INTERNAL_SERVER_ERROR.value()
+      render(contentType: 'application/json') {
+        [error: "Internal Server Error", message: "Failed to mark ${resourceTypeName} for delete: ${e.message}"]
+      }
+    }
+  }
+
 
   def markForDelete(MarkForDeleteBody deleteBody) {
     log.info("ResourceController::markForDelete({})", deleteBody.toString())
@@ -497,9 +555,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
       // TODO this should pass the full body,
       // maybe broken down into multiple List<String> instead of using MarkForDeleteBody in the service
       Map resourceIdMap = new HashMap<String, List<String>>();
-      resourceIdMap.put("pcis", deleteBody.pcis)
-      resourceIdMap.put("ptis", deleteBody.ptis)
-      resourceIdMap.put("tis", deleteBody.tis)
+      resourceIdMap.put("resources", deleteBody.resources)
 
       respond ermResourceService.markForDelete(resourceIdMap);
     } catch (Exception e) {

@@ -218,6 +218,10 @@ class UrlMappings {
     "/erm/statistics/kbCount" (controller: 'statistics', action: 'kbCount', method: 'GET')
     "/erm/statistics/sasCount" (controller: 'statistics', action: 'agreementCount', method: 'GET')
 
-    "/erm/hierarchicalDelete/markForDelete" (controller: 'resource', action: 'markForDelete', method: 'POST')
+    "/erm/hierarchicalDelete/markForDelete" {
+    }
+    "/erm/hierarchicalDelete/markForDelete/pci" (controller: 'resource', action: 'markPcisForDelete', method: 'POST')
+    "/erm/hierarchicalDelete/markForDelete/pti" (controller: 'resource', action: 'markPtisForDelete', method: 'POST')
+    "/erm/hierarchicalDelete/markForDelete/ti"  (controller: 'resource', action: 'markTisForDelete', method: 'POST')
   }
 }

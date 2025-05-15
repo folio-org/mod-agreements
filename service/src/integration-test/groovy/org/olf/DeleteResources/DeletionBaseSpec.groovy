@@ -24,6 +24,268 @@ import groovy.json.JsonOutput
 class DeletionBaseSpec extends BaseSpec {
 
   ErmResourceService ermResourceService;
+  String packageNameSimple1 = "K-Int Deletion Test Package 001"
+  String packageNameTopLink1 = "K-Int Link - Deletion Test Package 001";
+  String packageNameTopLink2 = "K-Int Link - Deletion Test Package 002"
+  String packageNameTiLink1 = "K-Int TI Link - Deletion Test Package 001";
+  String packageNameTiLink2 = "K-Int TI Link - Deletion Test Package 002"
+  String packageNameWorkLink1 = "K-Int Work Link - Deletion Test Package 001";
+  String packageNameWorkLink2 = "K-Int Work Link - Deletion Test Package 002"
+  String agreementName = "test_agreement"
+  static final String EXPECTED_SCENARIOS_JSON_PATH = "src/integration-test/resources/packages/hierarchicalDeletion/nestedScenarios.json"
+  static final String EXPECTED_KBSTATS_JSON_PATH = "src/integration-test/resources/packages/hierarchicalDeletion/expectedKbStats.json"
+  static final String EMPTY_IDENTIFIER = "Empty"
+
+  @Ignore
+  def seedDatabaseWithStructure(String structure) {
+    if (structure == "simple") {
+      importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
+      doGet("/erm/packages", [filters: ["name==${packageNameSimple1}"]])
+    }
+
+    if (structure == "top-link") {
+      importPackageFromFileViaService('hierarchicalDeletion/top_link_deletion.json')
+      importPackageFromFileViaService('hierarchicalDeletion/top_link_deletion_link.json')
+
+      List resp = doGet("/erm/packages", [filters: ["name==${packageNameTopLink1}"]])
+      List resp2 = doGet("/erm/packages", [filters: ["name==${packageNameTopLink2}"]])
+    }
+
+    if (structure == "ti-link") {
+      importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_1.json')
+      importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_2.json')
+
+      List resp = doGet("/erm/packages", [filters: ["name==${packageNameTiLink1}"]])
+      List resp2 = doGet("/erm/packages", [filters: ["name==${packageNameTiLink2}"]])
+    }
+
+    if (structure == "work-link") {
+      importPackageFromFileViaService('hierarchicalDeletion/work_link_deletion_1.json')
+      importPackageFromFileViaService('hierarchicalDeletion/work_link_deletion_2.json')
+
+      List resp = doGet("/erm/packages", [filters: ["name==${packageNameWorkLink1}"]])
+      List resp2 = doGet("/erm/packages", [filters: ["name==${packageNameWorkLink2}"]])
+
+      // Attach the Electronic ti from package 2 to the work from package 1. Then cleanup the orphaned work + ti, and the print ti on package 1.
+      withTenant {
+        PackageContentItem pci1 = findPCIByPackageName(packageNameWorkLink1) // Use the work from this package as base.
+        PackageContentItem pci2 = findPCIByPackageName(packageNameWorkLink2)
+        String targetWorkId = pci1.pti.titleInstance.work.id
+        String titleInstanceIdToUpdate = pci2.pti.titleInstance.id
+        Work oldWorkInstance = pci2.pti.titleInstance.work
+
+        Work targetWork = Work.get(targetWorkId)
+        if (!targetWork) {
+          log.error("Could not find target Work with ID {}.", targetWorkId)
+          throw new IllegalStateException("Test setup error: Work ${targetWorkId} not found.")
+        }
+
+        int rowsAffected = TitleInstance.executeUpdate(
+          """
+            UPDATE TitleInstance ti 
+            SET ti.work = :newWork 
+            WHERE ti.id = :tiId
+            """.toString(),
+          [ newWork: targetWork, tiId: titleInstanceIdToUpdate ]
+        )
+
+        PackageIngressMetadata.executeUpdate("DELETE FROM PackageIngressMetadata")
+
+
+        IdentifierOccurrence.executeUpdate("DELETE FROM IdentifierOccurrence")
+
+
+        ErmResource.executeUpdate(
+          """DELETE FROM Period"""
+        )
+
+        // Delete orphaned TI
+        TitleInstance.executeUpdate(
+          """
+        DELETE FROM TitleInstance ti
+        WHERE ti.work = :oldWorkEntity
+        """.toString(),
+          [oldWorkEntity: oldWorkInstance] // Pass the entity instance
+        )
+
+        // Delete orphaned work.
+        Work.executeUpdate(
+          """
+        DELETE FROM Work w
+        WHERE w.id = :workId
+        """.toString(),
+          [workId: oldWorkInstance.id]
+        )
+
+        // Delete print TI remaining to leave 2 TIs total.
+        TitleInstance.executeUpdate(
+          """
+        DELETE FROM TitleInstance ti
+        WHERE ti.id NOT IN (
+            SELECT pti.titleInstance.id 
+            FROM PlatformTitleInstance pti 
+            WHERE pti.titleInstance.id IS NOT NULL 
+        )
+        """.toString()
+        )
+
+
+      }
+    }
+  }
+
+  @Ignore
+  void createAgreementLines(Map<String, Set<String>> idsForAgreementLines) {
+    String agreement_name = agreementName
+    Map agreementResp = createAgreement(agreement_name)
+    idsForAgreementLines.keySet().forEach{String resourceKey -> {
+      if (!idsForAgreementLines.get(resourceKey).isEmpty()) {
+        idsForAgreementLines.get(resourceKey).forEach{String id -> {
+          log.info("agreement line resource id: {}", id)
+          addEntitlementForAgreement(agreement_name, id)
+        }}
+      }
+    }}
+  }
+
+  @Ignore
+  String parseResourceType(String resource) {
+    if (resource.startsWith("PCI")) {
+      return "pci"
+    }
+
+    if (resource.startsWith("PTI")) {
+      return "pti"
+    }
+
+    if (resource.startsWith("TI")) {
+      return "ti"
+    }
+  }
+
+  @Ignore
+  ErmResource parseResource(String resource, String structure) {
+    if (structure == "simple") {
+      if (resource == "PCI1") {
+        return findPCIByPackageName(packageNameSimple1)
+      }
+
+      if (resource == "PTI1") {
+        return findPCIByPackageName(packageNameSimple1).pti
+      }
+
+    }
+
+    if (structure == "top-link") {
+      if (resource == "PCI1") {
+        return findPCIByPackageName(packageNameTopLink1)
+      }
+
+      if (resource == "PCI2") {
+        return findPCIByPackageName(packageNameTopLink2)
+      }
+
+      if (resource == "PTI1" || resource == "PTI2") {
+        return findPCIByPackageName(packageNameTopLink1).pti
+      }
+    }
+
+    if (structure == "ti-link") {
+      if (resource == "PCI1") {
+        return findPCIByPackageName(packageNameTiLink1)
+      }
+
+      if (resource == "PCI2") {
+        return findPCIByPackageName(packageNameTiLink2)
+      }
+
+      if (resource == "PTI1") {
+        return findPCIByPackageName(packageNameTiLink1).pti
+      }
+
+      if (resource == "PTI2") {
+        return findPCIByPackageName(packageNameTiLink2).pti
+      }
+    }
+
+    if (structure == "work-link") {
+      if (resource == "PCI1") {
+        return findPCIByPackageName(packageNameWorkLink1)
+      }
+
+      if (resource == "PCI2") {
+        return findPCIByPackageName(packageNameWorkLink2)
+      }
+
+      if (resource == "PTI1") {
+        return findPCIByPackageName(packageNameWorkLink1).pti
+      }
+
+      if (resource == "PTI2") {
+        return findPCIByPackageName(packageNameWorkLink2).pti
+      }
+
+      if (resource == "TI1") {
+        return findPCIByPackageName(packageNameWorkLink1).pti.titleInstance
+      }
+
+      if (resource == "TI2") {
+        return findPCIByPackageName(packageNameWorkLink2).pti.titleInstance
+      }
+
+    }
+    return null;
+  }
+
+  @Ignore
+  Set<String> findInputResourceIds(List<String> inputResources, String structure) {
+    Set<String> resourceIdList = new HashSet<>()
+
+    inputResources.forEach{resource -> {
+      resourceIdList.add(parseResource(resource, structure).id)
+    }}
+
+    return resourceIdList
+  }
+
+  @Ignore
+  def findAgreementLineResourceIds(List<String> agreementLines, String structure) {
+    Map<String, Set<String>> allResources = new HashMap<String, Set<String>>();
+    allResources.put("pci", new HashSet<String>());
+    allResources.put("pti", new HashSet<String>());
+    allResources.put("ti", new HashSet<String>());
+    allResources.put("work", new HashSet<String>());
+
+    if (agreementLines.isEmpty()) {
+      return allResources;
+    }
+
+    agreementLines.forEach{resource -> {
+      String resourceType = parseResourceType(resource)
+      allResources.get(resourceType).add(parseResource(resource, structure).id)
+    }}
+
+    return allResources;
+  }
+
+  @Ignore
+  List<List<String>> generateSubCombinations(List<String> originalList) {
+    // Taking a list of elements e.g. [a, b]
+    // Output a list of lists of all combinations (ignoring order) including empties, e.g. [[], [a], [b], [a,b]]
+
+    List<List<String>> powerSet = [[]]
+
+    // For each element in the original list...
+    // Will construct the above example like [[]] --> [[], [a]] --> [[], [a], [b], [a,b]]
+    originalList.each { element ->
+      List<List<String>> newCombinationsForThisElement = []
+      powerSet.each { existingCombination ->
+        newCombinationsForThisElement.add(new ArrayList<>(existingCombination) + element)
+      }
+      powerSet.addAll(newCombinationsForThisElement)
+    }
+    return powerSet
+  }
 
   @Ignore
   Map createAgreement(String name="test_agreement") {

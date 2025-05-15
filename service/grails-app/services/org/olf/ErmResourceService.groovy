@@ -223,17 +223,21 @@ public class ErmResourceService {
     return (resourceSet.size() == 0 ? ["PLACEHOLDER_RESOURCE"] : resourceSet) as Set<String>
   }
 
-  // FIXME this is currently ONLY the mark for delete at the PCI level...
-  // TODO should probs be Set in, what happens if a user passes input with duplicates and we cast to Set?
-  public Map<String, Set<String>> markForDelete(Map<String, List<String>> resourceMap) {
-    log.info("LOG DEBUG - markForDelete({})", resourceMap);
-    List<String> pciList = resourceMap.get("pcis");
+  public Map<String, Set<String>> markPcisForDelete(List<String> pciInputList) {
+    markForDelete(pciInputList, [], [])
+  }
+
+  public Map<String, Set<String>> markPtisForDelete(List<String> ptiInputList) {
+    markForDelete([], ptiInputList, [])
+  }
+
+  public Map<String, Set<String>> markTisForDelete(List<String> tiInputList) {
+    markForDelete([], [], tiInputList)
+  }
+
+  public Map<String, Set<String>> markForDelete(List<String> pciList, List<String> ptiList, List<String> tiList) {
     Set<String> pciIds = (pciList != null) ? new HashSet<String>(pciList) : new HashSet<String>();
-
-    List<String> ptiList = resourceMap.get("ptis");
     Set<String> ptiIds = (ptiList != null) ? new HashSet<String>(ptiList) : new HashSet<String>();
-
-    List<String> tiList = resourceMap.get("tis");
     Set<String> tiIds = (tiList != null) ? new HashSet<String>(tiList) : new HashSet<String>();
 
 
