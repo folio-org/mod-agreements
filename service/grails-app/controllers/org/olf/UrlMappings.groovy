@@ -223,5 +223,11 @@ class UrlMappings {
     "/erm/hierarchicalDelete/markForDelete/pci" (controller: 'resource', action: 'markPcisForDelete', method: 'POST')
     "/erm/hierarchicalDelete/markForDelete/pti" (controller: 'resource', action: 'markPtisForDelete', method: 'POST')
     "/erm/hierarchicalDelete/markForDelete/ti"  (controller: 'resource', action: 'markTisForDelete', method: 'POST')
+
+    "/erm/hierarchicalDelete/delete" {
+    }
+    "/erm/hierarchicalDelete/delete/pci" (controller: 'resource', action: 'deletePcis', method: 'POST')
+    "/erm/hierarchicalDelete/delete/pti" (controller: 'resource', action: 'deletePtis', method: 'POST')
+    "/erm/hierarchicalDelete/delete/ti"  (controller: 'resource', action: 'deleteTis', method: 'POST')
   }
 }

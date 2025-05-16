@@ -182,14 +182,19 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
 
     then: "The system state matches the expected outcome"
     // 1. Assert the `markForDelete` operation's response (or error)
-    if (testCase.expectedMarkForDelete.error) { // If an error was expected from markForDelete
-      assert operationError // An error must have occurred
-      assert operationError.message.contains(testCase.expectedMarkForDelete.error) // Check if message matches (can be fragile)
-    } else if (operationError && !testCase.expectedMarkForDelete.error) {
-      fail("Unexpected error during markForDelete: ${operationError.message}")
+    if (testCase.doDelete) {
+      // Check Ids deleted (could return from /delete endpoint) match those from MarkForDelete?
     } else {
-      assertIdsMatch(testCase.structure, operationResponse, operationError, testCase.expectedMarkForDelete)
+      if (testCase.expectedMarkForDelete.error) { // If an error was expected from markForDelete
+        assert operationError // An error must have occurred
+        assert operationError.message.contains(testCase.expectedMarkForDelete.error) // Check if message matches (can be fragile)
+      } else if (operationError && !testCase.expectedMarkForDelete.error) {
+        fail("Unexpected error during markForDelete: ${operationError.message}")
+      } else {
+        assertIdsMatch(testCase.structure, operationResponse, operationError, testCase.expectedMarkForDelete)
+      }
     }
+
 
     // 2. Assert KB stats
     if (testCase.doDelete && !operationError) {

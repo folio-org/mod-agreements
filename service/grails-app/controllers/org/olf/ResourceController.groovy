@@ -20,6 +20,7 @@ import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
 import org.olf.kb.http.request.body.MarkForDeleteBody
+import org.olf.kb.http.request.body.MarkForDeleteResponse
 import org.springframework.http.HttpStatus
 
 import java.time.Duration
@@ -482,6 +483,48 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     }
   }
 
+  private void handleDelete(Validateable deleteBody, Closure serviceCall) {
+    if (deleteBody == null || !deleteBody.validate()) {
+      respond deleteBody?.errors ?: [error:"Invalid request"], [status: HttpStatus.BAD_REQUEST]
+      return
+    }
+    if (deleteBody.resources == null || deleteBody.resources.isEmpty()) {
+      respond([error: "Bad Request", message: "Resource IDs list cannot be empty."],
+        [status: HttpStatus.BAD_REQUEST])
+      return
+    }
+
+    try {
+      MarkForDeleteResponse resourcesToDelete = serviceCall.call(deleteBody.resources)
+      Map<String, Integer> deletionCounts = ermResourceService.deleteResources(resourcesToDelete)
+      respond([message: "Resources processed for deletion.", details: deletionCounts], [status: HttpStatus.OK])
+
+    } catch (Exception e) {
+      log.error("Error during one-shot deletion: ${e.message}", e)
+      respond([error: "Internal Server Error", message: "Failed to execute deletion: ${e.message}"],
+        [status: HttpStatus.INTERNAL_SERVER_ERROR])
+    }
+  }
+
+
+  def deletePcis(MarkForDeleteBody deleteBody) {
+    handleDelete(deleteBody) { ids ->
+      ermResourceService.markPcisForDelete(ids)
+    }
+  }
+
+  def deletePtis(MarkForDeleteBody deleteBody) {
+    handleDelete(deleteBody) { ids ->
+      ermResourceService.markPtisForDelete(ids)
+    }
+  }
+
+  def deleteTis(MarkForDeleteBody deleteBody) {
+    handleDelete(deleteBody) { ids ->
+      ermResourceService.markTisForDelete(ids)
+    }
+  }
+
   /**
    * Private helper method to handle the common logic for markForDelete actions.
    * @param deleteBody The deleteBody object (must implement Validateable and have a resources property corresponding to ErmResource IDs)
@@ -489,33 +532,32 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
    * @param serviceCall A closure that takes a List<String> of IDs and calls the appropriate service method.
    */
   private void handleMarkForDelete(Validateable deleteBody, String resourceTypeName, Closure serviceCall) {
-    // deleteBody passes resources property
-    List<String> idsToProcess = deleteBody.resources
+    if (deleteBody == null) {
+      log.warn("Received null delete body for marking {} for delete.", resourceTypeName)
+      respond([error: "Bad Request", message: "Request body cannot be null."],
+        [status: HttpStatus.BAD_REQUEST])
+      return
+    }
 
+    List<String> idsToProcess = deleteBody.resources
     log.info("ResourceController::handleMarkForDelete for {} with IDs: {}", resourceTypeName, idsToProcess)
 
-    if (deleteBody == null || deleteBody.hasErrors()) {
-      log.warn("Validation failed for mark {} for delete body: {}", resourceTypeName, deleteBody?.errors)
-      response.status = HttpStatus.BAD_REQUEST.value()
-      respond deleteBody?.errors
+    if (deleteBody.hasErrors()) {
+      log.warn("Validation failed for mark {} for delete body: {}", resourceTypeName, deleteBody.errors)
+      respond deleteBody.errors, [status: HttpStatus.BAD_REQUEST]
       return
     }
 
     try {
-      Map result = serviceCall.call(idsToProcess) // Pass the extracted IDs to the pci/pti/ti service call using the closure
+      MarkForDeleteResponse result = serviceCall.call(idsToProcess) // Pass the extracted IDs
       respond result
-    } catch (IllegalArgumentException iae) {
-      log.warn("Bad request during mark {} for delete for IDs {}: {}", resourceTypeName, idsToProcess, iae.message)
-      response.status = HttpStatus.BAD_REQUEST.value()
-      render(contentType: 'application/json') {
-        [error: "Bad Request", message: iae.message]
-      }
     } catch (Exception e) {
       log.error("Error during mark {} for delete for IDs {}: {}", resourceTypeName, idsToProcess, e.message, e)
-      response.status = HttpStatus.INTERNAL_SERVER_ERROR.value()
-      render(contentType: 'application/json') {
-        [error: "Internal Server Error", message: "Failed to mark ${resourceTypeName} for delete: ${e.message}"]
-      }
+      Map errorResponse = [
+        error  : "Internal Server Error",
+        message: "Failed to mark ${resourceTypeName} for delete: ${e.message}"
+      ]
+      respond errorResponse, [status: HttpStatus.INTERNAL_SERVER_ERROR]
     }
   }
 

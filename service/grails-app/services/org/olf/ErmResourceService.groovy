@@ -1,7 +1,9 @@
 package org.olf
 
 import org.olf.erm.Entitlement
+import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Work
+import org.olf.kb.http.request.body.MarkForDeleteResponse
 
 import java.util.stream.Collectors
 
@@ -223,19 +225,19 @@ public class ErmResourceService {
     return (resourceSet.size() == 0 ? ["PLACEHOLDER_RESOURCE"] : resourceSet) as Set<String>
   }
 
-  public Map<String, Set<String>> markPcisForDelete(List<String> pciInputList) {
-    markForDelete(pciInputList, [], [])
+  public MarkForDeleteResponse markPcisForDelete(List<String> pciInputList) {
+    markForDeleteImperative(pciInputList, [], [])
   }
 
-  public Map<String, Set<String>> markPtisForDelete(List<String> ptiInputList) {
-    markForDelete([], ptiInputList, [])
+  public MarkForDeleteResponse markPtisForDelete(List<String> ptiInputList) {
+    markForDeleteImperative([], ptiInputList, [])
   }
 
-  public Map<String, Set<String>> markTisForDelete(List<String> tiInputList) {
-    markForDelete([], [], tiInputList)
+  public MarkForDeleteResponse markTisForDelete(List<String> tiInputList) {
+    markForDeleteImperative([], [], tiInputList)
   }
 
-  public Map<String, Set<String>> markForDelete(List<String> pciList, List<String> ptiList, List<String> tiList) {
+  public MarkForDeleteResponse markForDelete(List<String> pciList, List<String> ptiList, List<String> tiList) {
     Set<String> pciIds = (pciList != null) ? new HashSet<String>(pciList) : new HashSet<String>();
     Set<String> ptiIds = (ptiList != null) ? new HashSet<String>(ptiList) : new HashSet<String>();
     Set<String> tiIds = (tiList != null) ? new HashSet<String>(tiList) : new HashSet<String>();
@@ -245,21 +247,17 @@ public class ErmResourceService {
       throw new Exception("Id list cannot be empty.");
     }
 
-    Map<String, Set<String>> markForDeletion = new HashMap<>();
-    markForDeletion.put('pci', new HashSet<String>());
-    markForDeletion.put('pti', new HashSet<String>());
-    markForDeletion.put('ti', new HashSet<String>());
-    markForDeletion.put('work', new HashSet<String>());
+    MarkForDeleteResponse markForDeletion = new MarkForDeleteResponse()
 
-    markForDeletion.get('pci').addAll(markForDeletePCI(pciIds));
-    log.info("LOG DEBUG - PCIs marked for deletion {}", markForDeletion.get("pci"))
+    markForDeletion.pci.addAll(markForDeletePCI(pciIds));
+    log.info("LOG DEBUG - PCIs marked for deletion {}", markForDeletion.pci)
 
     Set<String> ptisForDeleteCheck = PlatformTitleInstance.executeQuery(
       """
         SELECT DISTINCT pci.pti.id FROM PackageContentItem pci
         WHERE pci.id IN :pcisForDelete 
       """.toString(),
-      [pcisForDelete:markForDeletion.get("pci")]
+      [pcisForDelete:markForDeletion.pci]
     ) as Set
     ptisForDeleteCheck.addAll(ptiIds)
     log.info("LOG DEBUG - PTIs for delete checking {}", ptisForDeleteCheck)
@@ -268,24 +266,24 @@ public class ErmResourceService {
     // We could either run through PCIs to end of process then PTIs etc and use the Set to handle distinct
     // Or run _just_ PCI check, then add the PTI outcomes to the user ones and run all PTIs etc etc
 
-    markForDeletion.get('pti').addAll(markForDeletePTI(ptisForDeleteCheck, markForDeletion.get('pci')));
-    log.info("LOG DEBUG - PTIs marked for deletion {}", markForDeletion.get("pti"))
+    markForDeletion.pti.addAll(markForDeletePTI(ptisForDeleteCheck, markForDeletion.pci));
+    log.info("LOG DEBUG - PTIs marked for deletion {}", markForDeletion.pci)
 
     Set<String> tisForDeleteCheck = TitleInstance.executeQuery(
       """
         SELECT DISTINCT pti.titleInstance.id FROM PlatformTitleInstance pti
         WHERE pti.id IN :ptisForDelete 
       """.toString(),
-      [ptisForDelete:markForDeletion.get("pti")]
+      [ptisForDelete:markForDeletion.pti]
     ) as Set
     tisForDeleteCheck.addAll(tiIds)
 
     log.info("TIs for delete check - {}", tisForDeleteCheck.toListString())
 
-    Tuple2<Set<String>, Set<String>> tisAndWorksForDeletion = markForDeleteTI(tisForDeleteCheck, markForDeletion.get("pti"));
+    Tuple2<Set<String>, Set<String>> tisAndWorksForDeletion = markForDeleteTI(tisForDeleteCheck, markForDeletion.pti);
     log.info("LOG DEBUG - TIS and Works for Deletion - {}", tisAndWorksForDeletion.toListString())
-    markForDeletion.get('ti').addAll(tisAndWorksForDeletion.v1);
-    markForDeletion.get('work').addAll(tisAndWorksForDeletion.v2);
+    markForDeletion.ti.addAll(tisAndWorksForDeletion.v1);
+    markForDeletion.work.addAll(tisAndWorksForDeletion.v2);
 
     log.info("LOG DEBUG markForDeletion - {}", markForDeletion);
     return markForDeletion
@@ -434,14 +432,81 @@ public class ErmResourceService {
     return Tuple.tuple(tisToDelete, worksToDelete);
   }
 
-  public Map<String, Set<String>> markForDeleteImperative(Map<String, List<String>> resourceMap) {
-    List<String> pciList = resourceMap.get("pcis");
+  private int deleteByIds(Class domainClass, Collection<String> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return 0
+    }
+
+    // TODO: Or should we be using .delete()?
+    String hql = "DELETE FROM ${domainClass.simpleName} WHERE id IN (:idsToDelete)"
+    return ErmResource.executeUpdate(hql, [idsToDelete: new ArrayList<>(ids)])
+  }
+
+
+  @Transactional
+  public Map<String, Integer> deleteResources(MarkForDeleteResponse resourcesToDelete) {
+    if (resourcesToDelete == null) {
+      log.warn("deleteResources called with null MarkForDeleteResponse.")
+      return [pciDeleted: 0, ptiDeleted: 0, tiDeleted: 0, workDeleted: 0]
+    }
+    log.info("Attempting to delete resources: {}", resourcesToDelete)
+    Map<String, Integer> deletionCounts = [:]
+
+    int pciDeletedCount = 0
+    if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
+      log.info("Deleting PCIs: {}", resourcesToDelete.pci)
+      pciDeletedCount = deleteByIds(PackageContentItem, resourcesToDelete.pci)
+      log.info("Deleted {} PCIs", pciDeletedCount)
+    }
+    deletionCounts.pciDeleted = pciDeletedCount
+
+    int ptiDeletedCount = 0
+    if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
+      log.info("Deleting PTIs: {}", resourcesToDelete.pti)
+      ptiDeletedCount = deleteByIds(PlatformTitleInstance, resourcesToDelete.pti)
+      log.info("Deleted {} PTIs", ptiDeletedCount)
+    }
+    deletionCounts.ptiDeleted = ptiDeletedCount
+
+    String ioQueryHql = """
+            SELECT io.id FROM IdentifierOccurrence io
+            WHERE io.resource.id IN (:ermTitleListIds)
+        """
+
+    List<String> tiAndWorkIds = new ArrayList<>()
+    tiAndWorkIds.addAll(resourcesToDelete.ti)
+    tiAndWorkIds.addAll(resourcesToDelete.work)
+    List<String> ioIdsToDelete = IdentifierOccurrence.executeQuery(
+      ioQueryHql,
+      [ermTitleListIds: tiAndWorkIds]
+    )
+
+    String hql = "DELETE FROM IdentifierOccurrence WHERE id IN (:ids)"
+    IdentifierOccurrence.executeUpdate(hql, [ids: ioIdsToDelete])
+
+    int tiDeletedCount = 0
+    if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
+      log.info("Deleting TIs: {}", resourcesToDelete.ti)
+      tiDeletedCount = deleteByIds(TitleInstance, resourcesToDelete.ti)
+      log.info("Deleted {} TIs", tiDeletedCount)
+    }
+    deletionCounts.tiDeleted = tiDeletedCount
+
+    int workDeletedCount = 0
+    if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
+      log.info("Deleting Works: {}", resourcesToDelete.work)
+      workDeletedCount = deleteByIds(Work, resourcesToDelete.work)
+      log.info("Deleted {} Works", workDeletedCount)
+    }
+    deletionCounts.workDeleted = workDeletedCount
+
+    log.info("Deletion complete. Counts: {}", deletionCounts)
+    return deletionCounts
+  }
+
+  public MarkForDeleteResponse markForDeleteImperative(List<String> pciList, List<String> ptiList, List<String> tiList) {
     Set<String> pciIds = (pciList != null) ? new HashSet<String>(pciList) : new HashSet<String>();
-
-    List<String> ptiList = resourceMap.get("ptis");
     Set<String> ptiIds = (ptiList != null) ? new HashSet<String>(ptiList) : new HashSet<String>();
-
-    List<String> tiList = resourceMap.get("tis");
     Set<String> tiIds = (tiList != null) ? new HashSet<String>(tiList) : new HashSet<String>();
 
 
@@ -449,16 +514,12 @@ public class ErmResourceService {
       throw new Exception("Id list cannot be empty.");
     }
 
-    Map<String, Set<String>> markForDeletion = new HashMap<>();
-    markForDeletion.put('pci', new HashSet<String>());
-    markForDeletion.put('pti', new HashSet<String>());
-    markForDeletion.put('ti', new HashSet<String>());
-    markForDeletion.put('work', new HashSet<String>());
+    MarkForDeleteResponse markForDeletion = new MarkForDeleteResponse()
 
     pciIds.forEach{String id -> {
       Set<String> linesForResource = entitlementsForResource(id, 1)
       if (linesForResource.size() == 0) {
-        markForDeletion.get('pci').add(id);
+        markForDeletion.pci.add(id);
       }
     }}
 
@@ -467,7 +528,7 @@ public class ErmResourceService {
         SELECT DISTINCT pci.pti.id FROM PackageContentItem pci
         WHERE pci.id IN :pcisForDelete 
       """.toString(),
-      [pcisForDelete:markForDeletion.get("pci")]
+      [pcisForDelete:markForDeletion.pci]
     ) as Set
 
     ptiIds.addAll(ptisForDeleteCheck);
@@ -485,7 +546,7 @@ public class ErmResourceService {
             WHERE pci.pti.id = :ptiId
             AND pci.id NOT IN :ignorePcis
           """.toString(),
-        [ptiId:id, ignorePcis:handleEmptyListMapping(markForDeletion.get("pci"))],
+        [ptiId:id, ignorePcis:handleEmptyListMapping(markForDeletion.pci)],
         [max:1]
       ) as Set
 
@@ -494,7 +555,7 @@ public class ErmResourceService {
         return null
       }
 
-      markForDeletion.get('pti').add(id);
+      markForDeletion.pti.add(id);
     }}
 
     Set<String> tisForWorkChecking = TitleInstance.executeQuery(
@@ -502,7 +563,7 @@ public class ErmResourceService {
         SELECT DISTINCT pti.titleInstance.id FROM PlatformTitleInstance pti
         WHERE pti.id IN :ptisForDelete 
       """.toString(),
-      [ptisForDelete:markForDeletion.get("pti")]
+      [ptisForDelete:markForDeletion.pti]
     ) as Set
     tisForWorkChecking.addAll(tiIds)
 
@@ -511,16 +572,16 @@ public class ErmResourceService {
           SELECT pti.id FROM PlatformTitleInstance pti
           WHERE pti.titleInstance.id = :tiId
           AND pti.id NOT IN :ignorePtis
-        """.toString(), [tiId:id, ignorePtis:handleEmptyListMapping(markForDeletion.get("pti"))], [max:1])  as Set
+        """.toString(), [tiId:id, ignorePtis:handleEmptyListMapping(markForDeletion.pti)], [max:1])  as Set
 
       if (ptisForTi.size() != 0) {
         log.info("LOG WARNING: PTIs that have not been marked for deletion exist for TI: TI ID- {}, PTIs found- {}", id, ptisForTi);
         return null
       }
-      markForDeletion.get("ti").add(id)
+      markForDeletion.ti.add(id)
     }}
 
-    markForDeletion.get("ti").forEach{String id -> {
+    markForDeletion.ti.forEach{String id -> {
       List<String> workIdList = TitleInstance.executeQuery("""
           SELECT ti.work.id FROM TitleInstance ti
           WHERE ti.id = :tiId
@@ -541,7 +602,7 @@ public class ErmResourceService {
           SELECT pti from PlatformTitleInstance pti
           WHERE pti.id NOT IN :ignorePtis
           AND pti.titleInstance.work.id = :workId
-        """.toString(), [ignorePtis:handleEmptyListMapping(markForDeletion.get("pti")), workId: workId], [max:1]) as Set
+        """.toString(), [ignorePtis:handleEmptyListMapping(markForDeletion.pti), workId: workId], [max:1]) as Set
 
       log.info("Ptis for Work: {}", ptisForWork.toListString())
 
@@ -550,10 +611,10 @@ public class ErmResourceService {
         return null
       }
 
-      markForDeletion.get("work").add(workId)
+      markForDeletion.work.add(workId)
     }}
 
-    markForDeletion.get("work").forEach{String id -> {
+    markForDeletion.work.forEach{String id -> {
         Set<String> tisForWork = Work.executeQuery("""
           SELECT ti.id from TitleInstance ti
           WHERE ti.work.id = :workId
@@ -561,7 +622,7 @@ public class ErmResourceService {
 
         // If we can delete a work, delete any other TIs attached to it
 
-      markForDeletion.get("ti").addAll(tisForWork)
+      markForDeletion.ti.addAll(tisForWork)
       }}
 
     return markForDeletion
