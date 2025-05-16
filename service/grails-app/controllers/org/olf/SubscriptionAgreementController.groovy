@@ -842,4 +842,15 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
     deleteResource sa
     render status: NO_CONTENT
   }
+
+  // FIXME DO NOT MERGE THIS IN FINAL PR
+  public def testingrbac() {
+    respond doTheLookup ({
+      def res = SubscriptionAgreement;
+      and{
+        sqlRestriction("? LIKE sa_name", ["GBV/LIB1/"])
+        //sqlRestriction("sa_name LIKE ?", ["GBV/LIB1/"])
+      }
+    })
+  }
 }

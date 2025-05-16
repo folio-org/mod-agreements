@@ -216,5 +216,8 @@ class UrlMappings {
     // Statistics endpoints. I think that we should be able to do this in a better mapping, but I can't figure it out rn
     "/erm/statistics/kbCount" (controller: 'statistics', action: 'kbCount', method: 'GET')
     "/erm/statistics/sasCount" (controller: 'statistics', action: 'agreementCount', method: 'GET')
+
+    // FIXME DO NOT MERGE IN FINAL PR
+    "/erm/testrbac" (controller: 'subscriptionAgreement', action: 'testingrbac')
   }
 }
