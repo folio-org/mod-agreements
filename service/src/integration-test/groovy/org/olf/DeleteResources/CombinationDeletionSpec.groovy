@@ -88,8 +88,8 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
                 currentInputResources: inputResourceCombo,
                 currentAgreementLines: agreementLineCombo,
                 doDelete: doDeleteFlag,
-                expectedMarkForDelete: normalizeExpectedResponse(expectedValue), // Normalize here
-                initialKbStats: new HashMap<>(loadedKbStats[structure]) // Fresh copy
+                expectedMarkForDelete: expectedValue,
+                initialKbStats: new HashMap<>(loadedKbStats[structure])
               ])
             }
           }
@@ -98,17 +98,6 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     }
     log.info("Loaded ${allVerificationTestCases.size()} verification test cases.")
     log.info("${allVerificationTestCases.toString()}")
-  }
-
-  Map normalizeExpectedResponse(Map response) {
-    if (response == null) response = [:] // Handle null response from API or JSON
-    return [
-      pci:  (response.pci  ?: []).sort() as Set,
-      pti:  (response.pti  ?: []).sort() as Set,
-      ti:   (response.ti   ?: []).sort() as Set,
-      work: (response.work ?: []).sort() as Set,
-      error: response.error // Preserve error if present
-    ]
   }
 
   void setupDataForTest(String structure) {
@@ -183,18 +172,17 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     then: "The system state matches the expected outcome"
     // 1. Assert the `markForDelete` operation's response (or error)
     if (testCase.doDelete) {
-      // Check Ids deleted (could return from /delete endpoint) match those from MarkForDelete?
+      // TODO: Check Ids deleted (could return from /delete endpoint) match those from MarkForDelete?
     } else {
-      if (testCase.expectedMarkForDelete.error) { // If an error was expected from markForDelete
-        assert operationError // An error must have occurred
-        assert operationError.message.contains(testCase.expectedMarkForDelete.error) // Check if message matches (can be fragile)
-      } else if (operationError && !testCase.expectedMarkForDelete.error) {
+     if (operationError) {
+       // TODO: Do we need to verify error scenarios?
+       log.info("Exception message: {}", operationError.message)
+//       assert operationError.message == "Id list cannot be empty."
         fail("Unexpected error during markForDelete: ${operationError.message}")
       } else {
-        assertIdsMatch(testCase.structure, operationResponse, operationError, testCase.expectedMarkForDelete)
+        assertIdsMatch(testCase.structure, operationResponse, testCase.expectedMarkForDelete)
       }
     }
-
 
     // 2. Assert KB stats
     if (testCase.doDelete && !operationError) {
@@ -203,7 +191,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
         testCase.expectedMarkForDelete
       )
       assertKbStatsMatch(finalKbStats, expectedStatsAfterDelete)
-    } else { // No actual delete OR an error occurred during markForDelete
+    } else { // if no error and just markForDelete check KB stats are unchanged.
       assertKbStatsMatch(finalKbStats, testCase.initialKbStats)
     }
 
@@ -233,7 +221,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     assert expectedKbStats.Work                  == actualKbStats.Work
   }
 
-  void assertIdsMatch(String structure, Map operationResponse, Exception operationError,  Map expectedMarkForDelete) {
+  void assertIdsMatch(String structure, Map operationResponse, Map expectedMarkForDelete) {
 
     if (operationResponse) {
       Set<String>  expectedPcis = findInputResourceIds(expectedMarkForDelete.get("pci") as List, structure)
@@ -248,9 +236,5 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       assert expectedWorks == operationResponse.get("work") as Set
     }
 
-    if (operationError) {
-      log.info("Exception message: {}", operationError.message)
-      operationError.message == "Id list cannot be empty."
-    }
   }
 }
