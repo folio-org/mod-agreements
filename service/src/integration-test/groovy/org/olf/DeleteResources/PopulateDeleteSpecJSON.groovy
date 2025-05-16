@@ -16,7 +16,7 @@ class PopulateDeleteSpecJSON extends DeletionBaseSpec {
   @Shared
   Map<String, Map<String, Map<String, Map<String, Map<String, List<String>>>>>> nestedScenarios = [:];
 
-//  @IgnoreIf({ !SHOULD_REGENERATE_EXPECTED_JSON }) // Only run if the flag is true
+  @IgnoreIf({ !SHOULD_REGENERATE_EXPECTED_JSON }) // Only run if the flag is true
   @Unroll
   void "populate data setup for #testCase.structure, inputs: #testCase.currentInputResources, agreements: #testCase.currentAgreementLines"() {
 
@@ -151,14 +151,25 @@ class PopulateDeleteSpecJSON extends DeletionBaseSpec {
 
       pciMap[id] = "PCI${suffix}"
       if (pci.pti) {
-        ptiMap[pci.pti.id] = "PTI${suffix}"
+        if (!ptiMap[pci.pti.id]) {
+          ptiMap[pci.pti.id] = "PTI${suffix}"
+        }
         if (pci.pti.titleInstance) {
-          tiMap[pci.pti.titleInstance.id] = "TI${suffix}"
+          if (!tiMap[pci.pti.titleInstance.id]) {
+            tiMap[pci.pti.titleInstance.id] = "TI${suffix}"
+          }
           if (pci.pti.titleInstance.work) {
-            workMap[pci.pti.titleInstance.work.id] = "Work${suffix}"
+            if (!workMap[pci.pti.titleInstance.work.id]) {
+              workMap[pci.pti.titleInstance.work.id] = "Work${suffix}"
+            }
 
 
             List<TitleInstance> allTisForWork = findTisByWorkId([pci.pti.titleInstance.work.id] as Set)
+            log.info("While building resource map, all tis for work")
+            allTisForWork.forEach{{
+              log.info(it.id)
+              log.info("TI Map: {}", tiMap)
+            }}
             allTisForWork.eachWithIndex { TitleInstance tiInstance, tiIndex ->
               if (!tiMap.containsKey(tiInstance.id)) {
                 tiMap[tiInstance.id] = "TI${tiIndex + 1}" // If we add multiple works, may need Work${suffix}_
@@ -172,7 +183,7 @@ class PopulateDeleteSpecJSON extends DeletionBaseSpec {
 
 
 
-//  @IgnoreIf({ !SHOULD_REGENERATE_EXPECTED_JSON })
+  @IgnoreIf({ !SHOULD_REGENERATE_EXPECTED_JSON })
   void "Save Populated Scenarios to JSON"() { // Renamed from "Scenario 2: Save JSON"
     setup:
     log.info("--- REGENERATING: Preparing to save populated scenarios to JSON ---")
@@ -193,7 +204,7 @@ class PopulateDeleteSpecJSON extends DeletionBaseSpec {
 
 // Helper for generating single type combinations (from previous suggestions)
   List<List<String>> generateSingleTypeCombinations(List<String> allPossibleResourcesForStructure, List<String> targetTypes) {
-    List<List<String>> singleTypeCombos = [[]] // Include empty input case
+    List<List<String>> singleTypeCombos = [] // Exclude empty input case []
     targetTypes.each { typePrefix ->
       List<String> resourcesOfType = allPossibleResourcesForStructure.findAll {
         it.toUpperCase().startsWith(typePrefix.toUpperCase()) // Case-insensitive prefix match

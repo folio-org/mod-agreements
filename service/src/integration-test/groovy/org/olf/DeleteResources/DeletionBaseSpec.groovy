@@ -163,77 +163,59 @@ class DeletionBaseSpec extends BaseSpec {
     }
   }
 
-  @Ignore
-  ErmResource parseResource(String resource, String structure) {
-    if (structure == "simple") {
-      if (resource == "PCI1") {
-        return findPCIByPackageName(packageNameSimple1)
+  String findPackageName(String resource, String structure) {
+    if (resource.endsWith("2")) {
+      switch(structure) {
+        case "simple":
+          return packageNameSimple1
+        case "top-link":
+          return packageNameTopLink2
+        case "ti-link":
+          return packageNameTiLink2
+        case "work-link":
+          return packageNameWorkLink2
       }
-
-      if (resource == "PTI1") {
-        return findPCIByPackageName(packageNameSimple1).pti
+    } else {
+      switch(structure) {
+        case "simple":
+          return packageNameSimple1
+        case "top-link":
+          return packageNameTopLink1
+        case "ti-link":
+          return packageNameTiLink1
+        case "work-link":
+          return packageNameWorkLink1
       }
-
     }
+  }
 
-    if (structure == "top-link") {
-      if (resource == "PCI1") {
-        return findPCIByPackageName(packageNameTopLink1)
-      }
-
-      if (resource == "PCI2") {
-        return findPCIByPackageName(packageNameTopLink2)
+  @Ignore
+  String parseResource(String resource, String structure) {
+      if (resource == "PCI1" || resource == "PCI2") {
+        return findPCIByPackageName(findPackageName(resource, structure)).id
       }
 
       if (resource == "PTI1" || resource == "PTI2") {
-        return findPCIByPackageName(packageNameTopLink1).pti
-      }
-    }
-
-    if (structure == "ti-link") {
-      if (resource == "PCI1") {
-        return findPCIByPackageName(packageNameTiLink1)
-      }
-
-      if (resource == "PCI2") {
-        return findPCIByPackageName(packageNameTiLink2)
-      }
-
-      if (resource == "PTI1") {
-        return findPCIByPackageName(packageNameTiLink1).pti
-      }
-
-      if (resource == "PTI2") {
-        return findPCIByPackageName(packageNameTiLink2).pti
-      }
-    }
-
-    if (structure == "work-link") {
-      if (resource == "PCI1") {
-        return findPCIByPackageName(packageNameWorkLink1)
-      }
-
-      if (resource == "PCI2") {
-        return findPCIByPackageName(packageNameWorkLink2)
-      }
-
-      if (resource == "PTI1") {
-        return findPCIByPackageName(packageNameWorkLink1).pti
-      }
-
-      if (resource == "PTI2") {
-        return findPCIByPackageName(packageNameWorkLink2).pti
+        return findPCIByPackageName(findPackageName(resource, structure)).pti.id
       }
 
       if (resource == "TI1") {
-        return findPCIByPackageName(packageNameWorkLink1).pti.titleInstance
+        return findPCIByPackageName(findPackageName(resource, structure)).pti.titleInstance.id
       }
 
       if (resource == "TI2") {
-        return findPCIByPackageName(packageNameWorkLink2).pti.titleInstance
+        if (structure == "work-link") {
+          return findPCIByPackageName(findPackageName(resource, structure)).pti.titleInstance.id
+        }
+        Set<String> workId = [findPCIByPackageName(findPackageName(resource, structure)).pti.titleInstance.work.id] as Set
+        String ti1Id = findPCIByPackageName(findPackageName(resource, structure)).pti.titleInstance.id
+
+        return findTisByWorkId(workId).findAll{TitleInstance ti -> ti.id != ti1Id}.get(0).id
       }
 
-    }
+      if (resource == "Work1") {
+        return findPCIByPackageName(findPackageName(resource, structure)).pti.titleInstance.work.id
+      }
     return null;
   }
 
@@ -242,7 +224,7 @@ class DeletionBaseSpec extends BaseSpec {
     Set<String> resourceIdList = new HashSet<>()
 
     inputResources.forEach{resource -> {
-      resourceIdList.add(parseResource(resource, structure).id)
+        resourceIdList.add(parseResource(resource, structure))
     }}
 
     return resourceIdList
@@ -262,7 +244,7 @@ class DeletionBaseSpec extends BaseSpec {
 
     agreementLines.forEach{resource -> {
       String resourceType = parseResourceType(resource)
-      allResources.get(resourceType).add(parseResource(resource, structure).id)
+      allResources.get(resourceType).add(parseResource(resource, structure))
     }}
 
     return allResources;

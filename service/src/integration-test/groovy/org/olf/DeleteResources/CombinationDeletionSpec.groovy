@@ -3,48 +3,16 @@ package org.olf.DeleteResources
 import grails.testing.mixin.integration.Integration
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
-import org.olf.erm.Entitlement
-import org.olf.erm.SubscriptionAgreement
-import org.olf.kb.ErmResource
-import org.olf.kb.IdentifierOccurrence
-import org.olf.kb.PackageContentItem
-import org.olf.kb.PlatformTitleInstance
-import org.olf.kb.TitleInstance
-import org.olf.kb.Work
-import org.olf.kb.metadata.PackageIngressMetadata
 import org.spockframework.runtime.SpecificationContext
 import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Stepwise
 import groovy.json.JsonOutput
-import spock.lang.Unroll
 
 @Integration
 @Stepwise
 @Slf4j
 class CombinationDeletionSpec extends DeletionBaseSpec {
-
-
-  @Shared
-  Map<String, Integer> expectedKbStatsData;
-
-  def cleanup() {
-    // Used to clear resources from DB between tests.
-    // Specification logic is needed to ensure clearResources is not run for BaseSpec tests (which will cause it to fail).
-    SpecificationContext currentSpecInfo = specificationContext;
-    if (specificationContext.currentFeature?.name.contains("Scenario")) {
-      log.info("--- Running Cleanup for test: ${currentSpecInfo.currentIteration?.name ?: currentSpecInfo.currentFeature?.name ?: currentSpecInfo.currentSpec.name} in ${CombinationDeletionSpec.simpleName} ---")
-      try {
-        clearResources()
-      } catch (Exception e) {
-        log.error("--- Error during SimpleDeletionSpec cleanup: ${e.message}", e)
-      }
-      log.info("--- ${CombinationDeletionSpec.simpleName} Cleanup Complete ---")
-    } else {
-      log.info("--- Skipping SimpleDeletionSpec-specific cleanup for BaseSpec feature run in: ${currentSpecInfo.currentSpec.displayName} (Feature: ${currentSpecInfo.currentFeature?.name}) ---")
-    }
-  }
-
 
   @Shared
   Map<String, List<String>> resourcesByStructure = [
@@ -74,18 +42,17 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
 
   def setupSpec() {
     log.info("--- CombinationDeletionSpec: setupSpec ---")
-    File scenariosFile = new File(EXPECTED_SCENARIOS_JSON_PATH) // Use constants for paths
+    File scenariosFile = new File(EXPECTED_SCENARIOS_JSON_PATH)
     File kbStatsFile = new File(EXPECTED_KBSTATS_JSON_PATH)
 
     if (!scenariosFile.exists() || !kbStatsFile.exists()) {
-      log.error("CRITICAL: Expected JSON files not found. Running population step.")
+      log.error("Expected Test Case files ${EXPECTED_SCENARIOS_JSON_PATH} and ${EXPECTED_KBSTATS_JSON_PATH} not found.")
       return
     }
 
     def jsonSlurper = new JsonSlurper()
     Map<String, Map<String, Map<String, Map<String, Map<String, List<String>>>>>> loadedScenarios = jsonSlurper.parse(scenariosFile)
     Map<String, Map<String, Integer>> loadedKbStats = jsonSlurper.parse(kbStatsFile)
-
 
     loadedScenarios.each { structure, structureData ->
       List<List<String>> currentInputCombos = inputResourceCombinationsByStructure[structure]
@@ -99,6 +66,8 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       currentInputCombos.each { inputResourceCombo ->
         currentAgreementCombos.each { agreementLineCombo ->
           [false, true].each { doDeleteFlag -> // Iterate over the boolean flags for actual deletion
+
+            // Create keys for accessing the expected values for each test case.
             String inputKey = inputResourceCombo.isEmpty() ? EMPTY_IDENTIFIER : inputResourceCombo.sort(false).join(",")
             String agreementKey = agreementLineCombo.isEmpty() ? EMPTY_IDENTIFIER : agreementLineCombo.sort(false).join(",")
 
@@ -134,7 +103,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
   Map normalizeExpectedResponse(Map response) {
     if (response == null) response = [:] // Handle null response from API or JSON
     return [
-      pci:  (response.pci  ?: []).sort() as Set, // Convert to Set for easier comparison
+      pci:  (response.pci  ?: []).sort() as Set,
       pti:  (response.pti  ?: []).sort() as Set,
       ti:   (response.ti   ?: []).sort() as Set,
       work: (response.work ?: []).sort() as Set,
@@ -143,65 +112,31 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
   }
 
   void setupDataForTest(String structure) {
-    seedDatabaseWithStructure(structure) // This is crucial per iteration
-    File jsonFile = new File(EXPECTED_KBSTATS_JSON_PATH)
-    if (!jsonFile.exists()) {
-      log.error("KB Stats JSON file not found at ${EXPECTED_KBSTATS_JSON_PATH}")
-      // throw new FileNotFoundException("KB Stats JSON file not found")
-      expectedKbStatsData = [:] // Default to empty to avoid NPE, but test will likely fail
-      return
-    }
-    def jsonSlurper = new JsonSlurper()
-    Map<String, Integer> allKbStats = jsonSlurper.parse(jsonFile)
-    expectedKbStatsData = allKbStats.get(structure) // This is the initial state for the given structure
-    if (expectedKbStatsData == null) {
-      log.warn("No KB stats data found for structure '${structure}' in ${EXPECTED_KBSTATS_JSON_PATH}")
-      expectedKbStatsData = [:]
-    }
-  }
-
-  Map calculateExpectedKbStatsAfterDelete(Map initialStats, Map itemsExpectedToBeDeleted) {
-    Map expectedStats = new HashMap<>(initialStats)
-    if (itemsExpectedToBeDeleted && !itemsExpectedToBeDeleted.error) {
-      expectedStats.PackageContentItem    -= (itemsExpectedToBeDeleted.pci?.size()  ?: 0)
-      expectedStats.PlatformTitleInstance -= (itemsExpectedToBeDeleted.pti?.size()  ?: 0)
-      expectedStats.TitleInstance         -= (itemsExpectedToBeDeleted.ti?.size()   ?: 0)
-      expectedStats.Work                  -= (itemsExpectedToBeDeleted.work?.size() ?: 0)
-    }
-    return expectedStats
-  }
-
-  void assertKbStatsMatch(Map actualKbStats, Map expectedKbStats) {
-    log.info("Asserting KB Stats: Actual=${actualKbStats}, Expected=${expectedKbStats}")
-    assert expectedKbStats.PackageContentItem    == actualKbStats.PackageContentItem
-    assert expectedKbStats.PlatformTitleInstance == actualKbStats.PlatformTitleInstance
-    assert expectedKbStats.TitleInstance         == actualKbStats.TitleInstance
-    assert expectedKbStats.Work                  == actualKbStats.Work
+    seedDatabaseWithStructure(structure)
   }
 
 //  @Ignore
   void "For #testCase.structure: marking #testCase.resourceTypeToMark (#testCase.currentInputResources) with agreements (#testCase.currentAgreementLines) and delete=#testCase.doDelete"() {
     setup:
-    log.info("In combinatorial test---")
-    clearResources()
-    setupDataForTest(testCase.structure) // Seeds DB, loads initial expectedKbStatsData
+      log.info("In combinatorial test---")
+      clearResources()
+      setupDataForTest(testCase.structure)
 
     when: "Resources are marked for deletion and optionally deleted"
-    log.info("VERIFYING: Structure: ${testCase.structure}, Type: ${testCase.resourceTypeToMark}, Inputs: ${testCase.currentInputResources.toListString()}, Agreements: ${testCase.currentAgreementLines.toListString()}, doDelete: ${testCase.doDelete}")
+      log.info("VERIFYING: Structure: ${testCase.structure}, Type: ${testCase.resourceTypeToMark}, Inputs: ${testCase.currentInputResources.toListString()}, Agreements: ${testCase.currentAgreementLines.toListString()}, doDelete: ${testCase.doDelete}")
 
-    Set<String> idsForProcessing = findInputResourceIds(testCase.currentInputResources, testCase.structure)
-    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(testCase.currentAgreementLines, testCase.structure)
+      Set<String> idsForProcessing = findInputResourceIds(testCase.currentInputResources, testCase.structure)
+      Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(testCase.currentAgreementLines, testCase.structure)
+      createAgreementLines(idsForAgreementLines)
 
-    if (testCase.resourceTypeToMark == "pci" && !idsForProcessing.isEmpty()) {
-      visualiseHierarchy(idsForProcessing)
-    }
+      if (testCase.resourceTypeToMark == "pci" && !idsForProcessing.isEmpty()) {
+        visualiseHierarchy(idsForProcessing)
+      }
 
-    createAgreementLines(idsForAgreementLines)
+      log.info("IDs to process for ${testCase.resourceTypeToMark}: ${idsForProcessing}")
 
-    log.info("IDs to process for ${testCase.resourceTypeToMark}: ${idsForProcessing}")
-
-    Map operationResponse
-    Exception operationError
+      Map operationResponse
+      Exception operationError
 
     // Only make a call if there are IDs to process for the designated resource type
     if (!testCase.resourceTypeToMark.isEmpty() && !idsForProcessing.isEmpty()) {
@@ -214,7 +149,6 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
         log.error("Error calling markForDelete endpoint ${endpoint}: ${e.toString()}", e)
       }
     } else {
-      // No specific resources selected for marking, or resourceTypeToMark is empty
       operationResponse = [pci: [], pti: [], ti: [], work: []]
     }
 
@@ -223,9 +157,9 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     Map actualDeleteResponse
 
     if (testCase.doDelete && !operationError && operationResponse && !(operationResponse.pci.isEmpty() && operationResponse.pti.isEmpty() && operationResponse.ti.isEmpty() && operationResponse.work.isEmpty()) ) {
-      // Only attempt actual delete if markForDelete was successful (no error, non-empty response)
+      // Only attempt delete if markForDelete was successful (no error, non-empty response)
       // And if there were items actually marked by the previous step
-      log.info("Proceeding with actual delete operation for marked items: ${operationResponse}")
+      log.info("Proceeding with delete operation for marked items: ${operationResponse}")
       try {
         String deleteEndpoint = "/erm/hierarchicalDelete/delete/${testCase.resourceTypeToMark}"
         String deletePayloadKey = "resources"
@@ -254,19 +188,17 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     } else if (operationError && !testCase.expectedMarkForDelete.error) {
       fail("Unexpected error during markForDelete: ${operationError.message}")
     } else {
-      assertIdsMatch(testCase.structure, operationResponse, operationError, finalKbStats, testCase.expectedMarkForDelete)
+      assertIdsMatch(testCase.structure, operationResponse, operationError, testCase.expectedMarkForDelete)
     }
 
     // 2. Assert KB stats
     if (testCase.doDelete && !operationError) {
-      // Calculate expected stats after the items from `expectedMarkForDelete` are gone
       Map expectedStatsAfterDelete = calculateExpectedKbStatsAfterDelete(
-        testCase.initialKbStats, // Initial stats for this structure
-        testCase.expectedMarkForDelete  // Items that should have been deleted
+        testCase.initialKbStats,
+        testCase.expectedMarkForDelete
       )
       assertKbStatsMatch(finalKbStats, expectedStatsAfterDelete)
     } else { // No actual delete OR an error occurred during markForDelete
-      // Stats should be same as after markForDelete (which is initialKbStats if markForDelete doesn't change counts,
       assertKbStatsMatch(finalKbStats, testCase.initialKbStats)
     }
 
@@ -274,159 +206,41 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
     testCase << allVerificationTestCases.collect { it }
   }
 
-  @Ignore
-  void "populate data setup"() {
-    when:
-    resourcesByStructure.keySet().each{structure ->
-    List<List<String>> currentInputCombos = inputResourceCombinationsByStructure[structure]
-    List<List<String>> currentAgreementCombos = agreementLineCombinationsByStructure[structure]
 
-    if (!currentInputCombos || !currentAgreementCombos) {
-      log.warn("Missing combination definitions for structure: ${structure} in setupSpec. Skipping.")
-      return // continue to next structure
+  // Assertion methods:
+
+  Map calculateExpectedKbStatsAfterDelete(Map initialStats, Map itemsExpectedToBeDeleted) {
+    Map expectedStats = new HashMap<>(initialStats)
+    if (itemsExpectedToBeDeleted && !itemsExpectedToBeDeleted.error) {
+      expectedStats.PackageContentItem    -= (itemsExpectedToBeDeleted.pci?.size()  ?: 0)
+      expectedStats.PlatformTitleInstance -= (itemsExpectedToBeDeleted.pti?.size()  ?: 0)
+      expectedStats.TitleInstance         -= (itemsExpectedToBeDeleted.ti?.size()   ?: 0)
+      expectedStats.Work                  -= (itemsExpectedToBeDeleted.work?.size() ?: 0)
     }
-
-    currentInputCombos.each { inputResourceCombo ->
-      currentAgreementCombos.each { agreementLineCombo ->
-          String inputKey = inputResourceCombo.isEmpty() ? EMPTY_IDENTIFIER : inputResourceCombo.sort(false).join(",")
-          String agreementKey = agreementLineCombo.isEmpty() ? EMPTY_IDENTIFIER : agreementLineCombo.sort(false).join(",")
-            // Determine resourceType from the first element of inputResourceCombo if not empty
-            String resourceTypeToMark = ""
-            if (!inputResourceCombo.isEmpty()) {
-              resourceTypeToMark = parseResourceType(inputResourceCombo[0]) // PCI, PTI, or TI
-            }
-
-            allVerificationTestCases.add([
-              structure: structure,
-              resourceTypeToMark: resourceTypeToMark, // pci, pti, ti
-              currentInputResources: inputResourceCombo,
-              currentAgreementLines: agreementLineCombo,
-            ])
-        }
-      }
-    }
-    then:
-    true
+    return expectedStats
   }
 
-  @Ignore
-  void "Populate expected outcomes for #testCase.structure, input resources: #testCase.currentInputResources, agreement lines: #testCase.currentAgreementLines scenarios"() {
-    setup:
-    clearResources()
-    log.info(" --- Seeding populate --- ")
-    seedDatabaseWithStructure(testCase.structure)
-
-    // Determine pciIds for mapping based on structure
-    Set<String> pciIdsForMapping
-    switch (testCase.structure) {
-      case "simple":
-        pciIdsForMapping = [findPCIByPackageName(packageNameSimple1).id]
-        break
-      case "top-link":
-        pciIdsForMapping = [findPCIByPackageName(packageNameTopLink1).id, findPCIByPackageName(packageNameTopLink2).id]
-        break
-      case "ti-link":
-        pciIdsForMapping = [findPCIByPackageName(packageNameTiLink1).id, findPCIByPackageName(packageNameTiLink2).id]
-        break
-      case "work-link":
-        pciIdsForMapping = [findPCIByPackageName(packageNameWorkLink1).id, findPCIByPackageName(packageNameWorkLink2).id]
-        break
-      default:
-        throw new IllegalArgumentException("Unknown structure: $structure")
-    }
-    Map<String, String> pciMap = [:]
-    Map<String, String> ptiMap = [:]
-    Map<String, String> tiMap = [:]
-    Map<String, String> workMap = [:]
-
-    // Build the resource name maps (PCI1, PTI1, etc.)
-    // e.g. pciMap {PCI1: 12312-123123-123, PCI2: 542524-123423-1231}
-    buildResourceNameMaps(pciIdsForMapping, pciMap, ptiMap, tiMap, workMap)
-
-    log.info(" --- Resource Maps created --- ")
-
-    when:
-    log.info("POPULATING: Structure: ${testCase.structure}, Inputs: ${testCase.currentInputResources.toListString()}, Agreements: ${testCase.currentAgreementLines.toListString()}")
-    Set<String> idsForProcessing = findInputResourceIds(testCase.currentInputResources, testCase.structure)
-    Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(testCase.currentAgreementLines, testCase.structure)
-    String inputResourcesIdentifier = testCase.currentInputResources.isEmpty() ? EMPTY_IDENTIFIER : testCase.currentInputResources.sort(false).join(",")
-    String agreementLinesIdentifier = testCase.currentAgreementLines.isEmpty() ? EMPTY_IDENTIFIER : testCase.currentAgreementLines.sort(false).join(",")
-    String resourceType = parseResourceType(testCase.currentInputResources.get(0))
-
-    try {
-      createAgreement(agreementName)
-    } catch (Exception e) {
-      log.info(e.toString())
-    }
-    idsForAgreementLines.values().flatten().each { String resourceId ->
-      if (resourceId) addEntitlementForAgreement(agreementName, resourceId)
-    }
-
-    Map operationResponse = [:]
-    if (idsForProcessing.any { !it.isEmpty() } ) { // Only call if there's something to process
-      try {
-//        List<String> tisToProcess = (structure == "work-link") ? idsForProcessing['ti'] : [] // Only work-link uses TIs directly
-        operationResponse = doPost("/erm/hierarchicalDelete/markForDelete/${resourceType}", ['resources': idsForProcessing])
-        mapResponseIdsToNames(operationResponse, pciMap, ptiMap, tiMap, workMap)
-      } catch (Exception e) {
-        log.error("Error during markForDelete for structure ${structure}: ${e.toString()}", e)
-        // Decide how to handle errors in population phase, maybe store error info
-        operationResponse = [error: e.getMessage()]
-      }
-    } else {
-      // Ensure consistent empty response structure
-      operationResponse = [pci: [], pti: [], ti: [], work: []]
-    }
-
-    nestedScenarios
-      .computeIfAbsent(testCase.structure, { [:] })
-      .computeIfAbsent("inputResource", { [:] })
-      .computeIfAbsent(inputResourcesIdentifier, { [:] })
-      .computeIfAbsent("agreementLine", { [:] })
-      .put(agreementLinesIdentifier, ["expectedValue": operationResponse])
-
-
-    then:
-    log.info("Stored for ${testCase.structure} [${inputResourcesIdentifier}] / [${agreementLinesIdentifier}]: ${operationResponse}")
-    true // Assert success of this population step
-
-    where:
-    // This combines all previous where blocks
-    // Note: The .collectMany structure can be complex. Consider a helper if it gets too nested.
-    testCase << allVerificationTestCases.collect { it }
+  void assertKbStatsMatch(Map actualKbStats, Map expectedKbStats) {
+    log.info("Asserting KB Stats: Actual=${actualKbStats}, Expected=${expectedKbStats}")
+    assert expectedKbStats.PackageContentItem    == actualKbStats.PackageContentItem
+    assert expectedKbStats.PlatformTitleInstance == actualKbStats.PlatformTitleInstance
+    assert expectedKbStats.TitleInstance         == actualKbStats.TitleInstance
+    assert expectedKbStats.Work                  == actualKbStats.Work
   }
 
-  @Ignore
-  void "Scenario 2: Save JSON "() {
-    setup:
-    log.info("In setup")
-    when:
-    log.info("LOG DEBUG - SCENARIOS {}", nestedScenarios.toMapString())
-    String jsonOutput = JsonOutput.prettyPrint(JsonOutput.toJson(nestedScenarios))
-
-    new File("src/integration-test/resources/packages/hierarchicalDeletion/nestedScenarios.json").write(jsonOutput)
-    then:
-    true
-  }
-
-
-  void assertIdsMatch(String structure, Map operationResponse, Exception operationError, Map kbStatsResp, Map expectedMarkForDelete) {
+  void assertIdsMatch(String structure, Map operationResponse, Exception operationError,  Map expectedMarkForDelete) {
 
     if (operationResponse) {
-      // If no TIs were deleted, or all are deleted, we don't need to check their IDs.
-      if (expectedMarkForDelete.get("ti").size() == kbStatsResp.get("TitleInstance") || expectedMarkForDelete.get("ti").size() == 0) {
-        assert true
-      }
-
-      if (expectedMarkForDelete.get("work").size() == kbStatsResp.get("Work") || expectedMarkForDelete.get("work").size() == 0) {
-        assert true
-      }
-
       Set<String>  expectedPcis = findInputResourceIds(expectedMarkForDelete.get("pci") as List, structure)
       Set<String>  expectedPtis = findInputResourceIds(expectedMarkForDelete.get("pti") as List, structure)
+      Set<String>  expectedTis = findInputResourceIds(expectedMarkForDelete.get("ti") as List, structure)
+      Set<String>  expectedWorks = findInputResourceIds(expectedMarkForDelete.get("work") as List, structure)
+
       log.info("expected PCIs: {}", expectedPcis)
       assert expectedPcis == operationResponse.get("pci") as Set
       assert expectedPtis == operationResponse.get("pti") as Set
+      assert expectedTis == operationResponse.get("ti") as Set
+      assert expectedWorks == operationResponse.get("work") as Set
     }
 
     if (operationError) {
