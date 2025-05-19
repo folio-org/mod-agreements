@@ -181,16 +181,16 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
                         }
                       }
                       
-                      entitlements {
-                        or {
-                          isNull 'activeFrom'
-                          le 'activeFrom', today
-                        }
-                        or {
-                          isNull 'activeTo'
-                          ge 'activeTo', today
-                        }
-                      }
+//                      entitlements {
+//                        or {
+//                          isNull 'activeFrom'
+//                          le 'activeFrom', today
+//                        }
+//                        or {
+//                          isNull 'activeTo'
+//                          ge 'activeTo', today
+//                        }
+//                      }
                       
                       or {
                         isNull 'accessStart'
