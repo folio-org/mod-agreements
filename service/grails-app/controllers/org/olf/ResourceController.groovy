@@ -36,6 +36,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
   ResourceController() {
     // True means read only. This should block post and puts to this.
     super(ErmResource, true)
+
   }
 
   DetachedCriteria pciSubQuery = PackageContentItem.where({
@@ -463,20 +464,21 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.debug("completed in ${Duration.between(start, Instant.now()).toSeconds()} seconds")
   }
 
+  // For /erm/hierarchicalDelete/markForDelete/pcis
   def markPcisForDelete(MarkForDeleteBody deleteBody) {
     handleMarkForDelete(deleteBody, "PCIs") { ids ->
       ermResourceService.markPcisForDelete(ids)
     }
   }
 
-  // Action for /erm/hierarchicalDelete/markForDelete/ptis
+  // For /erm/hierarchicalDelete/markForDelete/ptis
   def markPtisForDelete(MarkForDeleteBody deleteBody) {
     handleMarkForDelete(deleteBody, "PTIs") { ids ->
       ermResourceService.markPtisForDelete(ids)
     }
   }
 
-  // Action for /erm/hierarchicalDelete/markForDelete/tis
+  // For /erm/hierarchicalDelete/markForDelete/tis
   def markTisForDelete(MarkForDeleteBody deleteBody) {
     handleMarkForDelete(deleteBody, "TIs") { ids ->
       ermResourceService.markTisForDelete(ids)
@@ -485,40 +487,41 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
 
   private void handleDelete(Validateable deleteBody, Closure serviceCall) {
     if (deleteBody == null || !deleteBody.validate()) {
-      respond deleteBody?.errors ?: [error:"Invalid request"], [status: HttpStatus.BAD_REQUEST]
+      respond deleteBody?.errors ?: [message: "Invalid delete request.", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value()
       return
     }
     if (deleteBody.resources == null || deleteBody.resources.isEmpty()) {
-      respond([error: "Bad Request", message: "Resource IDs list cannot be empty."],
-        [status: HttpStatus.BAD_REQUEST])
+      respond([message: "Nothing in delete request body.", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value())
       return
     }
 
     try {
       MarkForDeleteResponse resourcesToDelete = serviceCall.call(deleteBody.resources)
       Map<String, Integer> deletionCounts = ermResourceService.deleteResources(resourcesToDelete)
-      respond([message: "Resources processed for deletion.", details: deletionCounts], [status: HttpStatus.OK])
+      respond([message: "Resources processed for deletion.", statusCode: HttpStatus.OK.value(), deletionResult: deletionCounts], status: HttpStatus.OK.value())
 
     } catch (Exception e) {
-      log.error("Error during one-shot deletion: ${e.message}", e)
-      respond([error: "Internal Server Error", message: "Failed to execute deletion: ${e.message}"],
-        [status: HttpStatus.INTERNAL_SERVER_ERROR])
+      log.error("Error during deletion: ${e.message}", e)
+      respond([message: "Something went wrong", statusCode: HttpStatus.INTERNAL_SERVER_ERROR.value(), error: e], status: HttpStatus.INTERNAL_SERVER_ERROR.value())
+
     }
   }
 
-
+  // For /erm/hierarchicalDelete/delete/pci
   def deletePcis(MarkForDeleteBody deleteBody) {
     handleDelete(deleteBody) { ids ->
       ermResourceService.markPcisForDelete(ids)
     }
   }
 
+  // For /erm/hierarchicalDelete/delete/ptis
   def deletePtis(MarkForDeleteBody deleteBody) {
     handleDelete(deleteBody) { ids ->
       ermResourceService.markPtisForDelete(ids)
     }
   }
 
+  // For /erm/hierarchicalDelete/delete/tis
   def deleteTis(MarkForDeleteBody deleteBody) {
     handleDelete(deleteBody) { ids ->
       ermResourceService.markTisForDelete(ids)
@@ -534,8 +537,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
   private void handleMarkForDelete(Validateable deleteBody, String resourceTypeName, Closure serviceCall) {
     if (deleteBody == null) {
       log.warn("Received null delete body for marking {} for delete.", resourceTypeName)
-      respond([error: "Bad Request", message: "Request body cannot be null."],
-        [status: HttpStatus.BAD_REQUEST])
+      respond([message: "Nothing in delete request body.", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value())
       return
     }
 
@@ -543,7 +545,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.info("ResourceController::handleMarkForDelete for {} with IDs: {}", resourceTypeName, idsToProcess)
 
     if (deleteBody.hasErrors()) {
-      log.warn("Validation failed for mark {} for delete body: {}", resourceTypeName, deleteBody.errors)
+      log.warn([message: "Validation failed for MarkForDelete() body.", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value())
       respond deleteBody.errors, [status: HttpStatus.BAD_REQUEST]
       return
     }
@@ -553,11 +555,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
       respond result
     } catch (Exception e) {
       log.error("Error during mark {} for delete for IDs {}: {}", resourceTypeName, idsToProcess, e.message, e)
-      Map errorResponse = [
-        error  : "Internal Server Error",
-        message: "Failed to mark ${resourceTypeName} for delete: ${e.message}"
-      ]
-      respond errorResponse, [status: HttpStatus.INTERNAL_SERVER_ERROR]
+      respond ([message: "Something went wrong", statusCode: HttpStatus.INTERNAL_SERVER_ERROR.value(), error: e], status: HttpStatus.INTERNAL_SERVER_ERROR.value())
     }
   }
 

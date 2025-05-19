@@ -77,6 +77,26 @@ public class ErmResourceService {
     resourceList
   }
 
+  public boolean checkResourceExists(String resourceId, String resourceType) {
+    List<String> resourceExists = ErmResource.executeQuery(
+      """
+            SELECT id FROM ${resourceType}
+            WHERE id = :resourceId
+          """.toString(),
+      [resourceId:resourceId],
+      [max:1]
+    )
+
+
+    if (resourceExists != null && !resourceExists.isEmpty()) {
+      log.info("LOG DEBUG - RESOURCE EXISTS: ${resourceId} for type ${resourceType}. ${resourceExists}")
+      return true
+    } else {
+      log.info("LOG DEBUG - RESOURCE DOES NOT EXIST: ${resourceId} for type ${resourceType}. ${resourceExists}")
+      return false
+    }
+  }
+
   public Set<String> entitlementsForResource(String resourceId, int max) {
     Map options = [:]
     if (max) {
@@ -226,15 +246,15 @@ public class ErmResourceService {
   }
 
   public MarkForDeleteResponse markPcisForDelete(List<String> pciInputList) {
-    markForDeleteImperative(pciInputList, [], [])
+    markForDelete(pciInputList, [], [])
   }
 
   public MarkForDeleteResponse markPtisForDelete(List<String> ptiInputList) {
-    markForDeleteImperative([], ptiInputList, [])
+    markForDelete([], ptiInputList, [])
   }
 
   public MarkForDeleteResponse markTisForDelete(List<String> tiInputList) {
-    markForDeleteImperative([], [], tiInputList)
+    markForDelete([], [], tiInputList)
   }
 
   public MarkForDeleteResponse markForDelete(List<String> pciList, List<String> ptiList, List<String> tiList) {
@@ -285,7 +305,7 @@ public class ErmResourceService {
     markForDeletion.ti.addAll(tisAndWorksForDeletion.v1);
     markForDeletion.work.addAll(tisAndWorksForDeletion.v2);
 
-    log.info("LOG DEBUG markForDeletion - {}", markForDeletion);
+    log.info("LOG DEBUG markForDeletion - {}", markForDeletion.toString());
     return markForDeletion
   }
 
@@ -297,6 +317,10 @@ public class ErmResourceService {
           // Find agreement lines for PCI.
           Set<String> linesForResource = entitlementsForResource(id, 1)
           log.debug("LOG DEBUG linesForResource: {}", linesForResource)
+
+          if (!checkResourceExists(id, "PackageContentItem")) {
+            return null
+          }
 
           // If no agreement lines exist for PCI, mark for deletion.
           if (linesForResource.size() != 0) {
@@ -314,6 +338,11 @@ public class ErmResourceService {
     return ids
       .stream()
       .map(id -> {
+
+        if (!checkResourceExists(id, "PlatformTitleInstance")) {
+          return null
+        }
+
         Set<String> linesForResource = entitlementsForResource(id, 1)
         if (linesForResource.size() != 0) {
           return null;
@@ -347,6 +376,10 @@ public class ErmResourceService {
     Set<String> tisToDelete = ids
       .stream()
       .map(id -> {
+        if (!checkResourceExists(id, "TitleInstance")) {
+          return null
+        }
+
         // Find any other PTIs that have not been marked for deletion that exist for the TIs.
         Set<String> ptisForTi = PlatformTitleInstance.executeQuery("""
           SELECT pti.id FROM PlatformTitleInstance pti
@@ -392,6 +425,7 @@ public class ErmResourceService {
           workId = workIdList.get(0);
         } else {
           // No work ID exists or multiple works returned for one TI.
+          log.info("LOG DEBUG - Work does not exist: ${workId}")
           return null;
         }
 

@@ -19,4 +19,15 @@ class MarkForDeleteResponse {
     this.ti = new HashSet<String>()
     this.work = new HashSet<String>()
   }
+
+
+  @Override
+  public String toString() {
+    return "MarkForDeleteResponse{" +
+      "pci=" + pci +
+      ", pti=" + pti +
+      ", ti=" + ti +
+      ", work=" + work +
+      '}';
+  }
 }
