@@ -350,7 +350,7 @@ public class ErmResourceService {
 
 
   @Transactional
-  public Map<String, Integer> deleteResources(MarkForDeleteResponse resourcesToDelete) {
+  public Map<String, Map<String, Integer>> deleteResources(MarkForDeleteResponse resourcesToDelete) {
     if (resourcesToDelete == null) {
       log.warn("deleteResources called with null MarkForDeleteResponse.")
       return [pciDeleted: 0, ptiDeleted: 0, tiDeleted: 0, workDeleted: 0]
@@ -407,7 +407,7 @@ public class ErmResourceService {
     deletionCounts.workDeleted = workDeletedCount
 
     log.info("Deletion complete. Counts: {}", deletionCounts)
-    return deletionCounts
+    return [statistics: deletionCounts ] as Map<String, Map<String, Integer>>
   }
 
   public MarkForDeleteResponse markForDeleteImperative(List<String> pciList, List<String> ptiList, List<String> tiList) {
