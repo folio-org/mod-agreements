@@ -118,10 +118,6 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       Map<String, Set<String>> idsForAgreementLines = findAgreementLineResourceIds(testCase.currentAgreementLines, testCase.structure)
       createAgreementLines(idsForAgreementLines)
 
-      if (testCase.resourceTypeToMark == "pci" && !idsForProcessing.isEmpty()) {
-        visualiseHierarchy(idsForProcessing)
-      }
-
       log.info("IDs to process for ${testCase.resourceTypeToMark}: ${idsForProcessing}")
 
       Map operationResponse
@@ -129,7 +125,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
 
     // Only make a call if there are IDs to process for the designated resource type
     if (!testCase.resourceTypeToMark.isEmpty() && !idsForProcessing.isEmpty()) {
-      String endpoint = "/erm/hierarchicalDelete/markForDelete/${testCase.resourceTypeToMark}" // e.g., /pci, /pti, /ti
+      String endpoint = "/erm/resource/markForDelete/${testCase.resourceTypeToMark}" // e.g., /pci, /pti, /ti
       String payloadKey = "resources"
       try {
         operationResponse = doPost(endpoint, [(payloadKey): idsForProcessing])
@@ -150,7 +146,7 @@ class CombinationDeletionSpec extends DeletionBaseSpec {
       // And if there were items actually marked by the previous step
       log.info("Proceeding with delete operation for marked items: ${operationResponse}")
       try {
-        String deleteEndpoint = "/erm/hierarchicalDelete/delete/${testCase.resourceTypeToMark}"
+        String deleteEndpoint = "/erm/resource/delete/${testCase.resourceTypeToMark}"
         String deletePayloadKey = "resources"
 
         if (!idsForProcessing.isEmpty()) {

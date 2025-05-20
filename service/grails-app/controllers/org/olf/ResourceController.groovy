@@ -464,21 +464,21 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.debug("completed in ${Duration.between(start, Instant.now()).toSeconds()} seconds")
   }
 
-  // For /erm/hierarchicalDelete/markForDelete/pcis
+  // For /erm/resources/markForDelete/pcis
   def markPcisForDelete(MarkForDeleteBody deleteBody) {
     handleMarkForDelete(deleteBody, "PCIs") { ids ->
       ermResourceService.markPcisForDelete(ids)
     }
   }
 
-  // For /erm/hierarchicalDelete/markForDelete/ptis
+  // For /erm/resources/markForDelete/ptis
   def markPtisForDelete(MarkForDeleteBody deleteBody) {
     handleMarkForDelete(deleteBody, "PTIs") { ids ->
       ermResourceService.markPtisForDelete(ids)
     }
   }
 
-  // For /erm/hierarchicalDelete/markForDelete/tis
+  // For /erm/resources/markForDelete/tis
   def markTisForDelete(MarkForDeleteBody deleteBody) {
     handleMarkForDelete(deleteBody, "TIs") { ids ->
       ermResourceService.markTisForDelete(ids)
@@ -507,21 +507,21 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     }
   }
 
-  // For /erm/hierarchicalDelete/delete/pci
+  // For /erm/resources/delete/pci
   def deletePcis(MarkForDeleteBody deleteBody) {
     handleDelete(deleteBody) { ids ->
       ermResourceService.markPcisForDelete(ids)
     }
   }
 
-  // For /erm/hierarchicalDelete/delete/ptis
+  // For /erm/resources/delete/ptis
   def deletePtis(MarkForDeleteBody deleteBody) {
     handleDelete(deleteBody) { ids ->
       ermResourceService.markPtisForDelete(ids)
     }
   }
 
-  // For /erm/hierarchicalDelete/delete/tis
+  // For /erm/resources/delete/tis
   def deleteTis(MarkForDeleteBody deleteBody) {
     handleDelete(deleteBody) { ids ->
       ermResourceService.markTisForDelete(ids)

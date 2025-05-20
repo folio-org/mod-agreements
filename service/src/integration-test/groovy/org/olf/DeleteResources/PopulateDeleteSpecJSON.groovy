@@ -59,7 +59,7 @@ class PopulateDeleteSpecJSON extends DeletionBaseSpec {
 
     Map operationResponse = [:]
     if (!testCase.resourceTypeToMark.isEmpty() && !idsForProcessing.isEmpty()) {
-      String endpoint = "/erm/hierarchicalDelete/markForDelete/${testCase.resourceTypeToMark}"
+      String endpoint = "/erm/resource/markForDelete/${testCase.resourceTypeToMark}"
       String payloadKey = "resources" // As per your controller change
       try {
         operationResponse = doPost(endpoint, [(payloadKey): idsForProcessing])
