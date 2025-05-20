@@ -136,287 +136,6 @@ public class ErmResourceService {
   private MarkForDeleteResponse markForDeleteInternal(Set<String> pciIds, Set<String> ptiIds, Set<String> tiIds) {
     MarkForDeleteResponse markForDeletion = new MarkForDeleteResponse()
 
-    markForDeletion.pci.addAll(markForDeletePCI(pciIds));
-    log.info("LOG DEBUG - PCIs marked for deletion {}", markForDeletion.pci)
-
-    Set<String> ptisForDeleteCheck = PlatformTitleInstance.executeQuery(
-      """
-        SELECT DISTINCT pci.pti.id FROM PackageContentItem pci
-        WHERE pci.id IN :pcisForDelete 
-      """.toString(),
-      [pcisForDelete:markForDeletion.pci]
-    ) as Set
-    ptisForDeleteCheck.addAll(ptiIds)
-    log.info("LOG DEBUG - PTIs for delete checking {}", ptisForDeleteCheck)
-
-    // TODO consider case where user has sent PCI: [1,2,3], PTI: [4,5].
-    // We could either run through PCIs to end of process then PTIs etc and use the Set to handle distinct
-    // Or run _just_ PCI check, then add the PTI outcomes to the user ones and run all PTIs etc etc
-
-    markForDeletion.pti.addAll(markForDeletePTI(ptisForDeleteCheck, markForDeletion.pci));
-    log.info("LOG DEBUG - PTIs marked for deletion {}", markForDeletion.pci)
-
-    Set<String> tisForDeleteCheck = TitleInstance.executeQuery(
-      """
-        SELECT DISTINCT pti.titleInstance.id FROM PlatformTitleInstance pti
-        WHERE pti.id IN :ptisForDelete 
-      """.toString(),
-      [ptisForDelete:markForDeletion.pti]
-    ) as Set
-    tisForDeleteCheck.addAll(tiIds)
-
-    log.info("TIs for delete check - {}", tisForDeleteCheck.toListString())
-
-    Tuple2<Set<String>, Set<String>> tisAndWorksForDeletion = markForDeleteTI(tisForDeleteCheck, markForDeletion.pti);
-    log.info("LOG DEBUG - TIS and Works for Deletion - {}", tisAndWorksForDeletion.toListString())
-    markForDeletion.ti.addAll(tisAndWorksForDeletion.v1);
-    markForDeletion.work.addAll(tisAndWorksForDeletion.v2);
-
-    log.info("LOG DEBUG markForDeletion - {}", markForDeletion.toString());
-    return markForDeletion
-  }
-
-  public Set<String> markForDeletePCI(Set<String> ids) {
-    return ids
-        .stream()
-        .map( id -> {
-          log.debug("LOG DEBUG CHECKING PCI ID: {}", id)
-          // Find agreement lines for PCI.
-          Set<String> linesForResource = entitlementsForResource(id, 1)
-          log.debug("LOG DEBUG linesForResource: {}", linesForResource)
-
-          if (!checkResourceExists(id, "PackageContentItem")) {
-            return null
-          }
-
-          // If no agreement lines exist for PCI, mark for deletion.
-          if (linesForResource.size() != 0) {
-            return null
-          }
-
-          return id;
-        })
-        .filter({id -> id != null })
-        .collect(Collectors.toSet());
-  }
-
-  // ignorePcis is for any PCIs which would otherwise block PTI deletion but we can safely ignore and allow for delete
-  public Set<String> markForDeletePTI(Set<String> ids, Set<String> ignorePcis) {
-    return ids
-      .stream()
-      .map(id -> {
-
-        if (!checkResourceExists(id, "PlatformTitleInstance")) {
-          return null
-        }
-
-        Set<String> linesForResource = entitlementsForResource(id, 1)
-        if (linesForResource.size() != 0) {
-          return null;
-        }
-
-        // Find any other PCIs that have not been marked for deletion that exist for the PTI.
-        Set<String> pcisForPti = PackageContentItem.executeQuery(
-          """
-            SELECT pci.id FROM PackageContentItem pci
-            WHERE pci.pti.id = :ptiId
-            AND pci.id NOT IN :ignorePcis
-          """.toString(),
-          [ptiId:id, ignorePcis:handleEmptyListMapping(ignorePcis)],
-          [max:1]
-        ) as Set
-
-        // If no agreement lines and no other non-deletable PCIs exist for the PTI, mark for deletion.
-        if (pcisForPti.size() != 0) {
-          return null
-        }
-
-        return id;
-      })
-      .filter({id -> id != null })
-      .collect(Collectors.toSet());
-  }
-
-
-  // Outputs a list of TIs to mark for deletion AND a list of works to mark for deletion
-  public Tuple2<Set<String>, Set<String>> markForDeleteTI(Set<String> ids, Set<String> ignorePtis) {
-    Set<String> tisToDelete = ids
-      .stream()
-      .map(id -> {
-        if (!checkResourceExists(id, "TitleInstance")) {
-          return null
-        }
-
-        // Find any other PTIs that have not been marked for deletion that exist for the TIs.
-        Set<String> ptisForTi = PlatformTitleInstance.executeQuery("""
-          SELECT pti.id FROM PlatformTitleInstance pti
-          WHERE pti.titleInstance.id = :tiId
-          AND pti.id NOT IN :ignorePtis
-        """.toString(), [tiId:id, ignorePtis:handleEmptyListMapping(ignorePtis)], [max:1])  as Set
-
-        if (ptisForTi.size() != 0) {
-          log.info("LOG WARNING: PTIs that have not been marked for deletion exist for TI: TI ID- {}, PTIs found- {}", id, ptisForTi);
-          return null
-        }
-        return id }
-      ).filter({id -> id != null })
-      .collect(Collectors.toSet())
-
-    Set<String> worksToDelete = ids
-      .stream()
-      .map(id -> {
-        // Find any other PTIs that have not been marked for deletion that exist for the TIs.
-        Set<String> ptisForTi = PlatformTitleInstance.executeQuery("""
-          SELECT pti.id FROM PlatformTitleInstance pti
-          WHERE pti.titleInstance.id = :tiId
-          AND pti.id NOT IN :ignorePtis
-        """.toString(), [tiId:id, ignorePtis:handleEmptyListMapping(ignorePtis)], [max:1])  as Set
-
-        log.info("PTIs for TI ({}): {}", id, ptisForTi.toListString())
-
-        if (ptisForTi.size() != 0) {
-          log.info("LOG WARNING: PTIs that have not been marked for deletion exist for TI: TI ID- {}, PTIs found- {}", id, ptisForTi);
-          return null
-        }
-
-        List<String> workIdList = TitleInstance.executeQuery("""
-          SELECT ti.work.id FROM TitleInstance ti
-          WHERE ti.id = :tiId
-        """.toString(), [tiId: id], [max: 1])
-
-        log.info("Work ID List: {}", workIdList.toListString())
-
-        String workId;
-
-        if (workIdList.size() == 1) {
-          workId = workIdList.get(0);
-        } else {
-          // No work ID exists or multiple works returned for one TI.
-          log.info("LOG DEBUG - Work does not exist: ${workId}")
-          return null;
-        }
-
-          Set<String> ptisForWork = Work.executeQuery("""
-          SELECT pti from PlatformTitleInstance pti
-          WHERE pti.id NOT IN :ignorePtis
-          AND pti.titleInstance.work.id = :workId
-        """.toString(), [ignorePtis:handleEmptyListMapping(ignorePtis), workId: workId], [max:1]) as Set
-
-        log.info("Ptis for Work: {}", ptisForWork.toListString())
-
-        if (ptisForWork.size() != 0) {
-          log.info("LOG WARNING: PTIs that have not been marked for deletion exist for work: Work ID- {}, PTIs found- {}", workId, ptisForWork);
-          return null
-        }
-
-        return workId
-      })
-      .filter({id -> id != null })
-      .collect(Collectors.toSet());
-
-    log.info("LOG DEBUG - Attemping to delete works: {}", worksToDelete.toListString())
-
-    Set<String> tisToDeleteFromWork = worksToDelete
-      .stream()
-      .flatMap(id -> {
-        Set<String> tisForWork = Work.executeQuery("""
-          SELECT ti.id from TitleInstance ti
-          WHERE ti.work.id = :workId
-        """.toString(), [workId:id]) as Set
-
-        return tisForWork.stream()
-      })
-      .collect(Collectors.toSet());
-
-    tisToDelete.addAll(tisToDeleteFromWork)
-
-    return Tuple.tuple(tisToDelete, worksToDelete);
-  }
-
-  private int deleteByIds(Class domainClass, Collection<String> ids) {
-    if (ids == null || ids.isEmpty()) {
-      return 0
-    }
-
-    // TODO: Or should we be using .delete()?
-    String hql = "DELETE FROM ${domainClass.simpleName} WHERE id IN (:idsToDelete)"
-    return ErmResource.executeUpdate(hql, [idsToDelete: new ArrayList<>(ids)])
-  }
-
-
-  @Transactional
-  public Map<String, Map<String, Integer>> deleteResources(MarkForDeleteResponse resourcesToDelete) {
-    if (resourcesToDelete == null) {
-      log.warn("deleteResources called with null MarkForDeleteResponse.")
-      return [pciDeleted: 0, ptiDeleted: 0, tiDeleted: 0, workDeleted: 0]
-    }
-    log.info("Attempting to delete resources: {}", resourcesToDelete)
-    Map<String, Integer> deletionCounts = [:]
-
-    int pciDeletedCount = 0
-    if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
-      log.info("Deleting PCIs: {}", resourcesToDelete.pci)
-      pciDeletedCount = deleteByIds(PackageContentItem, resourcesToDelete.pci)
-      log.info("Deleted {} PCIs", pciDeletedCount)
-    }
-    deletionCounts.pciDeleted = pciDeletedCount
-
-    int ptiDeletedCount = 0
-    if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
-      log.info("Deleting PTIs: {}", resourcesToDelete.pti)
-      ptiDeletedCount = deleteByIds(PlatformTitleInstance, resourcesToDelete.pti)
-      log.info("Deleted {} PTIs", ptiDeletedCount)
-    }
-    deletionCounts.ptiDeleted = ptiDeletedCount
-
-    String ioQueryHql = """
-            SELECT io.id FROM IdentifierOccurrence io
-            WHERE io.resource.id IN (:ermTitleListIds)
-        """
-
-    List<String> tiAndWorkIds = new ArrayList<>()
-    tiAndWorkIds.addAll(resourcesToDelete.ti)
-    tiAndWorkIds.addAll(resourcesToDelete.work)
-    List<String> ioIdsToDelete = IdentifierOccurrence.executeQuery(
-      ioQueryHql,
-      [ermTitleListIds: tiAndWorkIds]
-    )
-
-    String hql = "DELETE FROM IdentifierOccurrence WHERE id IN (:ids)"
-    IdentifierOccurrence.executeUpdate(hql, [ids: ioIdsToDelete])
-
-    int tiDeletedCount = 0
-    if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
-      log.info("Deleting TIs: {}", resourcesToDelete.ti)
-      tiDeletedCount = deleteByIds(TitleInstance, resourcesToDelete.ti)
-      log.info("Deleted {} TIs", tiDeletedCount)
-    }
-    deletionCounts.tiDeleted = tiDeletedCount
-
-    int workDeletedCount = 0
-    if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
-      log.info("Deleting Works: {}", resourcesToDelete.work)
-      workDeletedCount = deleteByIds(Work, resourcesToDelete.work)
-      log.info("Deleted {} Works", workDeletedCount)
-    }
-    deletionCounts.workDeleted = workDeletedCount
-
-    log.info("Deletion complete. Counts: {}", deletionCounts)
-    return [statistics: deletionCounts ] as Map<String, Map<String, Integer>>
-  }
-
-  public MarkForDeleteResponse markForDeleteImperative(List<String> pciList, List<String> ptiList, List<String> tiList) {
-    Set<String> pciIds = (pciList != null) ? new HashSet<String>(pciList) : new HashSet<String>();
-    Set<String> ptiIds = (ptiList != null) ? new HashSet<String>(ptiList) : new HashSet<String>();
-    Set<String> tiIds = (tiList != null) ? new HashSet<String>(tiList) : new HashSet<String>();
-
-
-    if (pciIds.isEmpty() && ptiIds.isEmpty() && tiIds.isEmpty()) {
-      throw new Exception("Id list cannot be empty.");
-    }
-
-    MarkForDeleteResponse markForDeletion = new MarkForDeleteResponse()
-
     pciIds.forEach{String id -> {
       Set<String> linesForResource = entitlementsForResource(id, 1)
       if (linesForResource.size() == 0) {
@@ -527,7 +246,82 @@ public class ErmResourceService {
       }}
 
     return markForDeletion
+  }
 
+  private int deleteByIds(Class domainClass, Collection<String> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return 0
+    }
+
+    // TODO: Or should we be using .delete()?
+    String hql = "DELETE FROM ${domainClass.simpleName} WHERE id IN (:idsToDelete)"
+    return ErmResource.executeUpdate(hql, [idsToDelete: new ArrayList<>(ids)])
+  }
+
+  // FIXME can we have a DeleteResponse similar to the MarkForDeleteResponse please? :)
+  public Map<String, Map<String, Integer>> deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
+    MarkForDeleteResponse forDeletion = markForDelete(idInputs, resourceClass);
+    log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
+
+    return deleteResourcesInternal(forDeletion);
+  }
+
+  @Transactional
+  private Map<String, Map<String, Integer>> deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
+    if (resourcesToDelete == null) {
+      log.warn("deleteResources called with null MarkForDeleteResponse")
+      return [statistics: [pciDeleted: 0, ptiDeleted: 0, tiDeleted: 0, workDeleted: 0]] as Map<String, Map<String, Integer>>
+    }
+
+    log.info("Attempting to delete resources: {}", resourcesToDelete)
+    Map<String, Integer> deletionCounts = [:]
+
+    int pciDeletedCount = 0
+    if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
+      log.info("Deleting PCIs: {}", resourcesToDelete.pci)
+      pciDeletedCount = deleteByIds(PackageContentItem, resourcesToDelete.pci)
+      log.info("Deleted {} PCIs", pciDeletedCount)
+    }
+    deletionCounts.pciDeleted = pciDeletedCount
+
+    int ptiDeletedCount = 0
+    if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
+      log.info("Deleting PTIs: {}", resourcesToDelete.pti)
+      ptiDeletedCount = deleteByIds(PlatformTitleInstance, resourcesToDelete.pti)
+      log.info("Deleted {} PTIs", ptiDeletedCount)
+    }
+    deletionCounts.ptiDeleted = ptiDeletedCount
+
+    List<String> tiAndWorkIds = new ArrayList<>()
+    tiAndWorkIds.addAll(resourcesToDelete.ti)
+    tiAndWorkIds.addAll(resourcesToDelete.work)
+
+    // DELETE THE IdentifierOccurrences
+    List<String> ioIdsToDelete = IdentifierOccurrence.executeQuery("""
+      SELECT io.id FROM IdentifierOccurrence io
+      WHERE io.resource.id IN (:ermTitleListIds)
+    """, [ermTitleListIds: tiAndWorkIds])
+
+    deleteByIds(IdentifierOccurrence, ioIdsToDelete);
+
+    int tiDeletedCount = 0
+    if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
+      log.info("Deleting TIs: {}", resourcesToDelete.ti)
+      tiDeletedCount = deleteByIds(TitleInstance, resourcesToDelete.ti)
+      log.info("Deleted {} TIs", tiDeletedCount)
+    }
+    deletionCounts.tiDeleted = tiDeletedCount
+
+    int workDeletedCount = 0
+    if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
+      log.info("Deleting Works: {}", resourcesToDelete.work)
+      workDeletedCount = deleteByIds(Work, resourcesToDelete.work)
+      log.info("Deleted {} Works", workDeletedCount)
+    }
+    deletionCounts.workDeleted = workDeletedCount
+
+    log.info("Deletion complete. Counts: {}", deletionCounts)
+    return [statistics: deletionCounts ] as Map<String, Map<String, Integer>>
   }
 }
 
