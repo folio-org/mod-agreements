@@ -16,23 +16,29 @@ import org.springframework.validation.BindingResult
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import groovyx.net.http.*
+
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.exceptions.HttpClientResponseException
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.uri.UriBuilder
 
 /**
  * Get and Put KB records from the EBSCO API. Documentation can be found:
  *    https://developer.ebsco.com/gettingstarted
  *    https://developer.ebsco.com/docs
- * 
+ *
  */
 
 @Slf4j
 @CompileStatic
 public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, DataBinder {
 
+  private HttpClient httpClient
+
   EbscoKBAdapter() {
-    super (HttpBuilder.configure {
-      
-    })
+    super(null)
+    this.httpClient = HttpClient.create(new URI("https://sandbox.ebsco.io"))
   }
 
   public void freshenPackageData(String source_name,
@@ -79,7 +85,7 @@ public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   }
 
   /**
-   * Use the EBSCO api and paginate the list of titles into our internal canonical package format, 
+   * Use the EBSCO api and paginate the list of titles into our internal canonical package format,
    * @param params - A map containing vendorid and packageid
    * @return the canonicalpackage definition.
    */
@@ -90,7 +96,7 @@ public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     def result = null;
 
     if ( ( vendorid == null  ) ||
-         ( packageid == null ) ) 
+         ( packageid == null ) )
       throw new RuntimeException("buildErmPackage requires vendorid and packageid parameters");
 
     result = [
@@ -109,25 +115,38 @@ public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     ]
 
     // See https://developer.ebsco.com/docs#/
-    def ebsco_api = new HTTPBuilder('https://sandbox.ebsco.io');
+    // def ebsco_api = new HTTPBuilder('https://sandbox.ebsco.io');
 
 
     // Get package header
-    ebsco_api.request(Method.GET) { req ->
-      headers.'x-api-key' = credentials
-      uri.path="/rm/rmaccounts/${principal}/vendors/${vendorid}/packages/${packageid}"
-      response.success = { resp, json ->
-        log.debug("Package header: ${json}");
-        result.header.reference = package_reference;
-        result.header.packageSlug = package_reference;
-        result.header.packageName = json.packageName
-        result.header.packageProvider.name = json.vendorName
-        result.header.packageProvider.reference = json.vendorId
-        // {"isCustom":false,"titleCount":1262,"isSelected":false,"visibilityData":{"isHidden":false,"reason":""},"selectedCount":0,"isTokenNeeded":true,
-        // "contentType":"AggregatedFullText","customCoverage":{"beginCoverage":"","endCoverage":""},"proxy":{"id":"<n>","inherited":true},
-        // "allowEbscoToAddTitles":false,"packageToken":null,"packageType":"Complete"}
-      }
-    }
+    def packageHeaderUri = UriBuilder.of("/rm/rmaccounts/${principal}/vendors/${vendorid}/packages/${packageid}").build()
+    def headerReq = HttpRequest.GET(packageHeaderUri)
+                      .header("x-api-key", credentials)
+                      .accept("application/json")
+    HttpResponse headerResp = httpClient.toBlocking().exchange(headerReq, Map)
+    def json = headerResp.body()
+    log.debug("Package header: ${json}")
+    result.header.reference = package_reference
+    result.header.packageSlug = package_reference
+    result.header.packageName = json.packageName
+    result.header.packageProvider.name = json.vendorName
+    result.header.packageProvider.reference = json.vendorId
+
+    // ebsco_api.request(Method.GET) { req ->
+    //   headers.'x-api-key' = credentials
+    //   uri.path="/rm/rmaccounts/${principal}/vendors/${vendorid}/packages/${packageid}"
+    //   response.success = { resp, json ->
+    //     log.debug("Package header: ${json}");
+    //     result.header.reference = package_reference;
+    //     result.header.packageSlug = package_reference;
+    //     result.header.packageName = json.packageName
+    //     result.header.packageProvider.name = json.vendorName
+    //     result.header.packageProvider.reference = json.vendorId
+    //     // {"isCustom":false,"titleCount":1262,"isSelected":false,"visibilityData":{"isHidden":false,"reason":""},"selectedCount":0,"isTokenNeeded":true,
+    //     // "contentType":"AggregatedFullText","customCoverage":{"beginCoverage":"","endCoverage":""},"proxy":{"id":"<n>","inherited":true},
+    //     // "allowEbscoToAddTitles":false,"packageToken":null,"packageType":"Complete"}
+    //   }
+    // }
 
 
     int pageno = 1;
@@ -143,119 +162,215 @@ public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
     // Ebsco API uses pagination in blocks of count, offset by page. offset is PAGE offset, not record number, so count 100, offset 3 = records from 301-400
     // Last page will return 0
-    while ( found_records ) {
+    while (found_records) {
+      log.debug("Fetch page ${pageno} - records ${((pageno-1)*100)+1} to ${pageno*100} -- ${query_params}")
+      query_params.offset = pageno
 
-      log.debug("Fetch page ${pageno} - records ${((pageno-1)*100)+1} to ${pageno*100} -- ${query_params}");
-      query_params.offset = pageno;
+      def uriPath = UriBuilder.of("/rm/rmaccounts/${principal}/vendors/${vendorid}/packages/${packageid}/titles")
+                              .queryParams(query_params)
+                              .build()
 
-      ebsco_api.request(Method.GET) { req ->
-        // headers.Accept = 'application/json'
-        headers.'x-api-key' = credentials
-        uri.path="/rm/rmaccounts/${principal}/vendors/${vendorid}/packages/${packageid}/titles"
-        uri.query=query_params
+      HttpRequest pageReq = HttpRequest.GET(uriPath)
+                              .header("x-api-key", credentials)
+                              .accept("application/json")
 
-        response.success = { resp, json ->
-          if ( json.titles.size() == 0 ) {
-            found_records = false;
-          }
-          else {
-            println("Process ${json.titles.size()} titles (total=${json.totalResults})");
-            // println("First title: ${json.titles[0].titleId} ${json.titles[0].titleName}");
-            // json.titles[0].identifiersList.each { id ->
-            //   println("  -> id ${id.id} (${id.source} ${id.type} ${id.subtype})");
-            // }
+      try {
+        HttpResponse pageResp = httpClient.toBlocking().exchange(pageReq, Map)
+        def json = pageResp.body()
 
-            json.titles.each { title ->
+        if (json.titles.size() == 0) {
+          found_records = false
+        } else {
+          println("Process ${json.titles.size()} titles (total=${json.totalResults})")
+          json.titles.each { title ->
+            String tipp_media = title.pubType?.toLowerCase()
+            String tipp_medium = 'electronic'
 
-              String tipp_media = title.pubType?.toLowerCase()
-              String tipp_medium = 'electronic';
+            def instance_identifiers = []
+            def sibling_instance_identifiers = []
 
-
-              def instance_identifiers = [];
-              def sibling_instance_identifiers = [];
-              title.identifiersList.each { id ->
-                switch ( id.type ) {
-                  case 0: //ISSN
-                    switch( id.subtype ) {
-                      case 0:
-                        break;
-                      case 1: // PRINT
-                        sibling_instance_identifiers.add([namespace:'issn',value:id.id])
-                        break;
-                      case 2: // ONLINE
-                        instance_identifiers.add([namespace:'issn',value:id.id])
-                        break;
-                      case 7: // INVALID
-                        break;
-                    }
-                    break;
-                  case 1: //ISBN
-                    instance_identifiers.add([namespace:'isbn',value:id.id])
-                    break;
-                  case 6: //ZDBID
-                    instance_identifiers.add([namespace:'zdb',value:id.id])
-                    break;
-                  default:
-                    break;
-                }
-              }
-
-              def titleRecord = title.customerResourcesList.find { it.packageId.toString().equals(packageid.trim()) }
-
-              if ( titleRecord ) {
-                // log.debug("titleRecord located in customerResourceList -- ${titleRecord} ${titleRecord.url}");
-              }
-              else {
-                log.debug("Unable to find ${packageid} amongst ${title.customerResourcesList.collect{ it.packageId}}");
-              }
-
-              String tipp_url = titleRecord?.url;
-              String tipp_platform_url = null; // Platform URL is the URL of the platform provider - not the title. Will be derived from tipp url if not set
-              def tipp_coverage = []
-
-              titleRecord?.managedCoverageList?.each { ci ->
-                tipp_coverage.add(
-                  "startVolume": null,
-                  "startIssue": null,
-                  "startDate": ci.beginCoverage,
-                  "endVolume": null,
-                  "endIssue": null,
-                  "endDate": ci.endCoverage
-                )
-              }
-
-              if ( ( tipp_url != null ) && ( tipp_url.trim().length() > 0 ) ) {
-                result.packageContents.add([
-                  "title": title.titleName,
-                  "instanceMedium": tipp_medium,
-                  "instanceMedia": tipp_media,
-                  "instanceIdentifiers": instance_identifiers,
-                  "siblingInstanceIdentifiers": sibling_instance_identifiers,
-                  "coverage": tipp_coverage,
-                  // "embargo": null,
-                  // "coverageDepth": tipp_coverage_depth,
-                  // "coverageNote": tipp_coverage_note,
-                  "platformUrl": tipp_platform_url,
-                  // "platformName": tipp_platform_name,
-                  "url": tipp_url
-                ])
-              }
-              else {
-                // entry failed basic QA check - don't add to the package
-                log.warn("unable to locate URL for title ${title.titleName} - skipping");
+            title.identifiersList.each { id ->
+              switch (id.type) {
+                case 0: // ISSN
+                  switch (id.subtype) {
+                    case 0:
+                      break
+                    case 1:
+                      sibling_instance_identifiers.add([namespace: 'issn', value: id.id])
+                      break
+                    case 2:
+                      instance_identifiers.add([namespace: 'issn', value: id.id])
+                      break
+                    case 7:
+                      break
+                  }
+                  break
+                case 1: // ISBN
+                  instance_identifiers.add([namespace: 'isbn', value: id.id])
+                  break
+                case 6: // ZDBID
+                  instance_identifiers.add([namespace: 'zdb', value: id.id])
+                  break
+                default:
+                  break
               }
             }
 
-            pageno++;
-          }
-        }
+            def titleRecord = title.customerResourcesList.find {
+              it.packageId.toString().equals(packageid.trim())
+            }
 
-        response.failure = { resp ->
-          log.error("Unexpected error: ${resp.status} : ${resp.statusLine.reasonPhrase}")
-          found_records = false;
+            String tipp_url = titleRecord?.url
+            String tipp_platform_url = null
+            def tipp_coverage = []
+
+            titleRecord?.managedCoverageList?.each { ci ->
+              tipp_coverage.add(
+                [startVolume: null,
+                startIssue: null,
+                startDate: ci.beginCoverage,
+                endVolume: null,
+                endIssue: null,
+                endDate: ci.endCoverage]
+              )
+            }
+
+            if (tipp_url?.trim()) {
+              result.packageContents.add([
+                "title": title.titleName,
+                "instanceMedium": tipp_medium,
+                "instanceMedia": tipp_media,
+                "instanceIdentifiers": instance_identifiers,
+                "siblingInstanceIdentifiers": sibling_instance_identifiers,
+                "coverage": tipp_coverage,
+                "platformUrl": tipp_platform_url,
+                "url": tipp_url
+              ])
+            } else {
+              log.warn("unable to locate URL for title ${title.titleName} - skipping")
+            }
+          }
+          pageno++
         }
+      } catch (HttpClientResponseException e) {
+        log.error("Unexpected error: ${e.message}")
+        found_records = false
       }
     }
+
+    // while ( found_records ) {
+
+    //   log.debug("Fetch page ${pageno} - records ${((pageno-1)*100)+1} to ${pageno*100} -- ${query_params}");
+    //   query_params.offset = pageno;
+
+    //   ebsco_api.request(Method.GET) { req ->
+    //     // headers.Accept = 'application/json'
+    //     headers.'x-api-key' = credentials
+    //     uri.path="/rm/rmaccounts/${principal}/vendors/${vendorid}/packages/${packageid}/titles"
+    //     uri.query=query_params
+
+    //     response.success = { resp, json ->
+    //       if ( json.titles.size() == 0 ) {
+    //         found_records = false;
+    //       }
+    //       else {
+    //         println("Process ${json.titles.size()} titles (total=${json.totalResults})");
+    //         // println("First title: ${json.titles[0].titleId} ${json.titles[0].titleName}");
+    //         // json.titles[0].identifiersList.each { id ->
+    //         //   println("  -> id ${id.id} (${id.source} ${id.type} ${id.subtype})");
+    //         // }
+
+    //         json.titles.each { title ->
+
+    //           String tipp_media = title.pubType?.toLowerCase()
+    //           String tipp_medium = 'electronic';
+
+
+    //           def instance_identifiers = [];
+    //           def sibling_instance_identifiers = [];
+    //           title.identifiersList.each { id ->
+    //             switch ( id.type ) {
+    //               case 0: //ISSN
+    //                 switch( id.subtype ) {
+    //                   case 0:
+    //                     break;
+    //                   case 1: // PRINT
+    //                     sibling_instance_identifiers.add([namespace:'issn',value:id.id])
+    //                     break;
+    //                   case 2: // ONLINE
+    //                     instance_identifiers.add([namespace:'issn',value:id.id])
+    //                     break;
+    //                   case 7: // INVALID
+    //                     break;
+    //                 }
+    //                 break;
+    //               case 1: //ISBN
+    //                 instance_identifiers.add([namespace:'isbn',value:id.id])
+    //                 break;
+    //               case 6: //ZDBID
+    //                 instance_identifiers.add([namespace:'zdb',value:id.id])
+    //                 break;
+    //               default:
+    //                 break;
+    //             }
+    //           }
+
+    //           def titleRecord = title.customerResourcesList.find { it.packageId.toString().equals(packageid.trim()) }
+
+    //           if ( titleRecord ) {
+    //             // log.debug("titleRecord located in customerResourceList -- ${titleRecord} ${titleRecord.url}");
+    //           }
+    //           else {
+    //             log.debug("Unable to find ${packageid} amongst ${title.customerResourcesList.collect{ it.packageId}}");
+    //           }
+
+    //           String tipp_url = titleRecord?.url;
+    //           String tipp_platform_url = null; // Platform URL is the URL of the platform provider - not the title. Will be derived from tipp url if not set
+    //           def tipp_coverage = []
+
+    //           titleRecord?.managedCoverageList?.each { ci ->
+    //             tipp_coverage.add(
+    //               "startVolume": null,
+    //               "startIssue": null,
+    //               "startDate": ci.beginCoverage,
+    //               "endVolume": null,
+    //               "endIssue": null,
+    //               "endDate": ci.endCoverage
+    //             )
+    //           }
+
+    //           if ( ( tipp_url != null ) && ( tipp_url.trim().length() > 0 ) ) {
+    //             result.packageContents.add([
+    //               "title": title.titleName,
+    //               "instanceMedium": tipp_medium,
+    //               "instanceMedia": tipp_media,
+    //               "instanceIdentifiers": instance_identifiers,
+    //               "siblingInstanceIdentifiers": sibling_instance_identifiers,
+    //               "coverage": tipp_coverage,
+    //               // "embargo": null,
+    //               // "coverageDepth": tipp_coverage_depth,
+    //               // "coverageNote": tipp_coverage_note,
+    //               "platformUrl": tipp_platform_url,
+    //               // "platformName": tipp_platform_name,
+    //               "url": tipp_url
+    //             ])
+    //           }
+    //           else {
+    //             // entry failed basic QA check - don't add to the package
+    //             log.warn("unable to locate URL for title ${title.titleName} - skipping");
+    //           }
+    //         }
+
+    //         pageno++;
+    //       }
+    //     }
+
+    //     response.failure = { resp ->
+    //       log.error("Unexpected error: ${resp.status} : ${resp.statusLine.reasonPhrase}")
+    //       found_records = false;
+    //     }
+    //   }
+    // }
 
     InternalPackageImplWithPackageContents pkg = new InternalPackageImplWithPackageContents()
     BindingResult binding = bindData (pkg, result)
