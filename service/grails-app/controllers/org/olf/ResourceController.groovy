@@ -466,28 +466,35 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
 
   // For /erm/resources/markForDelete/pcis
   def markPcisForDelete(DeleteBody deleteBody) {
-    handleDeleteCall(deleteBody, "PCIs") { ids ->
+    log.info("ResourceController::markPcisForDelete({})", deleteBody)
+    handleDeleteCall(deleteBody) { ids ->
       return ermResourceService.markPcisForDelete(ids)
     }
   }
 
   // For /erm/resources/markForDelete/ptis
   def markPtisForDelete(DeleteBody deleteBody) {
-    handleDeleteCall(deleteBody, "PTIs") { ids ->
+    log.info("ResourceController::markPtisForDelete({})", deleteBody)
+
+    handleDeleteCall(deleteBody) { ids ->
       return ermResourceService.markPtisForDelete(ids)
     }
   }
 
   // For /erm/resources/markForDelete/tis
   def markTisForDelete(DeleteBody deleteBody) {
-    handleDeleteCall(deleteBody, "TIs") { ids ->
+    log.info("ResourceController::markTisForDelete({})", deleteBody)
+
+    handleDeleteCall(deleteBody) { ids ->
       return ermResourceService.markTisForDelete(ids)
     }
   }
 
   // For /erm/resources/delete/pci
   def deletePcis(DeleteBody deleteBody) {
-    handleDeleteCall(deleteBody, 'PCIs') { ids ->
+    log.info("ResourceController::deletePcis({})", deleteBody)
+
+    handleDeleteCall(deleteBody) { ids ->
       MarkForDeleteResponse forDeletion = ermResourceService.markPcisForDelete(ids);
       log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
 
@@ -497,7 +504,9 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
 
   // For /erm/resources/delete/ptis
   def deletePtis(DeleteBody deleteBody) {
-    handleDeleteCall(deleteBody, 'PTIs') { ids ->
+    log.info("ResourceController::deletePtis({})", deleteBody)
+
+    handleDeleteCall(deleteBody) { ids ->
       MarkForDeleteResponse forDeletion = ermResourceService.markPtisForDelete(ids);
       log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
 
@@ -507,7 +516,9 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
 
   // For /erm/resources/delete/tis
   def deleteTis(DeleteBody deleteBody) {
-    handleDeleteCall(deleteBody, 'TIs') { ids ->
+    log.info("ResourceController::deleteTis({})", deleteBody)
+
+    handleDeleteCall(deleteBody) { ids ->
       MarkForDeleteResponse forDeletion = ermResourceService.markTisForDelete(ids);
       log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
 
@@ -518,17 +529,14 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
   /**
    * Private helper method to handle the common logic for delete actions (markForDelete/delete).
    * @param deleteBody The deleteBody object (must implement Validateable and have a resources property corresponding to ErmResource IDs)
-   * @param resourceTypeName A descriptive name for the resource type (e.g., "PCIs", "PTIs") for logging/error messages.
    * @param serviceCall A closure that takes a List<String> of IDs and calls the appropriate service method.
    */
-  private void handleDeleteCall(DeleteBody deleteBody, String resourceTypeName, Closure serviceCall) {
+  private void handleDeleteCall(DeleteBody deleteBody, Closure serviceCall) {
     if (deleteBody == null) {
-      log.warn("Received null delete body for handleDeleteCall({}, {})", deleteBody, resourceTypeName)
+      log.warn("Received null delete body for handleDeleteCall({})", deleteBody)
       respond([message: "Nothing in delete request body.", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value())
       return
     }
-
-    log.info("ResourceController::handleDeleteCall({},{})", deleteBody, resourceTypeName)
 
     if (!deleteBody.validate()) {
       log.warn("Errors validating deleteBody: {}", deleteBody.errors);
