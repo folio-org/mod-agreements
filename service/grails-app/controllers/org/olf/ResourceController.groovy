@@ -468,7 +468,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
   def markPcisForDelete(DeleteBody deleteBody) {
     log.info("ResourceController::markPcisForDelete({})", deleteBody)
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.markPcisForDelete(ids)
+      return ermResourceService.markForDelete(ids, PackageContentItem.class)
     }
   }
 
@@ -477,7 +477,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.info("ResourceController::markPtisForDelete({})", deleteBody)
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.markPtisForDelete(ids)
+      return ermResourceService.markForDelete(ids, PlatformTitleInstance.class);
     }
   }
 
@@ -486,7 +486,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.info("ResourceController::markTisForDelete({})", deleteBody)
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.markTisForDelete(ids)
+      return ermResourceService.markForDelete(ids, TitleInstance.class);
     }
   }
 
@@ -495,7 +495,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.info("ResourceController::deletePcis({})", deleteBody)
 
     handleDeleteCall(deleteBody) { ids ->
-      MarkForDeleteResponse forDeletion = ermResourceService.markPcisForDelete(ids);
+      MarkForDeleteResponse forDeletion = ermResourceService.markForDelete(ids, PackageContentItem.class);
       log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
 
       return ermResourceService.deleteResources(forDeletion)
@@ -507,7 +507,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.info("ResourceController::deletePtis({})", deleteBody)
 
     handleDeleteCall(deleteBody) { ids ->
-      MarkForDeleteResponse forDeletion = ermResourceService.markPtisForDelete(ids);
+      MarkForDeleteResponse forDeletion = ermResourceService.markForDelete(ids, PlatformTitleInstance.class);
       log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
 
       return ermResourceService.deleteResources(forDeletion)
@@ -519,7 +519,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.info("ResourceController::deleteTis({})", deleteBody)
 
     handleDeleteCall(deleteBody) { ids ->
-      MarkForDeleteResponse forDeletion = ermResourceService.markTisForDelete(ids);
+      MarkForDeleteResponse forDeletion = ermResourceService.markForDelete(ids, TitleInstance.class);
       log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
 
       return ermResourceService.deleteResources(forDeletion)

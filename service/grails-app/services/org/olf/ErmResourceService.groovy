@@ -117,23 +117,23 @@ public class ErmResourceService {
     return (resourceSet.size() == 0 ? ["PLACEHOLDER_RESOURCE"] : resourceSet) as Set<String>
   }
 
-  public MarkForDeleteResponse markPcisForDelete(List<String> pciInputList) {
-    markForDelete(pciInputList, [], [])
+  public MarkForDeleteResponse markForDelete(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
+    switch (resourceClass) {
+      case PackageContentItem.class:
+        return markForDelete(new HashSet<String>(idInputs), new HashSet<String>(), new HashSet<String>())
+        break;
+      case PlatformTitleInstance.class:
+        return markForDelete(new HashSet<String>(), new HashSet<String>(idInputs), new HashSet<String>())
+        break;
+      case TitleInstance.class:
+        return markForDelete(new HashSet<String>(), new HashSet<String>(), new HashSet<String>(idInputs))
+        break;
+      default:
+        throw new RuntimeException("Unexpected resource class, cannot delete for class: ${resourceClass.name}");
+    }
   }
 
-  public MarkForDeleteResponse markPtisForDelete(List<String> ptiInputList) {
-    markForDelete([], ptiInputList, [])
-  }
-
-  public MarkForDeleteResponse markTisForDelete(List<String> tiInputList) {
-    markForDelete([], [], tiInputList)
-  }
-
-  public MarkForDeleteResponse markForDelete(List<String> pciList, List<String> ptiList, List<String> tiList) {
-    Set<String> pciIds = (pciList != null) ? new HashSet<String>(pciList) : new HashSet<String>();
-    Set<String> ptiIds = (ptiList != null) ? new HashSet<String>(ptiList) : new HashSet<String>();
-    Set<String> tiIds = (tiList != null) ? new HashSet<String>(tiList) : new HashSet<String>();
-
+  public MarkForDeleteResponse markForDelete(Set<String> pciIds, Set<String> ptiIds, Set<String> tiIds) {
 
     if (pciIds.isEmpty() && ptiIds.isEmpty() && tiIds.isEmpty()) {
       throw new Exception("Id list cannot be empty.");
