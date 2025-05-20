@@ -3,16 +3,13 @@ package org.olf.DeleteResources
 import grails.testing.mixin.integration.Integration
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
-import org.spockframework.runtime.SpecificationContext
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Stepwise
-import groovy.json.JsonOutput
 
 @Integration
 @Stepwise
 @Slf4j
-class CombinationDeletionSpec extends DeletionBaseSpec {
+class ResourceDeletionSpec extends DeletionBaseSpec {
 
   @Shared
   Map<String, List<String>> resourcesByStructure = [
