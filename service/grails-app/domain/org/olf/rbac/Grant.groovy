@@ -47,6 +47,14 @@ public class Grant implements MultiTenant<Grant> {
   // For ROLE this would be one of AffiliationRole
   // For GROUP this will be // FIXME What will this be??? -- is this where acquisition groups come in or no?
 
+  // TODO The actual "permission" parts go here.
+  // PermissionType = GROUP vs SINGLE?
+  // Permission = GroupName vs Single Perm type (READ vs UPDATE vs CREATE vs DELETE)???
+  // But maybe we need the perms to be hierarchical as well... ie if you can UPDATE then you can READ.
+  // Or maybe we leave this bit out now, and leave that to the existing perms?
+
+  // Are we _replacing_ FOLIO perms or appending to them?
+
 
   static mapping = {
     id           column: 'gra_id', generator: 'uuid2', length:36
