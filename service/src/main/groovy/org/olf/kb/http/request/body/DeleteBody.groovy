@@ -6,13 +6,11 @@ public class DeleteBody implements Validateable {
   List<String> resources
 
   static constraints = {
-    resources nullable: true
+    resources nullable: true, minSize: 1
   }
 
   @Override
   public String toString() {
-    return "DeleteBody{" +
-            ", resources=" + resources +
-            '}';
+    return "DeleteBody{ resources=${resources} }"
   }
 }

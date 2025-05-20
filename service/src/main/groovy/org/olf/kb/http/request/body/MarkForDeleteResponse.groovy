@@ -23,11 +23,6 @@ class MarkForDeleteResponse {
 
   @Override
   public String toString() {
-    return "MarkForDeleteResponse{" +
-      "pci=" + pci +
-      ", pti=" + pti +
-      ", ti=" + ti +
-      ", work=" + work +
-      '}';
+    return "MarkForDeleteResponse{ pci=${pci}, pti=${pti}, ti=${ti}, work=${work} }"
   }
 }

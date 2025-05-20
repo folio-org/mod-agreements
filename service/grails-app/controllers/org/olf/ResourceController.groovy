@@ -32,6 +32,7 @@ import static org.olf.general.Constants.Queries.*
 @CurrentTenant
 class ResourceController extends OkapiTenantAwareController<ErmResource> {
   ErmResourceService ermResourceService
+  UtilityService utilityService
 
   ResourceController() {
     // True means read only. This should block post and puts to this.
@@ -538,10 +539,9 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
       return
     }
 
-    if (!deleteBody.validate()) {
-      log.warn("Errors validating deleteBody: {}", deleteBody.errors);
-
-      respond([message: "Validation failed for delete call body", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value())
+    if (!utilityService.checkValidBinding(deleteBody)) {
+      // NOTE!! We can only assume this because there is only one validation rule on DeleteBody
+      respond([message: "DeleteBody.resources must be non-null and not empty", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value())
       return
     }
 

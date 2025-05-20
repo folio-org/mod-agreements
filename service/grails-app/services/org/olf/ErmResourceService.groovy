@@ -120,25 +120,20 @@ public class ErmResourceService {
   public MarkForDeleteResponse markForDelete(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
     switch (resourceClass) {
       case PackageContentItem.class:
-        return markForDelete(new HashSet<String>(idInputs), new HashSet<String>(), new HashSet<String>())
+        return markForDeleteInternal(new HashSet<String>(idInputs), new HashSet<String>(), new HashSet<String>())
         break;
       case PlatformTitleInstance.class:
-        return markForDelete(new HashSet<String>(), new HashSet<String>(idInputs), new HashSet<String>())
+        return markForDeleteInternal(new HashSet<String>(), new HashSet<String>(idInputs), new HashSet<String>())
         break;
       case TitleInstance.class:
-        return markForDelete(new HashSet<String>(), new HashSet<String>(), new HashSet<String>(idInputs))
+        return markForDeleteInternal(new HashSet<String>(), new HashSet<String>(), new HashSet<String>(idInputs))
         break;
       default:
         throw new RuntimeException("Unexpected resource class, cannot delete for class: ${resourceClass.name}");
     }
   }
 
-  public MarkForDeleteResponse markForDelete(Set<String> pciIds, Set<String> ptiIds, Set<String> tiIds) {
-
-    if (pciIds.isEmpty() && ptiIds.isEmpty() && tiIds.isEmpty()) {
-      throw new Exception("Id list cannot be empty.");
-    }
-
+  private MarkForDeleteResponse markForDeleteInternal(Set<String> pciIds, Set<String> ptiIds, Set<String> tiIds) {
     MarkForDeleteResponse markForDeletion = new MarkForDeleteResponse()
 
     markForDeletion.pci.addAll(markForDeletePCI(pciIds));
