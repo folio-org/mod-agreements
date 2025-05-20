@@ -2,7 +2,7 @@ package org.olf.kb.http.request.body;
 
 import grails.validation.Validateable
 
-public class MarkForDeleteBody implements Validateable {
+public class DeleteBody implements Validateable {
   List<String> resources
 
   static constraints = {
@@ -11,7 +11,7 @@ public class MarkForDeleteBody implements Validateable {
 
   @Override
   public String toString() {
-    return "MarkForDeleteBody{" +
+    return "DeleteBody{" +
             ", resources=" + resources +
             '}';
   }

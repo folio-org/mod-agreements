@@ -19,7 +19,7 @@ import org.hibernate.criterion.Projections
 import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
-import org.olf.kb.http.request.body.MarkForDeleteBody
+import org.olf.kb.http.request.body.DeleteBody
 import org.olf.kb.http.request.body.MarkForDeleteResponse
 import org.springframework.http.HttpStatus
 
@@ -465,148 +465,84 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
   }
 
   // For /erm/resources/markForDelete/pcis
-  def markPcisForDelete(MarkForDeleteBody deleteBody) {
-    handleMarkForDelete(deleteBody, "PCIs") { ids ->
-      ermResourceService.markPcisForDelete(ids)
+  def markPcisForDelete(DeleteBody deleteBody) {
+    handleDeleteCall(deleteBody, "PCIs") { ids ->
+      return ermResourceService.markPcisForDelete(ids)
     }
   }
 
   // For /erm/resources/markForDelete/ptis
-  def markPtisForDelete(MarkForDeleteBody deleteBody) {
-    handleMarkForDelete(deleteBody, "PTIs") { ids ->
-      ermResourceService.markPtisForDelete(ids)
+  def markPtisForDelete(DeleteBody deleteBody) {
+    handleDeleteCall(deleteBody, "PTIs") { ids ->
+      return ermResourceService.markPtisForDelete(ids)
     }
   }
 
   // For /erm/resources/markForDelete/tis
-  def markTisForDelete(MarkForDeleteBody deleteBody) {
-    handleMarkForDelete(deleteBody, "TIs") { ids ->
-      ermResourceService.markTisForDelete(ids)
-    }
-  }
-
-  private void handleDelete(Validateable deleteBody, Closure serviceCall) {
-    if (deleteBody == null || !deleteBody.validate()) {
-      respond deleteBody?.errors ?: [message: "Invalid delete request.", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value()
-      return
-    }
-    if (deleteBody.resources == null || deleteBody.resources.isEmpty()) {
-      respond([message: "Nothing in delete request body.", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value())
-      return
-    }
-
-    try {
-      MarkForDeleteResponse resourcesToDelete = serviceCall.call(deleteBody.resources)
-      Map<String, Integer> deletionCounts = ermResourceService.deleteResources(resourcesToDelete)
-      respond([message: "Resources processed for deletion.", statusCode: HttpStatus.OK.value(), deletionResult: deletionCounts], status: HttpStatus.OK.value())
-
-    } catch (Exception e) {
-      log.error("Error during deletion: ${e.message}", e)
-      respond([message: "Something went wrong", statusCode: HttpStatus.INTERNAL_SERVER_ERROR.value(), error: e], status: HttpStatus.INTERNAL_SERVER_ERROR.value())
-
+  def markTisForDelete(DeleteBody deleteBody) {
+    handleDeleteCall(deleteBody, "TIs") { ids ->
+      return ermResourceService.markTisForDelete(ids)
     }
   }
 
   // For /erm/resources/delete/pci
-  def deletePcis(MarkForDeleteBody deleteBody) {
-    handleDelete(deleteBody) { ids ->
-      ermResourceService.markPcisForDelete(ids)
+  def deletePcis(DeleteBody deleteBody) {
+    handleDeleteCall(deleteBody, 'PCIs') { ids ->
+      MarkForDeleteResponse forDeletion = ermResourceService.markPcisForDelete(ids);
+      log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
+
+      return ermResourceService.deleteResources(forDeletion)
     }
   }
 
   // For /erm/resources/delete/ptis
-  def deletePtis(MarkForDeleteBody deleteBody) {
-    handleDelete(deleteBody) { ids ->
-      ermResourceService.markPtisForDelete(ids)
+  def deletePtis(DeleteBody deleteBody) {
+    handleDeleteCall(deleteBody, 'PTIs') { ids ->
+      MarkForDeleteResponse forDeletion = ermResourceService.markPtisForDelete(ids);
+      log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
+
+      return ermResourceService.deleteResources(forDeletion)
     }
   }
 
   // For /erm/resources/delete/tis
-  def deleteTis(MarkForDeleteBody deleteBody) {
-    handleDelete(deleteBody) { ids ->
-      ermResourceService.markTisForDelete(ids)
+  def deleteTis(DeleteBody deleteBody) {
+    handleDeleteCall(deleteBody, 'TIs') { ids ->
+      MarkForDeleteResponse forDeletion = ermResourceService.markTisForDelete(ids);
+      log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
+
+      return ermResourceService.deleteResources(forDeletion)
     }
   }
 
   /**
-   * Private helper method to handle the common logic for markForDelete actions.
+   * Private helper method to handle the common logic for delete actions (markForDelete/delete).
    * @param deleteBody The deleteBody object (must implement Validateable and have a resources property corresponding to ErmResource IDs)
    * @param resourceTypeName A descriptive name for the resource type (e.g., "PCIs", "PTIs") for logging/error messages.
    * @param serviceCall A closure that takes a List<String> of IDs and calls the appropriate service method.
    */
-  private void handleMarkForDelete(Validateable deleteBody, String resourceTypeName, Closure serviceCall) {
+  private void handleDeleteCall(DeleteBody deleteBody, String resourceTypeName, Closure serviceCall) {
     if (deleteBody == null) {
-      log.warn("Received null delete body for marking {} for delete.", resourceTypeName)
+      log.warn("Received null delete body for handleDeleteCall({}, {})", deleteBody, resourceTypeName)
       respond([message: "Nothing in delete request body.", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value())
       return
     }
 
-    List<String> idsToProcess = deleteBody.resources
-    log.info("ResourceController::handleMarkForDelete for {} with IDs: {}", resourceTypeName, idsToProcess)
+    log.info("ResourceController::handleDeleteCall({},{})", deleteBody, resourceTypeName)
 
-    if (deleteBody.hasErrors()) {
-      log.warn([message: "Validation failed for MarkForDelete() body.", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value())
-      respond deleteBody.errors, [status: HttpStatus.BAD_REQUEST]
+    if (!deleteBody.validate()) {
+      log.warn("Errors validating deleteBody: {}", deleteBody.errors);
+
+      respond([message: "Validation failed for delete call body", statusCode: HttpStatus.BAD_REQUEST.value()], status: HttpStatus.BAD_REQUEST.value())
       return
     }
 
     try {
-      MarkForDeleteResponse result = serviceCall.call(idsToProcess) // Pass the extracted IDs
-      respond result
+      respond serviceCall.call(deleteBody.resources)
     } catch (Exception e) {
-      log.error("Error during mark {} for delete for IDs {}: {}", resourceTypeName, idsToProcess, e.message, e)
-      respond ([message: "Something went wrong", statusCode: HttpStatus.INTERNAL_SERVER_ERROR.value(), error: e], status: HttpStatus.INTERNAL_SERVER_ERROR.value())
+      log.error("Error during delete service call for IDs {}: {}", deleteBody.resources, e.message, e)
+      respond ([message: "Error during delete call", statusCode: HttpStatus.INTERNAL_SERVER_ERROR.value()], status: HttpStatus.INTERNAL_SERVER_ERROR.value())
     }
-  }
-
-
-  def markForDelete(MarkForDeleteBody deleteBody) {
-    log.info("ResourceController::markForDelete({})", deleteBody.toString())
-
-    if (deleteBody == null || deleteBody.hasErrors()) {
-      log.warn("Validation failed for markForDelete body: {}", deleteBody?.errors)
-      response.status = HttpStatus.BAD_REQUEST.value()
-      respond(deleteBody?.errors)
-      return
-    }
-
-    List<String> idsToDelete = []
-
-    // TODO handle the "hierarchical" element here, what if we're passed only PCIs, what about PCIs and PTIs? etc etc
-    // Actually I'd probably let the service handle ALL the business logic and then just try catch there.
-
-    // TODO do we need to do this? We could instead validate UUID by UUID later on
-//    if (deleteBody.pcis) {
-//      idsToDelete = deleteBody.pcis.findAll { String idStr ->
-//        idStr != null && !idStr.trim().isEmpty()
-//      }
-    //}
-
-//    if (idsToDelete.isEmpty()) {
-//      log.warn("No valid non-empty PCI IDs provided in the list.")
-//      response.status = HttpStatus.BAD_REQUEST.value() // 400
-//      // TODO check whether to use render vs respond here... not sure what our "best practice" is or even if we have one
-//      render(contentType: 'application/json') { [message: "No valid IDs provided in the list."] }
-//      return
-//    }
-
-
-    try {
-      // TODO this should pass the full body,
-      // maybe broken down into multiple List<String> instead of using MarkForDeleteBody in the service
-      Map resourceIdMap = new HashMap<String, List<String>>();
-      resourceIdMap.put("resources", deleteBody.resources)
-
-      respond ermResourceService.markForDelete(resourceIdMap);
-    } catch (Exception e) {
-      log.error("Error during markForDelete for IDs {}: {}", idsToDelete, e.message, e)
-      response.status = HttpStatus.INTERNAL_SERVER_ERROR.value()
-      render(contentType: 'application/json') {
-        [error: "Internal Server Error", message: "Failed to delete package content items: ${e.message}"]
-      }
-    }
-    return
-
   }
 }
 
