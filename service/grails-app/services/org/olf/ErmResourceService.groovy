@@ -112,7 +112,7 @@ public class ErmResourceService {
     ) as Set
   }
 
-  Set<String> handleEmptyListMapping(Set<String> resourceSet) {
+  private Set<String> handleEmptyListMapping(Set<String> resourceSet) {
     // Workaround for HQL 'NOT IN' bug: https://stackoverflow.com/questions/36879116/hibernate-hql-not-in-clause-doesnt-seem-to-work
     return (resourceSet.size() == 0 ? ["PLACEHOLDER_RESOURCE"] : resourceSet) as Set<String>
   }
@@ -133,9 +133,14 @@ public class ErmResourceService {
     }
   }
 
+  // We make use of the fact that these are Sets to deduplicate in the case that we have, say, two PCIs for a PTI
+  // Normally a SELECT for PTIs from PCIs would return twice, but we can dedupe for free here.
   private MarkForDeleteResponse markForDeleteInternal(Set<String> pciIds, Set<String> ptiIds, Set<String> tiIds) {
     MarkForDeleteResponse markForDeletion = new MarkForDeleteResponse()
 
+    // FIXME Check that ids actually exist and log/ignore any that don't
+
+    // PCI Level checking -- only need to test whether it has any AgreementLines
     pciIds.forEach{String id -> {
       Set<String> linesForResource = entitlementsForResource(id, 1)
       if (linesForResource.size() == 0) {
@@ -143,9 +148,10 @@ public class ErmResourceService {
       }
     }}
 
+    // Find all the PTIs in the system for PCIs we've decided to delete
     Set<String> ptisForDeleteCheck = PlatformTitleInstance.executeQuery(
       """
-        SELECT DISTINCT pci.pti.id FROM PackageContentItem pci
+        SELECT pci.pti.id FROM PackageContentItem pci
         WHERE pci.id IN :pcisForDelete 
       """.toString(),
       [pcisForDelete:markForDeletion.pci]
@@ -153,6 +159,7 @@ public class ErmResourceService {
 
     ptiIds.addAll(ptisForDeleteCheck);
 
+    // PTIs are valid to delete if there are no AgreementLines for them AND they have no not-for-delete PCIs
     ptiIds.forEach{ String id -> {
       Set<String> linesForResource = entitlementsForResource(id, 1)
       if (linesForResource.size() != 0) {
@@ -178,16 +185,23 @@ public class ErmResourceService {
       markForDeletion.pti.add(id);
     }}
 
+    // Find all TIs for PTIs we've marked for deletion and mark for "work checking"
     Set<String> tisForWorkChecking = TitleInstance.executeQuery(
       """
-        SELECT DISTINCT pti.titleInstance.id FROM PlatformTitleInstance pti
+        SELECT pti.titleInstance.id FROM PlatformTitleInstance pti
         WHERE pti.id IN :ptisForDelete 
       """.toString(),
       [ptisForDelete:markForDeletion.pti]
     ) as Set
     tisForWorkChecking.addAll(tiIds)
 
-    tisForWorkChecking.forEach{String id -> {
+    // It is valid to delete a Work and ALL attached TIs if none of the TIs have a PTI that is not marked for deletion
+
+    // FIXME I think this needs to take all Tis "for work checking" and create a set of work ids
+    // THen for each work id, find any PTIs linked to any Tis for that work
+    // If we have none, can delete work and ALL tis
+    // Else we delete nothing
+    tisForWorkChecking.forEach{ String id -> {
       Set<String> ptisForTi = PlatformTitleInstance.executeQuery("""
           SELECT pti.id FROM PlatformTitleInstance pti
           WHERE pti.titleInstance.id = :tiId
@@ -203,9 +217,9 @@ public class ErmResourceService {
 
     markForDeletion.ti.forEach{String id -> {
       List<String> workIdList = TitleInstance.executeQuery("""
-          SELECT ti.work.id FROM TitleInstance ti
-          WHERE ti.id = :tiId
-        """.toString(), [tiId: id], [max: 1])
+        SELECT ti.work.id FROM TitleInstance ti
+        WHERE ti.id = :tiId
+      """.toString(), [tiId: id], [max: 1])
 
       log.info("Work ID List: {}", workIdList.toListString())
 
