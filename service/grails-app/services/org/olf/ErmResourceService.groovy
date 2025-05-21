@@ -70,7 +70,6 @@ public class ErmResourceService {
       // At this point we have a comprehensive list of resources at various levels
       resourceList.addAll(ptis)
       resourceList.addAll(pcis)
-    //}
 
     resourceList
   }
@@ -87,10 +86,9 @@ public class ErmResourceService {
 
 
     if (resourceExists != null && !resourceExists.isEmpty()) {
-      log.info("LOG DEBUG - RESOURCE EXISTS: ${resourceId} for type ${resourceType}. ${resourceExists}")
       return true
     } else {
-      log.info("LOG DEBUG - RESOURCE DOES NOT EXIST: ${resourceId} for type ${resourceType}. ${resourceExists}")
+      log.info("Resource: ${resourceId} does not exist for resource type ${resourceType}.")
       return false
     }
   }
@@ -134,12 +132,17 @@ public class ErmResourceService {
   // We make use of the fact that these are Sets to deduplicate in the case that we have, say, two PCIs for a PTI
   // Normally a SELECT for PTIs from PCIs would return twice, but we can dedupe for free here.
   private MarkForDeleteResponse markForDeleteInternal(Set<String> pciIds, Set<String> ptiIds, Set<String> tiIds) {
+    log.info("Initiating markForDelete with PCI ids: {}, PTI ids: {}, TI ids: {}", pciIds, ptiIds, tiIds)
     MarkForDeleteResponse markForDeletion = new MarkForDeleteResponse()
 
     // Check that ids actually exist and log/ignore any that don't
     pciIds = pciIds.findAll{String id -> {checkResourceExists(id, "PackageContentItem")}}
     ptiIds.findAll{String id -> {checkResourceExists(id, "PlatformTitleInstance")}}
     tiIds.findAll{String id -> {checkResourceExists(id, "TitleInstance")}}
+
+    if (pciIds.isEmpty() && ptiIds.isEmpty() && tiIds.isEmpty()) {
+      log.warn("No ids found after filtering for existing ids.")
+    }
 
     // PCI Level checking -- only need to test whether it has any AgreementLines
     pciIds.forEach{String id -> {
@@ -206,7 +209,7 @@ public class ErmResourceService {
         """.toString(), [tiId:id, ignorePtis:handleEmptyListMapping(markForDeletion.pti)], [max:1])  as Set
 
       if (ptisForTi.size() != 0) {
-        log.info("LOG WARNING: PTIs that have not been marked for deletion exist for TI: TI ID- {}, PTIs found- {}", id, ptisForTi);
+        log.debug("PTIs ({}) that have not been marked for deletion exist for TI: {}", ptisForTi, id);
         return null
       }
       tisForWorkChecking.add(id);
@@ -222,7 +225,7 @@ public class ErmResourceService {
 
       if (workIdList.size() == 1) {
         workId = workIdList.get(0);
-        log.info("Work Id found for deletion: {}", workId)
+        log.debug("Work Id found for deletion: {}", workId)
       } else {
         // No work ID exists or multiple works returned for one TI.
         return null;
@@ -234,10 +237,8 @@ public class ErmResourceService {
           AND pti.titleInstance.work.id = :workId
         """.toString(), [ignorePtis:handleEmptyListMapping(markForDeletion.pti), workId: workId], [max:1]) as Set
 
-      log.info("Ptis for Work: {}", ptisForWork.toListString())
-
       if (ptisForWork.size() != 0) {
-        log.info("LOG WARNING: PTIs that have not been marked for deletion exist for work: Work ID- {}, PTIs found- {}", workId, ptisForWork);
+        log.debug("PTIs ({}) that have not been marked for deletion exist for work: {}", ptisForWork, workId);
         return null
       }
 
@@ -254,6 +255,8 @@ public class ErmResourceService {
       markForDeletion.ti.addAll(tisForWork)
       }}
 
+    log.info("Marked resources for delete: {}", markForDeletion)
+
     return markForDeletion
   }
 
@@ -267,11 +270,8 @@ public class ErmResourceService {
     return ErmResource.executeUpdate(hql, [idsToDelete: new ArrayList<>(ids)])
   }
 
-  // FIXME can we have a DeleteResponse similar to the MarkForDeleteResponse please? :)
   public DeleteResponse deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
     MarkForDeleteResponse forDeletion = markForDelete(idInputs, resourceClass);
-    log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
-
     return deleteResourcesInternal(forDeletion);
   }
 
@@ -291,17 +291,17 @@ public class ErmResourceService {
 
     int pciDeletedCount = 0
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
-      log.info("Deleting PCIs: {}", resourcesToDelete.pci)
+      log.debug("Deleting PCIs: {}", resourcesToDelete.pci)
       pciDeletedCount = deleteByIds(PackageContentItem, resourcesToDelete.pci)
-      log.info("Deleted {} PCIs", pciDeletedCount)
+      log.debug("Deleted {} PCIs", pciDeletedCount)
     }
     deletionCounts.pciDeleted = pciDeletedCount
 
     int ptiDeletedCount = 0
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
-      log.info("Deleting PTIs: {}", resourcesToDelete.pti)
+      log.debug("Deleting PTIs: {}", resourcesToDelete.pti)
       ptiDeletedCount = deleteByIds(PlatformTitleInstance, resourcesToDelete.pti)
-      log.info("Deleted {} PTIs", ptiDeletedCount)
+      log.debug("Deleted {} PTIs", ptiDeletedCount)
     }
     deletionCounts.ptiDeleted = ptiDeletedCount
 
@@ -319,17 +319,17 @@ public class ErmResourceService {
 
     int tiDeletedCount = 0
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
-      log.info("Deleting TIs: {}", resourcesToDelete.ti)
+      log.debug("Deleting TIs: {}", resourcesToDelete.ti)
       tiDeletedCount = deleteByIds(TitleInstance, resourcesToDelete.ti)
-      log.info("Deleted {} TIs", tiDeletedCount)
+      log.debug("Deleted {} TIs", tiDeletedCount)
     }
     deletionCounts.tiDeleted = tiDeletedCount
 
     int workDeletedCount = 0
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
-      log.info("Deleting Works: {}", resourcesToDelete.work)
+      log.debug("Deleting Works: {}", resourcesToDelete.work)
       workDeletedCount = deleteByIds(Work, resourcesToDelete.work)
-      log.info("Deleted {} Works", workDeletedCount)
+      log.debug("Deleted {} Works", workDeletedCount)
     }
     deletionCounts.workDeleted = workDeletedCount
 
