@@ -21,7 +21,17 @@ The module has important dependences on reference data. initial installations an
 may not work as expected if this is omitted.
 
 While this README and the module description template offer some guidance on how to run this module and the resourcing required, it is not possible to anticipate all possible environmental configurations and deployment processes. Determining the exact resourcing, deployment processes and other aspects such as the size of database conneciton pools needed in any particular environment is down to those running the module and it is recommended that all such practices are fully documented by those responsible
+### Environment variables 
+This is a NON-EXHAUSTIVE list of environment variables which tweak behaviour in this module
 
+| Variable                      | Description                                                                                                                                                                                                                                                         | Options                                                                                      | Default                       |
+|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|-------------------------------|
+| `TIRS`                          | Allows the switching of the default "matching" logic underpinning when we declare two incoming titles as equivalent                                                                                                                                                 | <ul><li>`'IdFirst'`</lit><li>`'TitleFirst'`</lit><li>`'WorkSourceIdentifier'`</li></ul>      | `WorkSourceIdentifier`        |
+| `SYNC_PACKAGES_VIA_HARVEST`     | Allows the turning on/off of "sync" for packages harvested via the GokbOAIAdapter                                                                                                                                                                                   | <ul><li>`'true'`</li><li>`'false'`</li></ul>                                                 | `'false'`                     |
+| `INGRESS_TYPE`                  | Allows the switching between the two main ingress methods to get packages/titles into the local KB.These are mutually exclusive options, which is why they are surfaced as an environment variable                                                                  | <ul><li>`PushKB`</li><li>`Harvest`</li></ul>                                                 | `Harvest` (Subject to change) |
+| `KB_HARVEST_BUFFER`             | Allows changing of the default time it takes for mod-agreements to consider its local KB "stale". Note that this will _not_ change the frequency with which the Jobs are created in the system, simply the rate at which those jobs will finish without doing work. | <ul><li>`ONE_HOUR`</li><li>`ZERO`</li><li>Any integer -- representing milliseconds</li></ul> | `1*60*60*1000` (`ONE_HOUR`)   |
+| `GLOBAL_S3_SECRET_KEY`          | Allows the setting of a global S3 secret key fallback. First module checks older S3SecretKey AppSetting. If not present then it falls back to this value.                                                                                                           | S3 secret                                                                                    |                               |
+| `ENDPOINTS_INCLUDE_STACK_TRACE` | Allows the HTTP response 500 to contain stacktrace from the exception thrown. Default return will be a generic message and a timestamp.                                                                                                                             | <ul><li>`true`</li><li>`false`</li></ul>                                                     | `false`                       |
 ### Locks and failure to upgrade
 This module has a few "problem" scenarios that _shouldn't_ occur in general operation, but particular approaches to upgrades in particular can leave the module unable to self right. This occurs especially often where the module or container die/are killed regularly shortly after/during the upgrade.
 
@@ -45,12 +55,12 @@ In order of importance to check:
     - If the module dies it's likely resourcing that's the issue
     - The module may be able to self right
   - If the module cannot self right
-    - Check the `mod_agreements_system.system_changelog_lock`
+    - Check the `mod_agreements__system.system_changelog_lock`
       - The same applies from the above section as this is a liquibase lock, but this is seriously unlikely to get caught as the table is so small
-    - Finally check the `mod_agreements_system.federation_lock`
+    - Finally check the `mod_agreements__system.federation_lock`
       - If this table has entries, this can prevent the module from any and all operations
       - It should self right from here, even if pointing at dead instances
-        - See `mod_agreements_system.app_instance` for a table of instance ids, a killed and restarted module should eventually get cleared from here.
+        - See `mod_agreements__system.app_instance` for a table of instance ids, a killed and restarted module should eventually get cleared from here.
         - It is NOT RECOMMENDED to clear app_instances manually
       - If there are entries in the federated lock table that do not clear after 20 minutes of uninterrupted running then this table should be manually emptied.
 
@@ -67,18 +77,18 @@ This resource allows module owners to obtain tenant extensible lists of controll
 
 As of 2019-02-20 the following are defined:
 
-| Refdata Category | URL for values |
-| --- | --- |
-|TitleInstance.SubType|/erm/refdataValues/TitleInstance/SubType|
-|TitleInstance.Type|/erm/refdataValues/TitleInstance/Type|
-|InternalContact.Role|/erm/refdataValues/InternalContact/Role|
-|SubscriptionAgreementOrg.Role|/erm/refdataValues/SubscriptionAgreementOrg/Role|
-|SubscriptionAgreement.AgreementType|/erm/refdataValues/SubscriptionAgreement/AgreementType|
-|SubscriptionAgreement.RenewalPriority|/erm/refdataValues/SubscriptionAgreement/RenewalPriority|
-|Global.Yes_No|/erm/refdataValues/Global/Yes_No|
-|SubscriptionAgreement.AgreementStatus|/erm/refdataValues/SubscriptionAgreement/AgreementStatus|
-|Pkg.Type|/erm/refdataValues/Pkg/Type|
-|IdentifierOccurrence.Status|/erm/refdataValues/IdentifierOccurrence/Status|
+| Refdata Category                      | URL for values                                           |
+|---------------------------------------|----------------------------------------------------------|
+| TitleInstance.SubType                 | /erm/refdataValues/TitleInstance/SubType                 |
+| TitleInstance.Type                    | /erm/refdataValues/TitleInstance/Type                    |
+| InternalContact.Role                  | /erm/refdataValues/InternalContact/Role                  |
+| SubscriptionAgreementOrg.Role         | /erm/refdataValues/SubscriptionAgreementOrg/Role         |
+| SubscriptionAgreement.AgreementType   | /erm/refdataValues/SubscriptionAgreement/AgreementType   |
+| SubscriptionAgreement.RenewalPriority | /erm/refdataValues/SubscriptionAgreement/RenewalPriority |
+| Global.Yes_No                         | /erm/refdataValues/Global/Yes_No                         |
+| SubscriptionAgreement.AgreementStatus | /erm/refdataValues/SubscriptionAgreement/AgreementStatus |
+| Pkg.Type                              | /erm/refdataValues/Pkg/Type                              |
+| IdentifierOccurrence.Status           | /erm/refdataValues/IdentifierOccurrence/Status           |
 
 ## ModuleDescriptor
 
@@ -235,3 +245,6 @@ mvn org.folio:folio-module-descriptor-validator:1.0.0:validate -DmoduleDescripto
 ```
 
 This will create a file called `validate_module_descriptor_output.txt` containing the output of the validator. The github action does some cleanup and comments the errors on a PR (if present). The `grep`/`sed` commands with regex can be found in the workflow file `.github/validate-module`.
+
+### Resourcing
+The "Memory" requirement listed in the module descriptor for this module is unusually high. This is because the memory requirement is made assuming full range of module functionality is in use, including GOKb Harvest and processing of thousands of TIPPs. Installations not making use of the harvest functionality can run with substantially lower memory.
