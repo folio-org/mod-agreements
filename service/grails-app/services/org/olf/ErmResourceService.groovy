@@ -186,22 +186,18 @@ public class ErmResourceService {
     }}
 
     // Find all TIs for PTIs we've marked for deletion and mark for "work checking"
-    Set<String> tisForWorkChecking = TitleInstance.executeQuery(
+    Set<String> allTisForPtis = TitleInstance.executeQuery(
       """
         SELECT pti.titleInstance.id FROM PlatformTitleInstance pti
         WHERE pti.id IN :ptisForDelete 
       """.toString(),
       [ptisForDelete:markForDeletion.pti]
     ) as Set
-    tisForWorkChecking.addAll(tiIds)
+    allTisForPtis.addAll(tiIds)
 
     // It is valid to delete a Work and ALL attached TIs if none of the TIs have a PTI that is not marked for deletion
-
-    // FIXME I think this needs to take all Tis "for work checking" and create a set of work ids
-    // THen for each work id, find any PTIs linked to any Tis for that work
-    // If we have none, can delete work and ALL tis
-    // Else we delete nothing
-    tisForWorkChecking.forEach{ String id -> {
+    Set<String> tisForWorkChecking = new HashSet<String>();
+    allTisForPtis.forEach{ String id -> {
       Set<String> ptisForTi = PlatformTitleInstance.executeQuery("""
           SELECT pti.id FROM PlatformTitleInstance pti
           WHERE pti.titleInstance.id = :tiId
@@ -212,21 +208,20 @@ public class ErmResourceService {
         log.info("LOG WARNING: PTIs that have not been marked for deletion exist for TI: TI ID- {}, PTIs found- {}", id, ptisForTi);
         return null
       }
-      markForDeletion.ti.add(id)
+      tisForWorkChecking.add(id);
     }}
 
-    markForDeletion.ti.forEach{String id -> {
+    tisForWorkChecking.forEach{String id -> {
       List<String> workIdList = TitleInstance.executeQuery("""
         SELECT ti.work.id FROM TitleInstance ti
         WHERE ti.id = :tiId
       """.toString(), [tiId: id], [max: 1])
 
-      log.info("Work ID List: {}", workIdList.toListString())
-
       String workId;
 
       if (workIdList.size() == 1) {
         workId = workIdList.get(0);
+        log.info("Work Id found for deletion: {}", workId)
       } else {
         // No work ID exists or multiple works returned for one TI.
         return null;
@@ -255,7 +250,6 @@ public class ErmResourceService {
         """.toString(), [workId:id]) as Set
 
         // If we can delete a work, delete any other TIs attached to it
-
       markForDeletion.ti.addAll(tisForWork)
       }}
 
