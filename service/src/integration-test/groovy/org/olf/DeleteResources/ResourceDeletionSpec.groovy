@@ -3,6 +3,8 @@ package org.olf.DeleteResources
 import grails.testing.mixin.integration.Integration
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
+import org.olf.kb.http.response.DeleteResponse
+import org.olf.kb.http.response.MarkForDeleteResponse
 import spock.lang.Shared
 import spock.lang.Stepwise
 
@@ -117,7 +119,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
 
       log.info("IDs to process for ${testCase.resourceTypeToMark}: ${idsForProcessing}")
 
-      Map operationResponse
+      MarkForDeleteResponse operationResponse
       Exception operationError
 
     // Only make a call if there are IDs to process for the designated resource type
@@ -131,12 +133,12 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
         log.error("Error calling markForDelete endpoint ${endpoint}: ${e.toString()}", e)
       }
     } else {
-      operationResponse = [pci: [], pti: [], ti: [], work: []]
+      operationResponse = new MarkForDeleteResponse()
     }
 
     Map kbStatsBeforeActualDelete = doGet("/erm/statistics/kbCount")
     Map finalKbStats = kbStatsBeforeActualDelete
-    Map actualDeleteResponse
+    DeleteResponse actualDeleteResponse
 
     if (testCase.doDelete && !operationError && operationResponse && !(operationResponse.pci.isEmpty() && operationResponse.pti.isEmpty() && operationResponse.ti.isEmpty() && operationResponse.work.isEmpty()) ) {
       // Only attempt delete if markForDelete was successful (no error, non-empty response)
@@ -145,13 +147,8 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
       try {
         String deleteEndpoint = "/erm/resource/delete/${testCase.resourceTypeToMark}"
         String deletePayloadKey = "resources"
-
-        if (!idsForProcessing.isEmpty()) {
-          actualDeleteResponse = doPost(deleteEndpoint, [(deletePayloadKey): idsForProcessing])
-          finalKbStats = doGet("/erm/statistics/kbCount") // Get stats *after* actual delete
-        } else {
-          log.info("Skipping actual delete as no IDs were initially processed for this type.")
-        }
+        actualDeleteResponse = doPost(deleteEndpoint, [(deletePayloadKey): idsForProcessing])
+        finalKbStats = doGet("/erm/statistics/kbCount") // Get stats *after* actual delete
       } catch (Exception e) {
         log.error("Error during actual delete operation: ${e.toString()}", e)
       }
@@ -165,7 +162,8 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
     then: "The system state matches the expected outcome"
     // 1. Assert the `markForDelete` operation's response (or error)
     if (testCase.doDelete) {
-      // TODO: Check Ids deleted (could return from /delete endpoint) match those from MarkForDelete?
+      // Check Ids deleted (could return from /delete endpoint) match those from MarkForDelete?
+      assertIdsMatch(testCase.structure, actualDeleteResponse.deletedIds, testCase.expectedMarkForDelete)
     } else {
      if (operationError) {
        // TODO: Do we need to verify error scenarios?
@@ -214,7 +212,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
     assert expectedKbStats.Work                  == actualKbStats.Work
   }
 
-  void assertIdsMatch(String structure, Map operationResponse, Map expectedMarkForDelete) {
+  void assertIdsMatch(String structure, MarkForDeleteResponse operationResponse, Map expectedMarkForDelete) {
 
     if (operationResponse) {
       Set<String>  expectedPcis = findInputResourceIds(expectedMarkForDelete.get("pci") as List, structure)
@@ -223,10 +221,10 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
       Set<String>  expectedWorks = findInputResourceIds(expectedMarkForDelete.get("work") as List, structure)
 
       log.info("expected PCIs: {}", expectedPcis)
-      assert expectedPcis == operationResponse.get("pci") as Set
-      assert expectedPtis == operationResponse.get("pti") as Set
-      assert expectedTis == operationResponse.get("ti") as Set
-      assert expectedWorks == operationResponse.get("work") as Set
+      assert expectedPcis == operationResponse.pci as Set
+      assert expectedPtis == operationResponse.pti as Set
+      assert expectedTis == operationResponse.ti as Set
+      assert expectedWorks == operationResponse.work as Set
     }
 
   }
