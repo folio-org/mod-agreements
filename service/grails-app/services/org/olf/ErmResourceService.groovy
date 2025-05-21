@@ -1,7 +1,10 @@
 package org.olf
 
 import org.olf.erm.Entitlement
+import org.olf.kb.CoverageStatement
+import org.olf.kb.Embargo
 import org.olf.kb.IdentifierOccurrence
+import org.olf.kb.Platform
 import org.olf.kb.Work
 import org.olf.kb.http.response.DeleteResponse
 import org.olf.kb.http.response.DeletionCounts
@@ -275,6 +278,22 @@ public class ErmResourceService {
     return deleteResourcesInternal(forDeletion);
   }
 
+  private void deleteCoverageStatement(Set<String> resourceIds) {
+    log.debug("Deleting Coverage Statements for Resources: {}", resourceIds)
+    CoverageStatement.executeUpdate("""
+      DELETE FROM CoverageStatement cov
+      WHERE cov.resource.id IN (:resourceIds)
+    """, [resourceIds: resourceIds])
+  }
+
+  private void deleteEmbargos(List<String> embargosForPcis) {
+    log.debug("Deleting embargos: {}", embargosForPcis)
+    Embargo.executeUpdate("""
+      DELETE FROM Embargo emb
+      WHERE emb.id IN (:embargoIds)
+    """, [embargoIds: embargosForPcis])
+  }
+
   @Transactional
   private DeleteResponse deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
     DeleteResponse response = new DeleteResponse()
@@ -292,7 +311,16 @@ public class ErmResourceService {
     int pciDeletedCount = 0
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
       log.debug("Deleting PCIs: {}", resourcesToDelete.pci)
+      List<String> embargosForPcis = Embargo.executeQuery("""
+        SELECT pci.embargo.id FROM PackageContentItem pci
+        WHERE pci.id IN :resourceIds
+      """, [resourceIds: resourcesToDelete.pci])
+
+      deleteCoverageStatement(resourcesToDelete.pci)
       pciDeletedCount = deleteByIds(PackageContentItem, resourcesToDelete.pci)
+      if (!embargosForPcis.isEmpty()) {
+        deleteEmbargos(embargosForPcis)
+      }
       log.debug("Deleted {} PCIs", pciDeletedCount)
     }
     deletionCounts.pciDeleted = pciDeletedCount
@@ -300,6 +328,7 @@ public class ErmResourceService {
     int ptiDeletedCount = 0
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
       log.debug("Deleting PTIs: {}", resourcesToDelete.pti)
+      deleteCoverageStatement(resourcesToDelete.pti)
       ptiDeletedCount = deleteByIds(PlatformTitleInstance, resourcesToDelete.pti)
       log.debug("Deleted {} PTIs", ptiDeletedCount)
     }
@@ -320,6 +349,7 @@ public class ErmResourceService {
     int tiDeletedCount = 0
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
       log.debug("Deleting TIs: {}", resourcesToDelete.ti)
+      deleteCoverageStatement(resourcesToDelete.ti)
       tiDeletedCount = deleteByIds(TitleInstance, resourcesToDelete.ti)
       log.debug("Deleted {} TIs", tiDeletedCount)
     }
@@ -332,6 +362,8 @@ public class ErmResourceService {
       log.debug("Deleted {} Works", workDeletedCount)
     }
     deletionCounts.workDeleted = workDeletedCount
+
+
 
     log.info("Deletion complete. Counts: {}", deletionCounts)
     response.statistics = deletionCounts
