@@ -136,7 +136,10 @@ public class ErmResourceService {
   private MarkForDeleteResponse markForDeleteInternal(Set<String> pciIds, Set<String> ptiIds, Set<String> tiIds) {
     MarkForDeleteResponse markForDeletion = new MarkForDeleteResponse()
 
-    // FIXME Check that ids actually exist and log/ignore any that don't
+    // Check that ids actually exist and log/ignore any that don't
+    pciIds = pciIds.findAll{String id -> {checkResourceExists(id, "PackageContentItem")}}
+    ptiIds.findAll{String id -> {checkResourceExists(id, "PlatformTitleInstance")}}
+    tiIds.findAll{String id -> {checkResourceExists(id, "TitleInstance")}}
 
     // PCI Level checking -- only need to test whether it has any AgreementLines
     pciIds.forEach{String id -> {
