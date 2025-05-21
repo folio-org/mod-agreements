@@ -263,14 +263,16 @@ public class ErmResourceService {
     return markForDeletion
   }
 
-  private int deleteByIds(Class domainClass, Collection<String> ids) {
+  private Set<String> deleteByIds(Class domainClass, Set<String> ids) {
     if (ids == null || ids.isEmpty()) {
-      return 0
+      return new HashSet<String>();
     }
 
     // TODO: Or should we be using .delete()?
     String hql = "DELETE FROM ${domainClass.simpleName} WHERE id IN (:idsToDelete)"
-    return ErmResource.executeUpdate(hql, [idsToDelete: new ArrayList<>(ids)])
+    ErmResource.executeUpdate(hql, [idsToDelete: new ArrayList<>(ids)])
+
+    return ids // on Success return Ids
   }
 
   public DeleteResponse deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
@@ -297,6 +299,7 @@ public class ErmResourceService {
   @Transactional
   private DeleteResponse deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
     DeleteResponse response = new DeleteResponse()
+    MarkForDeleteResponse deletedIds = new MarkForDeleteResponse(); // Track deleted Ids
 
     if (resourcesToDelete == null) {
       log.warn("deleteResources called with null MarkForDeleteResponse")
@@ -308,7 +311,7 @@ public class ErmResourceService {
     log.info("Attempting to delete resources: {}", resourcesToDelete)
     DeletionCounts deletionCounts = new DeletionCounts();
 
-    int pciDeletedCount = 0
+    Set<String> deletedPcis = new HashSet<String>();
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
       log.debug("Deleting PCIs: {}", resourcesToDelete.pci)
       List<String> embargosForPcis = Embargo.executeQuery("""
@@ -317,56 +320,60 @@ public class ErmResourceService {
       """, [resourceIds: resourcesToDelete.pci])
 
       deleteCoverageStatement(resourcesToDelete.pci)
-      pciDeletedCount = deleteByIds(PackageContentItem, resourcesToDelete.pci)
+      deletedPcis = deleteByIds(PackageContentItem, resourcesToDelete.pci)
       if (!embargosForPcis.isEmpty()) {
         deleteEmbargos(embargosForPcis)
       }
-      log.debug("Deleted {} PCIs", pciDeletedCount)
+      log.debug("Deleted {} PCIs", deletedPcis)
     }
-    deletionCounts.pciDeleted = pciDeletedCount
+    deletionCounts.pciDeleted = deletedPcis.size()
+    deletedIds.pci = deletedPcis
 
-    int ptiDeletedCount = 0
+    Set<String> deletedPtis = new HashSet<String>();
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
       log.debug("Deleting PTIs: {}", resourcesToDelete.pti)
       deleteCoverageStatement(resourcesToDelete.pti)
-      ptiDeletedCount = deleteByIds(PlatformTitleInstance, resourcesToDelete.pti)
-      log.debug("Deleted {} PTIs", ptiDeletedCount)
+      deletedPtis = deleteByIds(PlatformTitleInstance, resourcesToDelete.pti)
+      log.debug("Deleted {} PTIs", deletedPtis)
     }
-    deletionCounts.ptiDeleted = ptiDeletedCount
+    deletionCounts.ptiDeleted = deletedPtis.size()
+    deletedIds.pti = deletedPtis
 
     List<String> tiAndWorkIds = new ArrayList<>()
     tiAndWorkIds.addAll(resourcesToDelete.ti)
     tiAndWorkIds.addAll(resourcesToDelete.work)
 
     // DELETE THE IdentifierOccurrences
-    List<String> ioIdsToDelete = IdentifierOccurrence.executeQuery("""
+    Set<String> ioIdsToDelete = IdentifierOccurrence.executeQuery("""
       SELECT io.id FROM IdentifierOccurrence io
       WHERE io.resource.id IN (:ermTitleListIds)
-    """, [ermTitleListIds: tiAndWorkIds])
+    """, [ermTitleListIds: tiAndWorkIds]) as Set
 
     deleteByIds(IdentifierOccurrence, ioIdsToDelete);
 
-    int tiDeletedCount = 0
+    Set<String> deletedTis = new HashSet<String>();
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
       log.debug("Deleting TIs: {}", resourcesToDelete.ti)
       deleteCoverageStatement(resourcesToDelete.ti)
-      tiDeletedCount = deleteByIds(TitleInstance, resourcesToDelete.ti)
-      log.debug("Deleted {} TIs", tiDeletedCount)
+      deletedTis = deleteByIds(TitleInstance, resourcesToDelete.ti)
+      log.debug("Deleted {} TIs", deletedTis)
     }
-    deletionCounts.tiDeleted = tiDeletedCount
+    deletionCounts.tiDeleted = deletedTis.size()
+    deletedIds.ti = deletedTis as Set;
 
-    int workDeletedCount = 0
+
+    Set<String> deletedWorks = new HashSet<String>();
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
       log.debug("Deleting Works: {}", resourcesToDelete.work)
-      workDeletedCount = deleteByIds(Work, resourcesToDelete.work)
-      log.debug("Deleted {} Works", workDeletedCount)
+      deletedWorks = deleteByIds(Work, resourcesToDelete.work)
+      log.debug("Deleted {} Works", deletedWorks)
     }
-    deletionCounts.workDeleted = workDeletedCount
-
-
+    deletionCounts.workDeleted = deletedWorks.size();
+    deletedIds.work = deletedWorks as Set
 
     log.info("Deletion complete. Counts: {}", deletionCounts)
     response.statistics = deletionCounts
+    response.deletedIds = deletedIds
     return response;
   }
 }

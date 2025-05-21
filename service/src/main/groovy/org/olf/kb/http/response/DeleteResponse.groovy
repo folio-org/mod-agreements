@@ -3,6 +3,7 @@ package org.olf.kb.http.response
 class DeleteResponse {
 
   DeletionCounts statistics;
+  MarkForDeleteResponse deletedIds;
 
   DeleteResponse() {
   }
@@ -11,9 +12,15 @@ class DeleteResponse {
     this.statistics = statistics
   }
 
+  DeleteResponse(DeletionCounts statistics, MarkForDeleteResponse deletedIds) {
+    this.statistics = statistics
+    this.deletedIds = deletedIds
+  }
+
   @Override
   public String toString() {
     return "DeleteResponse{" +
+      "deletedIds=" + deletedIds +
       "statistics=" + statistics +
       '}';
   }
