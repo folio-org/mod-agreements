@@ -265,7 +265,7 @@ public class ErmResourceService {
   }
 
   // FIXME can we have a DeleteResponse similar to the MarkForDeleteResponse please? :)
-  public Map<String, Map<String, Integer>> deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
+  public DeleteResponse deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
     MarkForDeleteResponse forDeletion = markForDelete(idInputs, resourceClass);
     log.info("Marked resources for delete: {}, continuing to delete", forDeletion)
 
