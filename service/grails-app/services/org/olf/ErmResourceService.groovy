@@ -137,8 +137,8 @@ public class ErmResourceService {
 
     // Check that ids actually exist and log/ignore any that don't
     pciIds = pciIds.findAll{String id -> {checkResourceExists(id, "PackageContentItem")}}
-    ptiIds.findAll{String id -> {checkResourceExists(id, "PlatformTitleInstance")}}
-    tiIds.findAll{String id -> {checkResourceExists(id, "TitleInstance")}}
+    ptiIds = ptiIds.findAll{String id -> {checkResourceExists(id, "PlatformTitleInstance")}}
+    tiIds = tiIds.findAll{String id -> {checkResourceExists(id, "TitleInstance")}}
 
     if (pciIds.isEmpty() && ptiIds.isEmpty() && tiIds.isEmpty()) {
       log.warn("No ids found after filtering for existing ids.")
