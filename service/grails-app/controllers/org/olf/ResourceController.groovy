@@ -1,10 +1,7 @@
 package org.olf
 
-import grails.converters.JSON
-import grails.validation.Validateable
-import org.hibernate.Hibernate
-import org.hibernate.sql.JoinType
 
+import org.hibernate.Hibernate
 import org.olf.erm.Entitlement
 import org.olf.kb.ErmResource
 import org.olf.kb.PackageContentItem
@@ -14,13 +11,10 @@ import org.olf.kb.TitleInstance
 
 import com.k_int.okapi.OkapiTenantAwareController
 import grails.gorm.DetachedCriteria
-import org.hibernate.criterion.CriteriaSpecification
-import org.hibernate.criterion.Projections
 import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
 import org.olf.kb.http.request.body.DeleteBody
-import org.olf.kb.http.request.body.MarkForDeleteResponse
 import org.springframework.http.HttpStatus
 
 import java.time.Duration

@@ -1,4 +1,4 @@
-package org.olf.kb.http.request.body
+package org.olf.kb.http.response
 
 class MarkForDeleteResponse {
   Set<String> pci;

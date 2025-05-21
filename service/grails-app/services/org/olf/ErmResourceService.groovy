@@ -3,13 +3,11 @@ package org.olf
 import org.olf.erm.Entitlement
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Work
-import org.olf.kb.http.request.body.MarkForDeleteResponse
-
-import java.util.stream.Collectors
+import org.olf.kb.http.response.DeleteResponse
+import org.olf.kb.http.response.DeletionCounts
+import org.olf.kb.http.response.MarkForDeleteResponse
 
 import static org.springframework.transaction.annotation.Propagation.MANDATORY
-
-import org.olf.dataimport.internal.PackageSchema.ContentItemSchema
 
 import org.olf.kb.ErmResource
 import org.olf.kb.TitleInstance
@@ -275,14 +273,18 @@ public class ErmResourceService {
   }
 
   @Transactional
-  private Map<String, Map<String, Integer>> deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
+  private DeleteResponse deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
+    DeleteResponse response = new DeleteResponse()
+
     if (resourcesToDelete == null) {
       log.warn("deleteResources called with null MarkForDeleteResponse")
-      return [statistics: [pciDeleted: 0, ptiDeleted: 0, tiDeleted: 0, workDeleted: 0]] as Map<String, Map<String, Integer>>
+      DeletionCounts emptyCount = new DeletionCounts(0, 0, 0, 0);
+      response.statistics = emptyCount;
+      return response;
     }
 
     log.info("Attempting to delete resources: {}", resourcesToDelete)
-    Map<String, Integer> deletionCounts = [:]
+    DeletionCounts deletionCounts = new DeletionCounts();
 
     int pciDeletedCount = 0
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
@@ -329,7 +331,8 @@ public class ErmResourceService {
     deletionCounts.workDeleted = workDeletedCount
 
     log.info("Deletion complete. Counts: {}", deletionCounts)
-    return [statistics: deletionCounts ] as Map<String, Map<String, Integer>>
+    response.statistics = deletionCounts
+    return response;
   }
 }
 
