@@ -40,7 +40,13 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
   @Shared List<Map> allVerificationTestCases = []
 
   def setupSpec() {
-    log.info("--- CombinationDeletionSpec: setupSpec ---")
+    /*
+      The setup spec constructs the list of test scenarios programatically. This involves iterating through
+      'structures', 'input resources' and 'agreement lines', and also a 'doDelete' step. Structures, input resources
+      and agreement lines form the "key" which uniquely defines each test scenario, and is used to access expected values
+      from the JSON files.
+     */
+    log.info("--- ResourceDeletionSpec: setupSpec ---")
     File scenariosFile = new File(EXPECTED_SCENARIOS_JSON_PATH)
     File kbStatsFile = new File(EXPECTED_KBSTATS_JSON_PATH)
 
@@ -62,6 +68,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
         return // continue to next structure
       }
 
+      // For each structure, iterate through all possible combinations of input resources and attached agreements.
       currentInputCombos.each { inputResourceCombo ->
         currentAgreementCombos.each { agreementLineCombo ->
           [false, true].each { doDeleteFlag -> // Iterate over the boolean flags for actual deletion
@@ -106,7 +113,6 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
 //  @Ignore
   void "For #testCase.structure: marking #testCase.resourceTypeToMark (#testCase.currentInputResources) with agreements (#testCase.currentAgreementLines) and delete=#testCase.doDelete"() {
     setup:
-      log.info("In combinatorial test---")
       clearResources()
       setupDataForTest(testCase.structure)
 
@@ -184,6 +190,10 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
   // Assertion methods:
 
   Map calculateExpectedKbStatsAfterDelete(Map initialStats, Map itemsExpectedToBeDeleted) {
+    /*
+      Using the initial number of resources present and the expected resources to delete,
+      calculate the expected KB stats we should see after deletion.
+    */
     Map expectedStats = new HashMap<>(initialStats)
     if (itemsExpectedToBeDeleted && !itemsExpectedToBeDeleted.error) {
       expectedStats.PackageContentItem    -= (itemsExpectedToBeDeleted.pci?.size()  ?: 0)
