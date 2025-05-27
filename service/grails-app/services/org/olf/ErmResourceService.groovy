@@ -330,11 +330,6 @@ public class ErmResourceService {
     deletionCounts.pciDeleted = deletedPcis.size()
     deletedIds.pci = deletedPcis
 
-    // Get specifically the platforms referenced by ptis to be deleted to remove later.
-    Set<String> platformsReferencedByPtis = Platform.executeQuery("""
-      SELECT pti.platform.id FROM PlatformTitleInstance pti
-      WHERE pti.id IN :ptisToBeDeleted
-    """, [ptisToBeDeleted: resourcesToDelete.pti]) as Set
 
     Set<String> deletedPtis = new HashSet<String>();
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
@@ -377,37 +372,6 @@ public class ErmResourceService {
     }
     deletionCounts.workDeleted = deletedWorks.size();
     deletedIds.work = deletedWorks as Set
-
-    // Delete any orphaned platforms post-pti deletion
-    log.debug("Platforms found referenced by PTIs {}.", platformsReferencedByPtis)
-
-    // For each platform, check if it is referenced by any existing PTIs
-    platformsReferencedByPtis.forEach{String id -> {
-      Set<String> otherPtisReferencingPlatforms = PlatformTitleInstance.executeQuery("""
-      SELECT pti.id FROM PlatformTitleInstance pti
-      WHERE pti.platform.id = :platformId
-    """, [platformId: id], [max: 1]) as Set
-      log.info("otherPtisReferencingPlatforms {}.", otherPtisReferencingPlatforms)
-
-      if (otherPtisReferencingPlatforms.size() == 0) {
-        // If no other PTIs reference the platform, delete platform locators, then delete safely
-        List<PlatformLocator> platformLocatorsForPlatform = PlatformLocator.executeQuery("""
-          SELECT platform.locators FROM Platform platform
-          WHERE platform.id = :platformId
-        """, [platformId: id], [max: 1])
-
-        platformLocatorsForPlatform.forEach{PlatformLocator platformLocator -> {
-          log.info("Deleting PlatformLocator {} during ErmResourceService::deleteResourceInternal.", platformLocator.id)
-          PlatformLocator.executeUpdate("""
-          DELETE FROM PlatformLocator plat
-          WHERE plat.id = :id
-        """, [id: platformLocator.id])
-        }}
-
-        log.info("Deleting platform {} during ErmResourceService::deleteResourceInternal.", id)
-        deleteByIds(Platform, [id] as Set)
-      }
-    }}
 
     log.info("Deletion complete. Counts: {}", deletionCounts)
     response.statistics = deletionCounts
