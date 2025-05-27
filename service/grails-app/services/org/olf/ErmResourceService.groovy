@@ -329,14 +329,6 @@ public class ErmResourceService {
     tiAndWorkIds.addAll(resourcesToDelete.ti)
     tiAndWorkIds.addAll(resourcesToDelete.work)
 
-//    // DELETE THE IdentifierOccurrences
-//    Set<String> ioIdsToDelete = IdentifierOccurrence.executeQuery("""
-//      SELECT io.id FROM IdentifierOccurrence io
-//      WHERE io.resource.id IN (:ermTitleListIds)
-//    """, [ermTitleListIds: tiAndWorkIds]) as Set
-//
-//    deleteByIds(IdentifierOccurrence, ioIdsToDelete);
-
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
       log.debug("Deleting TIs: {}", resourcesToDelete.ti)
       deleteByIds(TitleInstance, resourcesToDelete.ti)
