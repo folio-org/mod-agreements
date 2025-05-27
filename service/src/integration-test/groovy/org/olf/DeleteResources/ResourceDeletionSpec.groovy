@@ -23,10 +23,10 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
 
   @Shared
   Map<String, List<List<String>>> inputResourceCombinationsByStructure = [
-    "simple":    [["PCI1"], ["PTI1"]],
-    "top-link": [["PCI1"], ["PTI1"], ["PCI1", "PCI2"]],
-    "ti-link":   [["PCI1"], ["PTI1"], ["PCI1", "PCI2"], ["PTI1", "PTI2"]],
-    "work-link": [["PCI1"], ["PTI1"], ["PCI1", "PCI2"], ["PTI1", "PTI2"]],
+    "simple":    [["PCI1"], ["PTI1"], ["TI1"]],
+    "top-link": [["PCI1"], ["PTI1"], ["PCI1", "PCI2"], ["TI1"]],
+    "ti-link":   [["PCI1"], ["PTI1"], ["PCI1", "PCI2"], ["PTI1", "PTI2"], ["TI1"]],
+    "work-link": [["PCI1"], ["PTI1"], ["PCI1", "PCI2"], ["PTI1", "PTI2"], ["TI1"], ["TI1", "TI2"]],
   ]
 
   @Shared
@@ -62,7 +62,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
     loadedScenarios.each { structure, structureData ->
       List<List<String>> currentInputCombos = inputResourceCombinationsByStructure[structure]
       List<List<String>> currentAgreementCombos = agreementLineCombinationsByStructure[structure]
-
+      log.info("currentInputCombos {}", currentInputCombos)
       if (!currentInputCombos || !currentAgreementCombos) {
         log.warn("Missing combination definitions for structure: ${structure} in setupSpec. Skipping.")
         return // continue to next structure
@@ -72,6 +72,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
       currentInputCombos.each { inputResourceCombo ->
         currentAgreementCombos.each { agreementLineCombo ->
           [false, true].each { doDeleteFlag -> // Iterate over the boolean flags for actual deletion
+            log.info("InputResourceCombo {}", inputResourceCombo)
 
             // Create keys for accessing the expected values for each test case.
             String inputKey = inputResourceCombo.isEmpty() ? EMPTY_IDENTIFIER : inputResourceCombo.sort(false).join(",")
@@ -81,6 +82,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
             Map expectedValue = structureData.inputResource?.get(inputKey)?.agreementLine?.get(agreementKey)?.expectedValue
             if (expectedValue == null) {
               log.warn("Missing expected value in JSON for structure '${structure}', input '${inputKey}', agreement '${agreementKey}'. Skipping test case.")
+              throw new Exception("Missing expected value in JSON for structure '${structure}', input '${inputKey}', agreement '${agreementKey}'.")
             } else {
               // Determine resourceType from the first element of inputResourceCombo if not empty
               String resourceTypeToMark = ""
