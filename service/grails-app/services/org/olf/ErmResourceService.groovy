@@ -296,14 +296,6 @@ public class ErmResourceService {
     return deleteResourcesInternal(forDeletion);
   }
 
-  private void deleteCoverageStatement(Set<String> resourceIds) {
-    log.debug("Deleting Coverage Statements for Resources: {}", resourceIds)
-    CoverageStatement.executeUpdate("""
-      DELETE FROM CoverageStatement cov
-      WHERE cov.resource.id IN (:resourceIds)
-    """, [resourceIds: resourceIds])
-  }
-
   @Transactional
   private DeleteResponse deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
     DeleteResponse response = new DeleteResponse()
@@ -321,7 +313,6 @@ public class ErmResourceService {
 
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
       log.debug("Deleting PCIs: {}", resourcesToDelete.pci)
-      deleteCoverageStatement(resourcesToDelete.pci)
       deleteByIds(PackageContentItem, resourcesToDelete.pci)
     }
     deletionCounts.pciDeleted = resourcesToDelete.pci.size()
@@ -329,7 +320,6 @@ public class ErmResourceService {
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
       log.debug("Deleting PTIs: {}", resourcesToDelete.pti)
-      deleteCoverageStatement(resourcesToDelete.pti)
       deleteByIds(PlatformTitleInstance, resourcesToDelete.pti)
     }
     deletionCounts.ptiDeleted = resourcesToDelete.pti.size()
@@ -349,7 +339,6 @@ public class ErmResourceService {
 
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
       log.debug("Deleting TIs: {}", resourcesToDelete.ti)
-      deleteCoverageStatement(resourcesToDelete.ti)
       deleteByIds(TitleInstance, resourcesToDelete.ti)
     }
     deletionCounts.tiDeleted =  resourcesToDelete.ti.size()
