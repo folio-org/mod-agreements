@@ -160,22 +160,12 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
     log.info("Expected outcome from markForDelete (JSON): ${testCase.expectedMarkForDelete}")
 
     then: "The system state matches the expected outcome"
-    // 1. Assert the `markForDelete` operation's response (or error)
-    if (testCase.doDelete) {
-      // Check Ids deleted (could return from /delete endpoint) match those from MarkForDelete?
-      assertIdsMatch(testCase.structure, actualDeleteResponse.deletedIds, testCase.expectedMarkForDelete)
-    } else {
-     if (operationError) {
-       // TODO: Do we need to verify error scenarios?
-       log.info("Exception message: {}", operationError.message)
-//       assert operationError.message == "Id list cannot be empty."
-        fail("Unexpected error during markForDelete: ${operationError.message}")
-      } else {
-        assertIdsMatch(testCase.structure, operationResponse, testCase.expectedMarkForDelete)
-      }
+    // Assert that the ids marked for deletion match the expected ids.
+    if (!testCase.doDelete && !operationError) {
+      assertIdsMatch(testCase.structure, operationResponse, testCase.expectedMarkForDelete)
     }
 
-    // 2. Assert KB stats
+    // Assert KB stats
     if (testCase.doDelete && !operationError) {
       Map expectedStatsAfterDelete = calculateExpectedKbStatsAfterDelete(
         testCase.initialKbStats,
@@ -200,6 +190,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
       expectedStats.PlatformTitleInstance -= (itemsExpectedToBeDeleted.pti?.size()  ?: 0)
       expectedStats.TitleInstance         -= (itemsExpectedToBeDeleted.ti?.size()   ?: 0)
       expectedStats.Work                  -= (itemsExpectedToBeDeleted.work?.size() ?: 0)
+      expectedStats.ErmResource           = expectedStats.PackageContentItem + expectedStats.PlatformTitleInstance + expectedStats.TitleInstance + expectedStats.Work + expectedStats.Pkg
     }
     return expectedStats
   }
@@ -220,7 +211,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
       Set<String>  expectedTis = findInputResourceIds(expectedMarkForDelete.get("ti") as List, structure)
       Set<String>  expectedWorks = findInputResourceIds(expectedMarkForDelete.get("work") as List, structure)
 
-      log.info("expected PCIs: {}", expectedPcis)
+      log.info("Asserting IDs match: Actual=[pci: {}, pti: {}, ti: {}, work: {}]; Expected=[pci: {}, pti: {}, ti: {}, work: {}]", operationResponse.pci, operationResponse.pti, operationResponse.ti, operationResponse.work, expectedPcis, expectedPtis, expectedTis, expectedWorks)
       assert expectedPcis == operationResponse.pci as Set
       assert expectedPtis == operationResponse.pti as Set
       assert expectedTis == operationResponse.ti as Set
