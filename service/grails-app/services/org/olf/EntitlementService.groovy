@@ -48,8 +48,9 @@ public class EntitlementService {
     // When ErmResource has changed, update contentUpdated for all entitlements for that resource
 //    Entitlement.withNewTransaction {
     resourcesToQuery.each {String resId ->
+      List<Entitlement> entitlementList = Entitlement.executeQuery(ENT_HQL, [resId: resId]);
       entitlements.addAll(
-        Entitlement.executeQuery(ENT_HQL, [resId: resId])
+        entitlementList
       )
     }
 

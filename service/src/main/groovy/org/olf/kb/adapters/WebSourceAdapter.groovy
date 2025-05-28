@@ -5,7 +5,7 @@ import groovy.transform.CompileStatic
 import groovyx.net.http.HttpBuilder
 import groovyx.net.http.HttpConfig
 import groovyx.net.http.HttpObjectConfig
-
+import java.net.HttpURLConnection
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -33,9 +33,10 @@ public abstract class WebSourceAdapter {
             new SynchronousQueue<Runnable>() // Use a synchronous queue
           )
           
-          client.clientCustomizer { HttpURLConnection conn ->
-            conn.connectTimeout = 5000    // 5 Seconds
-            conn.readTimeout    = 900000  // 15 Mins
+          client.clientCustomizer { java.net.HttpURLConnection conn ->
+            HttpURLConnection typedConn = (HttpURLConnection) conn
+            typedConn.connectTimeout = 5000    // 5 Seconds
+            typedConn.readTimeout    = 900000  // 15 Mins
           }
         }
       }

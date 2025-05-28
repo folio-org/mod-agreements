@@ -9,7 +9,7 @@ import org.olf.kb.TitleInstance
 import org.olf.kb.Platform
 import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 
-final Object[] tuple = binding.variables.values()[0]
+final Object[] tuple = (Object[]) binding.variables.values()[0]
 boolean via_package = false
 final ErmResource resource = GrailsHibernateUtil.unwrapIfProxy(tuple[0]) as ErmResource
 Entitlement ent
@@ -62,7 +62,7 @@ rti = ti.relatedTitles
 Map customCoverageMap = request?.getAttribute("${controllerName}.${actionName}.customCoverage") as Map 
 
 // Check for custom coverage on this resource.
-List customCoverageList = customCoverageMap?.get("${resource.id}") 
+List customCoverageList = (List) customCoverageMap?.get("${resource.id}")
 
 json {
 

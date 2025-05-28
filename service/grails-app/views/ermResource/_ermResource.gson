@@ -12,7 +12,7 @@ ermResource = GrailsHibernateUtil.unwrapIfProxy(ermResource) as ErmResource
 Map customCoverageMap = request?.getAttribute("${controllerName}.${actionName}.customCoverage") as Map
 
 // Check for custom coverage on this resource.
-List customCoverageList = customCoverageMap?.get("${ermResource.id}")
+List customCoverageList = (List) customCoverageMap?.get("${ermResource.id}")
 
 def minimalView = params.minimalView ?: false
 if (minimalView && ermResource.class.name == 'org.olf.kb.PackageContentItem') {
