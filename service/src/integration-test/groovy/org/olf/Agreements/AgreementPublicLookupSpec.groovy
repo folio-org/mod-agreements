@@ -9,7 +9,6 @@ import spock.lang.Shared
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.olf.erm.SubscriptionAgreement
-import org.olf.erm.Entitlement
 
 @Integration
 @Slf4j
@@ -65,7 +64,7 @@ class AgreementPublicLookupSpec extends BaseSpec {
   }
 
   @Ignore
-  Map updateEntitlementForAgreement(String agreementName, String resourceId) {
+  String getAgreementIdByName(String agreementName) {
     String agreement_id;
     withTenant {
       String hql = """
@@ -76,21 +75,7 @@ class AgreementPublicLookupSpec extends BaseSpec {
       List results = SubscriptionAgreement.executeQuery(hql, [agreementName: agreementName])
       agreement_id = results.get(0)
     }
-
-    def today = LocalDate.now()
-    def dateInPast = today.minusDays(10)
-
-
-    return doPut("/erm/sas/${agreement_id}", {
-      items ([
-        {
-          resource {
-            id resourceId
-          }
-        }
-      ])
-      activeTo: dateInPast.toString()
-    }) as Map
+    return agreement_id
   }
 
   Pkg findPkgByPackageName(String packageName) {
@@ -125,6 +110,18 @@ class AgreementPublicLookupSpec extends BaseSpec {
     }
   }
 
+  @Ignore
+  void assertAgreements(String resourceId, Set<String> expectedAgreements) {
+    Collection<Object> records = doGet("/erm/sas/publicLookup?resourceId=${resourceId}").get("records")
+    Set<String> observedAgreements = new HashSet<String>();
+    for (Object record:records) {
+      observedAgreements.add(record.name.toString())
+    }
+
+    assert records.size() == expectedAgreements.size();
+    assert observedAgreements == expectedAgreements;
+  }
+
   @Shared
   String pci1Id;
 
@@ -145,6 +142,9 @@ class AgreementPublicLookupSpec extends BaseSpec {
 
   @Shared
   PackageContentItem test_package_1_pci;
+
+  @Shared
+  Pkg test_package_1;
 
   void "Load Packages"() {
 
@@ -176,7 +176,7 @@ class AgreementPublicLookupSpec extends BaseSpec {
   void "Create Agreements and lines"() {
 
     when:
-    Pkg test_package_1 = findPkgByPackageName("test_package_1")
+    test_package_1 = findPkgByPackageName("test_package_1")
     createAgreement("Agreement A")
     addEntitlementForAgreement("Agreement A", test_package_1.id)
 
@@ -209,34 +209,23 @@ class AgreementPublicLookupSpec extends BaseSpec {
     ti2Id = test_package_2_pci.pti.titleInstance.id
 
     then:
-    Map res = doGet("/erm/sas")[0]
-    Map resEnt = doGet("/erm/entitlements")[0]
-    log.info("Logging")
-    log.info(res.toString())
-    log.info(resEnt.toString())
+    log.debug("PCI ID: {}", pci1Id)
+    Set pciExpected = ["Agreement A", "Agreement B"] as Set
+    assertAgreements(pci1Id, pciExpected)
 
-    log.info("PCI ID: {}", pci1Id)
-    doGet("/erm/sas/publicLookup?resourceId=${pci1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
+    log.debug("PTI ID: {}", pti1Id)
+    Set ptiExpected = ["Agreement A", "Agreement B", "Agreement D", "Agreement F"] as Set
+    assertAgreements(pti1Id, ptiExpected)
 
-    log.info("PTI ID: {}", pti1Id)
-    doGet("/erm/sas/publicLookup?resourceId=${pti1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
-
-    log.info("TI ID: {}", ti1Id)
-    doGet("/erm/sas/publicLookup?resourceId=${ti1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
-
-    log.info("PCI ID: {}", pci2Id)
-    doGet("/erm/sas/publicLookup?resourceId=${pci2Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
-
-    log.info("PTI ID: {}", pti2Id)
-    doGet("/erm/sas/publicLookup?resourceId=${pti2Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
-
-    log.info("TI ID: {}", ti2Id)
-    doGet("/erm/sas/publicLookup?resourceId=${ti2Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
-
-
+    log.debug("TI ID: {}", ti1Id)
+    Set tiExpected = ["Agreement A", "Agreement B", "Agreement D", "Agreement F"] as Set
+    assertAgreements(ti1Id, tiExpected)
   }
 
-  void "Agreement B active to date in the past"() {
+  void "Agreement B activeTo date in the past"() {
+
+    when:
+    String agreement_id = getAgreementIdByName("Agreement B")
     Map httpResult = doGet("/erm/sas/${agreement_id}", [expand: 'items'])
     def index = httpResult.items.findIndexOf{ it.resource?.id == test_package_1_pci.id }
     httpResult.items[index].activeFrom = "${thisYear - 2}-01-01"
@@ -244,20 +233,103 @@ class AgreementPublicLookupSpec extends BaseSpec {
     httpResult = doPut("/erm/sas/${agreement_id}", httpResult, [expand: 'items'])
 
     then:
-    List res = doGet("/erm/sas")
-    List resEnt = doGet("/erm/entitlements")
-    log.info("Logging")
-    log.info(res.toListString())
-    log.info(resEnt.toListString())
+    log.debug("PCI ID: {}", pci1Id)
+    Set pciExpected = ["Agreement A"] as Set
+    assertAgreements(pci1Id, pciExpected)
 
-    log.info("PCI ID: {}", pci1Id)
-    doGet("/erm/sas/publicLookup?resourceId=${pci1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
+    log.debug("PTI ID: {}", pti1Id)
+    Set ptiExpected = ["Agreement A", "Agreement D", "Agreement F"] as Set
+    assertAgreements(pti1Id, ptiExpected)
 
-    log.info("PTI ID: {}", pti1Id)
-    doGet("/erm/sas/publicLookup?resourceId=${pti1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
+    log.debug("TI ID: {}", ti1Id)
+    Set tiExpected = ["Agreement A", "Agreement D", "Agreement F"] as Set
+    assertAgreements(ti1Id, tiExpected)
 
-    log.info("TI ID: {}", ti1Id)
-    doGet("/erm/sas/publicLookup?resourceId=${ti1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
+  }
+
+  void "Agreement B activeFrom date in the future and no activeTo date"() {
+    when:
+    String agreement_id = getAgreementIdByName("Agreement B")
+    Map httpResult = doGet("/erm/sas/${agreement_id}", [expand: 'items'])
+    def index = httpResult.items.findIndexOf{ it.resource?.id == test_package_1_pci.id }
+    httpResult.items[index].activeFrom = "${thisYear + 1}-01-01"
+    httpResult.items[index].activeTo = ""
+    httpResult = doPut("/erm/sas/${agreement_id}", httpResult, [expand: 'items'])
+
+    then:
+    log.debug("PCI ID: {}", pci1Id)
+    Set pciExpected = ["Agreement A"] as Set
+    assertAgreements(pci1Id, pciExpected)
+
+    log.debug("PTI ID: {}", pti1Id)
+    Set ptiExpected = ["Agreement A", "Agreement D", "Agreement F"] as Set
+    assertAgreements(pti1Id, ptiExpected)
+
+    log.debug("TI ID: {}", ti1Id)
+    Set tiExpected = ["Agreement A", "Agreement D", "Agreement F"] as Set
+    assertAgreements(ti1Id, tiExpected)
+
+  }
+
+  void "Agreement B no active to/active from dates, Agreement A has activeTo date in the past"() {
+    when:
+    String agreementBId = getAgreementIdByName("Agreement B")
+    String agreementAId = getAgreementIdByName("Agreement A")
+    Map httpResultAgreementB = doGet("/erm/sas/${agreementBId}", [expand: 'items'])
+    Map httpResultAgreementA = doGet("/erm/sas/${agreementAId}", [expand: 'items'])
+
+    def indexB = httpResultAgreementB.items.findIndexOf{ it.resource?.id == test_package_1_pci.id }
+    httpResultAgreementB.items[indexB].activeFrom = ""
+    httpResultAgreementB.items[indexB].activeTo = ""
+    httpResultAgreementB = doPut("/erm/sas/${agreementBId}", httpResultAgreementB, [expand: 'items'])
+
+    def indexA = httpResultAgreementA.items.findIndexOf{ it.resource?.id == test_package_1.id }
+    httpResultAgreementA.items[indexA].activeTo = "${thisYear -1}-12-31"
+    httpResultAgreementA = doPut("/erm/sas/${agreementAId}", httpResultAgreementA, [expand: 'items'])
+
+    then:
+    log.debug("PCI ID: {}", pci1Id)
+    Set pciExpected = ["Agreement B"] as Set
+    assertAgreements(pci1Id, pciExpected)
+
+    log.debug("PTI ID: {}", pti1Id)
+    Set ptiExpected = ["Agreement B", "Agreement D", "Agreement F"] as Set
+    assertAgreements(pti1Id, ptiExpected)
+
+    log.debug("TI ID: {}", ti1Id)
+    Set tiExpected = ["Agreement B", "Agreement D", "Agreement F"] as Set
+    assertAgreements(ti1Id, tiExpected)
+  }
+
+  void "Agreement A has activeFrom date in future and no activeTo date."() {
+    when:
+    String agreementBId = getAgreementIdByName("Agreement B")
+    String agreementAId = getAgreementIdByName("Agreement A")
+    Map httpResultAgreementB = doGet("/erm/sas/${agreementBId}", [expand: 'items'])
+    Map httpResultAgreementA = doGet("/erm/sas/${agreementAId}", [expand: 'items'])
+
+    def indexB = httpResultAgreementB.items.findIndexOf{ it.resource?.id == test_package_1_pci.id }
+    httpResultAgreementB.items[indexB].activeFrom = ""
+    httpResultAgreementB.items[indexB].activeTo = ""
+    httpResultAgreementB = doPut("/erm/sas/${agreementBId}", httpResultAgreementB, [expand: 'items'])
+
+    def indexA = httpResultAgreementA.items.findIndexOf{ it.resource?.id == test_package_1.id }
+    httpResultAgreementA.items[indexA].activeTo = ""
+    httpResultAgreementA.items[indexA].activeFrom = "${thisYear + 1}-12-31"
+    httpResultAgreementA = doPut("/erm/sas/${agreementAId}", httpResultAgreementA, [expand: 'items'])
+
+    then:
+    log.debug("PCI ID: {}", pci1Id)
+    Set pciExpected = ["Agreement B"] as Set
+    assertAgreements(pci1Id, pciExpected)
+
+    log.debug("PTI ID: {}", pti1Id)
+    Set ptiExpected = ["Agreement B", "Agreement D", "Agreement F"] as Set
+    assertAgreements(pti1Id, ptiExpected)
+
+    log.debug("TI ID: {}", ti1Id)
+    Set tiExpected = ["Agreement B", "Agreement D", "Agreement F"] as Set
+    assertAgreements(ti1Id, tiExpected)
 
   }
 }
