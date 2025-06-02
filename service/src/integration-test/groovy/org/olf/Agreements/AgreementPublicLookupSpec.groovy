@@ -64,6 +64,35 @@ class AgreementPublicLookupSpec extends BaseSpec {
     }) as Map
   }
 
+  @Ignore
+  Map updateEntitlementForAgreement(String agreementName, String resourceId) {
+    String agreement_id;
+    withTenant {
+      String hql = """
+            SELECT agreement.id 
+            FROM SubscriptionAgreement agreement 
+            WHERE agreement.name = :agreementName 
+        """
+      List results = SubscriptionAgreement.executeQuery(hql, [agreementName: agreementName])
+      agreement_id = results.get(0)
+    }
+
+    def today = LocalDate.now()
+    def dateInPast = today.minusDays(10)
+
+
+    return doPut("/erm/sas/${agreement_id}", {
+      items ([
+        {
+          resource {
+            id resourceId
+          }
+        }
+      ])
+      activeTo: dateInPast.toString()
+    }) as Map
+  }
+
   Pkg findPkgByPackageName(String packageName) {
     log.info("Package name: " + packageName)
     withTenant {
@@ -97,13 +126,25 @@ class AgreementPublicLookupSpec extends BaseSpec {
   }
 
   @Shared
-  String pciId;
+  String pci1Id;
 
   @Shared
-  String ptiId;
+  String pti1Id;
 
   @Shared
-  String tiId;
+  String ti1Id;
+
+  @Shared
+  String pci2Id;
+
+  @Shared
+  String pti2Id;
+
+  @Shared
+  String ti2Id;
+
+  @Shared
+  PackageContentItem test_package_1_pci;
 
   void "Load Packages"() {
 
@@ -139,7 +180,7 @@ class AgreementPublicLookupSpec extends BaseSpec {
     createAgreement("Agreement A")
     addEntitlementForAgreement("Agreement A", test_package_1.id)
 
-    PackageContentItem test_package_1_pci = findPCIByPackageName("test_package_1", "Academy of Management Learning & Education")
+    test_package_1_pci = findPCIByPackageName("test_package_1", "Academy of Management Learning & Education")
     createAgreement("Agreement B")
     addEntitlementForAgreement("Agreement B", test_package_1_pci.id)
 
@@ -159,9 +200,13 @@ class AgreementPublicLookupSpec extends BaseSpec {
     PackageContentItem test_package_2_pci = findPCIByPackageName("test_package_2", "Academy of Management Learning & Education")
     addEntitlementForAgreement("Agreement F", test_package_2_pci.id)
 
-    pciId = test_package_1_pci.id
-    ptiId = test_package_1_pci.pti.id
-    tiId = test_package_1_pci.pti.titleInstance.id
+    pci1Id = test_package_1_pci.id
+    pti1Id = test_package_1_pci.pti.id
+    ti1Id = test_package_1_pci.pti.titleInstance.id
+
+    pci2Id = test_package_2_pci.id
+    pti2Id = test_package_2_pci.pti.id
+    ti2Id = test_package_2_pci.pti.titleInstance.id
 
     then:
     Map res = doGet("/erm/sas")[0]
@@ -170,38 +215,33 @@ class AgreementPublicLookupSpec extends BaseSpec {
     log.info(res.toString())
     log.info(resEnt.toString())
 
-    log.info("PCI ID: {}", pciId)
-    doGet("/erm/sas/publicLookup?resourceId=${pciId}").get("records").forEach{Object record -> log.info(record.name.toString())}
+    log.info("PCI ID: {}", pci1Id)
+    doGet("/erm/sas/publicLookup?resourceId=${pci1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
 
-    log.info("PTI ID: {}", ptiId)
-    doGet("/erm/sas/publicLookup?resourceId=${ptiId}").get("records").forEach{Object record -> log.info(record.name.toString())}
+    log.info("PTI ID: {}", pti1Id)
+    doGet("/erm/sas/publicLookup?resourceId=${pti1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
 
-    log.info("TI ID: {}", tiId)
-    doGet("/erm/sas/publicLookup?resourceId=${tiId}").get("records").forEach{Object record -> log.info(record.name.toString())}
+    log.info("TI ID: {}", ti1Id)
+    doGet("/erm/sas/publicLookup?resourceId=${ti1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
+
+    log.info("PCI ID: {}", pci2Id)
+    doGet("/erm/sas/publicLookup?resourceId=${pci2Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
+
+    log.info("PTI ID: {}", pti2Id)
+    doGet("/erm/sas/publicLookup?resourceId=${pti2Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
+
+    log.info("TI ID: {}", ti2Id)
+    doGet("/erm/sas/publicLookup?resourceId=${ti2Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
+
 
   }
 
   void "Agreement B active to date in the past"() {
-
-    when:
-    String agreement_id;
-    withTenant {
-      String hql = """
-            SELECT agreement.id 
-            FROM SubscriptionAgreement agreement 
-            WHERE agreement.name = 'Agreement B'
-        """
-      List results = SubscriptionAgreement.executeQuery(hql)
-      agreement_id = results.get(0)
-    }
-
-    def today = LocalDate.now()
-    def dateInPast = today.minusDays(10)
-
-
-    doPut("/erm/sas/${agreement_id}", {
-      'activeTo' dateInPast
-    }) as Map
+    Map httpResult = doGet("/erm/sas/${agreement_id}", [expand: 'items'])
+    def index = httpResult.items.findIndexOf{ it.resource?.id == test_package_1_pci.id }
+    httpResult.items[index].activeFrom = "${thisYear - 2}-01-01"
+    httpResult.items[index].activeTo = "${thisYear -1}-12-31"
+    httpResult = doPut("/erm/sas/${agreement_id}", httpResult, [expand: 'items'])
 
     then:
     List res = doGet("/erm/sas")
@@ -210,14 +250,14 @@ class AgreementPublicLookupSpec extends BaseSpec {
     log.info(res.toListString())
     log.info(resEnt.toListString())
 
-    log.info("PCI ID: {}", pciId)
-    doGet("/erm/sas/publicLookup?resourceId=${pciId}").get("records").forEach{Object record -> log.info(record.name.toString())}
+    log.info("PCI ID: {}", pci1Id)
+    doGet("/erm/sas/publicLookup?resourceId=${pci1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
 
-    log.info("PTI ID: {}", ptiId)
-    doGet("/erm/sas/publicLookup?resourceId=${ptiId}").get("records").forEach{Object record -> log.info(record.name.toString())}
+    log.info("PTI ID: {}", pti1Id)
+    doGet("/erm/sas/publicLookup?resourceId=${pti1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
 
-    log.info("TI ID: {}", tiId)
-    doGet("/erm/sas/publicLookup?resourceId=${tiId}").get("records").forEach{Object record -> log.info(record.name.toString())}
+    log.info("TI ID: {}", ti1Id)
+    doGet("/erm/sas/publicLookup?resourceId=${ti1Id}").get("records").forEach{Object record -> log.info(record.name.toString())}
 
   }
 }

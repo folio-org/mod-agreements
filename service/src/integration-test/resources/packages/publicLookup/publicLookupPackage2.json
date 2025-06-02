@@ -51,11 +51,12 @@
     "embargo": null,
     "coverageDepth": "fulltext",
     "coverageNote": "New for 2014. This record is a test case for split coverage",
-    "url": "http://aom.org/amle/",
+    "url": "http://aom.org/amle2/",
     "platformName": "Academy of Management",
     "_platformId": 627,
     "sourceIdentifierNamespace": "gokb",
-    "sourceIdentifier": "24134b52-05cd-47d3-ae4e-02d1e2d9c4fb"
+    "sourceIdentifier": "24134b52-05cd-47d3-ae4e-02d1e2d9c4fb",
+    "accessStart": "2099-01-01"
   },
     {
       "title": "The Personal History of David Copperfield",
@@ -90,6 +91,7 @@
       "platformName": "Project Gutenberg",
       "_platformId": 627,
       "sourceIdentifierNamespace": "projectGutenberg",
-      "sourceIdentifier": "43111"
+      "sourceIdentifier": "43111",
+      "accessStart": "2020-01-01"
     }]
 }

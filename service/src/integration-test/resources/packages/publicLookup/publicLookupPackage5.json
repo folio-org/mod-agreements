@@ -91,7 +91,8 @@
       "platformName": "Project Gutenberg",
       "_platformId": 627,
       "sourceIdentifierNamespace": "projectGutenberg",
-      "sourceIdentifier": "43111"
+      "sourceIdentifier": "43111",
+      "accessStart": "2020-01-01"
     }
   ]
 }

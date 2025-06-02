@@ -62,7 +62,9 @@
       "platformName": "Academy of Management",
       "_platformId": 627,
       "sourceIdentifierNamespace": "gokb",
-      "sourceIdentifier": "24134b52-05cd-47d3-ae4e-02d1e2d9c4fb"
+      "sourceIdentifier": "24134b52-05cd-47d3-ae4e-02d1e2d9c4fb",
+      "accessStart": "2014-01-01",
+      "accessEnd": "2020-12-31"
     },
     {
       "title": "The Personal History of David Copperfield",
@@ -100,7 +102,9 @@
       "platformName": "Project Gutenberg",
       "_platformId": 627,
       "sourceIdentifierNamespace": "projectGutenberg",
-      "sourceIdentifier": "43111"
+      "sourceIdentifier": "43111",
+      "accessStart": "2020-01-01",
+      "accessEnd": "2020-12-31"
     }
   ]
 }
