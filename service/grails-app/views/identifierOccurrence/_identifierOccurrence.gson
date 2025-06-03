@@ -2,6 +2,14 @@ import org.olf.kb.IdentifierOccurrence
 
 import groovy.transform.*
 
+def shouldExpand = ['status', 'identifier']
+def shouldExclude = ['id']
+
+if (controllerName == 'identifier') {
+  shouldExclude << 'identifier'
+  shouldExpand << 'resource'
+}
+
 @Field
 IdentifierOccurrence identifierOccurrence
-json g.render(identifierOccurrence, [expand: ['identifier', 'status'], excludes: ['id']])
+json g.render(identifierOccurrence, [expand: shouldExpand, excludes: shouldExclude])

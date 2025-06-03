@@ -4,7 +4,19 @@ import groovy.transform.*
 
 @Field
 Identifier identifier
-json g.render(identifier, [excludes: ['id', 'occurrences', 'ns']]) {
+
+def shouldExclude = ['ns']
+def shouldExpand = []
+
+if (controllerName == 'identifier') {
+  if (actionName != 'index') {
+    shouldExpand << 'occurrences'
+  }
+} else {
+  shouldExclude << 'id'
+}
+
+json g.render(identifier, [excludes: shouldExclude, expand: shouldExpand]) {
   'ns' {
     'value' identifier.ns.value
   }
