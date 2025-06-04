@@ -9,6 +9,7 @@ import org.olf.kb.TitleInstance
 import org.olf.kb.Platform
 import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
 
+// For Grails 6.2.3 need to cast binding.variables.values()[0] to Object[] or static type checking fails
 final Object[] tuple = (Object[]) binding.variables.values()[0]
 boolean via_package = false
 final ErmResource resource = GrailsHibernateUtil.unwrapIfProxy(tuple[0]) as ErmResource
@@ -61,7 +62,7 @@ rti = ti.relatedTitles
  
 Map customCoverageMap = request?.getAttribute("${controllerName}.${actionName}.customCoverage") as Map 
 
-// Check for custom coverage on this resource.
+// Check for custom coverage on this resource. Casting is required for static type checking in Grails 6.2.3
 List customCoverageList = (List) customCoverageMap?.get("${resource.id}")
 
 json {

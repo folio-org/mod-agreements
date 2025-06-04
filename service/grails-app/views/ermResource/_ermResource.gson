@@ -11,7 +11,7 @@ ermResource = GrailsHibernateUtil.unwrapIfProxy(ermResource) as ErmResource
 
 Map customCoverageMap = request?.getAttribute("${controllerName}.${actionName}.customCoverage") as Map
 
-// Check for custom coverage on this resource.
+// Check for custom coverage on this resource. Casting is required for static type checking in Grails 6.2.3.
 List customCoverageList = (List) customCoverageMap?.get("${ermResource.id}")
 
 def minimalView = params.minimalView ?: false

@@ -33,10 +33,10 @@ public abstract class WebSourceAdapter {
             new SynchronousQueue<Runnable>() // Use a synchronous queue
           )
           
-          client.clientCustomizer { java.net.HttpURLConnection conn ->
-            HttpURLConnection typedConn = (HttpURLConnection) conn
-            typedConn.connectTimeout = 5000    // 5 Seconds
-            typedConn.readTimeout    = 900000  // 15 Mins
+          client.clientCustomizer { HttpURLConnection conn ->
+            conn = (HttpURLConnection) conn // For some reason compiler treats 'conn' as an Object which fails static type checking without this cast.
+            conn.connectTimeout = 5000    // 5 Seconds
+            conn.readTimeout    = 900000  // 15 Mins
           }
         }
       }
