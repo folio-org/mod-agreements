@@ -1,18 +1,13 @@
 package org.olf
 
-import groovy.transform.CompileDynamic
 import org.olf.erm.Entitlement
-import org.olf.kb.CoverageStatement
-import org.olf.kb.Embargo
-import org.olf.kb.IdentifierOccurrence
-import org.olf.kb.Platform
-import org.olf.kb.PlatformLocator
 import org.olf.kb.Work
 import org.olf.kb.http.response.DeleteResponse
 import org.olf.kb.http.response.DeletionCounts
 import org.olf.kb.http.response.MarkForDeleteResponse
 
 import static org.springframework.transaction.annotation.Propagation.MANDATORY
+import static groovy.transform.TypeCheckingMode.SKIP
 
 import org.olf.kb.ErmResource
 import org.olf.kb.TitleInstance
@@ -265,7 +260,7 @@ public class ErmResourceService {
     return markForDeletion
   }
 
-  @CompileDynamic
+  @CompileStatic(SKIP)
   private Set<String> deleteByIds(Class domainClass, Collection<String> ids) {
     if (ids == null || ids.isEmpty()) {
       return new HashSet<String>()
@@ -278,7 +273,7 @@ public class ErmResourceService {
 
       if (instance) {
         try {
-          instance.delete(flush: true)
+          instance.delete()
           successfullyDeletedIds.add(id)
           log.trace("Successfully deleted id: {}", id)
         } catch (Exception e) {
