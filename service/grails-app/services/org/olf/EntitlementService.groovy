@@ -51,7 +51,7 @@ public class EntitlementService {
 //    Entitlement.withNewTransaction {
     resourcesToQuery.each {String resId ->
       entitlements.addAll(
-        Entitlement.executeQuery(ENT_HQL, [resId: resId])
+        (List<Entitlement>) Entitlement.executeQuery(ENT_HQL, [resId: resId])
       )
     }
 

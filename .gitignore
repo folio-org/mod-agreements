@@ -14,4 +14,4 @@ tools/testing/zk-single-kafka-single
 
 *.iml
 
-**/.idea
+**/.idea/*
