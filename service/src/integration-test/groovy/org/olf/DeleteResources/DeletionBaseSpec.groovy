@@ -35,31 +35,21 @@ class DeletionBaseSpec extends BaseSpec {
   def seedDatabaseWithStructure(String structure) {
     if (structure == "simple") {
       importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
-      doGet("/erm/packages", [filters: ["name==${packageNameSimple1}"]])
     }
 
     if (structure == "top-link") {
       importPackageFromFileViaService('hierarchicalDeletion/top_link_deletion.json')
       importPackageFromFileViaService('hierarchicalDeletion/top_link_deletion_link.json')
-
-      List resp = doGet("/erm/packages", [filters: ["name==${packageNameTopLink1}"]])
-      List resp2 = doGet("/erm/packages", [filters: ["name==${packageNameTopLink2}"]])
     }
 
     if (structure == "ti-link") {
       importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_1.json')
       importPackageFromFileViaService('hierarchicalDeletion/ti_link_deletion_2.json')
-
-      List resp = doGet("/erm/packages", [filters: ["name==${packageNameTiLink1}"]])
-      List resp2 = doGet("/erm/packages", [filters: ["name==${packageNameTiLink2}"]])
     }
 
     if (structure == "work-link") {
       importPackageFromFileViaService('hierarchicalDeletion/work_link_deletion_1.json')
       importPackageFromFileViaService('hierarchicalDeletion/work_link_deletion_2.json')
-
-      List resp = doGet("/erm/packages", [filters: ["name==${packageNameWorkLink1}"]])
-      List resp2 = doGet("/erm/packages", [filters: ["name==${packageNameWorkLink2}"]])
 
       // Attach the Electronic ti from package 2 to the work from package 1. Then cleanup the orphaned work + ti, and the print ti on package 1.
       withTenant {
