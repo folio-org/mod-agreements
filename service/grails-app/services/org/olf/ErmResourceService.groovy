@@ -308,17 +308,15 @@ public class ErmResourceService {
 
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
       log.debug("Deleting PCIs: {}", resourcesToDelete.pci)
-      deleteByIds(PackageContentItem, resourcesToDelete.pci)
+      deletedIds.pci = deleteByIds(PackageContentItem, resourcesToDelete.pci)
     }
-    deletionCounts.pciDeleted = resourcesToDelete.pci.size()
-    deletedIds.pci = resourcesToDelete.pci
+    deletionCounts.pciDeleted =  deletedIds.pci.size()
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
       log.debug("Deleting PTIs: {}", resourcesToDelete.pti)
-      deleteByIds(PlatformTitleInstance, resourcesToDelete.pti)
+      deletedIds.pti = deleteByIds(PlatformTitleInstance, resourcesToDelete.pti)
     }
-    deletionCounts.ptiDeleted = resourcesToDelete.pti.size()
-    deletedIds.pti = resourcesToDelete.pti
+    deletionCounts.ptiDeleted = deletedIds.pti.size()
 
     List<String> tiAndWorkIds = new ArrayList<>()
     tiAndWorkIds.addAll(resourcesToDelete.ti)
@@ -326,17 +324,15 @@ public class ErmResourceService {
 
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
       log.debug("Deleting TIs: {}", resourcesToDelete.ti)
-      deleteByIds(TitleInstance, resourcesToDelete.ti)
+      deletedIds.ti = deleteByIds(TitleInstance, resourcesToDelete.ti)
     }
-    deletionCounts.tiDeleted =  resourcesToDelete.ti.size()
-    deletedIds.ti =  resourcesToDelete.ti as Set;
+    deletionCounts.tiDeleted = deletedIds.ti.size()
 
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
       log.debug("Deleting Works: {}", resourcesToDelete.work)
-      deleteByIds(Work, resourcesToDelete.work)
+      deletedIds.work = deleteByIds(Work, resourcesToDelete.work)
     }
-    deletionCounts.workDeleted = resourcesToDelete.work.size();
-    deletedIds.work = resourcesToDelete.work as Set
+    deletionCounts.workDeleted = deletedIds.work.size()
 
     log.info("Deletion complete. Counts: {}", deletionCounts)
     response.statistics = deletionCounts

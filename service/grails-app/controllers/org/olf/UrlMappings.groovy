@@ -109,7 +109,7 @@ class UrlMappings {
       "/metadata"        (controller: 'packageIngressMetadata', action: 'getMetadataForPackage', method: 'GET')
     }
 
-    "/erm/pci"(resources:'packageContentItem')
+    "/erm/pci"(resources:'packageContentItem', excludes: ['delete'])
     "/erm/platforms"(resources:'platform')
     "/erm/entitlements"(resources:'entitlement', excludes: ['patch']) {
       collection {
