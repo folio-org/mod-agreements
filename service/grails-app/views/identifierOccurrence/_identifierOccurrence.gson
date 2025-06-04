@@ -1,15 +1,31 @@
 import org.olf.kb.IdentifierOccurrence
+import org.olf.kb.ErmTitleList
+import org.olf.kb.ErmResource
+import org.olf.kb.Work
 
-import groovy.transform.*
+import org.grails.orm.hibernate.cfg.GrailsHibernateUtil
+
+import groovy.transform.Field
 
 def shouldExpand = ['status', 'identifier']
-def shouldExclude = ['id']
+def shouldExclude = ['id', 'resource']
 
 if (controllerName == 'identifier') {
   shouldExclude << 'identifier'
-  shouldExpand << 'resource'
 }
+
+ErmTitleList titleList = GrailsHibernateUtil.unwrapIfProxy(identifierOccurrence.resource) as ErmTitleList
 
 @Field
 IdentifierOccurrence identifierOccurrence
-json g.render(identifierOccurrence, [expand: shouldExpand, excludes: shouldExclude])
+json g.render(identifierOccurrence, [expand: shouldExpand, excludes: shouldExclude]) {
+  if (controllerName == 'identifier') {
+    // For now, ErmResource/Work are the important two... this is an ErmTitleList... we could potentially do this work in that template instead
+    // If SubscriptionAgreement or some other ErmTitleList is used here, ignore for now
+    if (titleList instanceof ErmResource) {
+      resource { g.inline((ErmResource) titleList) }
+    } else if (titleList instanceof Work) {
+      resource { g.inline((Work) titleList) }
+    }
+  }
+}

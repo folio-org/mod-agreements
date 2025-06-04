@@ -20,19 +20,6 @@ class IdentifierController extends OkapiTenantAwareController<Identifier> {
     super(Identifier)
   }
 
-  @Override // Overwritten so we can insert the "resource" stuff
-  @Transactional
-  def show() {
-    Identifier identifier = queryForResource(params.id);
-
-    log.debug("LOGDEBUG WHAT IS RESOURCE: ${identifier.occurrences}")
-
-    def model = [
-      identifier: identifier,
-    ]
-    render(view: '/identifier', model: model)
-  }
-
   def namespaces() {
     respond doTheLookup(IdentifierNamespace) {}
   }

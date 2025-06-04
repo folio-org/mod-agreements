@@ -20,4 +20,9 @@ json g.render(identifier, [excludes: shouldExclude, expand: shouldExpand]) {
   'ns' {
     'value' identifier.ns.value
   }
+
+  // We can't sort or filter by this I don't think
+  if (actionName == 'index') {
+    occurrenceCount identifier.occurrences.size()
+  }
 }
