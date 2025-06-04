@@ -3,12 +3,10 @@ package org.olf.DeleteResources
 import grails.testing.mixin.integration.Integration
 import groovy.util.logging.Slf4j
 import org.olf.BaseSpec
-import org.olf.ErmResourceService
 import org.olf.erm.SubscriptionAgreement
 import org.olf.kb.ErmResource
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.PackageContentItem
-import org.olf.kb.PlatformTitleInstance
 import org.olf.kb.TitleInstance
 import org.olf.kb.Work
 import org.olf.kb.metadata.PackageIngressMetadata
@@ -16,7 +14,6 @@ import spock.lang.Ignore
 import spock.lang.Stepwise
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import groovy.json.JsonOutput
 
 @Integration
 @Stepwise
