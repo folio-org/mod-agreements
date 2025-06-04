@@ -20,12 +20,11 @@ ErmTitleList titleList = GrailsHibernateUtil.unwrapIfProxy(identifierOccurrence.
 IdentifierOccurrence identifierOccurrence
 json g.render(identifierOccurrence, [expand: shouldExpand, excludes: shouldExclude]) {
   if (controllerName == 'identifier') {
-    // For now, ErmResource/Work are the important two... this is an ErmTitleList... we could potentially do this work in that template instead
-    // If SubscriptionAgreement or some other ErmTitleList is used here, ignore for now
-    if (titleList instanceof ErmResource) {
-      resource { g.inline((ErmResource) titleList) }
-    } else if (titleList instanceof Work) {
-      resource { g.inline((Work) titleList) }
+    resource {
+      // For now, ErmResource/Work are the important two
+      g.inline(titleList) {
+        'class' titleList.class.name
+      }
     }
   }
 }
