@@ -3,9 +3,6 @@ package org.olf.General
 import org.olf.BaseSpec
 
 import org.olf.kb.Identifier
-import org.olf.kb.Pkg
-import org.olf.kb.TitleInstance
-import org.olf.kb.Work
 
 import grails.testing.mixin.integration.Integration
 import spock.lang.Shared
