@@ -14,7 +14,7 @@ import spock.lang.Stepwise
 class ResourceDeletionSpec extends DeletionBaseSpec {
 
   @Shared
-  Map<String, List<String>> resourcesByStructure = [
+  Map<String, List<String>> resourcesForAgreementLinesStructure = [
     "simple": ["PCI1", "PTI1"],
     "top-link": ["PCI1", "PCI2", "PTI1"],
     "ti-link": ["PCI1", "PCI2", "PTI1", "PTI2"],
@@ -31,10 +31,10 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
 
   @Shared
   Map<String, List<List<String>>> agreementLineCombinationsByStructure = [
-    "simple":    generateSubCombinations(resourcesByStructure.get("simple")), // Original simpleCombinations
-    "top-link":  generateSubCombinations(resourcesByStructure.get("top-link")), // Original topLinkAgreementLineCombinations
-    "ti-link":   generateSubCombinations(resourcesByStructure.get("ti-link")), // Original tiLinkAgreementLineCombinations
-    "work-link": generateSubCombinations(resourcesByStructure.get("work-link").findAll{!it.startsWith("TI")}), // Agreements typically on PCI/PTI
+    "simple":    generateSubCombinations(resourcesForAgreementLinesStructure.get("simple")),
+    "top-link":  generateSubCombinations(resourcesForAgreementLinesStructure.get("top-link")),
+    "ti-link":   generateSubCombinations(resourcesForAgreementLinesStructure.get("ti-link")),
+    "work-link": generateSubCombinations(resourcesForAgreementLinesStructure.get("work-link"))
   ]
 
   @Shared List<Map> allVerificationTestCases = []
