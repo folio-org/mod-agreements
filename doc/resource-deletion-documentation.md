@@ -14,7 +14,7 @@ Resources can reference one another in various shapes. The most common would be 
 
 A diagram below shows all four structures that might exist between resources and therefore need to be tested.
 
-![diagram 1]("deleteStructuresDiagram.png")
+![diagram 1](./deleteStructuresDiagram.png)
 
 
 ## ErmResourceService::markForDelete() and ErmResourceService::deleteResources()
@@ -33,7 +33,7 @@ There are four stages in the mark for deletion process:
 4) Collect Works. Check if the works are still needed, if not, use the work to assign all TIs for deletion. 
 
 
-![diagram 2]("deleteResourcesDiagram.png")
+![diagram 2](./deleteResourcesDiagram.png)
 
 The delete resources method:
 
