@@ -1220,6 +1220,8 @@
     },
     {
       "permissionName": "erm.resources.delete",
+      "displayName": "ERM delete resources",
+      "description": "Mark resources for deletion and delete them",
       "subPermissions": [
         "erm.resources.delete.collection.execute",
         "erm.resources.markForDelete.collection.execute"
