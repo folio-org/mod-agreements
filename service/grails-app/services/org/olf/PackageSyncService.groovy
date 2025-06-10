@@ -92,6 +92,9 @@ class PackageSyncService {
       }
     }
   }
+
+  ClientService clientService;
+
   // Break out logic for specifically resyncing a pkg with ingressType == PUSH_KB
   public void resyncPushKBPackage(Pkg pkg, PackageIngressMetadata pim) {
     if (
@@ -104,7 +107,7 @@ class PackageSyncService {
 
       if (gokbUUID != null) {
         // FINALLY actually do the package resync
-        PushKBClient client = new PushKBClient(pim.contentIngressUrl);
+        PushKBClient client = new PushKBClient(clientService, pim.contentIngressUrl);
         client.temporaryPushTask(pim.contentIngressId, gokbUUID);
       } else {
         log.error("Cannot currently trigger resync for package \"${pkg.name}\" with id: ${pkg.id}, could not find identifier with namespace \"gokb_uuid\"")

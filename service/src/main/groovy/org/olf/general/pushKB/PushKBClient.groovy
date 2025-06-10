@@ -15,7 +15,8 @@ import io.micronaut.http.uri.UriBuilder
 
 
 
-import grails.converters.JSON;
+import grails.converters.JSON
+import org.olf.ClientServiceInterface;
 
 // Client to handle PUBLIC API calls to a pushKB
 @Slf4j
@@ -25,8 +26,8 @@ class PushKBClient {
   public static String HEALTH_ENDPOINT = "/health"
   public static String TEMPORARY_PUSHTASK_ENDPOINT = "/public/temporarypushtask"
 
-  public PushKBClient(String baseUrl) {
-    this.client = HttpClient.create(baseUrl.toURL());
+  public PushKBClient(ClientServiceInterface clientService, String baseUrl) {
+    this.client = clientService.createClient(baseUrl.toURL());
   }
 
   public HttpClient getClient() {
