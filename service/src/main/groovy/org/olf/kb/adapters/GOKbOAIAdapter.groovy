@@ -1,5 +1,7 @@
 package org.olf.kb.adapters
 
+import io.micronaut.http.HttpResponse
+
 import static groovy.transform.TypeCheckingMode.SKIP
 
 import java.text.*
@@ -80,9 +82,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       log.info("OAI/HTTP GET url=${packagesUrl} params=${query_params} elapsed=${System.currentTimeMillis()-package_sync_start_time}")
 
       // Built in parser for XML returns GPathResult
-      Object sync_result = getSync(packagesUrl, query_params) {
-        response.failure { FromServer fromServer ->
-          log.error "HTTP/OAI Request failed with status ${fromServer.statusCode}"
+      Object sync_result = getSync(packagesUrl, query_params) { HttpResponse response ->
+        if (response.status().toString() != "OK") {
+          log.error "HTTP/OAI Request failed with status ${response.status()}"
           found_records = false
         }
       }
@@ -166,10 +168,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       log.debug("** GET ${titlesUrl} ${query_params}")
 
       // Built in parser for XML returns GPathResult
-      xml = (GPathResult) getSync(titlesUrl, query_params) {
-
-        response.failure { FromServer fromServer ->
-          log.error "Request failed with status ${fromServer.statusCode}"
+      xml = (GPathResult) getSync(titlesUrl, query_params) {HttpResponse response ->
+        if (response.status().toString() != "OK") {
+          log.error "HTTP/OAI Request failed with status ${response.status()}"
           found_records = false
         }
       }
@@ -647,11 +648,10 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
       log.debug("GOKbOAIAdapter::getTitleInstance - fetching from URI: ${titlesUrl}")
       boolean valid = true
-      GPathResult xml = (GPathResult) getSync(titlesUrl, query_params) {
-
-        response.failure { FromServer fromServer ->
-          log.error "Request failed with status ${fromServer.statusCode}"
-          valid = false
+      GPathResult xml = (GPathResult) getSync(titlesUrl, query_params) {HttpResponse response ->
+        if (response.status().toString() != "OK") {
+          log.error "HTTP/OAI Request failed with status ${response.status()}"
+          found_records = false
         }
       }
 
