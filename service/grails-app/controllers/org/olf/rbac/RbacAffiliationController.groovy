@@ -7,8 +7,8 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 @CurrentTenant
-class RBACAffiliationController extends OkapiTenantAwareController<RBACAffiliation>  {
-  RBACAffiliationController() {
+class RbacAffiliationController extends OkapiTenantAwareController<RBACAffiliation>  {
+  RbacAffiliationController() {
     super(RBACAffiliation)
   }
 }

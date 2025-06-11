@@ -227,9 +227,6 @@ class UrlMappings {
 
     "/dashboard/definitions" (controller: 'dashboardDefinitions', action: 'getDefinitions' ,method: 'GET')
 
-    // FIXME DO NOT MERGE IN FINAL PR
-    "/erm/testrbac" (controller: 'subscriptionAgreement', action: 'testingrbac')
-
     group '/erm/statistics', {
       '/kbCount'(controller: 'statistics', action: 'kbCount', method: 'GET')
       '/sasCount'(controller: 'statistics', action: 'agreementCount', method: 'GET')
@@ -242,13 +239,13 @@ class UrlMappings {
       }
     }
 
-    group '/erm/rbac', {
-      '/grants'(resources: 'rbacGrant') {
-        collection {
-          "/testrbac" (controller: 'rbacGrant', action: 'testingrbac')
-        }
+    "/erm/rbac/grants" (resources: 'rbacGrant') {
+      collection {
+        "/test" (action: 'test')
       }
-      '/affiliations'(resources: 'rbacAffiliation')
     }
+
+
+    "/erm/rbac/affiliations" (resources: 'rbacAffiliation')
   }
 }

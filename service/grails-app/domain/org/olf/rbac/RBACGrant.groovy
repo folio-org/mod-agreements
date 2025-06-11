@@ -22,7 +22,7 @@ public class RBACGrant implements MultiTenant<RBACGrant> {
   String resourceType // A class string or %
   // FIXME could this potentially handle packages? org.olf.% for example
   String resourceId // Either an individual id or %
-  String party // A structured party string, as per Affiliation AND resource owner fields.
+  String resourceOwner // A structured party string, as per Affiliation AND resource owner fields.
 
   /* ------- GRANT TO WHOM ----- */
   // This object grants access to users matching the below
@@ -47,6 +47,10 @@ public class RBACGrant implements MultiTenant<RBACGrant> {
   // For ROLE this would be one of AffiliationRole
   // For GROUP this will be // FIXME What will this be??? -- is this where acquisition groups come in or no?
 
+  // FIXME do we need this???
+  String granteeContext // This is ALSO a structured party patten
+
+
   // TODO The actual "permission" parts go here.
   // PermissionType = GROUP vs SINGLE?
   // Permission = GroupName vs Single Perm type (READ vs UPDATE vs CREATE vs DELETE)???
@@ -57,15 +61,16 @@ public class RBACGrant implements MultiTenant<RBACGrant> {
 
 
   static mapping = {
-    table        'rbac_grant'
-    id           column: 'rgra_id', generator: 'uuid2', length:36
-    version      column: 'rgra_version'
-    resourceType column: 'rgra_resource_type'
-    resourceId   column: 'rgra_resource_id'
-    party        column: 'rgra_party'
+    table           'rbac_grant'
+    id              column: 'rgra_id', generator: 'uuid2', length:36
+    version         column: 'rgra_version'
+    resourceType    column: 'rgra_resource_type'
+    resourceId      column: 'rgra_resource_id'
+    resourceOwner   column: 'rgra_resource_owner'
 
-    granteeType  column: 'rgra_grantee_type'
-    granteeId    column: 'rgra_grantee_id'
+    granteeType     column: 'rgra_grantee_type'
+    granteeId       column: 'rgra_grantee_id'
+    granteeContext  column: 'rgra_grantee_context'
 
   }
 
