@@ -9,6 +9,7 @@ class UrlMappings {
     "/erm/compare" (controller: 'comparison', action: 'compare', method: 'POST')
 
     "/"(controller: 'application', action:'index')
+    "500"(view: '/error')
     "404"(view: '/notFound')
 
     // Map /kbs to RemoteKBController
@@ -237,5 +238,14 @@ class UrlMappings {
         "/namespaces" (controller: 'identifier', action: 'namespaces', method: 'GET')
       }
     }
+
+    "/erm/rbac/grants" (resources: 'rbacGrant') {
+      collection {
+        "/test" (action: 'test')
+      }
+    }
+
+
+    "/erm/rbac/affiliations" (resources: 'rbacAffiliation')
   }
 }
