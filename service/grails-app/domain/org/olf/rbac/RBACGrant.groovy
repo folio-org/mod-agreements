@@ -2,7 +2,7 @@ package org.olf.rbac
 
 import grails.gorm.MultiTenant
 
-public class Grant implements MultiTenant<Grant> {
+public class RBACGrant implements MultiTenant<RBACGrant> {
   String id
 
   /* ------- GRANT ON WHAT ----- */
@@ -57,11 +57,16 @@ public class Grant implements MultiTenant<Grant> {
 
 
   static mapping = {
-    id           column: 'gra_id', generator: 'uuid2', length:36
-    version      column: 'gra_version'
-    resourceType column: 'gra_resource_type'
-    resourceId   column: 'gra_resource_id'
-    party        column: 'gra_party'
+    table        'rbac_grant'
+    id           column: 'rgra_id', generator: 'uuid2', length:36
+    version      column: 'rgra_version'
+    resourceType column: 'rgra_resource_type'
+    resourceId   column: 'rgra_resource_id'
+    party        column: 'rgra_party'
+
+    granteeType  column: 'rgra_grantee_type'
+    granteeId    column: 'rgra_grantee_id'
+
   }
 
   static constraints = {

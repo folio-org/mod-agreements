@@ -2,7 +2,7 @@ package org.olf.rbac
 
 import grails.gorm.MultiTenant
 
-public class Affiliation implements MultiTenant<Affiliation> {
+public class RBACAffiliation implements MultiTenant<RBACAffiliation> {
   String id
 
   String user // A FOLIO UUID for a given user. No foreign key as this user is in a DIFFERENT schema
@@ -16,11 +16,12 @@ public class Affiliation implements MultiTenant<Affiliation> {
   // FIXME tbd how does this EXACTLY link to Acq groups?
 
   static mapping = {
-    id      column: 'aff_id', generator: 'uuid2', length:36
-    version column: 'aff_version'
-    user    column: 'aff_user'
-    role    column: 'aff_role'
-    party   column: 'aff_party'
+    table   'rbac_affiliation'
+    id      column: 'raff_id', generator: 'uuid2', length:36
+    version column: 'raff_version'
+    user    column: 'raff_user'
+    role    column: 'raff_role'
+    party   column: 'raff_party'
   }
 
   static constraints = {
