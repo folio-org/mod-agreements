@@ -37,6 +37,8 @@ public class EntitlementService {
     WHERE ent.resource.id = :resId
   """
 
+
+
   @Transactional(propagation = MANDATORY)
   public void handleErmResourceChange(ErmResource res) {
     Date now = new Date();
@@ -49,7 +51,7 @@ public class EntitlementService {
 //    Entitlement.withNewTransaction {
     resourcesToQuery.each {String resId ->
       entitlements.addAll(
-        Entitlement.executeQuery(ENT_HQL, [resId: resId])
+        (List<Entitlement>) Entitlement.executeQuery(ENT_HQL, [resId: resId])
       )
     }
 

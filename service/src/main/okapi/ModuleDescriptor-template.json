@@ -981,6 +981,24 @@
         },
         {
           "methods": [
+            "POST"
+          ],
+          "pathPattern": "/erm/resource/delete/*",
+          "permissionsRequired": [
+            "erm.resources.delete.collection.execute"
+          ]
+        },
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/erm/resource/markForDelete/*",
+          "permissionsRequired": [
+            "erm.resources.markForDelete.collection.execute"
+          ]
+        },
+        {
+          "methods": [
             "GET"
           ],
           "pathPattern": "/erm/settings*",
@@ -1031,6 +1049,33 @@
           "pathPattern": "/erm/pushKB*",
           "permissionsRequired": [
             "erm.pushkb.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/identifiers",
+          "permissionsRequired": [
+            "erm.identifiers.collection.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/identifiers/{id}",
+          "permissionsRequired": [
+            "erm.identifiers.item.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/identifiers/namespaces",
+          "permissionsRequired": [
+            "erm.identifiers.namespaces.collection.get"
           ]
         }
       ]
@@ -1199,6 +1244,15 @@
       "permissionName": "erm.agreements.property.validate",
       "displayName": "Validate SubscriptionAgreement property",
       "description": "Validate a property on a SubscriptionAgreement record"
+    },
+    {
+      "permissionName": "erm.resources.delete",
+      "displayName": "ERM delete resources",
+      "description": "Mark resources for deletion and delete them",
+      "subPermissions": [
+        "erm.resources.delete.collection.execute",
+        "erm.resources.markForDelete.collection.execute"
+      ]
     },
     {
       "permissionName": "erm.agreements.view",
@@ -1771,6 +1825,31 @@
       ]
     },
     {
+      "permissionName": "erm.identifiers.collection.get",
+      "displayName": "ERM: Identifiers collection get",
+      "description": "Get a collection of identifier records"
+    },
+    {
+      "permissionName": "erm.identifiers.item.get",
+      "displayName": "ERM: Identifiers item get",
+      "description": "Get an identifier record"
+    },
+    {
+      "permissionName": "erm.identifiers.namespaces.collection.get",
+      "displayName": "ERM: Identifier namespaces get",
+      "description": "Get a collection of identifier namespace records"
+    },
+    {
+      "permissionName": "erm.identifiers.view",
+      "displayName": "ERM: Identifier view",
+      "description": "Permissions to view identifier records",
+      "subPermissions": [
+        "erm.identifiers.collection.get",
+        "erm.identifiers.item.get",
+        "erm.identifiers.namespaces.collection.get"
+      ]
+    },
+    {
       "permissionName": "erm.resources.view",
       "subPermissions": [
         "erm.resources.collection.get",
@@ -1781,7 +1860,8 @@
         "erm.resources.entitlementOptions.collection.get",
         "erm.resources.entitlementOptions.static.collection.get",
         "erm.entitlements.view",
-        "erm.kbs.collection.get"
+        "erm.kbs.collection.get",
+        "erm.identifiers.view"
       ]
     },
     {
@@ -2010,6 +2090,18 @@
       "replaces": [
         "erm.admin.action"
       ]
+    },
+    {
+      "permissionName": "erm.resources.markForDelete.collection.execute",
+      "displayName": "ERM: Mark for delete resource collection",
+      "description": "Allows POST to mark resources for deletion.",
+      "visible": false
+    },
+    {
+      "permissionName": "erm.resources.delete.collection.execute",
+      "displayName": "ERM: Delete resource collection",
+      "description": "Allows DELETE of resources from the DB",
+      "visible": false
     },
     {
       "permissionName": "erm.statistics.get",
