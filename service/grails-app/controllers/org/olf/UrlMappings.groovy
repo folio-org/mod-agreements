@@ -241,5 +241,14 @@ class UrlMappings {
         "/namespaces" (controller: 'identifier', action: 'namespaces', method: 'GET')
       }
     }
+
+    group '/erm/rbac', {
+      '/grants'(resources: 'rbacGrant') {
+        collection {
+          "/testrbac" (controller: 'rbacGrant', action: 'testingrbac')
+        }
+      }
+      '/affiliations'(resources: 'rbacAffiliation')
+    }
   }
 }
