@@ -61,6 +61,7 @@ public abstract class WebSourceAdapter {
         def config = new DefaultHttpClientConfiguration()
         config.setConnectTimeout(Duration.ofSeconds(5))
         config.setReadTimeout(Duration.ofMinutes(15))
+        config.setMaxContentLength(2147483647)
 
         GLOBAL_CLIENT = clientService.createClientReactive(null, config)
 
@@ -116,75 +117,6 @@ public abstract class WebSourceAdapter {
 
 
 
-//  protected final def getSync(final String url, final Map params, @DelegatesTo(RequestCustomizer.class) final Closure expand = null) {
-//
-//    // 1. Prepare the URI (no change here)
-//    UriBuilder uriBuilder = UriBuilder.of(url)
-//    if (params) {
-//      params.each { key, value -> uriBuilder.queryParam(key as String, value as String) }
-//    }
-//
-//    // 2. Prepare the configuration collector
-//    def userAgentHeader = "Folio mod-agreements / ${Tenants.currentId()}"
-//    // Start the customizer with your base headers
-//    def customizer = new RequestCustomizer()
-//    customizer.header('User-Agent', userAgentHeader)
-//
-//
-//    // 4. Build the final, immutable request ONCE using all collected configuration
-//    // The .headers(Map) method is key here. It applies all headers at once.
-//    MutableHttpRequest<Object> requestBuilder = HttpRequest.GET(uriBuilder.build())
-//    customizer.headers.each { key, value ->
-//      requestBuilder.header(key, value)
-//    }
-//
-//    // 5. The 'requestBuilder' is now the final, fully configured request object.
-//    HttpRequest<Object> finalRequest = requestBuilder
-//
-//    // 5. Execute the request (no change here)
-//    try {
-//      HttpResponse<byte[]> response = httpClient.toBlocking().exchange(finalRequest, byte[])
-//
-//      if (expand) {
-//        expand.setDelegate(customizer)
-//        expand.setResolveStrategy(Closure.DELEGATE_FIRST)
-//        expand.call(response)
-//      }
-//
-//      def contentType = response.getContentType().orElse(null)
-//      if (contentType?.name?.contains('xml')) {
-//        return new XmlSlurper().parse(new ByteArrayInputStream(response.body()))
-//      }
-//      return response.getBody(String.class).orElse('')
-//
-//    } catch (HttpClientResponseException e) {
-//      log.error("HTTP Error: ${e.status} for URL: ${url}", e)
-//      throw e
-//    }
-//  }
-
-  def dataStreamToOutputStream(HttpRequest<?> request,
-                           PipedOutputStream outputStream,
-                           Runnable finallyRunnable) {
-    httpClient.dataStream(request as HttpRequest<Object>)
-      .doOnNext(byteBuffer -> {
-        try {
-          outputStream.write(byteBuffer.toByteArray());
-        } catch (IOException e) {
-        }
-      })
-      .doFinally(signalType -> {
-        try {
-          outputStream.close();
-        } catch (IOException e) {
-          System.out.println();
-        }
-        finallyRunnable.run();
-      })
-      .subscribe();
-  }
-
-
   protected final def getSync(final String url, final Map params, @DelegatesTo(RequestCustomizer.class) final Closure expand = null) {
 
     UriBuilder uriBuilder = UriBuilder.of(url)
@@ -193,9 +125,9 @@ public abstract class WebSourceAdapter {
     }
 
     def userAgentHeader = "Folio mod-agreements / ${Tenants.currentId()}"
-
     def customizer = new RequestCustomizer()
     customizer.header('User-Agent', userAgentHeader)
+
     MutableHttpRequest<Object> requestBuilder = HttpRequest.GET(uriBuilder.build())
     customizer.headers.each { key, value ->
       requestBuilder.header(key, value)
@@ -203,15 +135,77 @@ public abstract class WebSourceAdapter {
 
     HttpRequest<Object> finalRequest = requestBuilder
 
-    // Streaming
-    PipedOutputStream outputStream = new PipedOutputStream();
-    dataStreamToOutputStream(finalRequest, outputStream, () -> log.info("finished download"));
+    try {
+      HttpResponse<byte[]> response = httpClient.toBlocking().exchange(finalRequest, byte[])
 
-    PipedInputStream inputStream = new PipedInputStream(1024*10);
-    inputStream.connect(outputStream);
-    def parser = new XmlSlurper()
-    return parser.parse(inputStream)
+      if (expand) {
+        expand.setDelegate(customizer)
+        expand.setResolveStrategy(Closure.DELEGATE_FIRST)
+        expand.call(response)
+      }
+
+      def contentType = response.getContentType().orElse(null)
+      if (contentType?.name?.contains('xml')) {
+        return new XmlSlurper().parse(new ByteArrayInputStream(response.body()))
+      }
+      return response.getBody(String.class).orElse('')
+
+    } catch (HttpClientResponseException e) {
+      log.error("HTTP Error: ${e.status} for URL: ${url}", e)
+      throw e
     }
+  }
+
+  // From https://guides.micronaut.io/latest/micronaut-streamed-file-and-reactor-streaming-http-client-gradle-java.html
+//  def dataStreamToOutputStream(HttpRequest<?> request,
+//                           PipedOutputStream outputStream,
+//                           Runnable finallyRunnable) {
+//    httpClient.dataStream(request as HttpRequest<Object>)
+//      .doOnNext(byteBuffer -> {
+//        try {
+//          outputStream.write(byteBuffer.toByteArray());
+//        } catch (IOException e) {
+//        }
+//      })
+//      .doFinally(signalType -> {
+//        try {
+//          outputStream.close();
+//        } catch (IOException e) {
+//          System.out.println();
+//        }
+//        finallyRunnable.run();
+//      })
+//      .subscribe();
+//  }
+
+
+//  protected final def getSync(final String url, final Map params, @DelegatesTo(RequestCustomizer.class) final Closure expand = null) {
+//
+//    UriBuilder uriBuilder = UriBuilder.of(url)
+//    if (params) {
+//      params.each { key, value -> uriBuilder.queryParam(key as String, value as String) }
+//    }
+//
+//    def userAgentHeader = "Folio mod-agreements / ${Tenants.currentId()}"
+//
+//    def customizer = new RequestCustomizer()
+//    customizer.header('User-Agent', userAgentHeader)
+//    MutableHttpRequest<Object> requestBuilder = HttpRequest.GET(uriBuilder.build())
+//    customizer.headers.each { key, value ->
+//      requestBuilder.header(key, value)
+//    }
+//
+//    HttpRequest<Object> finalRequest = requestBuilder
+//
+//    // Streaming
+//    PipedOutputStream outputStream = new PipedOutputStream();
+//    dataStreamToOutputStream(finalRequest, outputStream, () -> log.info("finished download"));
+//
+//    PipedInputStream inputStream = new PipedInputStream(1024*10);
+//    inputStream.connect(outputStream);
+//    def parser = new XmlSlurper()
+//    return parser.parse(inputStream)
+//    }
 
 
   protected final def post (final String url, final def jsonData, @DelegatesTo(HttpConfig.class) final Closure expand = null) {
