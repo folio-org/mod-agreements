@@ -9,15 +9,19 @@ import grails.converters.JSON
 import com.k_int.web.toolkit.refdata.RefdataValue
 
 import org.olf.kb.RemoteKB
+import org.springframework.stereotype.Component
 import org.springframework.validation.BindingResult
 import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.kb.KBCacheUpdater
 import org.olf.general.jobs.PersistentJob
 import grails.gorm.transactions.Transactional
+
+import java.net.http.HttpRequest
 import java.time.Instant
 
 @Slf4j
 @CurrentTenant
+@Component
 class AdminController implements DataBinder{
 
   def packageIngestService
@@ -28,8 +32,8 @@ class AdminController implements DataBinder{
   def kbManagementService
   def kbHarvestService
 
-  public AdminController() {
-  }
+//  public AdminController() {
+//  }
 
   /**
    * Expose a load package endpoint so developers can use curl to upload package files in their development systems
@@ -136,6 +140,21 @@ class AdminController implements DataBinder{
     fileUploadService.migrateAtMost(0,'LOB','S3'); // n, FROM, TO
     result.status = 'OK'
     render result as JSON
+  }
+
+  KintHttpClient micronautHttpClientService
+
+  AdminController(KintHttpClient micronautHttpClientService) {
+    this.micronautHttpClientService = micronautHttpClientService
+  }
+
+  public hitApi() {
+    HttpRequest req = HttpRequest.newBuilder()
+      .uri(new URI("https://jsonplaceholder.typicode.com/todos/1"))
+      .GET()
+      .build()
+
+    render micronautHttpClientService.get(req)
   }
 }
 

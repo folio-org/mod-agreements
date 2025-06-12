@@ -1,3 +1,5 @@
+import org.olf.AdminController
+import org.olf.KintHttpClient
 import org.olf.dataimport.internal.titleInstanceResolvers.*
 import org.olf.dataimport.internal.KBManagementBean
 import org.olf.kb.metadata.ResourceIngressType

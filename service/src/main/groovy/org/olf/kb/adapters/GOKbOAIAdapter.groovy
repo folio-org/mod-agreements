@@ -1,5 +1,12 @@
 package org.olf.kb.adapters
 
+import io.micronaut.http.HttpResponse
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import org.olf.KintClientResponse
+import org.olf.KintHttpClient
+import org.springframework.stereotype.Component
+
 import static groovy.transform.TypeCheckingMode.SKIP
 
 import java.text.*
@@ -80,9 +87,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       log.info("OAI/HTTP GET url=${packagesUrl} params=${query_params} elapsed=${System.currentTimeMillis()-package_sync_start_time}")
 
       // Built in parser for XML returns GPathResult
-      Object sync_result = getSync(packagesUrl, query_params) {
-        response.failure { FromServer fromServer ->
-          log.error "HTTP/OAI Request failed with status ${fromServer.statusCode}"
+      Object sync_result = getSync(packagesUrl, query_params) { KintClientResponse response ->
+        if (!response.statusCode.toString().startsWithAny("2")) {
+          log.error "HTTP/OAI Request failed with status ${response.statusCode}"
           found_records = false
         }
       }
@@ -166,10 +173,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       log.debug("** GET ${titlesUrl} ${query_params}")
 
       // Built in parser for XML returns GPathResult
-      xml = (GPathResult) getSync(titlesUrl, query_params) {
-
-        response.failure { FromServer fromServer ->
-          log.error "Request failed with status ${fromServer.statusCode}"
+      xml = (GPathResult) getSync(titlesUrl, query_params) { KintClientResponse response ->
+        if (!response.statusCode.toString().startsWithAny("2")) {
+          log.error "Request failed with status ${response.statusCode}"
           found_records = false
         }
       }
@@ -647,10 +653,9 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
       log.debug("GOKbOAIAdapter::getTitleInstance - fetching from URI: ${titlesUrl}")
       boolean valid = true
-      GPathResult xml = (GPathResult) getSync(titlesUrl, query_params) {
-
-        response.failure { FromServer fromServer ->
-          log.error "Request failed with status ${fromServer.statusCode}"
+      GPathResult xml = (GPathResult) getSync(titlesUrl, query_params){ KintClientResponse response ->
+        if (!response.statusCode.toString().startsWithAny("2")) {
+          log.error "Request failed with status ${response.statusCode}"
           valid = false
         }
       }
