@@ -87,12 +87,12 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       log.info("OAI/HTTP GET url=${packagesUrl} params=${query_params} elapsed=${System.currentTimeMillis()-package_sync_start_time}")
 
       // Built in parser for XML returns GPathResult
-      Object sync_result = getSync(packagesUrl, query_params) { KintClientResponse response ->
+      Object sync_result = getSync(packagesUrl, query_params, null,{ KintClientResponse response ->
         if (!response.statusCode.toString().startsWithAny("2")) {
           log.error "HTTP/OAI Request failed with status ${response.statusCode}"
           found_records = false
         }
-      }
+      })
 
       if ( (found_records) && ( sync_result instanceof GPathResult ) ) {
 
@@ -173,12 +173,12 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       log.debug("** GET ${titlesUrl} ${query_params}")
 
       // Built in parser for XML returns GPathResult
-      xml = (GPathResult) getSync(titlesUrl, query_params) { KintClientResponse response ->
+      xml = (GPathResult) getSync(titlesUrl, query_params, null, { KintClientResponse response ->
         if (!response.statusCode.toString().startsWithAny("2")) {
           log.error "Request failed with status ${response.statusCode}"
           found_records = false
         }
-      }
+      })
 
       if (found_records) {
 
@@ -653,12 +653,12 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
       log.debug("GOKbOAIAdapter::getTitleInstance - fetching from URI: ${titlesUrl}")
       boolean valid = true
-      GPathResult xml = (GPathResult) getSync(titlesUrl, query_params){ KintClientResponse response ->
+      GPathResult xml = (GPathResult) getSync(titlesUrl, query_params, null, { KintClientResponse response ->
         if (!response.statusCode.toString().startsWithAny("2")) {
           log.error "Request failed with status ${response.statusCode}"
           valid = false
         }
-      }
+      })
 
       if (valid) {
 
