@@ -230,5 +230,12 @@ class UrlMappings {
       '/kbCount'(controller: 'statistics', action: 'kbCount', method: 'GET')
       '/sasCount'(controller: 'statistics', action: 'agreementCount', method: 'GET')
     }
+
+    "/erm/identifiers"(resources: 'identifier', excludes: ['update', 'patch', 'save', 'edit', 'create']) { // GET ONLY
+      // TODO Other endpoints here
+      collection {
+        "/namespaces" (controller: 'identifier', action: 'namespaces', method: 'GET')
+      }
+    }
   }
 }
