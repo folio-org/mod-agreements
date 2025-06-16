@@ -13,7 +13,7 @@ import io.micronaut.http.HttpResponse as MicronautHttpResponse
 import java.time.Duration
 
 @Component
-class MicronautHttpClientService implements KintHttpClient {
+class MicronautHttpClientService implements KintHttpClientService {
 
   HttpClient httpClient
 

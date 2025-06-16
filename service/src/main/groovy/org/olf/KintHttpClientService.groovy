@@ -2,7 +2,7 @@ package org.olf
 
 import java.net.http.HttpRequest
 
-interface KintHttpClient {
+interface KintHttpClientService {
   KintClientResponse get(HttpRequest request)
   KintClientResponse post(String url, byte[] body, Map<String, String> headers)
   KintClientResponse put(String url, byte[] body, Map<String, String> headers)
