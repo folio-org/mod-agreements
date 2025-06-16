@@ -459,6 +459,15 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.debug("completed in ${Duration.between(start, Instant.now()).toSeconds()} seconds")
   }
 
+  // For /erm/resources/markForDelete/pkg
+  def markPackageForDelete(DeleteBody deleteBody) {
+    log.info("ResourceController::markPackageForDelete({})", deleteBody)
+
+    handleDeleteCall(deleteBody) { ids ->
+      return ermResourceService.markForDelete(ids, Pkg.class)
+    }
+  }
+
   // For /erm/resources/markForDelete/pcis
   def markPcisForDelete(DeleteBody deleteBody) {
     log.info("ResourceController::markPcisForDelete({})", deleteBody)
@@ -482,6 +491,14 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
 
     handleDeleteCall(deleteBody) { ids ->
       return ermResourceService.markForDelete(ids, TitleInstance.class);
+    }
+  }
+
+  def deletePackage(DeleteBody deleteBody) {
+    log.info("ResourceController::deletePackage({})", deleteBody)
+
+    handleDeleteCall(deleteBody) { ids ->
+      return ermResourceService.deleteResources(ids, Pkg.class)
     }
   }
 

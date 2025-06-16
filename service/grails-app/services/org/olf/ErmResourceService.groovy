@@ -5,6 +5,7 @@ import org.olf.kb.Work
 import org.olf.kb.http.response.DeleteResponse
 import org.olf.kb.http.response.DeletionCounts
 import org.olf.kb.http.response.MarkForDeleteResponse
+import org.olf.kb.Pkg
 
 import static org.springframework.transaction.annotation.Propagation.MANDATORY
 import static groovy.transform.TypeCheckingMode.SKIP
@@ -113,8 +114,21 @@ public class ErmResourceService {
     return (resourceSet.size() == 0 ? ["PLACEHOLDER_RESOURCE"] : resourceSet) as Set<String>
   }
 
+  private Set<String> getPcisForPackage(List<String> packageId) {
+    return PackageContentItem.executeQuery(
+      """
+        SELECT pci.id FROM PackageContentItem pci
+        WHERE pci.pkg.id IN :packageId
+      """.toString(),
+      [packageId:packageId]
+    ) as Set
+  }
+
   public MarkForDeleteResponse markForDelete(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
     switch (resourceClass) {
+      case Pkg.class:
+        // Find the PCI ids that belong to the package, then markForDelete in the same way as for PCI endpoint.
+        return markForDeleteInternal(new HashSet<String>(getPcisForPackage(idInputs)), new HashSet<String>(), new HashSet<String>())
       case PackageContentItem.class:
         return markForDeleteInternal(new HashSet<String>(idInputs), new HashSet<String>(), new HashSet<String>())
         break;
