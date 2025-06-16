@@ -121,62 +121,81 @@ public abstract class WebSourceAdapter {
     return new XmlSlurper().parse(new ByteArrayInputStream(response.body))
   }
 
-  private KintClientResponse executeRequestWithBody(String url, def jsonData, Map params, Closure expand, Closure<KintClientResponse> clientAction) {
+  private KintClientResponse executeRequestWithBody(String url, def jsonData, Map params, @DelegatesTo(RequestCustomizer.class) final Closure requestConfigurer = null, // Optional request customizer
+                                                    final Closure responseHandler = null, Closure<KintClientResponse> clientAction) {
     def customizer = new RequestCustomizer()
     customizer.header('Content-Type', 'application/json; charset=utf-8')
 
     String finalUrl = buildUrlWithParams(url, params)
     byte[] bodyBytes = JsonOutput.toJson(jsonData).getBytes(StandardCharsets.UTF_8)
 
+    if (requestConfigurer) {
+      requestConfigurer.setDelegate(customizer)
+      requestConfigurer.setResolveStrategy(Closure.DELEGATE_FIRST)
+      requestConfigurer.call()
+    }
+
     KintClientResponse response = clientAction.call(finalUrl, bodyBytes, customizer.headers)
 
-    if (expand) {
-      expand.setResolveStrategy(Closure.DELEGATE_FIRST)
-      expand.call(response)
+    if (responseHandler) {
+      responseHandler.call(response)
     }
 
     return response
   }
 
-  protected final def post(final String url, final def jsonData, @DelegatesTo(HttpConfig.class) final Closure expand = null) {
-    post(url, jsonData, null, expand)
+  protected final def post(final String url, final def jsonData, @DelegatesTo(RequestCustomizer.class) final Closure requestConfigurer = null, // Optional request customizer
+                           final Closure responseHandler = null) {
+    post(url, jsonData, null, requestConfigurer, responseHandler)
   }
 
-  protected final def post(final String url, final def jsonData, final Map params, @DelegatesTo(HttpConfig.class) final Closure expand = null) {
-    return executeRequestWithBody(url, jsonData, params, expand, httpClient.&post)
+  protected final def post(final String url, final def jsonData, final Map params,  @DelegatesTo(RequestCustomizer.class) final Closure requestConfigurer = null, // Optional request customizer
+                           final Closure responseHandler = null) {
+    return executeRequestWithBody(url, jsonData, params, requestConfigurer, responseHandler, httpClient.&post)
   }
 
-  protected final def put(final String url, final def jsonData, @DelegatesTo(RequestCustomizer.class) final Closure expand = null) {
-    put(url, jsonData, null, expand)
+  protected final def put(final String url, final def jsonData,  @DelegatesTo(RequestCustomizer.class) final Closure requestConfigurer = null, // Optional request customizer
+                          final Closure responseHandler = null) {
+    put(url, jsonData, null, requestConfigurer, responseHandler)
   }
-  protected final def put(final String url, final def jsonData, final Map params, @DelegatesTo(RequestCustomizer.class) final Closure expand = null) {
-    return executeRequestWithBody(url, jsonData, params, expand, httpClient.&put)
-  }
-
-  protected final def patch(final String url, final def jsonData, @DelegatesTo(RequestCustomizer.class) final Closure expand = null) {
-    patch(url, jsonData, null, expand)
-  }
-  protected final def patch(final String url, final def jsonData, final Map params, @DelegatesTo(RequestCustomizer.class) final Closure expand = null) {
-    return executeRequestWithBody(url, jsonData, params, expand, httpClient.&patch)
+  protected final def put(final String url, final def jsonData, final Map params, @DelegatesTo(RequestCustomizer.class) final Closure requestConfigurer = null, // Optional request customizer
+                          final Closure responseHandler = null) {
+    return executeRequestWithBody(url, jsonData, params, requestConfigurer, responseHandler, httpClient.&put)
   }
 
-  protected final def delete(final String url, @DelegatesTo(RequestCustomizer.class) final Closure expand = null) {
-    delete(url, null, expand)
+  protected final def patch(final String url, final def jsonData,   @DelegatesTo(RequestCustomizer.class) final Closure requestConfigurer = null, // Optional request customizer
+                            final Closure responseHandler = null) {
+    patch(url, jsonData, null, requestConfigurer, responseHandler)
   }
-  protected final def delete(final String url, final Map params, @DelegatesTo(RequestCustomizer.class) final Closure expand = null) {
+  protected final def patch(final String url, final def jsonData, final Map params,   @DelegatesTo(RequestCustomizer.class) final Closure requestConfigurer = null, // Optional request customizer
+                            final Closure responseHandler = null) {
+    return executeRequestWithBody(url, jsonData, params, requestConfigurer, responseHandler, httpClient.&patch)
+  }
+
+  protected final def delete(final String url, @DelegatesTo(RequestCustomizer.class) final Closure requestConfigurer = null, // Optional request customizer
+                             final Closure responseHandler = null) {
+    delete(url, null, requestConfigurer, responseHandler)
+  }
+  protected final def delete(final String url, final Map params, @DelegatesTo(RequestCustomizer.class) final Closure requestConfigurer = null, // Optional request customizer
+                             final Closure responseHandler = null) {
     def customizer = new RequestCustomizer()
     customizer.header('User-Agent', "Folio mod-agreements / ${Tenants.currentId()}")
 
-    if (expand) {
-      expand.setDelegate(customizer)
-      expand.setResolveStrategy(Closure.DELEGATE_FIRST)
-      expand.call()
+    if (requestConfigurer) {
+      requestConfigurer.setDelegate(customizer)
+      requestConfigurer.setResolveStrategy(Closure.DELEGATE_FIRST)
+      requestConfigurer.call()
     }
 
     String finalUrl = buildUrlWithParams(url, params)
 
-    // Execute the DELETE request
-    return httpClient.delete(finalUrl, customizer.headers)
+    KintClientResponse response = httpClient.delete(finalUrl, customizer.headers)
+
+    if (responseHandler) {
+      responseHandler.call(response)
+    }
+
+    return response
   }
 }
 

@@ -1,5 +1,6 @@
-package org.olf.kb.adapters;
+package org.olf.kb.adapters
 
+import org.olf.KintClientResponse;
 import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.kb.KBCache;
@@ -44,13 +45,12 @@ public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, Da
 
       spin_protection++
       boolean valid = true
-      Map<String, ?> jsonMap = (Map)getSync(base_url, query_params) {
-        
-        response.failure { FromServer fromServer ->
-          log.debug "Request failed with status ${fromServer.statusCode}"
+      Map<String, ?> jsonMap = (Map)getSync(base_url, query_params, null, { KintClientResponse response ->
+        if (!response.statusCode.toString().startsWithAny("2")) {
+          log.error "Request failed with status ${response.statusCode}"
           valid = false
         }
-      }
+      })
  
       if (valid) {
         final Map page_result = processPage(cursor, jsonMap, source_name, cache)
@@ -106,12 +106,12 @@ public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, Da
     log.debug ("processPackage(${url},${source_name}) -- fetching");
     try {
       boolean valid = true
-      Map<String, ?> jsonMap = (Map) getSync(url) {
-        response.failure { FromServer fromServer ->
-          log.debug "Request failed with status ${fromServer.statusCode}"
+      Map<String, ?> jsonMap = (Map) getSync(url, null, { KintClientResponse response ->
+        if (!response.statusCode.toString().startsWithAny("2")) {
+          log.error "Request failed with status ${response.statusCode}"
           valid = false
         }
-      }
+      })
       
       if (valid) {
         PackageSchema json_package_description = kbplusToERM(jsonMap)
