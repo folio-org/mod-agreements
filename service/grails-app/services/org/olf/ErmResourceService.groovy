@@ -300,6 +300,18 @@ public class ErmResourceService {
     return successfullyDeletedIds
   }
 
+  public Map<String, DeleteResponse> deleteResourcesFromPackage(List<String> idInputs) {
+    Map<String, DeleteResponse> deleteResourcesResponseMap = [:]
+
+    // Collect responses for each package in a Map.
+    idInputs.forEach{String id -> {
+      MarkForDeleteResponse forDeletion = markForDelete(idInputs, Pkg.class); // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
+      deleteResourcesResponseMap.put(id, deleteResourcesInternal(forDeletion))
+    }}
+
+    return deleteResourcesResponseMap;
+  }
+
   public DeleteResponse deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
     MarkForDeleteResponse forDeletion = markForDelete(idInputs, resourceClass);
     return deleteResourcesInternal(forDeletion);
