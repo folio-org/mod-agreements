@@ -500,7 +500,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.info("ResourceController::deletePackage({})", deleteBody)
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.deleteResourcesFromPackage(ids, Pkg.class)
+      return ermResourceService.deleteResourcesFromPackage(ids)
     }
   }
 
