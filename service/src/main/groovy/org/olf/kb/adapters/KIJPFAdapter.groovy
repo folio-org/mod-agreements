@@ -1,8 +1,10 @@
 package org.olf.kb.adapters
 
-import org.olf.KintClientResponse;
+import groovy.xml.slurpersupport.GPathResult
+import io.micronaut.http.client.exceptions.HttpClientResponseException
 import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.dataimport.internal.PackageSchema
+import org.olf.kb.GoKbClient
 import org.olf.kb.KBCache;
 import org.olf.kb.KBCacheUpdater;
 import org.springframework.validation.BindingResult
@@ -14,8 +16,13 @@ import groovyx.net.http.FromServer
 
 @Slf4j
 @CompileStatic
-public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, DataBinder {
+public class KIJPFAdapter implements KBCacheUpdater, DataBinder {
 
+  GoKbClient goKbClient;
+
+  KIJPFAdapter() {
+   goKbClient = new GoKbClient()
+  }
 
   public void freshenPackageData(final String source_name,
                                  final String base_url,
@@ -45,12 +52,13 @@ public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, Da
 
       spin_protection++
       boolean valid = true
-      Map<String, ?> jsonMap = (Map)getSync(base_url, query_params, null, { KintClientResponse response ->
-        if (!response.statusCode.toString().startsWithAny("2")) {
-          log.error "Request failed with status ${response.statusCode}"
-          valid = false
-        }
-      })
+      Map<String, ?> jsonMap
+      try {
+        jsonMap = (Map)  goKbClient.getPackageData(base_url, query_params as Map<String, Object>)
+      } catch (HttpClientResponseException exception) {
+        log.error "Request failed with status ${exception.status.code}"
+        valid = false
+      }
  
       if (valid) {
         final Map page_result = processPage(cursor, jsonMap, source_name, cache)
@@ -106,13 +114,15 @@ public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, Da
     log.debug ("processPackage(${url},${source_name}) -- fetching");
     try {
       boolean valid = true
-      Map<String, ?> jsonMap = (Map) getSync(url, null, { KintClientResponse response ->
-        if (!response.statusCode.toString().startsWithAny("2")) {
-          log.error "Request failed with status ${response.statusCode}"
-          valid = false
-        }
-      })
-      
+      Map<String, ?> jsonMap
+      try {
+        jsonMap = (Map)  goKbClient.getPackageData(url)
+      } catch (HttpClientResponseException exception) {
+        log.error "Request failed with status ${exception.status.code}"
+        valid = false
+      }
+
+
       if (valid) {
         PackageSchema json_package_description = kbplusToERM(jsonMap)
         cache.onPackageChange(source_name, json_package_description)

@@ -129,32 +129,5 @@ class AdminController implements DataBinder{
     result.status = 'OK'
     render result as JSON
   }
-
-  /**
-   * Trigger migration of uploaded LOB objects from PostgresDB to configured S3/MinIO
-   */
-  @Transactional
-  public triggerDocMigration() {
-    def result = [:]
-    log.debug("AdminController::triggerDocMigration");
-    fileUploadService.migrateAtMost(0,'LOB','S3'); // n, FROM, TO
-    result.status = 'OK'
-    render result as JSON
-  }
-
-  KintHttpClient micronautHttpClientService
-
-  AdminController(KintHttpClient micronautHttpClientService) {
-    this.micronautHttpClientService = micronautHttpClientService
-  }
-
-  public hitApi() {
-    HttpRequest req = HttpRequest.newBuilder()
-      .uri(new URI("https://jsonplaceholder.typicode.com/todos/1"))
-      .GET()
-      .build()
-
-    render micronautHttpClientService.get(req)
-  }
 }
 
