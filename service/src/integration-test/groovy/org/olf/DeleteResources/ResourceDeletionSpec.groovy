@@ -134,12 +134,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
     if (!testCase.resourceTypeToMark.isEmpty() && !idsForProcessing.isEmpty()) {
       String endpoint = "/erm/resource/markForDelete/${testCase.resourceTypeToMark}" // e.g., /pci, /pti, /ti
       String payloadKey = "resources"
-      try {
-        operationResponse = doPost(endpoint, [(payloadKey): idsForProcessing])
-      } catch (Exception e) {
-        operationError = e
-        log.error("Error calling markForDelete endpoint ${endpoint}: ${e.toString()}", e)
-      }
+      operationResponse = doPost(endpoint, [(payloadKey): idsForProcessing])
     } else {
       operationResponse = new MarkForDeleteResponse()
     }
@@ -152,14 +147,10 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
       // Only attempt delete if markForDelete was successful (no error, non-empty response)
       // And if there were items actually marked by the previous step
       log.info("Proceeding with delete operation for marked items: ${operationResponse}")
-      try {
         String deleteEndpoint = "/erm/resource/delete/${testCase.resourceTypeToMark}"
         String deletePayloadKey = "resources"
         actualDeleteResponse = doPost(deleteEndpoint, [(deletePayloadKey): idsForProcessing])
         finalKbStats = doGet("/erm/statistics/kbCount") // Get stats *after* actual delete
-      } catch (Exception e) {
-        log.error("Error during actual delete operation: ${e.toString()}", e)
-      }
     }
 
     log.info("MarkForDelete Operation Response: ${operationResponse}")
@@ -202,7 +193,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
       expectedStats.PlatformTitleInstance -= (itemsExpectedToBeDeleted.pti?.size()  ?: 0)
       expectedStats.TitleInstance         -= (itemsExpectedToBeDeleted.ti?.size()   ?: 0)
       expectedStats.Work                  -= (itemsExpectedToBeDeleted.work?.size() ?: 0)
-      expectedStats.ErmResource           = expectedStats.PackageContentItem + expectedStats.PlatformTitleInstance + expectedStats.TitleInstance + expectedStats.Work + expectedStats.Pkg
+      expectedStats.ErmResource           = expectedStats.PackageContentItem + expectedStats.PlatformTitleInstance + expectedStats.TitleInstance + expectedStats.Work
     }
     return expectedStats
   }

@@ -75,25 +75,6 @@ public class ErmResourceService {
     resourceList
   }
 
-  public boolean checkResourceExists(String resourceId, String resourceType) {
-    List<String> resourceExists = ErmResource.executeQuery(
-      """
-            SELECT id FROM ${resourceType}
-            WHERE id = :resourceId
-          """.toString(),
-      [resourceId:resourceId],
-      [max:1]
-    )
-
-
-    if (resourceExists != null && !resourceExists.isEmpty()) {
-      return true
-    } else {
-      log.info("Resource: ${resourceId} does not exist for resource type ${resourceType}.")
-      return false
-    }
-  }
-
   public Set<String> entitlementsForResource(String resourceId, int max) {
     Map options = [:]
     if (max) {
@@ -146,25 +127,26 @@ public class ErmResourceService {
   // We make use of the fact that these are Sets to deduplicate in the case that we have, say, two PCIs for a PTI
   // Normally a SELECT for PTIs from PCIs would return twice, but we can dedupe for free here.
   private MarkForDeleteResponse markForDeleteInternal(Set<String> pciIds, Set<String> ptiIds, Set<String> tiIds) {
-    log.info("Initiating markForDelete with PCI ids: {}, PTI ids: {}, TI ids: {}", pciIds, ptiIds, tiIds)
+    log.info("Initiating markForDelete with PCI ids: {}, PTI ids: {}, TI ids: {}", pciIds.size(), ptiIds.size(), tiIds.size())
     MarkForDeleteResponse markForDeletion = new MarkForDeleteResponse()
 
     // Check that ids actually exist and log/ignore any that don't
-    pciIds = pciIds.findAll{String id -> {checkResourceExists(id, "PackageContentItem")}}
-    ptiIds = ptiIds.findAll{String id -> {checkResourceExists(id, "PlatformTitleInstance")}}
-    tiIds = tiIds.findAll{String id -> {checkResourceExists(id, "TitleInstance")}}
+    pciIds = pciIds.isEmpty() ? [] as Set<String> : PackageContentItem.executeQuery("select p.id from PackageContentItem p where p.id in :ids", [ids: pciIds]) as Set<String>
+    ptiIds = ptiIds.isEmpty() ? [] as Set<String> :PlatformTitleInstance.executeQuery("select p.id from PlatformTitleInstance p where p.id in :ids", [ids: ptiIds]) as Set<String>
+    tiIds = tiIds.isEmpty() ? [] as Set<String> : TitleInstance.executeQuery("select t.id from TitleInstance t where t.id in :ids", [ids: tiIds]) as Set<String>
 
     if (pciIds.isEmpty() && ptiIds.isEmpty() && tiIds.isEmpty()) {
       log.warn("No ids found after filtering for existing ids.")
     }
 
     // PCI Level checking -- only need to test whether it has any AgreementLines
-    pciIds.forEach{String id -> {
-      Set<String> linesForResource = entitlementsForResource(id, 1)
-      if (linesForResource.size() == 0) {
-        markForDeletion.pci.add(id);
-      }
-    }}
+    Set<String> pcisWithEntitlements = Entitlement.executeQuery(
+      "select distinct ent.resource.id from Entitlement ent where ent.resource.id in :pciIds",
+      [pciIds: pciIds]
+    ) as Set<String>
+    // PCIs to delete are those that exist but are NOT in the set with entitlements.
+    markForDeletion.pci.addAll(pciIds - pcisWithEntitlements)
+
 
     // Find all the PTIs in the system for PCIs we've decided to delete
     Set<String> ptisForDeleteCheck = PlatformTitleInstance.executeQuery(
@@ -173,35 +155,27 @@ public class ErmResourceService {
         WHERE pci.id IN :pcisForDelete 
       """.toString(),
       [pcisForDelete:markForDeletion.pci]
-    ) as Set
+    ) as Set<String>
 
     ptiIds.addAll(ptisForDeleteCheck);
 
     // PTIs are valid to delete if there are no AgreementLines for them AND they have no not-for-delete PCIs
-    ptiIds.forEach{ String id -> {
-      Set<String> linesForResource = entitlementsForResource(id, 1)
-      if (linesForResource.size() != 0) {
-        return null;
-      }
 
-      // Find any other PCIs that have not been marked for deletion that exist for the PTI.
-      Set<String> pcisForPti = PackageContentItem.executeQuery(
-        """
-            SELECT pci.id FROM PackageContentItem pci
-            WHERE pci.pti.id = :ptiId
-            AND pci.id NOT IN :ignorePcis
-          """.toString(),
-        [ptiId:id, ignorePcis:handleEmptyListMapping(markForDeletion.pci)],
-        [max:1]
-      ) as Set
+    Set<String> ptisWithEntitlements = Entitlement.executeQuery(
+      "select distinct ent.resource.id from Entitlement ent where ent.resource.id in :ptiIds",
+      [ptiIds: ptisForDeleteCheck]
+    ) as Set<String>
 
-      // If no agreement lines and no other non-deletable PCIs exist for the PTI, mark for deletion.
-      if (pcisForPti.size() != 0) {
-        return null
-      }
+    Set<String> ptisWithRemainingPcis = PlatformTitleInstance.executeQuery(
+      """
+            select distinct pci.pti.id from PackageContentItem pci
+            where pci.pti.id in :ptiIds and pci.id not in :deletablePcis
+            """,
+      [ptiIds: ptisForDeleteCheck, deletablePcis: handleEmptyListMapping(markForDeletion.pci)]
+    ) as Set<String>
 
-      markForDeletion.pti.add(id);
-    }}
+    Set<String> nonDeletablePtis = ptisWithEntitlements + ptisWithRemainingPcis
+    markForDeletion.pti.addAll(ptisForDeleteCheck - nonDeletablePtis)
 
     // Find all TIs for PTIs we've marked for deletion and mark for "work checking"
     Set<String> allTisForPtis = TitleInstance.executeQuery(
@@ -210,66 +184,44 @@ public class ErmResourceService {
         WHERE pti.id IN :ptisForDelete 
       """.toString(),
       [ptisForDelete:markForDeletion.pti]
-    ) as Set
+    ) as Set<String>
     allTisForPtis.addAll(tiIds)
 
     // It is valid to delete a Work and ALL attached TIs if none of the TIs have a PTI that is not marked for deletion
-    Set<String> tisForWorkChecking = new HashSet<String>();
-    allTisForPtis.forEach{ String id -> {
-      Set<String> ptisForTi = PlatformTitleInstance.executeQuery("""
-          SELECT pti.id FROM PlatformTitleInstance pti
-          WHERE pti.titleInstance.id = :tiId
+    Set<String> tisWithRemainingPtis = new HashSet<String>();
+    tisWithRemainingPtis = PlatformTitleInstance.executeQuery("""
+          SELECT pti.titleInstance.id FROM PlatformTitleInstance pti
+          WHERE pti.titleInstance.id IN :tiIds
           AND pti.id NOT IN :ignorePtis
-        """.toString(), [tiId:id, ignorePtis:handleEmptyListMapping(markForDeletion.pti)], [max:1])  as Set
+        """.toString(), [tiIds:allTisForPtis, ignorePtis:handleEmptyListMapping(markForDeletion.pti)], [max:1])  as Set<String>
+    Set<String> tisForWorkChecking = allTisForPtis - tisWithRemainingPtis
 
-      if (ptisForTi.size() != 0) {
-        log.debug("PTIs ({}) that have not been marked for deletion exist for TI: {}", ptisForTi, id);
-        return null
-      }
-      tisForWorkChecking.add(id);
-    }}
+    List<String> workIdList = TitleInstance.executeQuery(
+      "select ti.work.id from TitleInstance ti where ti.id in :tiIds",
+      [tiIds: tisForWorkChecking]
+    )
 
-    tisForWorkChecking.forEach{String id -> {
-      List<String> workIdList = TitleInstance.executeQuery("""
-        SELECT ti.work.id FROM TitleInstance ti
-        WHERE ti.id = :tiId
-      """.toString(), [tiId: id], [max: 1])
+    Set<String> workIdsToCheck = workIdList.unique() as Set<String>
+    Set<String> worksWithRemainingPtis = Work.executeQuery(
+      """
+            select distinct pti.titleInstance.work.id from PlatformTitleInstance pti
+            where pti.titleInstance.work.id in :workIds and pti.id not in :deletablePtis
+            """,
+      [workIds: workIdsToCheck, deletablePtis: handleEmptyListMapping(markForDeletion.pti)]
+    ) as Set<String>
 
-      String workId;
+    markForDeletion.work.addAll(workIdsToCheck - worksWithRemainingPtis)
 
-      if (workIdList.size() == 1) {
-        workId = workIdList.get(0);
-        log.debug("Work Id found for deletion: {}", workId)
-      } else {
-        // No work ID exists or multiple works returned for one TI.
-        return null;
-      }
+    if (!markForDeletion.work.isEmpty()) {
+      Set<String> tisForDeletableWorks = TitleInstance.executeQuery(
+        "select ti.id from TitleInstance ti where ti.work.id in :workIds",
+        [workIds: markForDeletion.work]
+      ) as Set<String>
+      markForDeletion.ti.addAll(tisForDeletableWorks)
+    }
 
-      Set<String> ptisForWork = Work.executeQuery("""
-          SELECT pti from PlatformTitleInstance pti
-          WHERE pti.id NOT IN :ignorePtis
-          AND pti.titleInstance.work.id = :workId
-        """.toString(), [ignorePtis:handleEmptyListMapping(markForDeletion.pti), workId: workId], [max:1]) as Set
-
-      if (ptisForWork.size() != 0) {
-        log.debug("PTIs ({}) that have not been marked for deletion exist for work: {}", ptisForWork, workId);
-        return null
-      }
-
-      markForDeletion.work.add(workId)
-    }}
-
-    markForDeletion.work.forEach{String id -> {
-        Set<String> tisForWork = Work.executeQuery("""
-          SELECT ti.id from TitleInstance ti
-          WHERE ti.work.id = :workId
-        """.toString(), [workId:id]) as Set
-
-        // If we can delete a work, delete any other TIs attached to it
-      markForDeletion.ti.addAll(tisForWork)
-      }}
-
-    log.info("Marked resources for delete: {}", markForDeletion)
+    log.info("Marked resources for delete completed: {} PCIs, {} PTIs, {} TIs, {} Works",
+      markForDeletion.pci.size(), markForDeletion.pti.size(), markForDeletion.ti.size(), markForDeletion.work.size())
 
     return markForDeletion
   }
