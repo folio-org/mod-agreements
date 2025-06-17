@@ -45,6 +45,7 @@ class GoKbClient {
 
   }
 
+  // Todo: Do we use the streaming approach? It's shaves ~25% of the time off fresheningPackages
 //  def dataStreamToOutputStream(HttpRequest<?> request,
 //  PipedOutputStream outputStream, Runnable finallyRunnable) {
 //    httpClient.dataStream(request as HttpRequest<Object>)
