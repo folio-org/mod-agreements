@@ -23,16 +23,6 @@ databaseChangeLog = {
 
     addPrimaryKey(columnNames: "id", constraintName: "access_policy_PK", tableName: "access_policy")
 
-    addForeignKeyConstraint(
-        baseColumnNames: "acc_pol_container_fk",
-        baseTableName: "access_policy",
-        constraintName: "access_policy_container_FK",
-        deferrable: "false",
-        initiallyDeferred: "false",
-        referencedColumnNames: "id",
-        referencedTableName: "access_policy_container"
-    )
-
     createIndex(indexName: "access_policy_type_idx", tableName: "access_policy") {
       column(name: "acc_pol_type")
     }
