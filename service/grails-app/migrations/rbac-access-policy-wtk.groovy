@@ -15,7 +15,7 @@ databaseChangeLog = {
       column(name: "acc_pol_type", type: "VARCHAR(255)")
       column(name: "acc_pol_description", type: "text")
       column(name: "acc_pol_date_created", type: "timestamp")
-      column(name: "acc_pol_policy_uuid", type: "VARCHAR(255)")
+      column(name: "acc_pol_policy_id", type: "VARCHAR(255)")
     }
 
     addPrimaryKey(columnNames: "id", constraintName: "access_policy_PK", tableName: "access_policy")
@@ -24,13 +24,13 @@ databaseChangeLog = {
       column(name: "acc_pol_type")
     }
 
-    createIndex(indexName: "access_policy_policy_uuid_idx", tableName: "access_policy") {
-      column(name: "acc_pol_policy_uuid")
+    createIndex(indexName: "access_policy_policy_id_idx", tableName: "access_policy") {
+      column(name: "acc_pol_policy_id")
     }
 
-    createIndex(indexName: "access_policy_type_policy_uuid_idx", tableName: "access_policy") {
+    createIndex(indexName: "access_policy_type_policy_id_idx", tableName: "access_policy") {
       column(name: "acc_pol_type")
-      column(name: "acc_pol_policy_uuid")
+      column(name: "acc_pol_policy_id")
     }
 
     createIndex(indexName: "access_policy_date_created_idx", tableName: "access_policy") {

@@ -1,27 +1,28 @@
 package com.k_int.accesscontrol.grails
 
+import com.k_int.accesscontrol.core.AccessPolicy
+
 // FIXME we could move this grails stuff out to a grails plugin
 //  specifically using the central java code
 // Or actually just into web-toolkit?
 
-import com.k_int.accesscontrol.core.AccessPolicy
+import grails.gorm.MultiTenant
 
-class AccessPolicyEntity extends AccessPolicy {
-  String id;
-
+class AccessPolicyEntity extends AccessPolicy implements MultiTenant<AccessPolicyEntity> {
   static mapping = {
     table         'access_policy'
     id            column: 'id', generator: 'uuid2', length:36
+    version       column: 'version'
+
     type          column: 'acc_pol_type'
     description   column: 'acc_pol_description'
     dateCreated   column: 'acc_pol_date_created'
-    policyUUID    column: 'acc_pol_policy_uuid'
+    policyId      column: 'acc_pol_policy_id'
   }
 
   static constraints = {
-    type nullable: false
+    type        nullable: false
     description nullable: true
-    dateCreated nullable: false
-    policyUUID blank: false
+    policyId       blank: false
   }
 }

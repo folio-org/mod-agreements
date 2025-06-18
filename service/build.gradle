@@ -194,7 +194,8 @@ dependencies {
 	implementation "org.seleniumhq.selenium:selenium-firefox-driver:3.14.0"
 
   /* FIXME Temporary imports for accesscontrol work -- SHOULD BE EXTERNAL LIBRARY */
-  implementation "org.projectlombok:lombok:1.18.38"
+  compileOnly("org.projectlombok:lombok:1.18.38")
+  annotationProcessor("org.projectlombok:lombok:1.18.38")
 
 	/* ---- Custom non profile deps ---- */
 	implementation 'org.apache.kafka:kafka-clients:3.7.2'

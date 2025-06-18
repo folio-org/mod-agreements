@@ -1,8 +1,8 @@
 package com.k_int.accesscontrol.core;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.time.Instant;
 
@@ -10,9 +10,9 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AccessPolicy {
+  private String id;
   private AccessPolicyType type;
   private String description;
   private Instant dateCreated;
-
-  private String policyUUID; // UUID of the policy in String form
+  private String policyId;
 }
