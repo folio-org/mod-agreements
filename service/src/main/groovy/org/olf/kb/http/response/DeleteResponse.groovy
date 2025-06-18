@@ -4,6 +4,7 @@ class DeleteResponse {
 
   DeletionCounts statistics;
   MarkForDeleteResponse deletedIds;
+  MarkForDeleteResponse selectedForDeletion;
 
   DeleteResponse() {
   }
@@ -15,6 +16,12 @@ class DeleteResponse {
   DeleteResponse(DeletionCounts statistics, MarkForDeleteResponse deletedIds) {
     this.statistics = statistics
     this.deletedIds = deletedIds
+  }
+
+  DeleteResponse(DeletionCounts statistics, MarkForDeleteResponse deletedIds, MarkForDeleteResponse selectedForDeletion) {
+    this.statistics = statistics
+    this.deletedIds = deletedIds
+    this.selectedForDeletion = selectedForDeletion;
   }
 
   @Override

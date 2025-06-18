@@ -324,7 +324,8 @@ public class ErmResourceService {
 
     log.info("Deletion complete. Counts: {}", deletionCounts)
     response.statistics = deletionCounts
-    response.deletedIds = null//deletedIds
+    response.deletedIds = deletedIds
+    response.selectedForDeletion = resourcesToDelete
 
     return response
   }
