@@ -46,6 +46,25 @@ databaseChangeLog = {
       column(name: "acc_pol_policy_id")
     }
 
+    createIndex(indexName: "access_policy_resource_class_idx", tableName: "access_policy") {
+      column(name: "acc_pol_resource_class")
+    }
+
+    createIndex(indexName: "access_policy_resource_id_idx", tableName: "access_policy") {
+      column(name: "acc_pol_resource_id")
+    }
+
+    createIndex(indexName: "access_policy_resource_class_resource_id_idx", tableName: "access_policy") {
+      column(name: "acc_pol_resource_class")
+      column(name: "acc_pol_resource_id")
+    }
+
+    createIndex(indexName: "access_policy_resource_class_type_policy_id_idx", tableName: "access_policy") {
+      column(name: "acc_pol_resource_class")
+      column(name: "acc_pol_type")
+      column(name: "acc_pol_policy_id")
+    }
+
     createIndex(indexName: "access_policy_date_created_idx", tableName: "access_policy") {
       column(name: "acc_pol_date_created")
     }
