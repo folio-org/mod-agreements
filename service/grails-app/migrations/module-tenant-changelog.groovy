@@ -35,4 +35,6 @@ databaseChangeLog = {
   include file: 'update-mod-agreements-6-1.groovy'
   include file: 'update-mod-agreements-7-1.groovy'
   include file: 'update-mod-agreements-7-2.groovy'
+  // TODO This probably ought to be moved out to web toolkit along with domain/controller stuff
+  include file: 'rbac-access-policy-wtk.groovy'
 }

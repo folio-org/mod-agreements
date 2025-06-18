@@ -237,5 +237,8 @@ class UrlMappings {
         "/namespaces" (controller: 'identifier', action: 'namespaces', method: 'GET')
       }
     }
+
+    // FIXME this won't necessarily end up in the finished product like this
+    "/erm/accessControl" (resources: 'accessPolicy')
   }
 }
