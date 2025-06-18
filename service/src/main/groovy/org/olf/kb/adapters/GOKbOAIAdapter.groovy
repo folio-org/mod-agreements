@@ -1,6 +1,6 @@
 package org.olf.kb.adapters
 
-import io.micronaut.http.client.exceptions.HttpClientResponseException
+import org.olf.kb.GoKbClientException
 
 import static groovy.transform.TypeCheckingMode.SKIP
 
@@ -95,8 +95,8 @@ public class GOKbOAIAdapter implements KBCacheUpdater, DataBinder {
       Object sync_result
       try {
         sync_result = goKbClient.getPackageData(packagesUrl, query_params)
-      } catch (HttpClientResponseException exception) {
-        log.error "HTTP/OAI Request failed with status code: ${exception.status.code}"
+      } catch (GoKbClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
         found_records = false
       }
 
@@ -181,8 +181,8 @@ public class GOKbOAIAdapter implements KBCacheUpdater, DataBinder {
       // Built in parser for XML returns GPathResult
       try {
         xml = (GPathResult) goKbClient.getPackageData(titlesUrl, query_params as Map<String, Object>)
-      } catch (HttpClientResponseException exception) {
-        log.error "Request failed with status code: ${exception.status.code}"
+      } catch (GoKbClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
         found_records = false
       }
 
@@ -663,8 +663,8 @@ public class GOKbOAIAdapter implements KBCacheUpdater, DataBinder {
       GPathResult xml
       try {
         xml = (GPathResult) goKbClient.getPackageData(titlesUrl, query_params)
-      } catch (HttpClientResponseException exception) {
-        log.error "Request failed with status ${exception.status.code}"
+      } catch (GoKbClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
         valid = false
       }
 

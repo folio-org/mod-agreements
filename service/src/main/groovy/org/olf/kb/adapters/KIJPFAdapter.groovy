@@ -1,10 +1,9 @@
 package org.olf.kb.adapters
 
-import groovy.xml.slurpersupport.GPathResult
-import io.micronaut.http.client.exceptions.HttpClientResponseException
 import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.dataimport.internal.PackageSchema
 import org.olf.kb.GoKbClient
+import org.olf.kb.GoKbClientException
 import org.olf.kb.KBCache;
 import org.olf.kb.KBCacheUpdater;
 import org.springframework.validation.BindingResult
@@ -12,7 +11,6 @@ import org.springframework.validation.BindingResult
 import grails.web.databinding.DataBinder
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import groovyx.net.http.FromServer
 
 @Slf4j
 @CompileStatic
@@ -55,8 +53,8 @@ public class KIJPFAdapter implements KBCacheUpdater, DataBinder {
       Map<String, ?> jsonMap
       try {
         jsonMap = (Map)  goKbClient.getPackageData(base_url, query_params as Map<String, Object>)
-      } catch (HttpClientResponseException exception) {
-        log.error "Request failed with status ${exception.status.code}"
+      } catch (GoKbClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
         valid = false
       }
  
@@ -117,8 +115,8 @@ public class KIJPFAdapter implements KBCacheUpdater, DataBinder {
       Map<String, ?> jsonMap
       try {
         jsonMap = (Map)  goKbClient.getPackageData(url)
-      } catch (HttpClientResponseException exception) {
-        log.error "Request failed with status ${exception.status.code}"
+      } catch (GoKbClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
         valid = false
       }
 
