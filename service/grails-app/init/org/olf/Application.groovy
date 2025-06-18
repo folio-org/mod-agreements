@@ -3,7 +3,6 @@ package org.olf
 import org.springframework.boot.web.embedded.undertow.UndertowBuilderCustomizer
 import org.springframework.boot.web.embedded.undertow.UndertowServletWebServerFactory
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.ComponentScan
 import org.springframework.scheduling.annotation.EnableScheduling
 
 import grails.boot.GrailsApp
@@ -13,7 +12,6 @@ import io.undertow.Undertow.Builder
 
 @CompileStatic
 @EnableScheduling
-@ComponentScan
 class Application extends GrailsAutoConfiguration {
   
   private void info ( final String message) {
