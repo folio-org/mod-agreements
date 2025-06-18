@@ -2,7 +2,7 @@
  * Add grails AccessPolicyEntity database migrations
  */
 databaseChangeLog = {
-  changeSet(author: "efreestone (manual)", id: "2025-06-18-0935-001") {
+  changeSet(author: "efreestone (manual)", id: "2025-06-18-0935-002") {
     createTable(tableName: "access_policy") {
       column(name: "id", type: "VARCHAR(36)") {
         constraints(nullable: "false")
@@ -16,9 +16,22 @@ databaseChangeLog = {
       column(name: "acc_pol_description", type: "text")
       column(name: "acc_pol_date_created", type: "timestamp")
       column(name: "acc_pol_policy_id", type: "VARCHAR(255)")
+
+      column(name: "acc_pol_resource_class", type: "VARCHAR(255)")
+      column(name: "acc_pol_resource_id", type: "VARCHAR(255)")
     }
 
     addPrimaryKey(columnNames: "id", constraintName: "access_policy_PK", tableName: "access_policy")
+
+    addForeignKeyConstraint(
+        baseColumnNames: "acc_pol_container_fk",
+        baseTableName: "access_policy",
+        constraintName: "access_policy_container_FK",
+        deferrable: "false",
+        initiallyDeferred: "false",
+        referencedColumnNames: "id",
+        referencedTableName: "access_policy_container"
+    )
 
     createIndex(indexName: "access_policy_type_idx", tableName: "access_policy") {
       column(name: "acc_pol_type")

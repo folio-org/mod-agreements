@@ -11,8 +11,14 @@ import java.time.Instant;
 @AllArgsConstructor
 public class AccessPolicy {
   private String id;
-  private AccessPolicyType type;
+
+  // Access policy itself
   private String description;
   private Instant dateCreated;
+  private AccessPolicyType type;
   private String policyId;
+
+  // On what resource
+  private String resourceClass;
+  private String resourceId;
 }
