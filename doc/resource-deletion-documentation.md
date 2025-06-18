@@ -96,6 +96,14 @@ And /markForDelete returns a response shape like:
 }
 ```
 
+We would expect users to be deleting all resources inside a package. Therefore a /pkg endpoint exists:
+
+POST {{baseUrl}}/erm/resource/markForDelete/pkg 
+
+This endpoint collects all the IDs for PCIs in the package, then runs the internal delete method using that list of PCIs.
+
+The /pkg endpoint only accepts one Pkg ID in the list in the request body.
+
 
 ## Testing
 
