@@ -26,13 +26,15 @@ public class FolioClient {
   private final HttpClient httpClient;
   private final String baseUrl;
   private final ObjectMapper objectMapper;
+  private final String tenant;
 
   private static final String LOGIN_PATH = "/authn/login-with-expiry";
 
   // BASEURL is going to need to be passed in because this is an external lib NOT a spring framework plugin
   // OkapiClient uses @Value('${okapi.service.host:}') and @Value('${okapi.service.port:80}')
-  public FolioClient(String baseUrl) {
+  public FolioClient(String baseUrl, String tenant) {
     this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    this.tenant = tenant;
     this.httpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
         .build();
@@ -42,18 +44,17 @@ public class FolioClient {
 
   public <T> T get(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException, IOException, InterruptedException {
     URI uri = buildUri(path, queryParams);
+
+    String[] finalHeaders = combineCookies(getBaseHeaders(), headers);
+
     HttpRequest request = HttpRequest.newBuilder()
         .uri(uri)
         .GET()
-        .headers(headers)
+        .headers(finalHeaders)
         .build();
 
     HttpResponse<String> response;
-    //try {
       response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    /*} catch (Exception e){
-      throw new InternalFolioClientException("Request failed", InternalFolioClientException.FAILED_REQUEST, e.getCause());
-    }*/
 
     if (response.statusCode() >= 200 && response.statusCode() < 300) {
       if (response.body() == null || response.body().isEmpty()) {
@@ -86,6 +87,14 @@ public class FolioClient {
     return URI.create(url.toString());
   }
 
+  public String[] getBaseHeaders() {
+    return new String[] {
+        "X-Okapi-Tenant", tenant,
+        "Content-Type", "application/json",
+        "accept", "application/json",
+    };
+  };
+
   public static String[] combineCookies(String[] headers1, String[] headers2) {
     return Stream.concat(Stream.of(headers1), Stream.of(headers2))
         .toArray(String[]::new);
@@ -95,10 +104,8 @@ public class FolioClient {
     URI uri = URI.create(baseUrl + LOGIN_PATH);
     String credBody = "{ \"username\": \"" + username + "\",  \"password\": \"" + password + "\"}";
 
-    String[] baseHeaders = new String[] {"Content-Type", "application/json"};
-
     // Concatenate baseHeaders and headers
-    String[] finalHeaders = combineCookies(baseHeaders, headers);
+    String[] finalHeaders = combineCookies(getBaseHeaders(), headers);
 
     HttpRequest request = HttpRequest.newBuilder()
         .uri(uri)

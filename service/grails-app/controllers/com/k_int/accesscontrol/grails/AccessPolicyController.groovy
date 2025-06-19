@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.k_int.folio.FolioClient
 import com.k_int.folio.FolioClientException
 import com.k_int.okapi.OkapiClient
+import com.k_int.okapi.OkapiTenantResolver
 import grails.converters.JSON
 import grails.gorm.multitenancy.CurrentTenant
+import grails.gorm.multitenancy.Tenants
 import groovy.util.logging.Slf4j
 import com.k_int.okapi.OkapiTenantAwareController
 
@@ -34,17 +36,20 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
     String okapiBaseUri = "https://${okapiClient.getOkapiHost()}:${okapiClient.getOkapiPort()}"
     log.info("LOGDEBUG BASE OKAPI URI: ${okapiBaseUri}")
 
+
+    // FIXME this should be central in any controller doing AccessControl
+    final String tenantName = OkapiTenantResolver.schemaNameToTenantId(Tenants.currentId())
+    log.info("LOGDEBUG TENANT ID: ${tenantName}")
+
     try {
-      //FolioClient folioClient = new folioClient(okapiBaseUri)
+      //FolioClient folioClient = new folioClient(okapiBaseUri, tenantName)
       // FIXME DO NOT CONNECT DIRECTLY TO EUREKA SNAPSHOT...
-      FolioClient folioClient = new FolioClient("https://folio-etesting-snapshot-kong.ci.folio.org")
+      FolioClient folioClient = new FolioClient("https://folio-etesting-snapshot-kong.ci.folio.org", "diku")
 
       String[] folioAccesssHeaders = folioClient.getFolioAccessTokenCookie(
           "diku_admin",
           "admin",
-          [
-              "X-Okapi-Tenant", "diku"
-          ] as String[]
+          [] as String[]
       );
 
       log.info("LOGDEBUG LOGIN COOKIE: ${folioAccesssHeaders}")
@@ -52,10 +57,7 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
       results = folioClient.get(
           "/erm/sas",
           FolioClient.combineCookies(
-              [
-                  "accept", "application/json",
-                  "X-Okapi-Tenant", "diku"
-              ] as String[],
+              [] as String[],
               folioAccesssHeaders
           ),
           [
@@ -77,8 +79,8 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
       }
       // Oops
     }
-    request.getHeaderNames()
-    log.info("LOGDEBUG HEADERS: ${request.getHeaderNames()}")
+
+    log.debug("LOGDEBUG SAS NAMES: ${results.results}")
 
     render results as JSON
   }
