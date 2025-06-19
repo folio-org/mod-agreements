@@ -1,5 +1,7 @@
 package org.olf
 
+import groovy.sql.Sql
+import org.hibernate.Session
 import org.olf.erm.Entitlement
 import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Work
@@ -9,6 +11,10 @@ import org.olf.kb.http.response.MarkForDeleteResponse
 import org.olf.kb.Pkg
 import org.olf.kb.Embargo
 import org.olf.kb.CoverageStatement
+
+import java.sql.Connection
+import java.sql.PreparedStatement
+import java.sql.ResultSet
 
 import static org.springframework.transaction.annotation.Propagation.MANDATORY
 import static groovy.transform.TypeCheckingMode.SKIP
@@ -83,6 +89,13 @@ public class ErmResourceService {
     return (resourceSet.size() == 0 ? ["PLACEHOLDER_RESOURCE"] : resourceSet) as Set<String>
   }
 
+  private String getPcisForPackageSubquery(List<String> packageId) {
+    return """
+        SELECT pci.id FROM PackageContentItem pci
+        WHERE pci.pkg.id IN ${packageId.get(0)}
+      """.toString()
+  }
+
   private Set<String> getPcisForPackage(List<String> packageId) {
     return PackageContentItem.executeQuery(
       """
@@ -99,13 +112,18 @@ public class ErmResourceService {
         // Find the PCI ids that belong to the package, then markForDelete in the same way as for PCI endpoint.
         return markForDeleteInternal(new HashSet<String>(getPcisForPackage(idInputs)), new HashSet<String>(), new HashSet<String>())
       case PackageContentItem.class:
-        return markForDeleteInternal(new HashSet<String>(idInputs), new HashSet<String>(), new HashSet<String>())
+        Set<String> pciIds = PackageContentItem.executeQuery("select p.id from PackageContentItem p where p.id in :ids", [ids: idInputs]) as Set<String>
+        return markForDeleteInternal(pciIds, new HashSet<String>(), new HashSet<String>())
+
+//        return markForDeleteInternal("select p.id from PackageContentItem p where p.id in ${idInputs}", new HashSet<String>(), new HashSet<String>())
         break;
       case PlatformTitleInstance.class:
-        return markForDeleteInternal(new HashSet<String>(), new HashSet<String>(idInputs), new HashSet<String>())
+        Set<String> ptiIds = PlatformTitleInstance.executeQuery("select p.id from PlatformTitleInstance p where p.id in :ids", [ids: idInputs]) as Set<String>
+        return markForDeleteInternal(new HashSet<String>(), ptiIds, new HashSet<String>())
         break;
       case TitleInstance.class:
-        return markForDeleteInternal(new HashSet<String>(), new HashSet<String>(), new HashSet<String>(idInputs))
+        Set<String> tiIds = TitleInstance.executeQuery("select t.id from TitleInstance t where t.id in :ids", [ids: idInputs]) as Set<String>
+        return markForDeleteInternal(new HashSet<String>(), new HashSet<String>(), tiIds)
         break;
       default:
         throw new RuntimeException("Unexpected resource class, cannot delete for class: ${resourceClass.name}");
@@ -118,100 +136,131 @@ public class ErmResourceService {
     log.info("Initiating markForDelete with PCI ids: {}, PTI ids: {}, TI ids: {}", pciIds.size(), ptiIds.size(), tiIds.size())
     MarkForDeleteResponse markForDeletion = new MarkForDeleteResponse()
 
-    // Check that ids actually exist and log/ignore any that don't
-    pciIds = pciIds.isEmpty() ? [] as Set<String> : PackageContentItem.executeQuery("select p.id from PackageContentItem p where p.id in :ids", [ids: pciIds]) as Set<String>
-    ptiIds = ptiIds.isEmpty() ? [] as Set<String> :PlatformTitleInstance.executeQuery("select p.id from PlatformTitleInstance p where p.id in :ids", [ids: ptiIds]) as Set<String>
-    tiIds = tiIds.isEmpty() ? [] as Set<String> : TitleInstance.executeQuery("select t.id from TitleInstance t where t.id in :ids", [ids: tiIds]) as Set<String>
-
     if (pciIds.isEmpty() && ptiIds.isEmpty() && tiIds.isEmpty()) {
-      log.warn("No ids found after filtering for existing ids.")
+      log.warn("No ids found.")
+      return markForDeletion
     }
 
-    // PCI Level checking -- only need to test whether it has any AgreementLines
-    Set<String> pcisWithEntitlements = Entitlement.executeQuery(
-      "select distinct ent.resource.id from Entitlement ent where ent.resource.id in :pciIds",
-      [pciIds: pciIds]
-    ) as Set<String>
-    // PCIs to delete are those that exist but are NOT in the set with entitlements.
-    markForDeletion.pci.addAll(pciIds - pcisWithEntitlements)
+    PackageContentItem.withSession { Session session ->
+      session.doWork { Connection connection ->
+        def sql = new Sql(connection)
 
+        // Create two reusable temp tables:
+        // the "main_ids" table is the ids we want to check for deletion
+        // the "filter_ids" table is for joining to filter for (inner) or exclude (left join and null check) certain ids
+        sql.execute("CREATE TEMP TABLE temp_main_ids (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE temp_filter_ids (id VARCHAR(255) PRIMARY KEY)")
 
-    // Find all the PTIs in the system for PCIs we've decided to delete
-    Set<String> ptisForDeleteCheck = PlatformTitleInstance.executeQuery(
-      """
-        SELECT pci.pti.id FROM PackageContentItem pci
-        WHERE pci.id IN :pcisForDelete 
-      """.toString(),
-      [pcisForDelete:markForDeletion.pci]
-    ) as Set<String>
+        // Mark PCIs for Delete
+        populateTempTable(sql, 'temp_main_ids', pciIds)
 
-    ptiIds.addAll(ptisForDeleteCheck);
+        def pcisWithEntitlements = fetchIds(sql, """
+            SELECT DISTINCT t.id FROM temp_main_ids t
+            INNER JOIN entitlement ent ON t.id = ent.ent_resource_fk
+        """)
+        markForDeletion.pci.addAll(pciIds - pcisWithEntitlements)
 
-    // PTIs are valid to delete if there are no AgreementLines for them AND they have no not-for-delete PCIs
+        // Mark PTIs for Delete
+        populateTempTable(sql, 'temp_filter_ids', markForDeletion.pci) // Load deletable PCIs into the filter table
 
-    Set<String> ptisWithEntitlements = Entitlement.executeQuery(
-      "select distinct ent.resource.id from Entitlement ent where ent.resource.id in :ptiIds",
-      [ptiIds: ptisForDeleteCheck]
-    ) as Set<String>
+        def ptisForDeleteCheck = fetchIds(sql, """
+            SELECT pci.pci_pti_fk FROM package_content_item pci
+            INNER JOIN temp_filter_ids t_del ON t_del.id = pci.id
+        """)
+        ptisForDeleteCheck.addAll(ptiIds) // Combine with initial ptiIds
 
-    Set<String> ptisWithRemainingPcis = PlatformTitleInstance.executeQuery(
-      """
-            select distinct pci.pti.id from PackageContentItem pci
-            where pci.pti.id in :ptiIds and pci.id not in :deletablePcis
-            """,
-      [ptiIds: ptisForDeleteCheck, deletablePcis: handleEmptyListMapping(markForDeletion.pci)]
-    ) as Set<String>
+        populateTempTable(sql, 'temp_main_ids', ptisForDeleteCheck) // Load all candidate PTIs into the main table
 
-    Set<String> nonDeletablePtis = ptisWithEntitlements + ptisWithRemainingPcis
-    markForDeletion.pti.addAll(ptisForDeleteCheck - nonDeletablePtis)
+        def ptisWithEntitlements = fetchIds(sql, """
+            SELECT DISTINCT t.id FROM temp_main_ids t
+            INNER JOIN entitlement ent ON t.id = ent.ent_resource_fk
+        """)
 
-    // Find all TIs for PTIs we've marked for deletion and mark for "work checking"
-    Set<String> allTisForPtis = TitleInstance.executeQuery(
-      """
-        SELECT pti.titleInstance.id FROM PlatformTitleInstance pti
-        WHERE pti.id IN :ptisForDelete 
-      """.toString(),
-      [ptisForDelete:markForDeletion.pti]
-    ) as Set<String>
-    allTisForPtis.addAll(tiIds)
+        def ptisWithRemainingPcis = fetchIds(sql, """
+            SELECT DISTINCT pci.pci_pti_fk FROM package_content_item pci
+            INNER JOIN temp_main_ids t_pti ON pci.pci_pti_fk = t_pti.id
+            LEFT JOIN temp_filter_ids t_del ON pci.id = t_del.id
+            WHERE t_del.id IS NULL
+        """)
 
-    // It is valid to delete a Work and ALL attached TIs if none of the TIs have a PTI that is not marked for deletion
-    Set<String> tisWithRemainingPtis = new HashSet<String>();
-    tisWithRemainingPtis = PlatformTitleInstance.executeQuery("""
-          SELECT pti.titleInstance.id FROM PlatformTitleInstance pti
-          WHERE pti.titleInstance.id IN :tiIds
-          AND pti.id NOT IN :ignorePtis
-        """.toString(), [tiIds:allTisForPtis, ignorePtis:handleEmptyListMapping(markForDeletion.pti)], [max:1])  as Set<String>
-    Set<String> tisForWorkChecking = allTisForPtis - tisWithRemainingPtis
+        markForDeletion.pti.addAll(ptisForDeleteCheck - (ptisWithEntitlements + ptisWithRemainingPcis))
 
-    List<String> workIdList = TitleInstance.executeQuery(
-      "select ti.work.id from TitleInstance ti where ti.id in :tiIds",
-      [tiIds: tisForWorkChecking]
-    )
+        // Mark TIs and Works for Delete
+        populateTempTable(sql, 'temp_filter_ids', markForDeletion.pti) // Load deletable PTIs into filter table
 
-    Set<String> workIdsToCheck = workIdList.unique() as Set<String>
-    Set<String> worksWithRemainingPtis = Work.executeQuery(
-      """
-            select distinct pti.titleInstance.work.id from PlatformTitleInstance pti
-            where pti.titleInstance.work.id in :workIds and pti.id not in :deletablePtis
-            """,
-      [workIds: workIdsToCheck, deletablePtis: handleEmptyListMapping(markForDeletion.pti)]
-    ) as Set<String>
+        def tisFromDeletablePtis = fetchIds(sql, """
+            SELECT DISTINCT pti.pti_ti_fk FROM platform_title_instance pti
+            INNER JOIN temp_filter_ids t ON pti.id = t.id
+        """)
+        def allTisForPtis = new HashSet<>(tiIds)
+        allTisForPtis.addAll(tisFromDeletablePtis)
 
-    markForDeletion.work.addAll(workIdsToCheck - worksWithRemainingPtis)
+        populateTempTable(sql, 'temp_main_ids', allTisForPtis) // Load all candidate TIs into main table
 
-    if (!markForDeletion.work.isEmpty()) {
-      Set<String> tisForDeletableWorks = TitleInstance.executeQuery(
-        "select ti.id from TitleInstance ti where ti.work.id in :workIds",
-        [workIds: markForDeletion.work]
-      ) as Set<String>
-      markForDeletion.ti.addAll(tisForDeletableWorks)
+        def tisWithRemainingPtis = fetchIds(sql, """
+            SELECT DISTINCT pti.pti_ti_fk FROM platform_title_instance pti
+            INNER JOIN temp_main_ids t_ti ON pti.pti_ti_fk = t_ti.id
+            LEFT JOIN temp_filter_ids t_del_pti ON pti.id = t_del_pti.id
+            WHERE t_del_pti.id IS NULL
+        """)
+
+        def tisForWorkChecking = allTisForPtis - tisWithRemainingPtis
+
+        populateTempTable(sql, 'temp_main_ids', tisForWorkChecking) // Load TIs for work check into main table
+
+        def workIdsToCheck = fetchIds(sql, """
+            SELECT DISTINCT ti.ti_work_fk FROM title_instance ti
+            INNER JOIN temp_main_ids t ON ti.id = t.id
+        """)
+
+        populateTempTable(sql, 'temp_main_ids', workIdsToCheck) // Load candidate Works into main table
+
+        def worksWithRemainingPtis = fetchIds(sql, """
+            SELECT DISTINCT ti.ti_work_fk FROM platform_title_instance pti
+            INNER JOIN title_instance ti ON pti.pti_ti_fk = ti.id
+            INNER JOIN temp_main_ids t_work ON ti.ti_work_fk = t_work.id
+            LEFT JOIN temp_filter_ids t_del_pti ON pti.id = t_del_pti.id
+            WHERE t_del_pti.id IS NULL
+        """)
+
+        markForDeletion.work.addAll(workIdsToCheck - worksWithRemainingPtis)
+
+        if (!markForDeletion.work.isEmpty()) {
+          populateTempTable(sql, 'temp_main_ids', markForDeletion.work) // Load final deletable Works
+          def finalTisToDelete = fetchIds(sql, """
+                SELECT ti.id FROM title_instance ti
+                INNER JOIN temp_main_ids t ON ti.ti_work_fk = t.id
+            """)
+          markForDeletion.ti.addAll(finalTisToDelete)
+        }
+
+        // --- Teardown: Temp tables are dropped automatically at transaction end ---
+      }
     }
 
     log.info("Marked resources for delete completed: {} PCIs, {} PTIs, {} TIs, {} Works",
       markForDeletion.pci.size(), markForDeletion.pti.size(), markForDeletion.ti.size(), markForDeletion.work.size())
 
     return markForDeletion
+  }
+
+  // --- HELPER METHODS ---
+  // Clears a table and populates it with a given set of IDs using efficient batching.
+  private void populateTempTable(Sql sql, String tableName, Collection<String> ids) {
+    String deleteSql = "DELETE FROM ${tableName}"
+    sql.execute(deleteSql)
+    if (ids.isEmpty()) return
+
+    sql.withBatch(1000, "INSERT INTO ${tableName} (id) VALUES (?)") { ps ->
+      ids.each { id ->
+        ps.addBatch([id])
+      }
+    }
+  }
+
+ // Executes a SELECT query that returns a single column of IDs and returns them as a Set.
+  private Set<String> fetchIds(Sql sql, String query) {
+    sql.rows(query).collect { it[0] } as Set<String>
   }
 
   @CompileStatic(SKIP)
@@ -260,6 +309,42 @@ public class ErmResourceService {
     return deleteResourcesInternal(forDeletion);
   }
 
+//  def sessionFactory // Injected by Grails
+
+//  @Transactional
+//  @CompileStatic(SKIP)
+//  void batchDelete(Class domainClass, Collection<String> allIds) {
+//    if (!allIds) {
+//      log.info("No IDs provided for deletion.")
+//      return
+//    }
+//
+//    int batchSize = 200
+//    int totalDeleted = 0
+//
+//    // Groovy's collate() breaks a list into batches
+//    List<List<String>> idBatches = allIds.collate(batchSize)
+//
+//    for (List<String> idBatch in idBatches) {
+//      String hql = "from ${domainClass.name} where id in :idList"
+//
+//      List recordsInBatch = domainClass.findAll(hql, [idList: new ArrayList(idBatch)])
+//
+//      for (def record in recordsInBatch) {
+//        record.delete(flush: false)
+//      }
+//
+//
+//      Session session = sessionFactory.currentSession
+//      session.flush()
+//      session.clear()
+//
+//      totalDeleted += recordsInBatch.size()
+//      log.info("Deleted ${totalDeleted} of ${allIds.size()} records so far...")
+//    }
+//    log.info("Finished batch deletion.")
+//  }
+
   @Transactional
   private DeleteResponse deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
     DeleteResponse response = new DeleteResponse()
@@ -301,8 +386,8 @@ public class ErmResourceService {
 
     log.info("Deletion complete. Counts: {}", deletionCounts)
     response.statistics = deletionCounts
-    response.deletedIds = deletedIds
-    response.selectedForDeletion = resourcesToDelete
+//    response.deletedIds = deletedIds
+//    response.selectedForDeletion = resourcesToDelete
 
     return response
   }
