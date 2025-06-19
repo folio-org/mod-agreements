@@ -78,21 +78,6 @@ public class ErmResourceService {
     resourceList
   }
 
-  public Set<String> entitlementsForResource(String resourceId, int max) {
-    Map options = [:]
-    if (max) {
-      options.max = max
-    }
-    return Entitlement.executeQuery(
-      """
-            SELECT ent.id FROM Entitlement ent
-            WHERE ent.resource.id = :resId
-          """.toString(),
-      [resId:resourceId],
-      options
-    ) as Set
-  }
-
   private Set<String> handleEmptyListMapping(Set<String> resourceSet) {
     // Workaround for HQL 'NOT IN' bug: https://stackoverflow.com/questions/36879116/hibernate-hql-not-in-clause-doesnt-seem-to-work
     return (resourceSet.size() == 0 ? ["PLACEHOLDER_RESOURCE"] : resourceSet) as Set<String>
@@ -255,14 +240,6 @@ public class ErmResourceService {
     }
 
     return successfullyDeletedIds
-  }
-
-  private void deleteCoverageStatement(Set<String> resourceIds) {
-    log.debug("Deleting Coverage Statements for Resources: {}", resourceIds)
-    CoverageStatement.executeUpdate("""
-      DELETE FROM CoverageStatement cov
-      WHERE cov.resource.id IN (:resourceIds)
-    """, [resourceIds: resourceIds])
   }
 
 
