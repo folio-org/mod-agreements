@@ -302,25 +302,25 @@ public class ErmResourceService {
       log.debug("Deleting PCIs: {}", resourcesToDelete.pci)
       deletedIds.pci = deleteWithEvents(PackageContentItem, resourcesToDelete.pci)
     }
-    deletionCounts.pciDeleted =  deletedIds.pci.size()
+    deletionCounts.pciDeleted =  deletedIds.pci?.size()
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
       log.debug("Deleting PTIs: {}", resourcesToDelete.pti)
       deletedIds.pti = deleteWithEvents(PlatformTitleInstance, resourcesToDelete.pti)
     }
-    deletionCounts.ptiDeleted = deletedIds.pti.size()
+    deletionCounts.ptiDeleted = deletedIds.pti?.size()
 
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
       log.debug("Deleting TIs: {}", resourcesToDelete.ti)
       deletedIds.ti = deleteWithEvents(TitleInstance, resourcesToDelete.ti)
     }
-    deletionCounts.tiDeleted = deletedIds.ti.size()
+    deletionCounts.tiDeleted = deletedIds.ti?.size()
 
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
       log.debug("Deleting Works: {}", resourcesToDelete.work)
       deletedIds.work = deleteWithEvents(Work, resourcesToDelete.work)
     }
-    deletionCounts.workDeleted = deletedIds.work.size()
+    deletionCounts.workDeleted = deletedIds.work?.size()
 
     log.info("Deletion complete. Counts: {}", deletionCounts)
     response.statistics = deletionCounts
