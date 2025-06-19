@@ -215,7 +215,7 @@ public class ErmResourceService {
   }
 
   @CompileStatic(SKIP)
-  private Set<String> deleteWithEvents(Class domainClass, Collection<String> ids) {
+  private Set<String> deleteIds(Class domainClass, Collection<String> ids) {
     if (ids == null || ids.isEmpty()) {
       return new HashSet<>()
     }
@@ -277,25 +277,25 @@ public class ErmResourceService {
 
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
       log.debug("Deleting PCIs: {}", resourcesToDelete.pci)
-      deletedIds.pci = deleteWithEvents(PackageContentItem, resourcesToDelete.pci)
+      deletedIds.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
     }
     deletionCounts.pciDeleted =  deletedIds.pci?.size()
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
       log.debug("Deleting PTIs: {}", resourcesToDelete.pti)
-      deletedIds.pti = deleteWithEvents(PlatformTitleInstance, resourcesToDelete.pti)
+      deletedIds.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
     }
     deletionCounts.ptiDeleted = deletedIds.pti?.size()
 
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
       log.debug("Deleting TIs: {}", resourcesToDelete.ti)
-      deletedIds.ti = deleteWithEvents(TitleInstance, resourcesToDelete.ti)
+      deletedIds.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
     }
     deletionCounts.tiDeleted = deletedIds.ti?.size()
 
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
       log.debug("Deleting Works: {}", resourcesToDelete.work)
-      deletedIds.work = deleteWithEvents(Work, resourcesToDelete.work)
+      deletedIds.work = deleteIds(Work, resourcesToDelete.work)
     }
     deletionCounts.workDeleted = deletedIds.work?.size()
 
