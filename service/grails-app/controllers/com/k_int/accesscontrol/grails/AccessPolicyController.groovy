@@ -1,6 +1,8 @@
 package com.k_int.accesscontrol.grails
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.k_int.accesscontrol.acqunits.AcquisitionsClient
+import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnit
 import com.k_int.folio.FolioClient
 import com.k_int.folio.FolioClientException
 import com.k_int.okapi.OkapiClient
@@ -41,8 +43,12 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
     final String tenantName = OkapiTenantResolver.schemaNameToTenantId(Tenants.currentId())
     log.info("LOGDEBUG TENANT ID: ${tenantName}")
 
+    // This is the user ID coming in through spring security
+    // String patronId = getPatron().id;
+    String patronId = "d54d4b04-f3f3-56e9-9b60-e756f3199698";
+
     try {
-      //FolioClient folioClient = new folioClient(okapiBaseUri, tenantName)
+      //FolioClient folioClient = new FolioClient(okapiBaseUri, tenantName)
       // FIXME DO NOT CONNECT DIRECTLY TO EUREKA SNAPSHOT...
       FolioClient folioClient = new FolioClient("https://folio-etesting-snapshot-kong.ci.folio.org", "diku")
 
@@ -69,18 +75,31 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
 
       log.info("LOGDEBUG RESULTS: ${results}")
 
+      log.debug("LOGDEBUG SAS NAMES: ${results.results}")
+
+
+      //AcquisitionsClient acqClient = new AcquisitionsClient(okapiBaseUri, tenantName)
+      // FIXME DO NOT CONNECT DIRECTLY TO EUREKA SNAPSHOT...
+      AcquisitionsClient acqClient = new AcquisitionsClient("https://folio-etesting-snapshot-kong.ci.folio.org", "diku");
+
+      log.info("LOGDEBUG LOGIN COOKIE: ${folioAccesssHeaders}")
+      // FIXME obviously this isn't what we need to do long term
+      AcquisitionUnit acqUnits = acqClient.getAcquisitionUnits(folioAccesssHeaders, Collections.emptyMap());
+
+      log.info("LOGDEBUG acqUnits: ${acqUnits}")
+      log.info("LOGDEBUG acqUnits: ${acqUnits.acquisitionsUnits}")
+
+
       // This will NOT work in DC mode :(
       //log.info("LOGDEBUG USERID: ${getPatron().id}")
     } catch (FolioClientException e) {
       if (e.cause) {
-        log.error("Something went wrong in internal folio redirect: ${e}: CAUSE:", e.cause)
+        log.error("Something went wrong in folio call: ${e}: CAUSE:", e.cause)
       } else {
-        log.error("Something went wrong in internal folio redirect", e)
+        log.error("Something went wrong in folio call", e)
       }
       // Oops
     }
-
-    log.debug("LOGDEBUG SAS NAMES: ${results.results}")
 
     render results as JSON
   }

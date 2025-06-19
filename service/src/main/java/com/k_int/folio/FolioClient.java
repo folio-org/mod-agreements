@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -98,6 +99,11 @@ public class FolioClient {
   public static String[] combineCookies(String[] headers1, String[] headers2) {
     return Stream.concat(Stream.of(headers1), Stream.of(headers2))
         .toArray(String[]::new);
+  }
+
+  public static Map<String, String> combineQueryParams(Map<String,String> map1, Map<String, String> map2) {
+    return Stream.concat(map1.entrySet().stream(), map2.entrySet().stream()).collect(
+        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   public String[] getFolioAccessTokenCookie(String username, String password, String[] headers) throws FolioClientException, IOException, InterruptedException {
