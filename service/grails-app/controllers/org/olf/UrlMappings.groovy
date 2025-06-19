@@ -239,6 +239,10 @@ class UrlMappings {
     }
 
     // FIXME this won't necessarily end up in the finished product like this
-    "/erm/accessControl" (resources: 'accessPolicy')
+    "/erm/accessControl" (resources: 'accessPolicy') {
+      collection {
+        '/testRequestContext' (controller: "accessPolicy", action: "testRequestContext", method: 'GET')
+      }
+    }
   }
 }
