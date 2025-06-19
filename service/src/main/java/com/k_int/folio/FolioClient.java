@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.stream.Stream;
 
 /**
  * This is designed to be a low level client for connecting to FOLIO.
@@ -21,14 +22,16 @@ import java.util.StringJoiner;
  * To that end it will simply pass through all headers provided to it,
  * and not be responsible for authentication at all
  * */
-public class InternalFolioClient {
+public class FolioClient {
   private final HttpClient httpClient;
   private final String baseUrl;
   private final ObjectMapper objectMapper;
 
+  private static final String LOGIN_PATH = "/authn/login-with-expiry";
+
   // BASEURL is going to need to be passed in because this is an external lib NOT a spring framework plugin
   // OkapiClient uses @Value('${okapi.service.host:}') and @Value('${okapi.service.port:80}')
-  public InternalFolioClient(String baseUrl) {
+  public FolioClient(String baseUrl) {
     this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
     this.httpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
@@ -37,7 +40,7 @@ public class InternalFolioClient {
     this.objectMapper= new ObjectMapper();
   }
 
-  public <T> T get(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws InternalFolioClientException, IOException, InterruptedException {
+  public <T> T get(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException, IOException, InterruptedException {
     URI uri = buildUri(path, queryParams);
     HttpRequest request = HttpRequest.newBuilder()
         .uri(uri)
@@ -59,10 +62,10 @@ public class InternalFolioClient {
       try {
         return objectMapper.readValue(response.body(), responseType);
       } catch (Exception e) {
-        throw new InternalFolioClientException("Failed to cast response body: " + response.body() + " to type: " + responseType.getSimpleName(), InternalFolioClientException.RESPONSE_WRONG_SHAPE, e);
+        throw new FolioClientException("Failed to cast response body: " + response.body() + " to type: " + responseType.getSimpleName(), FolioClientException.RESPONSE_WRONG_SHAPE, e);
       }
     } else {
-      throw new InternalFolioClientException("GET request failed: " + response.statusCode() + " - " + response.body(), InternalFolioClientException.REQUEST_NOT_OK);
+      throw new FolioClientException("GET request failed: " + response.statusCode() + " - " + response.body(), FolioClientException.REQUEST_NOT_OK);
     }
   }
 
@@ -82,6 +85,40 @@ public class InternalFolioClient {
 
     return URI.create(url.toString());
   }
+
+  public static String[] combineCookies(String[] headers1, String[] headers2) {
+    return Stream.concat(Stream.of(headers1), Stream.of(headers2))
+        .toArray(String[]::new);
+  }
+
+  public String[] getFolioAccessTokenCookie(String username, String password, String[] headers) throws FolioClientException, IOException, InterruptedException {
+    URI uri = URI.create(baseUrl + LOGIN_PATH);
+    String credBody = "{ \"username\": \"" + username + "\",  \"password\": \"" + password + "\"}";
+
+    String[] baseHeaders = new String[] {"Content-Type", "application/json"};
+
+    // Concatenate baseHeaders and headers
+    String[] finalHeaders = combineCookies(baseHeaders, headers);
+
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(uri)
+        .POST(HttpRequest.BodyPublishers.ofString(credBody))
+        .headers(finalHeaders)
+        .build();
+
+    HttpResponse<String> response;
+    response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+    String folioAccessToken = "";
+    for (String string : response.headers().map().get("set-cookie")) {
+      if (string.matches("folioAccessToken=.*")) {
+        folioAccessToken = string;
+      }
+    }
+
+    return new String[] { "Cookie", folioAccessToken };
+  }
+
 
   // TODO extend this to POST, PUT, etc
 }
