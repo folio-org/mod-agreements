@@ -1,6 +1,7 @@
 package com.k_int.folio;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URI;
@@ -23,6 +24,7 @@ import java.util.stream.Stream;
  * To that end it will simply pass through all headers provided to it,
  * and not be responsible for authentication at all
  * */
+@Slf4j
 public class FolioClient {
   private final HttpClient httpClient;
   private final String baseUrl;
@@ -64,6 +66,7 @@ public class FolioClient {
       try {
         return objectMapper.readValue(response.body(), responseType);
       } catch (Exception e) {
+        log.error("Failed to cast response body: {} to type: {}", response.body(), responseType.getSimpleName(), e);
         throw new FolioClientException("Failed to cast response body: " + response.body() + " to type: " + responseType.getSimpleName(), FolioClientException.RESPONSE_WRONG_SHAPE, e);
       }
     } else {

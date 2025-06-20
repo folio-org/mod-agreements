@@ -11,6 +11,15 @@
     </encoder>
   </appender>
 
+  <!-- FIXME DO NOT MERGE THESE TWO -->
+  <logger name="com.k_int.folio">
+    <level value="DEBUG" />
+  </logger>
+
+  <logger name="com.k_int.accesscontrol">
+    <level value="DEBUG" />
+  </logger>
+
   <logger name="org.hibernate.orm.deprecation">
     <level value="ERROR" />
   </logger>

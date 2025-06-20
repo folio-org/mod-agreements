@@ -24,11 +24,11 @@ public class AcquisitionsClient extends FolioClient {
   }};
 
   private static final Map<String, String> BASE_UNIT_QUERY_PARAMS = combineQueryParams(new HashMap<String, String>() {{
-    put("query", "cql.allRecords%3D1%20sortby%20name");
+    put("query", "cql.allRecords=1 sortby name");
   }}, BASE_LIMIT_PARAM);
 
   private static final Map<String, String> BASE_UNIT_MEMBERSHIP_QUERY_PARAMS = combineQueryParams(new HashMap<String, String>() {{
-    put("query", "%userId%3D%3D" + DIKU_USER_ID + "%29");
+    put("query", "(userId==" + DIKU_USER_ID + ")");
   }}, BASE_LIMIT_PARAM);
 
   public AcquisitionUnitResponse getAcquisitionUnits(String[] headers, Map<String,String> queryParams) throws IOException, FolioClientException, InterruptedException {
