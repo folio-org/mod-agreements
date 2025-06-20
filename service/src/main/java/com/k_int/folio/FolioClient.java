@@ -1,6 +1,7 @@
 package com.k_int.folio;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -31,11 +32,23 @@ public class FolioClient {
   private final ObjectMapper objectMapper;
   private final String tenant;
 
+  @Getter
+  private final String patronId;
+
+  private final String userLogin;
+  private final String userPassword;
+
   private static final String LOGIN_PATH = "/authn/login-with-expiry";
 
   // BASEURL is going to need to be passed in because this is an external lib NOT a spring framework plugin
   // OkapiClient uses @Value('${okapi.service.host:}') and @Value('${okapi.service.port:80}')
-  public FolioClient(String baseUrl, String tenant) {
+  public FolioClient(
+    String baseUrl,
+    String tenant,
+    String patronId,
+    String userLogin,
+    String userPassword
+  ) {
     this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
     this.tenant = tenant;
     this.httpClient = HttpClient.newBuilder()
@@ -43,6 +56,16 @@ public class FolioClient {
         .build();
 
     this.objectMapper= new ObjectMapper();
+    this.patronId = patronId;
+
+    this.userLogin = userLogin;
+    this.userPassword = userPassword;
+  }
+
+  public FolioClient(
+    FolioClientConfig config
+  ) {
+    this(config.baseOkapiUri, config.tenantName, config.patronId, config.userLogin, config.userPassword);
   }
 
   public <T> T get(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException, IOException, InterruptedException {
@@ -109,9 +132,9 @@ public class FolioClient {
         Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  public String[] getFolioAccessTokenCookie(String username, String password, String[] headers) throws FolioClientException, IOException, InterruptedException {
+  public String[] getFolioAccessTokenCookie(String[] headers) throws FolioClientException, IOException, InterruptedException {
     URI uri = URI.create(baseUrl + LOGIN_PATH);
-    String credBody = "{ \"username\": \"" + username + "\",  \"password\": \"" + password + "\"}";
+    String credBody = "{ \"username\": \"" + userLogin + "\",  \"password\": \"" + userPassword + "\"}";
 
     // Concatenate baseHeaders and headers
     String[] finalHeaders = combineCookies(getBaseHeaders(), headers);
