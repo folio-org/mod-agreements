@@ -148,8 +148,10 @@ public class ErmResourceService {
         // Create two reusable temp tables:
         // the "main_ids" table is the ids we want to check for deletion
         // the "filter_ids" table is for joining to filter for (inner) or exclude (left join and null check) certain ids
-        sql.execute("CREATE TEMP TABLE temp_main_ids (id VARCHAR(255) PRIMARY KEY)")
-        sql.execute("CREATE TEMP TABLE temp_filter_ids (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_main_ids (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_filter_ids (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("TRUNCATE TABLE temp_main_ids")
+        sql.execute("TRUNCATE TABLE temp_filter_ids")
 
         // Mark PCIs for Delete
         populateTempTable(sql, 'temp_main_ids', pciIds)
@@ -346,6 +348,7 @@ public class ErmResourceService {
 //  }
 
   @Transactional
+  @CompileStatic(SKIP)
   private DeleteResponse deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
     DeleteResponse response = new DeleteResponse()
     MarkForDeleteResponse deletedIds = new MarkForDeleteResponse()
@@ -357,30 +360,56 @@ public class ErmResourceService {
       return response
     }
 
-    log.info("Attempting to delete resources: {}", resourcesToDelete)
+//    log.info("Attempting to delete resources: {}", resourcesToDelete)
     DeletionCounts deletionCounts = new DeletionCounts()
 
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
-      log.debug("Deleting PCIs: {}", resourcesToDelete.pci)
-      deletedIds.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
+//      log.debug("Deleting PCIs: {}", resourcesToDelete.pci)
+
+//      deletedIds.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
+      List<String> pciIds = new ArrayList<>(resourcesToDelete.pci)
+
+      if (pciIds) { // Ensure the list is not empty before proceeding
+        // Now the compiler knows for sure it's passing an Iterable<String>
+        List<PackageContentItem> itemsToDelete = PackageContentItem.getAll(pciIds)
+        if (itemsToDelete) {
+          PackageContentItem.deleteAll(itemsToDelete)
+        }
+      }
     }
     deletionCounts.pciDeleted =  deletedIds.pci?.size()
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
-      log.debug("Deleting PTIs: {}", resourcesToDelete.pti)
-      deletedIds.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
+//      log.debug("Deleting PTIs: {}", resourcesToDelete.pti)
+
+//      deletedIds.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
+      List<String> ptiIds = new ArrayList<>(resourcesToDelete.pti)
+      List<PlatformTitleInstance> itemsToDelete = PlatformTitleInstance.getAll(ptiIds)
+      if (itemsToDelete) {
+        PlatformTitleInstance.deleteAll(itemsToDelete)
+      }
     }
     deletionCounts.ptiDeleted = deletedIds.pti?.size()
 
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
-      log.debug("Deleting TIs: {}", resourcesToDelete.ti)
-      deletedIds.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
+//      log.debug("Deleting TIs: {}", resourcesToDelete.ti)
+//      deletedIds.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
+      List<String> tiIds = new ArrayList<>(resourcesToDelete.ti)
+      List<TitleInstance> itemsToDelete = TitleInstance.getAll(tiIds)
+      if (itemsToDelete) {
+        TitleInstance.deleteAll(itemsToDelete)
+      }
     }
     deletionCounts.tiDeleted = deletedIds.ti?.size()
 
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
-      log.debug("Deleting Works: {}", resourcesToDelete.work)
-      deletedIds.work = deleteIds(Work, resourcesToDelete.work)
+//      log.debug("Deleting Works: {}", resourcesToDelete.work)
+//      deletedIds.work = deleteIds(Work, resourcesToDelete.work)
+      List<String> workIds = new ArrayList<>(resourcesToDelete.work)
+      List<Work> itemsToDelete = Work.getAll(workIds)
+      if (itemsToDelete) {
+        Work.deleteAll(itemsToDelete)
+      }
     }
     deletionCounts.workDeleted = deletedIds.work?.size()
 
