@@ -13,21 +13,29 @@ public class AcquisitionsClient extends FolioClient {
   public static final String ACQUISITION_UNIT_PATH = "/acquisitions-units/units";
   public static final String ACQUISITION_UNIT_MEMBERSHIP_PATH = "/acquisitions-units/memberships";
 
+  public static final String DIKU_USER_ID = "a432e091-e445-40e7-a7a6-e31c035cd51a"; // FIXME this shouldn't be static obvs
+
   public AcquisitionsClient(String baseUrl, String tenant) {
     super(baseUrl, tenant);
   }
 
-  private static Map<String, String> BASE_QUERY_PARAMS = new HashMap<String, String>() {{
+  private static final Map<String, String> BASE_LIMIT_PARAM = new HashMap<String, String>() {{
     put("limit", "2147483647");
-    put("query", "%28acquisitionsUnitId%3D%3Dba7b8596-16db-420e-ab9b-be19230b4c91%29");
   }};
 
+  private static final Map<String, String> BASE_UNIT_QUERY_PARAMS = combineQueryParams(new HashMap<String, String>() {{
+    put("query", "cql.allRecords%3D1%20sortby%20name");
+  }}, BASE_LIMIT_PARAM);
+
+  private static final Map<String, String> BASE_UNIT_MEMBERSHIP_QUERY_PARAMS = combineQueryParams(new HashMap<String, String>() {{
+    put("query", "%userId%3D%3D" + DIKU_USER_ID + "%29");
+  }}, BASE_LIMIT_PARAM);
 
   public AcquisitionUnitResponse getAcquisitionUnits(String[] headers, Map<String,String> queryParams) throws IOException, FolioClientException, InterruptedException {
-    return get(ACQUISITION_UNIT_PATH, headers, combineQueryParams(BASE_QUERY_PARAMS, queryParams), AcquisitionUnitResponse.class);
+    return get(ACQUISITION_UNIT_PATH, headers, combineQueryParams(BASE_UNIT_QUERY_PARAMS, queryParams), AcquisitionUnitResponse.class);
   }
 
-//  public AcquisitionUnitMembershipResponse getAcquisitionUnitMemberships(String[] headers, Map<String,String> queryParams) {
-//    return get(ACQUISITION_UNIT_MEMBERSHIP_PATH, headers, combineQueryParams(BASE_QUERY_PARAMS, queryParams), AcquisitionUnitMembershipResponse);
-//  }
+  public AcquisitionUnitMembershipResponse getAcquisitionUnitMemberships(String[] headers, Map<String,String> queryParams) throws IOException, FolioClientException, InterruptedException {
+    return get(ACQUISITION_UNIT_MEMBERSHIP_PATH, headers, combineQueryParams(BASE_UNIT_MEMBERSHIP_QUERY_PARAMS, queryParams), AcquisitionUnitMembershipResponse.class);
+  }
 }
