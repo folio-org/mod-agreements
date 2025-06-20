@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 
 import com.k_int.accesscontrol.acqunits.AcquisitionsClient
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnit
+import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembership
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembershipResponse
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitResponse
 import com.k_int.folio.FolioClientConfig
@@ -71,18 +72,59 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
 
       log.info("LOGDEBUG LOGIN COOKIE: ${folioAccessHeaders}")
       // FIXME obviously this isn't what we need to do long term
-      AcquisitionUnitResponse acqUnits = acqClient.getAcquisitionUnits(folioAccessHeaders, Collections.emptyMap());
 
-      log.info("LOGDEBUG acqUnits: ${acqUnits}")
-      log.info("LOGDEBUG acqUnits: ${acqUnits.acquisitionsUnits}")
+      // Fetch acq units which DO NOT restrict read
+      List<AcquisitionUnit> acqUnitsNoRestrictRead = acqClient.getNoRestrictReadAcquisitionUnits(folioAccessHeaders, Collections.emptyMap()).acquisitionsUnits;
 
-      AcquisitionUnitMembershipResponse acquisitionUnitMemberships = acqClient.getPatronAcquisitionUnitMemberships(folioAccessHeaders, Collections.emptyMap(), patronId);
+      // Fetch acq units which DO restrict read
+      List<AcquisitionUnit> acqUnitsRestrictRead = acqClient.getRestrictReadAcquisitionUnits(folioAccessHeaders, Collections.emptyMap()).acquisitionsUnits;
+
+      log.info("LOGDEBUG acqUnitsNoRestrictRead: ${acqUnitsNoRestrictRead}")
+      log.info("LOGDEBUG acqUnitsRestrictRead: ${acqUnitsRestrictRead}")
+
+      // This fetches the acq memberships patron holds
+      List<AcquisitionUnitMembership> acquisitionUnitMemberships = acqClient.getPatronAcquisitionUnitMemberships(folioAccessHeaders, Collections.emptyMap()).acquisitionsUnitMemberships;
 
       log.info("LOGDEBUG acqUnitMemberships: ${acquisitionUnitMemberships}")
-      log.info("LOGDEBUG acqUnitMemberships: ${acquisitionUnitMemberships.acquisitionsUnitMemberships}")
 
-      // This will NOT work in DC mode :(
-      //log.info("LOGDEBUG USERID: ${getPatron().id}")
+      // We aim for 3 lists.
+      /*
+      1.  **List A** – Acquisition units the user _is a member of_ and which _restrict READ_ access.
+
+      2.  **List B** – Acquisition units that _do not restrict READ_ access for anyone.
+
+      3.  **List C** – Acquisition units the user _is NOT a member of_ but _restrict READ_ access.
+     */
+
+      // List B is acqUnitsNoRestrictRead
+      //  construct List A
+      List<AcquisitionUnit> acqUnitsMemberAndRestrict = acqUnitsRestrictRead
+        .stream()
+        .filter { AcquisitionUnit au -> {
+          return acquisitionUnitMemberships.stream().anyMatch { AcquisitionUnitMembership aum -> {
+            return aum.acquisitionsUnitId == au.id && aum.userId == folioClientConfig.patronId
+          }}
+        }}
+        .collect()
+
+      //  construct List C
+      List<AcquisitionUnit> acqUnitsNotMemberAndRestrict = acqUnitsRestrictRead
+        .stream()
+        .filter { AcquisitionUnit au -> {
+          return acquisitionUnitMemberships.stream().noneMatch { AcquisitionUnitMembership aum -> {
+            return aum.acquisitionsUnitId == au.id && aum.userId == folioClientConfig.patronId
+          }}
+        }}
+        .collect()
+
+      log.info("LOGDEBUG List A: ${acqUnitsMemberAndRestrict}")
+      log.info("LOGDEBUG List B: ${acqUnitsNoRestrictRead}")
+      log.info("LOGDEBUG List C: ${acqUnitsNotMemberAndRestrict}")
+
+      log.info("LOGDEBUG List A SIZE: ${acqUnitsMemberAndRestrict.size()}")
+      log.info("LOGDEBUG List B SIZE: ${acqUnitsNoRestrictRead.size()}")
+      log.info("LOGDEBUG List C SIZE: ${acqUnitsNotMemberAndRestrict.size()}")
+
     } catch (FolioClientException e) {
       if (e.cause) {
         log.error("Something went wrong in folio call: ${e}: CAUSE:", e.cause)
