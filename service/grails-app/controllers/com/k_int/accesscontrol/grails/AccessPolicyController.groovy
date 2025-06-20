@@ -87,7 +87,7 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
 
       log.info("LOGDEBUG acqUnitMemberships: ${acquisitionUnitMemberships}")
 
-      // We aim for 3 lists.
+      // We aim for 3 lists. -- THIS WORK SHOULD BE INSIDE THE ACQ LIBRARY
       /*
       1.  **List A** – Acquisition units the user _is a member of_ and which _restrict READ_ access.
 
