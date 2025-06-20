@@ -1,6 +1,7 @@
 package org.olf
 
 import groovy.sql.Sql
+import org.grails.datastore.gorm.GormEntity
 import org.hibernate.Session
 import org.olf.erm.Entitlement
 import org.olf.kb.IdentifierOccurrence
@@ -156,28 +157,38 @@ public class ErmResourceService {
         // Mark PCIs for Delete
         populateTempTable(sql, 'temp_main_ids', pciIds)
 
+        // PCI Ids in the temporary table are filtered for those that exist in the entitlements table (using inner join).
         def pcisWithEntitlements = fetchIds(sql, """
             SELECT DISTINCT t.id FROM temp_main_ids t
             INNER JOIN entitlement ent ON t.id = ent.ent_resource_fk
         """)
+        // We can delete the PCIs from the original set minus the ones with entitlements.
         markForDeletion.pci.addAll(pciIds - pcisWithEntitlements)
 
         // Mark PTIs for Delete
-        populateTempTable(sql, 'temp_filter_ids', markForDeletion.pci) // Load deletable PCIs into the filter table
+        // Populate the temp filter table with the PCI Ids we want to delete.
+        populateTempTable(sql, 'temp_filter_ids', markForDeletion.pci)
 
+        // Filter the PCI table for those we want to delete, then select the PTI ids.
         def ptisForDeleteCheck = fetchIds(sql, """
             SELECT pci.pci_pti_fk FROM package_content_item pci
             INNER JOIN temp_filter_ids t_del ON t_del.id = pci.id
         """)
         ptisForDeleteCheck.addAll(ptiIds) // Combine with initial ptiIds
 
-        populateTempTable(sql, 'temp_main_ids', ptisForDeleteCheck) // Load all candidate PTIs into the main table
+        // Load PTI ids into main temp table.
+        populateTempTable(sql, 'temp_main_ids', ptisForDeleteCheck)
 
+        // Get PTIs with entitlements
         def ptisWithEntitlements = fetchIds(sql, """
             SELECT DISTINCT t.id FROM temp_main_ids t
             INNER JOIN entitlement ent ON t.id = ent.ent_resource_fk
         """)
 
+        // Take the PCI table, and filter for PCIs belonging to PTIs we marked for deletion.
+        // THEN, join back on the PCIs we have marked for deletion using the PCI Id.
+        // If a PTI that was marked for deletion does not have a PCI that was also marked for deletion (i.e. it is referenced by another pci),
+        // then it will be NULL in the t_del.id column.
         def ptisWithRemainingPcis = fetchIds(sql, """
             SELECT DISTINCT pci.pci_pti_fk FROM package_content_item pci
             INNER JOIN temp_main_ids t_pti ON pci.pci_pti_fk = t_pti.id
@@ -228,7 +239,8 @@ public class ErmResourceService {
         markForDeletion.work.addAll(workIdsToCheck - worksWithRemainingPtis)
 
         if (!markForDeletion.work.isEmpty()) {
-          populateTempTable(sql, 'temp_main_ids', markForDeletion.work) // Load final deletable Works
+          // Load final deletable Works to mark all related TIs for deletion.
+          populateTempTable(sql, 'temp_main_ids', markForDeletion.work)
           def finalTisToDelete = fetchIds(sql, """
                 SELECT ti.id FROM title_instance ti
                 INNER JOIN temp_main_ids t ON ti.ti_work_fk = t.id
@@ -267,28 +279,19 @@ public class ErmResourceService {
 
   @CompileStatic(SKIP)
   private Set<String> deleteIds(Class domainClass, Collection<String> ids) {
-    if (ids == null || ids.isEmpty()) {
-      return new HashSet<>()
-    }
-    String hql = "from ${domainClass.name} where id in :idList"
-
-    List instancesToDelete = domainClass.findAll(hql, [idList: new ArrayList(ids)])
-
-    if (instancesToDelete.isEmpty()) {
-      return new HashSet<>()
-    }
-
     Set<String> successfullyDeletedIds = new HashSet<>()
 
-    instancesToDelete.each { instance ->
-      try {
-        instance.delete()
-        successfullyDeletedIds.add(instance.id)
-        log.trace("Successfully deleted id: {}", instance.id)
-      } catch (Exception e) {
-        log.error("Failed to delete id {}: {}", instance.id, e.message, e)
+    ids.each { String id ->
+        def instance = domainClass.get(id)
+
+        if (instance) {
+          instance.delete()
+          successfullyDeletedIds.add(id)
+          log.trace("Successfully deleted id: {}", id)
+        } else {
+          log.warn("Could not find instance of {} with id {} to delete.", domainClass.name, id)
+        }
       }
-    }
 
     return successfullyDeletedIds
   }
@@ -311,43 +314,41 @@ public class ErmResourceService {
     return deleteResourcesInternal(forDeletion);
   }
 
-//  def sessionFactory // Injected by Grails
+  @CompileStatic(SKIP)
+  private int executeBatchDelete(Class<? extends GormEntity> domainClass, Set<String> ids, int batchSize = 10000) {
+    int totalDeleted = 0
+    // Split id set into batches using collate()
+    List<List<String>> batches = ids.toList().collate(batchSize)
 
-//  @Transactional
-//  @CompileStatic(SKIP)
-//  void batchDelete(Class domainClass, Collection<String> allIds) {
-//    if (!allIds) {
-//      log.info("No IDs provided for deletion.")
-//      return
-//    }
-//
-//    int batchSize = 200
-//    int totalDeleted = 0
-//
-//    // Groovy's collate() breaks a list into batches
-//    List<List<String>> idBatches = allIds.collate(batchSize)
-//
-//    for (List<String> idBatch in idBatches) {
-//      String hql = "from ${domainClass.name} where id in :idList"
-//
-//      List recordsInBatch = domainClass.findAll(hql, [idList: new ArrayList(idBatch)])
-//
-//      for (def record in recordsInBatch) {
-//        record.delete(flush: false)
-//      }
-//
-//
-//      Session session = sessionFactory.currentSession
-//      session.flush()
-//      session.clear()
-//
-//      totalDeleted += recordsInBatch.size()
-//      log.info("Deleted ${totalDeleted} of ${allIds.size()} records so far...")
-//    }
-//    log.info("Finished batch deletion.")
-//  }
+    for (int i = 0; i < batches.size(); i++) {
+      List<String> batchOfIds = batches[i]
 
-  @Transactional
+      try {
+        // Use a transaction for each batch
+        domainClass.withTransaction { status ->
+          String hql = "from ${domainClass.name} where id in :idList"
+          List<? extends GormEntity> instancesToDelete = domainClass.findAll(hql, [idList: batchOfIds])
+
+          if (instancesToDelete) {
+            domainClass.deleteAll(instancesToDelete)
+            totalDeleted += instancesToDelete.size()
+            log.debug("Successfully committed batch {}/{} for {}", i + 1, batches.size(), domainClass.name)
+          }
+        }
+      } catch (Exception e) {
+        // The transaction for this batch will be automatically rolled back by withTransaction
+        log.error("Failed to process batch {}/{} for {}. The process will stop. " +
+          "Previous batches are already committed. Error: {}",
+          i + 1, batches.size(), domainClass.name, e.message)
+
+        // rethrow error to stop delete operation.
+        throw new RuntimeException("Failed on batch ${i + 1}. See logs for details.", e)
+      }
+    }
+
+    return totalDeleted
+  }
+
   @CompileStatic(SKIP)
   private DeleteResponse deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
     DeleteResponse response = new DeleteResponse()
@@ -360,58 +361,24 @@ public class ErmResourceService {
       return response
     }
 
-//    log.info("Attempting to delete resources: {}", resourcesToDelete)
     DeletionCounts deletionCounts = new DeletionCounts()
 
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
-//      log.debug("Deleting PCIs: {}", resourcesToDelete.pci)
-
-//      deletedIds.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
-      List<String> pciIds = new ArrayList<>(resourcesToDelete.pci)
-
-      if (pciIds) { // Ensure the list is not empty before proceeding
-        // Now the compiler knows for sure it's passing an Iterable<String>
-        List<PackageContentItem> itemsToDelete = PackageContentItem.getAll(pciIds)
-        if (itemsToDelete) {
-          PackageContentItem.deleteAll(itemsToDelete)
-        }
-      }
+      deletionCounts.pciDeleted = executeBatchDelete(PackageContentItem, resourcesToDelete.pci)
     }
-    deletionCounts.pciDeleted =  deletedIds.pci?.size()
+
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
-//      log.debug("Deleting PTIs: {}", resourcesToDelete.pti)
-
-//      deletedIds.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
-      List<String> ptiIds = new ArrayList<>(resourcesToDelete.pti)
-      List<PlatformTitleInstance> itemsToDelete = PlatformTitleInstance.getAll(ptiIds)
-      if (itemsToDelete) {
-        PlatformTitleInstance.deleteAll(itemsToDelete)
-      }
+      deletionCounts.ptiDeleted = executeBatchDelete(PlatformTitleInstance, resourcesToDelete.pti)
     }
-    deletionCounts.ptiDeleted = deletedIds.pti?.size()
 
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
-//      log.debug("Deleting TIs: {}", resourcesToDelete.ti)
-//      deletedIds.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
-      List<String> tiIds = new ArrayList<>(resourcesToDelete.ti)
-      List<TitleInstance> itemsToDelete = TitleInstance.getAll(tiIds)
-      if (itemsToDelete) {
-        TitleInstance.deleteAll(itemsToDelete)
-      }
+      deletionCounts.tiDeleted = executeBatchDelete(TitleInstance, resourcesToDelete.ti)
     }
-    deletionCounts.tiDeleted = deletedIds.ti?.size()
 
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
-//      log.debug("Deleting Works: {}", resourcesToDelete.work)
-//      deletedIds.work = deleteIds(Work, resourcesToDelete.work)
-      List<String> workIds = new ArrayList<>(resourcesToDelete.work)
-      List<Work> itemsToDelete = Work.getAll(workIds)
-      if (itemsToDelete) {
-        Work.deleteAll(itemsToDelete)
-      }
+      deletionCounts.workDeleted = executeBatchDelete(Work, resourcesToDelete.work)
     }
-    deletionCounts.workDeleted = deletedIds.work?.size()
 
     log.info("Deletion complete. Counts: {}", deletionCounts)
     response.statistics = deletionCounts
