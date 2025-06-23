@@ -1,21 +1,15 @@
 package org.olf
 
 import groovy.sql.Sql
-import org.grails.datastore.gorm.GormEntity
 import org.hibernate.Session
-import org.olf.erm.Entitlement
-import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Work
 import org.olf.kb.http.response.DeleteResponse
 import org.olf.kb.http.response.DeletionCounts
-import org.olf.kb.http.response.MarkForDeleteResponse
+import org.olf.kb.http.response.MarkForDeleteMap
 import org.olf.kb.Pkg
-import org.olf.kb.Embargo
-import org.olf.kb.CoverageStatement
+import org.olf.kb.http.response.MarkForDeleteResponse
 
 import java.sql.Connection
-import java.sql.PreparedStatement
-import java.sql.ResultSet
 
 import static org.springframework.transaction.annotation.Propagation.MANDATORY
 import static groovy.transform.TypeCheckingMode.SKIP
@@ -135,11 +129,12 @@ public class ErmResourceService {
   // Normally a SELECT for PTIs from PCIs would return twice, but we can dedupe for free here.
   private MarkForDeleteResponse markForDeleteInternal(Set<String> pciIds, Set<String> ptiIds, Set<String> tiIds) {
     log.info("Initiating markForDelete with PCI ids: {}, PTI ids: {}, TI ids: {}", pciIds.size(), ptiIds.size(), tiIds.size())
-    MarkForDeleteResponse markForDeletion = new MarkForDeleteResponse()
+    MarkForDeleteMap markForDeletion = new MarkForDeleteMap()
+    MarkForDeleteResponse response = new MarkForDeleteResponse();
 
     if (pciIds.isEmpty() && ptiIds.isEmpty() && tiIds.isEmpty()) {
       log.warn("No ids found.")
-      return markForDeletion
+      return response
     }
 
     PackageContentItem.withSession { Session session ->
@@ -255,7 +250,10 @@ public class ErmResourceService {
     log.info("Marked resources for delete completed: {} PCIs, {} PTIs, {} TIs, {} Works",
       markForDeletion.pci.size(), markForDeletion.pti.size(), markForDeletion.ti.size(), markForDeletion.work.size())
 
-    return markForDeletion
+
+    response.ids = markForDeletion
+    response.statistics = getCountsFromDeletionMap(markForDeletion)
+    return response;
   }
 
   // --- HELPER METHODS ---
@@ -312,17 +310,17 @@ public class ErmResourceService {
 
     // Collect responses for each package in a Map.
     idInputs.forEach{String id -> {
-      MarkForDeleteResponse forDeletion = markForDelete([id], Pkg.class); // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
+      MarkForDeleteMap forDeletion = markForDelete([id], Pkg.class).ids; // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
       deleteResourcesResponseMap.put(id, deleteResourcesInternal(forDeletion))
     }}
 
     // Calculate total deletion counts
     DeletionCounts totals = new DeletionCounts(0,0,0,0)
     deleteResourcesResponseMap.keySet().forEach{String packageId -> {
-      totals.pci += deleteResourcesResponseMap.get(packageId).statistics.get("delete").getPci()
-      totals.pti += deleteResourcesResponseMap.get(packageId).statistics.get("delete").getPti()
-      totals.ti += deleteResourcesResponseMap.get(packageId).statistics.get("delete").getTi()
-      totals.work += deleteResourcesResponseMap.get(packageId).statistics.get("delete").getWork()
+      totals.pci += deleteResourcesResponseMap.get(packageId).statistics.deleted.pci
+      totals.pti += deleteResourcesResponseMap.get(packageId).statistics.deleted.pti
+      totals.ti += deleteResourcesResponseMap.get(packageId).statistics.deleted.ti
+      totals.work += deleteResourcesResponseMap.get(packageId).statistics.deleted.work
     }}
 
     Map outputMap = [:]
@@ -334,50 +332,48 @@ public class ErmResourceService {
   }
 
   public DeleteResponse deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
-    MarkForDeleteResponse forDeletion = markForDelete(idInputs, resourceClass);
+    MarkForDeleteMap forDeletion = markForDelete(idInputs, resourceClass).ids;
     return deleteResourcesInternal(forDeletion);
   }
 
-  DeletionCounts getCountsFromDeletionMap(MarkForDeleteResponse deleteMap) {
+  DeletionCounts getCountsFromDeletionMap(MarkForDeleteMap deleteMap) {
     return new DeletionCounts(deleteMap.pci.size(), deleteMap.pti.size(), deleteMap.ti.size(), deleteMap.work.size())
   }
 
   @CompileStatic(SKIP)
   @Transactional
-  private DeleteResponse deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
+  private DeleteResponse deleteResourcesInternal(MarkForDeleteMap resourcesToDelete) {
     DeleteResponse response = new DeleteResponse()
 
     if (resourcesToDelete == null) {
       log.warn("deleteResources called with null MarkForDeleteResponse")
       DeletionCounts emptyCount = new DeletionCounts(0, 0, 0, 0)
-      response.statistics.put("markForDelete", emptyCount)
-      response.statistics.put("delete", emptyCount)
+      response.statistics.markedForDeletion = emptyCount
+      response.statistics.deleted = emptyCount
       return response
     }
 
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
-      Set<String> deletedPCIs = deleteIds(PackageContentItem, resourcesToDelete.pci)
-      response.deletedIds.pci = deletedPCIs
+      response.ids.deleted.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
     }
 
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
-      response.deletedIds.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
+      response.ids.deleted.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
     }
 
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
-      response.deletedIds.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
+      response.ids.deleted.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
     }
 
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
-      response.deletedIds.work = deleteIds(Work, resourcesToDelete.work)
+      response.ids.deleted.work = deleteIds(Work, resourcesToDelete.work)
     }
 
     log.info("Deletion complete.")
-    response.statistics = [:]
-    response.statistics.put("markForDelete", getCountsFromDeletionMap(resourcesToDelete))
-    response.statistics.put("delete", getCountsFromDeletionMap(response.deletedIds))
-    response.markedForDeletion = resourcesToDelete
+    response.statistics.markedForDeletion = getCountsFromDeletionMap(resourcesToDelete)
+    response.statistics.deleted = getCountsFromDeletionMap(response.ids.deleted)
+    response.ids.markedForDeletion = resourcesToDelete
 
     return response
   }

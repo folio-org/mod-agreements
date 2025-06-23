@@ -4,7 +4,7 @@ import grails.testing.mixin.integration.Integration
 import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.olf.kb.http.response.DeleteResponse
-import org.olf.kb.http.response.MarkForDeleteResponse
+import org.olf.kb.http.response.MarkForDeleteMap
 import spock.lang.Shared
 import spock.lang.Stepwise
 
@@ -127,7 +127,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
 
       log.info("IDs to process for ${testCase.resourceTypeToMark}: ${idsForProcessing}")
 
-      MarkForDeleteResponse operationResponse
+      MarkForDeleteMap operationResponse
       Exception operationError
 
     // Only make a call if there are IDs to process for the designated resource type
@@ -136,7 +136,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
       String payloadKey = "resources"
       operationResponse = doPost(endpoint, [(payloadKey): idsForProcessing])
     } else {
-      operationResponse = new MarkForDeleteResponse()
+      operationResponse = new MarkForDeleteMap()
     }
 
     Map kbStatsBeforeActualDelete = doGet("/erm/statistics/kbCount")
@@ -206,7 +206,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
     assert expectedKbStats.Work                  == actualKbStats.Work
   }
 
-  void assertIdsMatch(String structure, MarkForDeleteResponse operationResponse, Map expectedMarkForDelete) {
+  void assertIdsMatch(String structure, MarkForDeleteMap operationResponse, Map expectedMarkForDelete) {
 
     if (operationResponse) {
       Set<String>  expectedPcis = findInputResourceIds(expectedMarkForDelete.get("pci") as List, structure)

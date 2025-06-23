@@ -1,41 +1,22 @@
 package org.olf.kb.http.response
 
+class IdGroups {
+  MarkForDeleteMap deleted = new MarkForDeleteMap()
+  MarkForDeleteMap markedForDeletion = new MarkForDeleteMap()
+}
+
+/**
+ * A container for the 'statistics' part of the response, holding counts
+ * for both deleted and marked-for-deletion items.
+ */
+class StatisticGroups {
+  DeletionCounts deleted = new DeletionCounts()
+  DeletionCounts markedForDeletion = new DeletionCounts()
+}
+
 class DeleteResponse {
-
-  Map<String, DeletionCounts> statistics;
-  MarkForDeleteResponse deletedIds;
-  MarkForDeleteResponse markedForDeletion;
-
-  DeleteResponse() {
-    this.deletedIds = new MarkForDeleteResponse()
-    this.markedForDeletion = new MarkForDeleteResponse()
-  }
-
-  DeleteResponse(DeletionCounts statistics) {
-    this.statistics = statistics
-    this.deletedIds = new MarkForDeleteResponse()
-    this.markedForDeletion = new MarkForDeleteResponse()
-  }
-
-  DeleteResponse(DeletionCounts statistics, MarkForDeleteResponse deletedIds) {
-    this.statistics = statistics
-    this.deletedIds = deletedIds
-    this.markedForDeletion = new MarkForDeleteResponse()
-  }
-
-  DeleteResponse(DeletionCounts statistics, MarkForDeleteResponse deletedIds, MarkForDeleteResponse markedForDeletion) {
-    this.statistics = statistics
-    this.deletedIds = deletedIds
-    this.markedForDeletion = markedForDeletion;
-  }
-
-  @Override
-  public String toString() {
-    return "DeleteResponse{" +
-      "deletedIds=" + deletedIds +
-      "statistics=" + statistics +
-      '}';
-  }
+  IdGroups ids = new IdGroups()
+  StatisticGroups statistics = new StatisticGroups()
 }
 
 class DeletionCounts {

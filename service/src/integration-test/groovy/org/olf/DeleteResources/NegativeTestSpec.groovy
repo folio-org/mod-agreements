@@ -1,11 +1,8 @@
 package org.olf.DeleteResources
 
 import grails.testing.mixin.integration.Integration
-import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import groovyx.net.http.HttpException
-import org.apache.http.client.HttpResponseException
-import org.olf.kb.http.response.MarkForDeleteResponse
 
 @Integration
 @Slf4j
