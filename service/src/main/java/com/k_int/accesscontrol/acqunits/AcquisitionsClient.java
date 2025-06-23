@@ -41,7 +41,7 @@ public class AcquisitionsClient extends FolioClient {
   }
 
   // This now uses built in "patronId", consider one for generic user id?
-  public AcquisitionUnitMembershipResponse getPatronAcquisitionUnitMemberships(String[] headers, Map<String,String> queryParams) throws IOException, FolioClientException, InterruptedException {
+  public AcquisitionUnitMembershipResponse getUserAcquisitionUnitMemberships(String[] headers, Map<String,String> queryParams) throws IOException, FolioClientException, InterruptedException {
     return get(
       ACQUISITION_UNIT_MEMBERSHIP_PATH,
       headers,
@@ -89,7 +89,7 @@ public class AcquisitionsClient extends FolioClient {
     List<AcquisitionUnit> nonRestrictiveUnits = getRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, false).getAcquisitionsUnits();
     List<AcquisitionUnit> restrictiveUnits = getRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, true).getAcquisitionsUnits();
 
-    List<AcquisitionUnitMembership> acquisitionUnitMemberships = getPatronAcquisitionUnitMemberships(headers, Collections.emptyMap()).getAcquisitionsUnitMemberships();
+    List<AcquisitionUnitMembership> acquisitionUnitMemberships = getUserAcquisitionUnitMemberships(headers, Collections.emptyMap()).getAcquisitionsUnitMemberships();
 
     // First up, construct list of restrictive units which patron is a member of
     List<AcquisitionUnit> memberRestrictiveUnits = restrictiveUnits
