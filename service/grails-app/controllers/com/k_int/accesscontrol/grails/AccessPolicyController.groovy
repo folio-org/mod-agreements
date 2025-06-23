@@ -3,6 +3,8 @@ package com.k_int.accesscontrol.grails
 import com.fasterxml.jackson.databind.JsonNode
 
 import com.k_int.accesscontrol.acqunits.AcquisitionsClient
+import com.k_int.accesscontrol.acqunits.Restriction
+import com.k_int.accesscontrol.acqunits.UserAcquisitionUnits
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnit
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembership
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembershipResponse
@@ -73,57 +75,16 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
       log.info("LOGDEBUG LOGIN COOKIE: ${folioAccessHeaders}")
       // FIXME obviously this isn't what we need to do long term
 
-      // Fetch acq units which DO NOT restrict read
-      List<AcquisitionUnit> acqUnitsNoRestrictRead = acqClient.getNoRestrictReadAcquisitionUnits(folioAccessHeaders, Collections.emptyMap()).acquisitionsUnits;
+      // Get the acquisition units for a user (This is all the information we need to query by Policy Type == ACQ_UNIT
+      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.READ);
 
-      // Fetch acq units which DO restrict read
-      List<AcquisitionUnit> acqUnitsRestrictRead = acqClient.getRestrictReadAcquisitionUnits(folioAccessHeaders, Collections.emptyMap()).acquisitionsUnits;
+      log.info("LOGDEBUG List A: ${userAcquisitionUnits.getMemberRestrictiveUnits()}")
+      log.info("LOGDEBUG List B: ${userAcquisitionUnits.getNonRestrictiveUnits()}")
+      log.info("LOGDEBUG List C: ${userAcquisitionUnits.getNonMemberRestrictiveUnits()}")
 
-      log.info("LOGDEBUG acqUnitsNoRestrictRead: ${acqUnitsNoRestrictRead}")
-      log.info("LOGDEBUG acqUnitsRestrictRead: ${acqUnitsRestrictRead}")
-
-      // This fetches the acq memberships patron holds
-      List<AcquisitionUnitMembership> acquisitionUnitMemberships = acqClient.getPatronAcquisitionUnitMemberships(folioAccessHeaders, Collections.emptyMap()).acquisitionsUnitMemberships;
-
-      log.info("LOGDEBUG acqUnitMemberships: ${acquisitionUnitMemberships}")
-
-      // We aim for 3 lists. -- THIS WORK SHOULD BE INSIDE THE ACQ LIBRARY
-      /*
-      1.  **List A** – Acquisition units the user _is a member of_ and which _restrict READ_ access.
-
-      2.  **List B** – Acquisition units that _do not restrict READ_ access for anyone.
-
-      3.  **List C** – Acquisition units the user _is NOT a member of_ but _restrict READ_ access.
-     */
-
-      // List B is acqUnitsNoRestrictRead
-      //  construct List A
-      List<AcquisitionUnit> acqUnitsMemberAndRestrict = acqUnitsRestrictRead
-        .stream()
-        .filter { AcquisitionUnit au -> {
-          return acquisitionUnitMemberships.stream().anyMatch { AcquisitionUnitMembership aum -> {
-            return aum.acquisitionsUnitId == au.id && aum.userId == folioClientConfig.patronId
-          }}
-        }}
-        .collect()
-
-      //  construct List C
-      List<AcquisitionUnit> acqUnitsNotMemberAndRestrict = acqUnitsRestrictRead
-        .stream()
-        .filter { AcquisitionUnit au -> {
-          return acquisitionUnitMemberships.stream().noneMatch { AcquisitionUnitMembership aum -> {
-            return aum.acquisitionsUnitId == au.id && aum.userId == folioClientConfig.patronId
-          }}
-        }}
-        .collect()
-
-      log.info("LOGDEBUG List A: ${acqUnitsMemberAndRestrict}")
-      log.info("LOGDEBUG List B: ${acqUnitsNoRestrictRead}")
-      log.info("LOGDEBUG List C: ${acqUnitsNotMemberAndRestrict}")
-
-      log.info("LOGDEBUG List A SIZE: ${acqUnitsMemberAndRestrict.size()}")
-      log.info("LOGDEBUG List B SIZE: ${acqUnitsNoRestrictRead.size()}")
-      log.info("LOGDEBUG List C SIZE: ${acqUnitsNotMemberAndRestrict.size()}")
+      log.info("LOGDEBUG List A SIZE: ${userAcquisitionUnits.getMemberRestrictiveUnits().size()}")
+      log.info("LOGDEBUG List B SIZE: ${userAcquisitionUnits.getNonRestrictiveUnits().size()}")
+      log.info("LOGDEBUG List C SIZE: ${userAcquisitionUnits.getNonMemberRestrictiveUnits().size()}")
 
     } catch (FolioClientException e) {
       if (e.cause) {
