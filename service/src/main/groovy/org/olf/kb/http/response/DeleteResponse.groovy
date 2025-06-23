@@ -2,20 +2,25 @@ package org.olf.kb.http.response
 
 class DeleteResponse {
 
-  DeletionCounts statistics;
+  Map<String, DeletionCounts> statistics;
   MarkForDeleteResponse deletedIds;
   MarkForDeleteResponse markedForDeletion;
 
   DeleteResponse() {
+    this.deletedIds = new MarkForDeleteResponse()
+    this.markedForDeletion = new MarkForDeleteResponse()
   }
 
   DeleteResponse(DeletionCounts statistics) {
     this.statistics = statistics
+    this.deletedIds = new MarkForDeleteResponse()
+    this.markedForDeletion = new MarkForDeleteResponse()
   }
 
   DeleteResponse(DeletionCounts statistics, MarkForDeleteResponse deletedIds) {
     this.statistics = statistics
     this.deletedIds = deletedIds
+    this.markedForDeletion = new MarkForDeleteResponse()
   }
 
   DeleteResponse(DeletionCounts statistics, MarkForDeleteResponse deletedIds, MarkForDeleteResponse markedForDeletion) {

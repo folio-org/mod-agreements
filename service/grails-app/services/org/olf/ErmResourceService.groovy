@@ -280,14 +280,12 @@ public class ErmResourceService {
   @CompileStatic(SKIP)
   private Set<String> deleteIds(Class domainClass, Collection<String> ids) {
     Set<String> successfullyDeletedIds = new HashSet<>()
-
     ids.each { String id ->
         def instance = domainClass.get(id)
 
         if (instance) {
           instance.delete()
           successfullyDeletedIds.add(id)
-          log.trace("Successfully deleted id: {}", id)
         } else {
           log.warn("Could not find instance of {} with id {} to delete.", domainClass.name, id)
         }
@@ -301,7 +299,7 @@ public class ErmResourceService {
 
     // Collect responses for each package in a Map.
     idInputs.forEach{String id -> {
-      MarkForDeleteResponse forDeletion = markForDelete(idInputs, Pkg.class); // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
+      MarkForDeleteResponse forDeletion = markForDelete([id], Pkg.class); // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
       deleteResourcesResponseMap.put(id, forDeletion)
     }}
 
@@ -309,16 +307,30 @@ public class ErmResourceService {
   }
 
 
-  public Map<String, DeleteResponse> deleteResourcesFromPackage(List<String> idInputs) {
+  public Map deleteResourcesFromPackage(List<String> idInputs) {
     Map<String, DeleteResponse> deleteResourcesResponseMap = [:]
 
     // Collect responses for each package in a Map.
     idInputs.forEach{String id -> {
-      MarkForDeleteResponse forDeletion = markForDelete(idInputs, Pkg.class); // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
+      MarkForDeleteResponse forDeletion = markForDelete([id], Pkg.class); // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
       deleteResourcesResponseMap.put(id, deleteResourcesInternal(forDeletion))
     }}
 
-    return deleteResourcesResponseMap;
+    // Calculate total deletion counts
+    DeletionCounts totals = new DeletionCounts(0,0,0,0)
+    deleteResourcesResponseMap.keySet().forEach{String packageId -> {
+      totals.pci += deleteResourcesResponseMap.get(packageId).statistics.get("delete").getPci()
+      totals.pti += deleteResourcesResponseMap.get(packageId).statistics.get("delete").getPti()
+      totals.ti += deleteResourcesResponseMap.get(packageId).statistics.get("delete").getTi()
+      totals.work += deleteResourcesResponseMap.get(packageId).statistics.get("delete").getWork()
+    }}
+
+    Map outputMap = [:]
+
+    outputMap.put("packages", deleteResourcesResponseMap)
+    outputMap.put("statistics", totals)
+
+    return outputMap;
   }
 
   public DeleteResponse deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
@@ -326,45 +338,45 @@ public class ErmResourceService {
     return deleteResourcesInternal(forDeletion);
   }
 
+  DeletionCounts getCountsFromDeletionMap(MarkForDeleteResponse deleteMap) {
+    return new DeletionCounts(deleteMap.pci.size(), deleteMap.pti.size(), deleteMap.ti.size(), deleteMap.work.size())
+  }
+
   @CompileStatic(SKIP)
   @Transactional
   private DeleteResponse deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
     DeleteResponse response = new DeleteResponse()
-    MarkForDeleteResponse deletedIds = new MarkForDeleteResponse()
 
     if (resourcesToDelete == null) {
       log.warn("deleteResources called with null MarkForDeleteResponse")
       DeletionCounts emptyCount = new DeletionCounts(0, 0, 0, 0)
-      response.statistics = emptyCount
+      response.statistics.put("markForDelete", emptyCount)
+      response.statistics.put("delete", emptyCount)
       return response
     }
 
-    DeletionCounts deletionCounts = new DeletionCounts()
-
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
-      response.deletedIds.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
-      deletionCounts.pci = response.deletedIds.pci.size()
+      Set<String> deletedPCIs = deleteIds(PackageContentItem, resourcesToDelete.pci)
+      response.deletedIds.pci = deletedPCIs
     }
 
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
       response.deletedIds.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
-      deletionCounts.pti = response.deletedIds.pti.size()
     }
 
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
       response.deletedIds.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
-      deletionCounts.ti = response.deletedIds.ti.size()
     }
 
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
       response.deletedIds.work = deleteIds(Work, resourcesToDelete.work)
-      deletionCounts.work = response.deletedIds.work.size()
     }
 
-    log.info("Deletion complete. Counts: {}", deletionCounts)
-    response.statistics = deletionCounts
-    response.deletedIds = deletedIds
+    log.info("Deletion complete.")
+    response.statistics = [:]
+    response.statistics.put("markForDelete", getCountsFromDeletionMap(resourcesToDelete))
+    response.statistics.put("delete", getCountsFromDeletionMap(response.deletedIds))
     response.markedForDeletion = resourcesToDelete
 
     return response
