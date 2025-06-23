@@ -4,7 +4,7 @@ class DeleteResponse {
 
   DeletionCounts statistics;
   MarkForDeleteResponse deletedIds;
-  MarkForDeleteResponse selectedForDeletion;
+  MarkForDeleteResponse markedForDeletion;
 
   DeleteResponse() {
   }
@@ -18,10 +18,10 @@ class DeleteResponse {
     this.deletedIds = deletedIds
   }
 
-  DeleteResponse(DeletionCounts statistics, MarkForDeleteResponse deletedIds, MarkForDeleteResponse selectedForDeletion) {
+  DeleteResponse(DeletionCounts statistics, MarkForDeleteResponse deletedIds, MarkForDeleteResponse markedForDeletion) {
     this.statistics = statistics
     this.deletedIds = deletedIds
-    this.selectedForDeletion = selectedForDeletion;
+    this.markedForDeletion = markedForDeletion;
   }
 
   @Override
@@ -34,28 +34,28 @@ class DeleteResponse {
 }
 
 class DeletionCounts {
-  Integer pciDeleted;
-  Integer ptiDeleted;
-  Integer tiDeleted;
-  Integer workDeleted;
+  Integer pci;
+  Integer pti;
+  Integer ti;
+  Integer work;
 
   DeletionCounts() {
   }
 
   DeletionCounts(Integer pciDeleted, Integer ptiDeleted, Integer tiDeleted, Integer workDeleted) {
-    this.pciDeleted = pciDeleted
-    this.ptiDeleted = ptiDeleted
-    this.tiDeleted = tiDeleted
-    this.workDeleted = workDeleted
+    this.pci = pciDeleted
+    this.pti = ptiDeleted
+    this.ti = tiDeleted
+    this.work = workDeleted
   }
 
   @Override
   public String toString() {
     return "DeletionCounts{" +
-      "pciDeleted=" + pciDeleted +
-      ", ptiDeleted=" + ptiDeleted +
-      ", tiDeleted=" + tiDeleted +
-      ", workDeleted=" + workDeleted +
+      "pciDeleted=" + pci +
+      ", ptiDeleted=" + pti +
+      ", tiDeleted=" + ti +
+      ", workDeleted=" + work +
       '}';
   }
 }

@@ -296,6 +296,18 @@ public class ErmResourceService {
     return successfullyDeletedIds
   }
 
+  public Map<String, MarkForDeleteResponse> markForDeleteFromPackage(List<String> idInputs) {
+    Map<String, MarkForDeleteResponse> deleteResourcesResponseMap = [:]
+
+    // Collect responses for each package in a Map.
+    idInputs.forEach{String id -> {
+      MarkForDeleteResponse forDeletion = markForDelete(idInputs, Pkg.class); // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
+      deleteResourcesResponseMap.put(id, forDeletion)
+    }}
+
+    return deleteResourcesResponseMap;
+  }
+
 
   public Map<String, DeleteResponse> deleteResourcesFromPackage(List<String> idInputs) {
     Map<String, DeleteResponse> deleteResourcesResponseMap = [:]
@@ -315,41 +327,7 @@ public class ErmResourceService {
   }
 
   @CompileStatic(SKIP)
-  private int executeBatchDelete(Class<? extends GormEntity> domainClass, Set<String> ids, int batchSize = 10000) {
-    int totalDeleted = 0
-    // Split id set into batches using collate()
-    List<List<String>> batches = ids.toList().collate(batchSize)
-
-    for (int i = 0; i < batches.size(); i++) {
-      List<String> batchOfIds = batches[i]
-
-      try {
-        // Use a transaction for each batch
-        domainClass.withTransaction { status ->
-          String hql = "from ${domainClass.name} where id in :idList"
-          List<? extends GormEntity> instancesToDelete = domainClass.findAll(hql, [idList: batchOfIds])
-
-          if (instancesToDelete) {
-            domainClass.deleteAll(instancesToDelete)
-            totalDeleted += instancesToDelete.size()
-            log.debug("Successfully committed batch {}/{} for {}", i + 1, batches.size(), domainClass.name)
-          }
-        }
-      } catch (Exception e) {
-        // The transaction for this batch will be automatically rolled back by withTransaction
-        log.error("Failed to process batch {}/{} for {}. The process will stop. " +
-          "Previous batches are already committed. Error: {}",
-          i + 1, batches.size(), domainClass.name, e.message)
-
-        // rethrow error to stop delete operation.
-        throw new RuntimeException("Failed on batch ${i + 1}. See logs for details.", e)
-      }
-    }
-
-    return totalDeleted
-  }
-
-  @CompileStatic(SKIP)
+  @Transactional
   private DeleteResponse deleteResourcesInternal(MarkForDeleteResponse resourcesToDelete) {
     DeleteResponse response = new DeleteResponse()
     MarkForDeleteResponse deletedIds = new MarkForDeleteResponse()
@@ -364,26 +342,30 @@ public class ErmResourceService {
     DeletionCounts deletionCounts = new DeletionCounts()
 
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
-      deletionCounts.pciDeleted = executeBatchDelete(PackageContentItem, resourcesToDelete.pci)
+      response.deletedIds.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
+      deletionCounts.pci = response.deletedIds.pci.size()
     }
 
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
-      deletionCounts.ptiDeleted = executeBatchDelete(PlatformTitleInstance, resourcesToDelete.pti)
+      response.deletedIds.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
+      deletionCounts.pti = response.deletedIds.pti.size()
     }
 
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
-      deletionCounts.tiDeleted = executeBatchDelete(TitleInstance, resourcesToDelete.ti)
+      response.deletedIds.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
+      deletionCounts.ti = response.deletedIds.ti.size()
     }
 
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
-      deletionCounts.workDeleted = executeBatchDelete(Work, resourcesToDelete.work)
+      response.deletedIds.work = deleteIds(Work, resourcesToDelete.work)
+      deletionCounts.work = response.deletedIds.work.size()
     }
 
     log.info("Deletion complete. Counts: {}", deletionCounts)
     response.statistics = deletionCounts
-//    response.deletedIds = deletedIds
-//    response.selectedForDeletion = resourcesToDelete
+    response.deletedIds = deletedIds
+    response.markedForDeletion = resourcesToDelete
 
     return response
   }

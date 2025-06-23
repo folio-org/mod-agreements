@@ -465,7 +465,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
 
     handleDeleteCall(deleteBody) { ids ->
 
-      return ermResourceService.markForDelete(ids, Pkg.class)
+      return ermResourceService.markForDeleteFromPackage(ids)
     }
   }
 
