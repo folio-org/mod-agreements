@@ -83,16 +83,16 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
 
       /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
       PolicyInformation policyInformationRead = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.READ);
-      PolicyInformation policyInformationClaim = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.CLAIM);
-      PolicyInformation policyInformationCreate = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.CREATE);
-      PolicyInformation policyInformationUpdate = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.UPDATE);
-      PolicyInformation policyInformationDelete = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.DELETE);
+//      PolicyInformation policyInformationClaim = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.CLAIM);
+//      PolicyInformation policyInformationCreate = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.CREATE);
+//      PolicyInformation policyInformationUpdate = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.UPDATE);
+//      PolicyInformation policyInformationDelete = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.DELETE);
 
       logUserAcquisitionUnits(policyInformationRead.getUserAcquisitionUnits(), "READ")
-      logUserAcquisitionUnits(policyInformationClaim.getUserAcquisitionUnits(), "CLAIM")
-      logUserAcquisitionUnits(policyInformationCreate.getUserAcquisitionUnits(), "CREATE")
-      logUserAcquisitionUnits(policyInformationUpdate.getUserAcquisitionUnits(), "UPDATE")
-      logUserAcquisitionUnits(policyInformationDelete.getUserAcquisitionUnits(), "DELETE")
+//      logUserAcquisitionUnits(policyInformationClaim.getUserAcquisitionUnits(), "CLAIM")
+//      logUserAcquisitionUnits(policyInformationCreate.getUserAcquisitionUnits(), "CREATE")
+//      logUserAcquisitionUnits(policyInformationUpdate.getUserAcquisitionUnits(), "UPDATE")
+//      logUserAcquisitionUnits(policyInformationDelete.getUserAcquisitionUnits(), "DELETE")
 
     } catch (FolioClientException e) {
       if (e.cause) {

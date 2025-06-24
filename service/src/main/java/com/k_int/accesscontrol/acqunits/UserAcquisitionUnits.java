@@ -19,4 +19,16 @@ public class UserAcquisitionUnits {
   List<AcquisitionUnit> nonRestrictiveUnits;
   List<AcquisitionUnit> memberRestrictiveUnits;
   List<AcquisitionUnit> nonMemberRestrictiveUnits;
+
+  public List<String> getNonRestrictiveUnitIds() {
+    return nonRestrictiveUnits.stream().map(AcquisitionUnit::getId).toList();
+  }
+
+  public List<String> getMemberRestrictiveUnitIds() {
+    return memberRestrictiveUnits.stream().map(AcquisitionUnit::getId).toList();
+  }
+
+  public List<String> getNonMemberRestrictiveUnitIds() {
+    return nonMemberRestrictiveUnits.stream().map(AcquisitionUnit::getId).toList();
+  }
 }
