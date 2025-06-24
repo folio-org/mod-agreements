@@ -16,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -68,6 +70,7 @@ public class FolioClient {
     this(config.baseOkapiUri, config.tenantName, config.patronId, config.userLogin, config.userPassword);
   }
 
+  // FIXME this is BLOCKING at the minute and we should probably use CompleteableFuture in getAsync instead?
   public <T> T get(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException, IOException, InterruptedException {
     URI uri = buildUri(path, queryParams);
 
@@ -95,6 +98,47 @@ public class FolioClient {
     } else {
       throw new FolioClientException("GET request failed: " + response.statusCode() + " - " + response.body(), FolioClientException.REQUEST_NOT_OK);
     }
+  }
+
+  /**
+   * Asynchronously performs a GET request and maps the response to the specified type.
+   *
+   * @param path The path for the GET request.
+   * @param headers An array of additional headers to include in the request.
+   * @param queryParams A map of query parameters to append to the URI.
+   * @param responseType The Class object representing the type to which the response body should be mapped.
+   * @param <T> The generic type of the response.
+   * @return A CompletableFuture that will be completed with the mapped response object or a CompletionException wrapping a FolioClientException
+   */
+  public <T> CompletableFuture<T> getAsync(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) {
+    URI uri = buildUri(path, queryParams);
+    String[] finalHeaders = combineCookies(getBaseHeaders(), headers);
+
+    HttpRequest request = HttpRequest.newBuilder()
+      .uri(uri)
+      .GET()
+      .headers(finalHeaders)
+      .build();
+
+    return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+      .thenApply(response -> {
+        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+          if (response.body() == null || response.body().isEmpty()) {
+            return null;
+          }
+          try {
+            return objectMapper.readValue(response.body(), responseType);
+          } catch (Exception e) {
+            String exceptionMessage = "Failed to cast response body: " + response.body() + " to type: " + responseType.getSimpleName();
+            log.error(exceptionMessage, e);
+            throw new CompletionException(exceptionMessage, new FolioClientException(exceptionMessage, FolioClientException.RESPONSE_WRONG_SHAPE, e));
+          }
+        } else {
+          String exceptionMessage = "GET request failed: " + response.statusCode() + " - " + response.body();
+          log.error(exceptionMessage);
+          throw new CompletionException(exceptionMessage, new FolioClientException(exceptionMessage, FolioClientException.REQUEST_NOT_OK));
+        }
+      });
   }
 
   // There's almost definitely a better way to build this URI... this will do for now

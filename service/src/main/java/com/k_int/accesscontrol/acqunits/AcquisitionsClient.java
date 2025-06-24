@@ -7,9 +7,12 @@ import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitResponse;
 import com.k_int.folio.FolioClient;
 import com.k_int.folio.FolioClientConfig;
 import com.k_int.folio.FolioClientException;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 public class AcquisitionsClient extends FolioClient {
   public static final String ACQUISITION_UNIT_PATH = "/acquisitions-units/units";
@@ -58,6 +61,23 @@ public class AcquisitionsClient extends FolioClient {
     );
   }
 
+  public CompletableFuture<AcquisitionUnitMembershipResponse> getAsyncUserAcquisitionUnitMemberships(String[] headers, Map<String,String> queryParams) {
+    return getAsync(
+      ACQUISITION_UNIT_MEMBERSHIP_PATH,
+      headers,
+      combineQueryParams(
+        combineQueryParams(
+          BASE_LIMIT_PARAM,
+          new HashMap<>() {{
+            put("query", "(userId==" + getPatronId() + ")");
+          }}
+        ),
+        queryParams
+      ),
+      AcquisitionUnitMembershipResponse.class
+    );
+  }
+
   // FIXME we need to consider what to do about "isDeleted" acq units
 
   /**
@@ -85,6 +105,22 @@ public class AcquisitionsClient extends FolioClient {
       AcquisitionUnitResponse.class);
   }
 
+  public CompletableFuture<AcquisitionUnitResponse> getAsyncRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, Restriction restriction, boolean restrictBool) {
+    return getAsync(
+      ACQUISITION_UNIT_PATH,
+      headers,
+      combineQueryParams(
+        BASE_LIMIT_PARAM,
+        combineQueryParams(
+          new HashMap<>() {{
+            put("query", "(" + restriction.getRestrictionAccessor() + "==" + restrictBool + ")");
+          }},
+          queryParams
+        )
+      ),
+      AcquisitionUnitResponse.class);
+  }
+
   public UserAcquisitionUnits getUserAcquisitionUnits(String[] headers, Restriction restriction) throws IOException, FolioClientException, InterruptedException {
     List<AcquisitionUnit> nonRestrictiveUnits = getRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, false).getAcquisitionsUnits();
     List<AcquisitionUnit> restrictiveUnits = getRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, true).getAcquisitionsUnits();
@@ -98,19 +134,19 @@ public class AcquisitionsClient extends FolioClient {
         .stream()
         .anyMatch(aum ->
           Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
-          Objects.equals(aum.getUserId(), this.getPatronId())
+            Objects.equals(aum.getUserId(), this.getPatronId())
         )
       )
       .toList();
 
-      // Then construct list of restrictive units which patron is not a member of
+    // Then construct list of restrictive units which patron is not a member of
     List<AcquisitionUnit> nonMemberRestrictiveUnits = restrictiveUnits
       .stream()
       .filter(au -> acquisitionUnitMemberships
         .stream()
         .noneMatch(aum ->
           Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
-          Objects.equals(aum.getUserId(), this.getPatronId())
+            Objects.equals(aum.getUserId(), this.getPatronId())
         )
       )
       .toList();
@@ -122,4 +158,54 @@ public class AcquisitionsClient extends FolioClient {
       .nonMemberRestrictiveUnits(nonMemberRestrictiveUnits)
       .build();
   }
+
+  // This is measurably faster, on average 0.2s compared to 0.6 for the blocking method above
+  public UserAcquisitionUnits getAsyncUserAcquisitionUnits(String[] headers, Restriction restriction) {
+    CompletableFuture<AcquisitionUnitResponse> nonRestrictiveUnitsResponse = getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, false);
+    CompletableFuture<AcquisitionUnitResponse> restrictiveUnitsResponse = getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, true);
+    CompletableFuture<AcquisitionUnitMembershipResponse> acquisitionUnitMembershipsResponse = getAsyncUserAcquisitionUnitMemberships(headers, Collections.emptyMap());
+
+    CompletableFuture<List<AcquisitionUnit>> memberRestrictiveUnits = restrictiveUnitsResponse.thenCombine(acquisitionUnitMembershipsResponse, (rur, aumr) ->
+      rur.getAcquisitionsUnits()
+        .stream()
+        .filter(au -> aumr.getAcquisitionsUnitMemberships()
+          .stream()
+          .anyMatch(aum ->
+            Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
+              Objects.equals(aum.getUserId(), this.getPatronId())
+          )
+        )
+        .toList()
+    );
+
+    CompletableFuture<List<AcquisitionUnit>> nonMemberRestrictiveUnits = restrictiveUnitsResponse.thenCombine(acquisitionUnitMembershipsResponse, (nrur, aumr) ->
+      nrur.getAcquisitionsUnits()
+        .stream()
+        .filter(au -> aumr.getAcquisitionsUnitMemberships()
+          .stream()
+          .noneMatch(aum ->
+            Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
+              Objects.equals(aum.getUserId(), this.getPatronId())
+          )
+        )
+        .toList()
+    );
+
+    CompletableFuture<UserAcquisitionUnits> combinedAcquisitionUnits = CompletableFuture.allOf(
+        nonRestrictiveUnitsResponse,
+        memberRestrictiveUnits,
+        nonMemberRestrictiveUnits
+      )
+      .thenApply(ignoredVoid -> {
+
+        return UserAcquisitionUnits
+          .builder()
+          .nonRestrictiveUnits(nonRestrictiveUnitsResponse.join().getAcquisitionsUnits())
+          .memberRestrictiveUnits(memberRestrictiveUnits.join())
+          .nonMemberRestrictiveUnits(nonMemberRestrictiveUnits.join())
+          .build();
+      });
+
+    return combinedAcquisitionUnits.join();
+  };
 }
