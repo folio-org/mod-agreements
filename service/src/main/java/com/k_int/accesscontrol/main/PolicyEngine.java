@@ -40,17 +40,20 @@ public class PolicyEngine {
         "acc_pol_type",
         "acc_pol_policy_id",
         "acc_pol_resource_id",
-        "access_policy_resource_class",
-        "sa",
-        "id",
+        "acc_pol_resource_class",
+        "{alias}", // FIXME This is a SQL restriction thing, should be templated in the grails module....
+        "sa_id",
+        "org.olf.erm.SubscriptionAgreement",
         String.join(",", temporaryUserAcquisitionUnits.getNonRestrictiveUnitIds()),
         String.join(",", temporaryUserAcquisitionUnits.getMemberRestrictiveUnitIds()),
         String.join(",", temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnitIds())
         );
-
+      // FIXME still to do, use {alias} and sqlRestriction to actually apply this to a SubscriptionAgreement READ
       log.info("LOGDEBUG THE SQL: {}", theSql);
 
-      policyInformationBuilder.userAcquisitionUnits(temporaryUserAcquisitionUnits);
+      policyInformationBuilder
+        .userAcquisitionUnits(temporaryUserAcquisitionUnits)
+        .acquisitionSql(theSql);
     }
 
     return policyInformationBuilder.build();

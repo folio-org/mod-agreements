@@ -17,6 +17,7 @@ import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.multitenancy.Tenants
 import groovy.util.logging.Slf4j
 import com.k_int.okapi.OkapiTenantAwareController
+import org.olf.erm.SubscriptionAgreement
 
 @Slf4j
 @CurrentTenant
@@ -94,6 +95,13 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
 //      logUserAcquisitionUnits(policyInformationUpdate.getUserAcquisitionUnits(), "UPDATE")
 //      logUserAcquisitionUnits(policyInformationDelete.getUserAcquisitionUnits(), "DELETE")
 
+      // FIXME this is stupid
+      respond doTheLookup(SubscriptionAgreement) {
+        //FIXME We need to be able to template here I think
+        sqlRestriction(policyInformationRead.getAcquisitionSql())
+      }
+      return null;
+
     } catch (FolioClientException e) {
       if (e.cause) {
         log.error("Something went wrong in folio call: ${e}: CAUSE:", e.cause)
@@ -111,12 +119,12 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
 
   // FIXME this shouoldn't be in the final code, here for logging while developing
   private logUserAcquisitionUnits(UserAcquisitionUnits uau, String name = "Generic") {
-    log.info("LOGDEBUG (${name}) List A: ${uau.getMemberRestrictiveUnits()}")
-    log.info("LOGDEBUG (${name}) List B: ${uau.getNonRestrictiveUnits()}")
-    log.info("LOGDEBUG (${name}) List C: ${uau.getNonMemberRestrictiveUnits()}")
+    log.info("LOGDEBUG (${name}) MemberRestrictiveUnits: ${uau.getMemberRestrictiveUnits()}")
+    log.info("LOGDEBUG (${name}) NonRestrictiveUnits: ${uau.getNonRestrictiveUnits()}")
+    log.info("LOGDEBUG (${name}) NonMemberRestrictiveUnits: ${uau.getNonMemberRestrictiveUnits()}")
 
-    log.info("LOGDEBUG (${name}) List A SIZE: ${uau.getMemberRestrictiveUnits().size()}")
-    log.info("LOGDEBUG (${name}) List B SIZE: ${uau.getNonRestrictiveUnits().size()}")
-    log.info("LOGDEBUG (${name}) List C SIZE: ${uau.getNonMemberRestrictiveUnits().size()}")
+    log.info("LOGDEBUG (${name}) MemberRestrictiveUnits SIZE: ${uau.getMemberRestrictiveUnits().size()}")
+    log.info("LOGDEBUG (${name}) NonRestrictiveUnits SIZE: ${uau.getNonRestrictiveUnits().size()}")
+    log.info("LOGDEBUG (${name}) NonMemberRestrictiveUnits: ${uau.getNonMemberRestrictiveUnits().size()}")
   }
 }

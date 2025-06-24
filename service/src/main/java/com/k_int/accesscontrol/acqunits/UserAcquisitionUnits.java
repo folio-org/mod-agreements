@@ -20,15 +20,16 @@ public class UserAcquisitionUnits {
   List<AcquisitionUnit> memberRestrictiveUnits;
   List<AcquisitionUnit> nonMemberRestrictiveUnits;
 
+  // FIXME This string replacements is DEFINITELY NOT RIGHT,but it's quick for now
   public List<String> getNonRestrictiveUnitIds() {
-    return nonRestrictiveUnits.stream().map(AcquisitionUnit::getId).toList();
+    return nonRestrictiveUnits.stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList();
   }
 
   public List<String> getMemberRestrictiveUnitIds() {
-    return memberRestrictiveUnits.stream().map(AcquisitionUnit::getId).toList();
+    return memberRestrictiveUnits.stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList();
   }
 
   public List<String> getNonMemberRestrictiveUnitIds() {
-    return nonMemberRestrictiveUnits.stream().map(AcquisitionUnit::getId).toList();
+    return nonMemberRestrictiveUnits.stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList();
   }
 }
