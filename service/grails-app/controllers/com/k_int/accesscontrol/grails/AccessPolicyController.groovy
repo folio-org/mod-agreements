@@ -34,31 +34,31 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
     // FIXME okapiBaseUri/tenantName/patronId should be central in any controller doing AccessControl
     // And obviously shouldn't be hardcoded
 
-
-    // Dynamic folio client config
-//    FolioClientConfig dynamicFolioClientConfig = new FolioClientConfig(
-//        "https://${okapiClient.getOkapiHost()}:${okapiClient.getOkapiPort()}", // baseOkapiUri
-//        OkapiTenantResolver.schemaNameToTenantId(Tenants.currentId()), // tenantName
-//        getPatron().id, // patronId
-//    );
+//    // Dynamic folio client config
+//    FolioClientConfig folioClientConfig = FolioClientConfig.builder()
+//      .baseOkapiUri("https://${okapiClient.getOkapiHost()}:${okapiClient.getOkapiPort()}")
+//      .tenantName(OkapiTenantResolver.schemaNameToTenantId(Tenants.currentId()))
+//      .patronId(getPatron().id)
+//      .build();
 
     // BF Sunflower folio client config
-    FolioClientConfig folioClientConfig = new FolioClientConfig(
-        "https://kong-bugfest-sunflower.int.aws.folio.org", // baseOkapiUri
-        "fs09000000", // tenantName
-        "9eb67301-6f6e-468f-9b1a-6134dc39a684", // patronId
-        "folio",
-        "folio"
-    );
+    FolioClientConfig folioClientConfig = FolioClientConfig.builder()
+      .baseOkapiUri("https://kong-bugfest-sunflower.int.aws.folio.org")
+      .tenantName("fs09000000")
+      .patronId("9eb67301-6f6e-468f-9b1a-6134dc39a684")
+      .userLogin("folio")
+      .userPassword("folio")
+      .build();
 
-    // Eureka Snapshot folio client config
-//    FolioClientConfig folioClientConfig = new FolioClientConfig(
-//        "https://folio-etesting-snapshot-kong.ci.folio.org", // baseOkapiUri
-//        "diku", // tenantName
-//        "a432e091-e445-40e7-a7a6-e31c035cd51a", // patronId
-//        "diku_admin",
-//        "admin"
-//    );
+
+//    // Eureka Snapshot folio client config
+//    FolioClientConfig folioClientConfig = FolioClientConfig.builder()
+//      .baseOkapiUri("https://folio-etesting-snapshot-kong.ci.folio.org")
+//      .tenantName("diku")
+//      .patronId("a432e091-e445-40e7-a7a6-e31c035cd51a")
+//      .userLogin("diku_admin")
+//      .userPassword("admin")
+//      .build();
 
     log.info("LOGDEBUG BASE OKAPI URI: ${folioClientConfig.baseOkapiUri}")
     log.info("LOGDEBUG TENANT ID: ${folioClientConfig.tenantName}")
@@ -76,18 +76,22 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
       // FIXME obviously this isn't what we need to do long term
 
 
-        // Get the acquisition units for a user (This is all the information we need to query by Policy Type == ACQ_UNIT
+      // For now we use the synchronous version (which is async under the hood for performance reasons)
+      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.READ);
+      logUserAcquisitionUnits(userAcquisitionUnits, "READ")
 
-        // For now we use the synchronous version (which is async under the hood for performance reasons)
-        UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.READ);
+      UserAcquisitionUnits userCreateAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.CREATE);
+      logUserAcquisitionUnits(userCreateAcquisitionUnits, "CREATE")
 
-      log.info("LOGDEBUG List A: ${userAcquisitionUnits.getMemberRestrictiveUnits()}")
-      log.info("LOGDEBUG List B: ${userAcquisitionUnits.getNonRestrictiveUnits()}")
-      log.info("LOGDEBUG List C: ${userAcquisitionUnits.getNonMemberRestrictiveUnits()}")
+      UserAcquisitionUnits userDeleteAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.DELETE);
+      logUserAcquisitionUnits(userDeleteAcquisitionUnits, "DELETE")
 
-      log.info("LOGDEBUG List A SIZE: ${userAcquisitionUnits.getMemberRestrictiveUnits().size()}")
-      log.info("LOGDEBUG List B SIZE: ${userAcquisitionUnits.getNonRestrictiveUnits().size()}")
-      log.info("LOGDEBUG List C SIZE: ${userAcquisitionUnits.getNonMemberRestrictiveUnits().size()}")
+      UserAcquisitionUnits userUpdateAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.UPDATE);
+      logUserAcquisitionUnits(userUpdateAcquisitionUnits, "UPDATE")
+
+
+      UserAcquisitionUnits userNoneAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.NONE);
+      logUserAcquisitionUnits(userNoneAcquisitionUnits, "NONE")
 
     } catch (FolioClientException e) {
       if (e.cause) {
@@ -102,5 +106,16 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
     Map results = ["didTheFetch": true];
 
     render results as JSON
+  }
+
+  // FIXME this shouoldn't be in the final code, here for logging while developing
+  private logUserAcquisitionUnits(UserAcquisitionUnits uau, String name = "Generic") {
+    log.info("LOGDEBUG (${name}) List A: ${uau.getMemberRestrictiveUnits()}")
+    log.info("LOGDEBUG (${name}) List B: ${uau.getNonRestrictiveUnits()}")
+    log.info("LOGDEBUG (${name}) List C: ${uau.getNonMemberRestrictiveUnits()}")
+
+    log.info("LOGDEBUG (${name}) List A SIZE: ${uau.getMemberRestrictiveUnits().size()}")
+    log.info("LOGDEBUG (${name}) List B SIZE: ${uau.getNonRestrictiveUnits().size()}")
+    log.info("LOGDEBUG (${name}) List C SIZE: ${uau.getNonMemberRestrictiveUnits().size()}")
   }
 }

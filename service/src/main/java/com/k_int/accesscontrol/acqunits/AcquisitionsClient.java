@@ -6,6 +6,7 @@ import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitResponse;
 import com.k_int.folio.FolioClient;
 import com.k_int.folio.FolioClientConfig;
 import com.k_int.folio.FolioClientException;
+import org.springframework.security.core.parameters.P;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -35,34 +36,6 @@ public class AcquisitionsClient extends FolioClient {
     put("query", "cql.allRecords=1 sortby name");
   }}, BASE_LIMIT_PARAM);
 
-
-  /**
-   * Asynchronously fetches all acquisition units with default query params.
-   *
-   * @param headers Request headers
-   * @param queryParams Additional query parameters
-   * @return Future with acquisition unit response
-   */
-  public CompletableFuture<AcquisitionUnitResponse> getAsyncAcquisitionUnits(String[] headers, Map<String,String> queryParams) {
-    return getAsync(
-      ACQUISITION_UNIT_PATH,
-      headers,
-      combineQueryParams(BASE_UNIT_QUERY_PARAMS, queryParams),
-      AcquisitionUnitResponse.class
-    );
-  }
-
-  /**
-   * Synchronously fetches all acquisition units with default query params.
-   *
-   * @param headers Headers for the request
-   * @param queryParams Extra query parameters
-   * @return AcquisitionUnitResponse
-   * @throws FolioClientException For failed or invalid responses
-   */
-  public AcquisitionUnitResponse getAcquisitionUnits(String[] headers, Map<String,String> queryParams) throws FolioClientException {
-    return asyncFolioClientExceptionHelper(() -> getAsyncAcquisitionUnits(headers, queryParams));
-  }
 
   /**
    * Asynchronously fetches all acquisition unit memberships with default limits.
@@ -138,19 +111,50 @@ public class AcquisitionsClient extends FolioClient {
    * @return Future with filtered acquisition units
    */
   public CompletableFuture<AcquisitionUnitResponse> getAsyncRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, Restriction restriction, boolean restrictBool) {
+    Map<String, String> restrictionQueryParams;
+    // Handle "no restriction" case
+    if (restriction == Restriction.NONE) {
+      restrictionQueryParams = new HashMap<>();
+    } else {
+      restrictionQueryParams = new HashMap<>() {{
+        put("query", "(" + restriction.getRestrictionAccessor() + "==" + restrictBool + ")");
+      }};
+    }
+
     return getAsync(
       ACQUISITION_UNIT_PATH,
       headers,
       combineQueryParams(
         BASE_LIMIT_PARAM,
         combineQueryParams(
-          new HashMap<>() {{
-            put("query", "(" + restriction.getRestrictionAccessor() + "==" + restrictBool + ")");
-          }},
+          restrictionQueryParams,
           queryParams
         )
       ),
       AcquisitionUnitResponse.class);
+  }
+
+  /**
+   * Asynchronously fetches all acquisition units with default query params.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @return Future with acquisition unit response
+   */
+  public CompletableFuture<AcquisitionUnitResponse> getAsyncAcquisitionUnits(String[] headers, Map<String,String> queryParams) {
+    return getAsyncRestrictionAcquisitionUnits(headers, queryParams, Restriction.NONE, false);
+  }
+
+  /**
+   * Synchronously fetches all acquisition units with default query params.
+   *
+   * @param headers Headers for the request
+   * @param queryParams Extra query parameters
+   * @return AcquisitionUnitResponse
+   * @throws FolioClientException For failed or invalid responses
+   */
+  public AcquisitionUnitResponse getAcquisitionUnits(String[] headers, Map<String,String> queryParams) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> getAsyncAcquisitionUnits(headers, queryParams));
   }
 
   /**
