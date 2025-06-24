@@ -311,9 +311,12 @@ public class ErmResourceService {
     }}
 
     Map outputMap = [:]
+    Map statisticsMap = [:]
+
+    statisticsMap.put("total_markedForDeletion", totals)
 
     outputMap.put("packages", deleteResourcesResponseMap)
-    outputMap.put("statistics", totals)
+    outputMap.put("statistics", statisticsMap)
 
     return outputMap;
   }
@@ -329,18 +332,30 @@ public class ErmResourceService {
     }}
 
     // Calculate total deletion counts
-    DeletionCounts totals = new DeletionCounts(0,0,0,0)
+    DeletionCounts totals_deleted = new DeletionCounts(0,0,0,0)
     deleteResourcesResponseMap.keySet().forEach{String packageId -> {
-      totals.pci += deleteResourcesResponseMap.get(packageId).deleted.statistics.pci
-      totals.pti += deleteResourcesResponseMap.get(packageId).deleted.statistics.pti
-      totals.ti += deleteResourcesResponseMap.get(packageId).deleted.statistics.ti
-      totals.work += deleteResourcesResponseMap.get(packageId).deleted.statistics.work
+      totals_deleted.pci += deleteResourcesResponseMap.get(packageId).deleted.statistics.pci
+      totals_deleted.pti += deleteResourcesResponseMap.get(packageId).deleted.statistics.pti
+      totals_deleted.ti += deleteResourcesResponseMap.get(packageId).deleted.statistics.ti
+      totals_deleted.work += deleteResourcesResponseMap.get(packageId).deleted.statistics.work
+    }}
+
+    DeletionCounts totals_marked = new DeletionCounts(0,0,0,0)
+    deleteResourcesResponseMap.keySet().forEach{String packageId -> {
+      totals_marked.pci += deleteResourcesResponseMap.get(packageId).markedForDeletion.statistics.pci
+      totals_marked.pti += deleteResourcesResponseMap.get(packageId).markedForDeletion.statistics.pti
+      totals_marked.ti += deleteResourcesResponseMap.get(packageId).markedForDeletion.statistics.ti
+      totals_marked.work += deleteResourcesResponseMap.get(packageId).markedForDeletion.statistics.work
     }}
 
     Map outputMap = [:]
+    Map statisticsMap = [:]
+
+    statisticsMap.put("total_deleted", totals_deleted)
+    statisticsMap.put("total_markedForDeletion", totals_marked)
 
     outputMap.put("packages", deleteResourcesResponseMap)
-    outputMap.put("statistics", totals)
+    outputMap.put("statistics", statisticsMap)
 
     return outputMap;
   }
