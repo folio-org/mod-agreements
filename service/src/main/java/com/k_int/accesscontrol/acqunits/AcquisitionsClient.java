@@ -6,7 +6,6 @@ import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitResponse;
 import com.k_int.folio.FolioClient;
 import com.k_int.folio.FolioClientConfig;
 import com.k_int.folio.FolioClientException;
-import org.springframework.security.core.parameters.P;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -142,7 +141,7 @@ public class AcquisitionsClient extends FolioClient {
    * @return Future with acquisition unit response
    */
   public CompletableFuture<AcquisitionUnitResponse> getAsyncAcquisitionUnits(String[] headers, Map<String,String> queryParams) {
-    return getAsyncRestrictionAcquisitionUnits(headers, queryParams, Restriction.NONE, false);
+    return getAsyncRestrictionAcquisitionUnits(headers, combineQueryParams(BASE_UNIT_QUERY_PARAMS, queryParams), Restriction.NONE, false);
   }
 
   /**
@@ -181,6 +180,8 @@ public class AcquisitionsClient extends FolioClient {
    * @return Future with UserAcquisitionUnits object
    */
   public CompletableFuture<UserAcquisitionUnits> getAsyncUserAcquisitionUnits(String[] headers, Restriction restriction) {
+    // When called for Restriction.NONE, the nonRestrictiveUnits will be all units, and the memberRestrictiveUnits/nonMemberRestrictiveUnits will comprise all the units the patron is/isn't a member of
+
     CompletableFuture<AcquisitionUnitResponse> nonRestrictiveUnitsResponse = getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, false);
     CompletableFuture<AcquisitionUnitResponse> restrictiveUnitsResponse = getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, true);
     CompletableFuture<AcquisitionUnitMembershipResponse> acquisitionUnitMembershipsResponse = getAsyncUserAcquisitionUnitMemberships(headers, Collections.emptyMap());

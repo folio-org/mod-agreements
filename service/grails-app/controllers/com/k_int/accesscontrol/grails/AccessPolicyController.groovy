@@ -1,14 +1,11 @@
 package com.k_int.accesscontrol.grails
 
-import com.fasterxml.jackson.databind.JsonNode
-
 import com.k_int.accesscontrol.acqunits.AcquisitionsClient
-import com.k_int.accesscontrol.acqunits.Restriction
 import com.k_int.accesscontrol.acqunits.UserAcquisitionUnits
-import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnit
-import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembership
-import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembershipResponse
-import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitResponse
+import com.k_int.accesscontrol.core.PolicyRestriction
+import com.k_int.accesscontrol.main.PolicyEngine
+import com.k_int.accesscontrol.main.PolicyEngineConfiguration
+import com.k_int.accesscontrol.main.PolicyInformation
 import com.k_int.folio.FolioClientConfig
 import com.k_int.folio.FolioClientException
 
@@ -67,31 +64,35 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
     log.info("LOGDEBUG USER PASSWORD: ${folioClientConfig.userPassword}")
 
     try {
-      AcquisitionsClient acqClient = new AcquisitionsClient(folioClientConfig);
+      // FIXME This probably ought to be spun up once in a service, rather than per request.
+      PolicyEngine policyEngine = new PolicyEngine(
+        PolicyEngineConfiguration
+          .builder()
+          .folioClientConfig(folioClientConfig)
+          .acquisitionUnits(true)
+          .build()
+      )
 
+      /* ------------------------------- LOGIN LOGIC ------------------------------- */
+      AcquisitionsClient acqClient = policyEngine.getAcqClient();
       // FIXME in the final work we will just pass down request context headers instead, not do a separate login
       String[] folioAccessHeaders = acqClient.getFolioAccessTokenCookie([] as String[]);
 
       log.info("LOGDEBUG LOGIN COOKIE: ${folioAccessHeaders}")
-      // FIXME obviously this isn't what we need to do long term
+      /* ------------------------------- END LOGIN LOGIC ------------------------------- */
 
+      /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
+      PolicyInformation policyInformationRead = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.READ);
+      PolicyInformation policyInformationClaim = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.CLAIM);
+      PolicyInformation policyInformationCreate = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.CREATE);
+      PolicyInformation policyInformationUpdate = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.UPDATE);
+      PolicyInformation policyInformationDelete = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.DELETE);
 
-      // For now we use the synchronous version (which is async under the hood for performance reasons)
-      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.READ);
-      logUserAcquisitionUnits(userAcquisitionUnits, "READ")
-
-      UserAcquisitionUnits userCreateAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.CREATE);
-      logUserAcquisitionUnits(userCreateAcquisitionUnits, "CREATE")
-
-      UserAcquisitionUnits userDeleteAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.DELETE);
-      logUserAcquisitionUnits(userDeleteAcquisitionUnits, "DELETE")
-
-      UserAcquisitionUnits userUpdateAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.UPDATE);
-      logUserAcquisitionUnits(userUpdateAcquisitionUnits, "UPDATE")
-
-
-      UserAcquisitionUnits userNoneAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.NONE);
-      logUserAcquisitionUnits(userNoneAcquisitionUnits, "NONE")
+      logUserAcquisitionUnits(policyInformationRead.getUserAcquisitionUnits(), "READ")
+      logUserAcquisitionUnits(policyInformationClaim.getUserAcquisitionUnits(), "CLAIM")
+      logUserAcquisitionUnits(policyInformationCreate.getUserAcquisitionUnits(), "CREATE")
+      logUserAcquisitionUnits(policyInformationUpdate.getUserAcquisitionUnits(), "UPDATE")
+      logUserAcquisitionUnits(policyInformationDelete.getUserAcquisitionUnits(), "DELETE")
 
     } catch (FolioClientException e) {
       if (e.cause) {

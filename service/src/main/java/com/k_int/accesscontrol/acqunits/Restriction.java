@@ -28,18 +28,13 @@ public enum Restriction {
     this.restrictionAccessor = restrictionAccessor;
   }
 
-  Restriction getRestrictionFromPolicyRestriction(PolicyRestriction pr) {
-    switch (pr) {
-      case READ:
-        return Restriction.READ;
-      case CLAIM:
-        return Restriction.CREATE;
-      case DELETE:
-        return Restriction.DELETE;
-      case UPDATE:
-        return Restriction.UPDATE;
-      default:
-        return Restriction.NONE;
-    }
+  public static Restriction getRestrictionFromPolicyRestriction(PolicyRestriction pr) {
+    return switch (pr) {
+      case READ -> Restriction.READ;
+      case CLAIM -> Restriction.CREATE;
+      case DELETE -> Restriction.DELETE;
+      case UPDATE -> Restriction.UPDATE;
+      default -> Restriction.NONE;
+    };
   }
 }
