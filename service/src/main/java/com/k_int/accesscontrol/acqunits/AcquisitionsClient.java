@@ -1,19 +1,21 @@
 package com.k_int.accesscontrol.acqunits;
 
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnit;
-import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembership;
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembershipResponse;
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitResponse;
 import com.k_int.folio.FolioClient;
 import com.k_int.folio.FolioClientConfig;
 import com.k_int.folio.FolioClientException;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
+/**
+ * Client for interacting with FOLIO's acquisition unit and membership APIs.
+ * Provides both synchronous and asynchronous access to key data structures
+ * relevant to resource protection (e.g., acquisition unit restrictions).
+ */
 public class AcquisitionsClient extends FolioClient {
   public static final String ACQUISITION_UNIT_PATH = "/acquisitions-units/units";
   public static final String ACQUISITION_UNIT_MEMBERSHIP_PATH = "/acquisitions-units/memberships";
@@ -43,24 +45,13 @@ public class AcquisitionsClient extends FolioClient {
     return get(ACQUISITION_UNIT_MEMBERSHIP_PATH, headers, combineQueryParams(BASE_LIMIT_PARAM, queryParams), AcquisitionUnitMembershipResponse.class);
   }
 
-  // This now uses built in "patronId", consider one for generic user id?
-  public AcquisitionUnitMembershipResponse getUserAcquisitionUnitMemberships(String[] headers, Map<String,String> queryParams) throws IOException, FolioClientException, InterruptedException {
-    return get(
-      ACQUISITION_UNIT_MEMBERSHIP_PATH,
-      headers,
-      combineQueryParams(
-        combineQueryParams(
-          BASE_LIMIT_PARAM,
-          new HashMap<>() {{
-            put("query", "(userId==" + getPatronId() + ")");
-          }}
-        ),
-        queryParams
-      ),
-      AcquisitionUnitMembershipResponse.class
-    );
-  }
-
+  /**
+   * Asynchronously fetches unit memberships for the current patron.
+   *
+   * @param headers Request headers
+   * @param queryParams Query parameters
+   * @return Future with unit membership response
+   */
   public CompletableFuture<AcquisitionUnitMembershipResponse> getAsyncUserAcquisitionUnitMemberships(String[] headers, Map<String,String> queryParams) {
     return getAsync(
       ACQUISITION_UNIT_MEMBERSHIP_PATH,
@@ -78,33 +69,27 @@ public class AcquisitionsClient extends FolioClient {
     );
   }
 
-  // FIXME we need to consider what to do about "isDeleted" acq units
-
   /**
-   * As far as I can tell, there is NO good way to find things like: Acquisition units the user _is a member of_ and which _restrict READ_ access.
-   * Since the unit's restrictions are only available on the unit call, and memberships are only available on the membership call. Examples:
-   * <br/><a href="https://github.com/folio-org/mod-finance/blob/v5.1.1/src/main/java/org/folio/services/protection/ProtectionService.java">mod-finance protection service</a>
-   * <br/><a href="https://github.com/folio-org/mod-finance/blob/v5.1.1/src/main/java/org/folio/rest/util/HelperUtils.java#L99-L102">mod-finance CQL id joiner</a>
-   * <br/>
+   * Synchronously fetches unit memberships for the current patron by blocking on the async path.
    *
-   * Necessitates pulling in a list of IDs and making a second and/or third call :(
+   * @param headers Request headers
+   * @param queryParams Query parameters
+   * @return Membership response
+   * @throws FolioClientException If the request fails or is interrupted
    */
-  public AcquisitionUnitResponse getRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, Restriction restriction, boolean restrictBool) throws IOException, FolioClientException, InterruptedException {
-    return get(
-      ACQUISITION_UNIT_PATH,
-      headers,
-      combineQueryParams(
-        BASE_LIMIT_PARAM,
-        combineQueryParams(
-          new HashMap<>() {{
-            put("query", "(" + restriction.getRestrictionAccessor() + "==" + restrictBool + ")");
-          }},
-          queryParams
-        )
-      ),
-      AcquisitionUnitResponse.class);
+  public AcquisitionUnitMembershipResponse getUserAcquisitionUnitMemberships(String[] headers, Map<String,String> queryParams) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> getAsyncUserAcquisitionUnitMemberships(headers, queryParams));
   }
 
+  /**
+   * Asynchronously fetches acquisition units filtered by a restriction flag.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @param restriction Type of restriction (READ, CREATE, etc.)
+   * @param restrictBool Whether the restriction is expected to be true or false
+   * @return Future with filtered acquisition units
+   */
   public CompletableFuture<AcquisitionUnitResponse> getAsyncRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, Restriction restriction, boolean restrictBool) {
     return getAsync(
       ACQUISITION_UNIT_PATH,
@@ -121,46 +106,30 @@ public class AcquisitionsClient extends FolioClient {
       AcquisitionUnitResponse.class);
   }
 
-  public UserAcquisitionUnits getUserAcquisitionUnits(String[] headers, Restriction restriction) throws IOException, FolioClientException, InterruptedException {
-    List<AcquisitionUnit> nonRestrictiveUnits = getRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, false).getAcquisitionsUnits();
-    List<AcquisitionUnit> restrictiveUnits = getRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, true).getAcquisitionsUnits();
-
-    List<AcquisitionUnitMembership> acquisitionUnitMemberships = getUserAcquisitionUnitMemberships(headers, Collections.emptyMap()).getAcquisitionsUnitMemberships();
-
-    // First up, construct list of restrictive units which patron is a member of
-    List<AcquisitionUnit> memberRestrictiveUnits = restrictiveUnits
-      .stream()
-      .filter(au -> acquisitionUnitMemberships
-        .stream()
-        .anyMatch(aum ->
-          Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
-            Objects.equals(aum.getUserId(), this.getPatronId())
-        )
-      )
-      .toList();
-
-    // Then construct list of restrictive units which patron is not a member of
-    List<AcquisitionUnit> nonMemberRestrictiveUnits = restrictiveUnits
-      .stream()
-      .filter(au -> acquisitionUnitMemberships
-        .stream()
-        .noneMatch(aum ->
-          Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
-            Objects.equals(aum.getUserId(), this.getPatronId())
-        )
-      )
-      .toList();
-
-    return UserAcquisitionUnits
-      .builder()
-      .nonRestrictiveUnits(nonRestrictiveUnits)
-      .memberRestrictiveUnits(memberRestrictiveUnits)
-      .nonMemberRestrictiveUnits(nonMemberRestrictiveUnits)
-      .build();
+  /**
+   * Synchronously fetches acquisition units filtered by restriction flag.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @param restriction Type of restriction (READ, CREATE, etc.)
+   * @param restrictBool Whether the restriction is expected to be true or false
+   * @return Filtered acquisition units
+   * @throws FolioClientException If the async path fails
+   */
+  public AcquisitionUnitResponse getRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, Restriction restriction, boolean restrictBool) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> getAsyncRestrictionAcquisitionUnits(headers, queryParams, restriction, restrictBool));
   }
 
-  // This is measurably faster, on average 0.2s compared to 0.6 for the blocking method above
-  public UserAcquisitionUnits getAsyncUserAcquisitionUnits(String[] headers, Restriction restriction) {
+  /**
+   * Asynchronously constructs and returns the 3 acquisition unit lists used for access control.
+   * This includes non-restrictive units, restrictive units the user is a member of,
+   * and restrictive units the user is not a member of.
+   *
+   * @param headers Request headers
+   * @param restriction Restriction type (READ, etc.)
+   * @return Future with UserAcquisitionUnits object
+   */
+  public CompletableFuture<UserAcquisitionUnits> getAsyncUserAcquisitionUnits(String[] headers, Restriction restriction) {
     CompletableFuture<AcquisitionUnitResponse> nonRestrictiveUnitsResponse = getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, false);
     CompletableFuture<AcquisitionUnitResponse> restrictiveUnitsResponse = getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, true);
     CompletableFuture<AcquisitionUnitMembershipResponse> acquisitionUnitMembershipsResponse = getAsyncUserAcquisitionUnitMemberships(headers, Collections.emptyMap());
@@ -206,6 +175,19 @@ public class AcquisitionsClient extends FolioClient {
           .build();
       });
 
-    return combinedAcquisitionUnits.join();
+    return combinedAcquisitionUnits;
   };
+
+  /**
+   * Synchronously constructs and returns the 3 acquisition unit lists for access control,
+   * using the async version internally.
+   *
+   * @param headers Request headers
+   * @param restriction Restriction type (READ, etc.)
+   * @return UserAcquisitionUnits
+   * @throws FolioClientException If any async call fails
+   */
+  public UserAcquisitionUnits getUserAcquisitionUnits(String[] headers, Restriction restriction) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> getAsyncUserAcquisitionUnits(headers, restriction));
+  }
 }

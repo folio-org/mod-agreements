@@ -77,11 +77,9 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
 
 
         // Get the acquisition units for a user (This is all the information we need to query by Policy Type == ACQ_UNIT
+
+        // For now we use the synchronous version (which is async under the hood for performance reasons)
         UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(folioAccessHeaders, Restriction.READ);
-
-        UserAcquisitionUnits asyncUserAcquisitionUnits = acqClient.getAsyncUserAcquisitionUnits(folioAccessHeaders, Restriction.READ);
-
-      // Get the acquisition units for a user (This is all the information we need to query by Policy Type == ACQ_UNIT
 
       log.info("LOGDEBUG List A: ${userAcquisitionUnits.getMemberRestrictiveUnits()}")
       log.info("LOGDEBUG List B: ${userAcquisitionUnits.getNonRestrictiveUnits()}")
@@ -90,15 +88,6 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
       log.info("LOGDEBUG List A SIZE: ${userAcquisitionUnits.getMemberRestrictiveUnits().size()}")
       log.info("LOGDEBUG List B SIZE: ${userAcquisitionUnits.getNonRestrictiveUnits().size()}")
       log.info("LOGDEBUG List C SIZE: ${userAcquisitionUnits.getNonMemberRestrictiveUnits().size()}")
-
-
-      log.info("LOGDEBUG ASYNC List A: ${asyncUserAcquisitionUnits.getMemberRestrictiveUnits()}")
-      log.info("LOGDEBUG ASYNC List B: ${asyncUserAcquisitionUnits.getNonRestrictiveUnits()}")
-      log.info("LOGDEBUG ASYNC List C: ${asyncUserAcquisitionUnits.getNonMemberRestrictiveUnits()}")
-
-      log.info("LOGDEBUG ASYNC List A SIZE: ${asyncUserAcquisitionUnits.getMemberRestrictiveUnits().size()}")
-      log.info("LOGDEBUG ASYNC List B SIZE: ${asyncUserAcquisitionUnits.getNonRestrictiveUnits().size()}")
-      log.info("LOGDEBUG ASYNC List C SIZE: ${asyncUserAcquisitionUnits.getNonMemberRestrictiveUnits().size()}")
 
     } catch (FolioClientException e) {
       if (e.cause) {
