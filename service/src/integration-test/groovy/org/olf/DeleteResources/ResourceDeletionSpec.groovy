@@ -5,6 +5,7 @@ import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import org.olf.kb.http.response.DeleteResponse
 import org.olf.kb.http.response.MarkForDeleteMap
+import org.olf.kb.http.response.MarkForDeleteResponse
 import spock.lang.Shared
 import spock.lang.Stepwise
 
@@ -127,7 +128,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
 
       log.info("IDs to process for ${testCase.resourceTypeToMark}: ${idsForProcessing}")
 
-      MarkForDeleteMap operationResponse
+      MarkForDeleteResponse operationResponse
       Exception operationError
 
     // Only make a call if there are IDs to process for the designated resource type
@@ -206,7 +207,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
     assert expectedKbStats.Work                  == actualKbStats.Work
   }
 
-  void assertIdsMatch(String structure, MarkForDeleteMap operationResponse, Map expectedMarkForDelete) {
+  void assertIdsMatch(String structure, MarkForDeleteResponse operationResponse, Map expectedMarkForDelete) {
 
     if (operationResponse) {
       Set<String>  expectedPcis = findInputResourceIds(expectedMarkForDelete.get("pci") as List, structure)
@@ -214,11 +215,11 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
       Set<String>  expectedTis = findInputResourceIds(expectedMarkForDelete.get("ti") as List, structure)
       Set<String>  expectedWorks = findInputResourceIds(expectedMarkForDelete.get("work") as List, structure)
 
-      log.info("Asserting IDs match: Actual=[pci: {}, pti: {}, ti: {}, work: {}]; Expected=[pci: {}, pti: {}, ti: {}, work: {}]", operationResponse.pci, operationResponse.pti, operationResponse.ti, operationResponse.work, expectedPcis, expectedPtis, expectedTis, expectedWorks)
-      assert expectedPcis == operationResponse.pci as Set
-      assert expectedPtis == operationResponse.pti as Set
-      assert expectedTis == operationResponse.ti as Set
-      assert expectedWorks == operationResponse.work as Set
+      log.info("Asserting IDs match: Actual=[pci: {}, pti: {}, ti: {}, work: {}]; Expected=[pci: {}, pti: {}, ti: {}, work: {}]", operationResponse.resourceIds.pci, operationResponse.resourceIds.pti, operationResponse.resourceIds.ti, operationResponse.resourceIds.work, expectedPcis, expectedPtis, expectedTis, expectedWorks)
+      assert expectedPcis == operationResponse.resourceIds.pci as Set
+      assert expectedPtis == operationResponse.resourceIds.pti as Set
+      assert expectedTis == operationResponse.resourceIds.ti as Set
+      assert expectedWorks == operationResponse.resourceIds.work as Set
     }
 
   }

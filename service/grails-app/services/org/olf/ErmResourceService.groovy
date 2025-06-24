@@ -1,15 +1,19 @@
 package org.olf
 
+import grails.converters.JSON
 import groovy.sql.Sql
 import org.hibernate.Session
+import org.olf.general.jobs.ResourceDeletionJob
 import org.olf.kb.Work
 import org.olf.kb.http.response.DeleteResponse
 import org.olf.kb.http.response.DeletionCounts
 import org.olf.kb.http.response.MarkForDeleteMap
 import org.olf.kb.Pkg
 import org.olf.kb.http.response.MarkForDeleteResponse
+import org.olf.general.ResourceDeletionJobType
 
 import java.sql.Connection
+import java.time.Instant
 
 import static org.springframework.transaction.annotation.Propagation.MANDATORY
 import static groovy.transform.TypeCheckingMode.SKIP
@@ -251,7 +255,7 @@ public class ErmResourceService {
       markForDeletion.pci.size(), markForDeletion.pti.size(), markForDeletion.ti.size(), markForDeletion.work.size())
 
 
-    response.ids = markForDeletion
+    response.resourceIds = markForDeletion
     response.statistics = getCountsFromDeletionMap(markForDeletion)
     return response;
   }
@@ -321,48 +325,32 @@ public class ErmResourceService {
     return outputMap;
   }
 
+  @CompileStatic(SKIP)
+  public deleteResourcesFromPackage(List<String> idInputs) {
+    ResourceDeletionJob job = new ResourceDeletionJob([
+      name: "ResourceDeletionJob, package IDs: ${idInputs.toString()} ${Instant.now()}",
+      packageIds: new JSON(idInputs).toString(),
+      deletionJobType: ResourceDeletionJobType.PackageDeletionJob
+    ])
 
-  public Map deleteResourcesFromPackage(List<String> idInputs) {
-    Map<String, DeleteResponse> deleteResourcesResponseMap = [:]
+    job.setStatusFromString('Queued')
+    job.save(failOnError: true, flush: true)
 
-    // Collect responses for each package in a Map.
-    idInputs.forEach{String id -> {
-      MarkForDeleteMap forDeletion = markForDelete([id], Pkg.class).ids; // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
-      deleteResourcesResponseMap.put(id, deleteResourcesInternal(forDeletion))
-    }}
-
-    // Calculate total deletion counts
-    DeletionCounts totals_deleted = new DeletionCounts(0,0,0,0)
-    deleteResourcesResponseMap.keySet().forEach{String packageId -> {
-      totals_deleted.pci += deleteResourcesResponseMap.get(packageId).deleted.statistics.pci
-      totals_deleted.pti += deleteResourcesResponseMap.get(packageId).deleted.statistics.pti
-      totals_deleted.ti += deleteResourcesResponseMap.get(packageId).deleted.statistics.ti
-      totals_deleted.work += deleteResourcesResponseMap.get(packageId).deleted.statistics.work
-    }}
-
-    DeletionCounts totals_marked = new DeletionCounts(0,0,0,0)
-    deleteResourcesResponseMap.keySet().forEach{String packageId -> {
-      totals_marked.pci += deleteResourcesResponseMap.get(packageId).markedForDeletion.statistics.pci
-      totals_marked.pti += deleteResourcesResponseMap.get(packageId).markedForDeletion.statistics.pti
-      totals_marked.ti += deleteResourcesResponseMap.get(packageId).markedForDeletion.statistics.ti
-      totals_marked.work += deleteResourcesResponseMap.get(packageId).markedForDeletion.statistics.work
-    }}
-
-    Map outputMap = [:]
-    Map statisticsMap = [:]
-
-    statisticsMap.put("total_deleted", totals_deleted)
-    statisticsMap.put("total_markedForDeletion", totals_marked)
-
-    outputMap.put("packages", deleteResourcesResponseMap)
-    outputMap.put("statistics", statisticsMap)
-
-    return outputMap;
+    return job;
   }
 
-  public DeleteResponse deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
-    MarkForDeleteMap forDeletion = markForDelete(idInputs, resourceClass).ids;
-    return deleteResourcesInternal(forDeletion);
+  public Map deleteResourcesJob(List<String> idInputs, Class<? extends ErmResource> resourceClass, String jobId) {
+    Map outputMap = [:]
+
+    idInputs.forEach{String id -> {
+      Map packageDeletionInfo = [:]
+      MarkForDeleteMap forDeletion = markForDelete([id], resourceClass).resourceIds;
+      packageDeletionInfo.put("jobId", jobId)
+      packageDeletionInfo.put("markedForDeletion", deleteResourcesInternal(forDeletion))
+      outputMap.put(id, packageDeletionInfo)
+    }}
+
+    return outputMap;
   }
 
   DeletionCounts getCountsFromDeletionMap(MarkForDeleteMap deleteMap) {
@@ -383,26 +371,26 @@ public class ErmResourceService {
     }
 
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
-      response.deleted.ids.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
+      response.deleted.resourceIds.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
     }
 
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
-      response.deleted.ids.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
+      response.deleted.resourceIds.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
     }
 
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
-      response.deleted.ids.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
+      response.deleted.resourceIds.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
     }
 
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
-      response.deleted.ids.work = deleteIds(Work, resourcesToDelete.work)
+      response.deleted.resourceIds.work = deleteIds(Work, resourcesToDelete.work)
     }
 
     log.info("Deletion complete.")
     response.markedForDeletion.statistics = getCountsFromDeletionMap(resourcesToDelete)
-    response.deleted.statistics = getCountsFromDeletionMap(response.deleted.ids)
-    response.markedForDeletion.ids = resourcesToDelete
+    response.deleted.statistics = getCountsFromDeletionMap(response.deleted.resourceIds)
+    response.markedForDeletion.resourceIds = resourcesToDelete
 
     return response
   }

@@ -1,6 +1,6 @@
 package org.olf.kb.http.response
 
 class MarkForDeleteResponse {
-  MarkForDeleteMap ids = new MarkForDeleteMap()
+  MarkForDeleteMap resourceIds = new MarkForDeleteMap()
   DeletionCounts statistics = new DeletionCounts()
 }
