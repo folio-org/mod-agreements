@@ -292,7 +292,7 @@ public class ErmResourceService {
     return successfullyDeletedIds
   }
 
-  public Map<String, MarkForDeleteResponse> markForDeleteFromPackage(List<String> idInputs) {
+  public Map markForDeleteFromPackage(List<String> idInputs) {
     Map<String, MarkForDeleteResponse> deleteResourcesResponseMap = [:]
 
     // Collect responses for each package in a Map.
@@ -301,7 +301,21 @@ public class ErmResourceService {
       deleteResourcesResponseMap.put(id, forDeletion)
     }}
 
-    return deleteResourcesResponseMap;
+    // Calculate total deletion counts
+    DeletionCounts totals = new DeletionCounts(0,0,0,0)
+    deleteResourcesResponseMap.keySet().forEach{String packageId -> {
+      totals.pci += deleteResourcesResponseMap.get(packageId).statistics.pci
+      totals.pti += deleteResourcesResponseMap.get(packageId).statistics.pti
+      totals.ti += deleteResourcesResponseMap.get(packageId).statistics.ti
+      totals.work += deleteResourcesResponseMap.get(packageId).statistics.work
+    }}
+
+    Map outputMap = [:]
+
+    outputMap.put("packages", deleteResourcesResponseMap)
+    outputMap.put("statistics", totals)
+
+    return outputMap;
   }
 
 
@@ -317,10 +331,10 @@ public class ErmResourceService {
     // Calculate total deletion counts
     DeletionCounts totals = new DeletionCounts(0,0,0,0)
     deleteResourcesResponseMap.keySet().forEach{String packageId -> {
-      totals.pci += deleteResourcesResponseMap.get(packageId).statistics.deleted.pci
-      totals.pti += deleteResourcesResponseMap.get(packageId).statistics.deleted.pti
-      totals.ti += deleteResourcesResponseMap.get(packageId).statistics.deleted.ti
-      totals.work += deleteResourcesResponseMap.get(packageId).statistics.deleted.work
+      totals.pci += deleteResourcesResponseMap.get(packageId).deleted.statistics.pci
+      totals.pti += deleteResourcesResponseMap.get(packageId).deleted.statistics.pti
+      totals.ti += deleteResourcesResponseMap.get(packageId).deleted.statistics.ti
+      totals.work += deleteResourcesResponseMap.get(packageId).deleted.statistics.work
     }}
 
     Map outputMap = [:]
@@ -348,32 +362,32 @@ public class ErmResourceService {
     if (resourcesToDelete == null) {
       log.warn("deleteResources called with null MarkForDeleteResponse")
       DeletionCounts emptyCount = new DeletionCounts(0, 0, 0, 0)
-      response.statistics.markedForDeletion = emptyCount
-      response.statistics.deleted = emptyCount
+      response.markedForDeletion.statistics = emptyCount
+      response.deleted.statistics = emptyCount
       return response
     }
 
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
-      response.ids.deleted.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
+      response.deleted.ids.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
     }
 
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
-      response.ids.deleted.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
+      response.deleted.ids.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
     }
 
     if (resourcesToDelete.ti && !resourcesToDelete.ti.isEmpty()) {
-      response.ids.deleted.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
+      response.deleted.ids.ti = deleteIds(TitleInstance, resourcesToDelete.ti)
     }
 
     if (resourcesToDelete.work && !resourcesToDelete.work.isEmpty()) {
-      response.ids.deleted.work = deleteIds(Work, resourcesToDelete.work)
+      response.deleted.ids.work = deleteIds(Work, resourcesToDelete.work)
     }
 
     log.info("Deletion complete.")
-    response.statistics.markedForDeletion = getCountsFromDeletionMap(resourcesToDelete)
-    response.statistics.deleted = getCountsFromDeletionMap(response.ids.deleted)
-    response.ids.markedForDeletion = resourcesToDelete
+    response.markedForDeletion.statistics = getCountsFromDeletionMap(resourcesToDelete)
+    response.deleted.statistics = getCountsFromDeletionMap(response.deleted.ids)
+    response.markedForDeletion.ids = resourcesToDelete
 
     return response
   }

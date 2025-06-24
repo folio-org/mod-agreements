@@ -1,22 +1,18 @@
 package org.olf.kb.http.response
 
-class IdGroups {
-  MarkForDeleteMap deleted = new MarkForDeleteMap()
-  MarkForDeleteMap markedForDeletion = new MarkForDeleteMap()
+class MarkForDeletionGroup {
+  MarkForDeleteMap ids = new MarkForDeleteMap()
+  DeletionCounts statistics = new DeletionCounts()
 }
 
-/**
- * A container for the 'statistics' part of the response, holding counts
- * for both deleted and marked-for-deletion items.
- */
-class StatisticGroups {
-  DeletionCounts deleted = new DeletionCounts()
-  DeletionCounts markedForDeletion = new DeletionCounts()
+class DeletedGroup {
+  MarkForDeleteMap ids = new MarkForDeleteMap()
+  DeletionCounts statistics = new DeletionCounts()
 }
 
 class DeleteResponse {
-  IdGroups ids = new IdGroups()
-  StatisticGroups statistics = new StatisticGroups()
+  MarkForDeletionGroup markedForDeletion = new MarkForDeletionGroup()
+  DeletedGroup deleted = new DeletedGroup()
 }
 
 class DeletionCounts {
@@ -26,13 +22,17 @@ class DeletionCounts {
   Integer work;
 
   DeletionCounts() {
+    this.pci = 0
+    this.pti = 0
+    this.ti = 0
+    this.work = 0
   }
 
-  DeletionCounts(Integer pciDeleted, Integer ptiDeleted, Integer tiDeleted, Integer workDeleted) {
-    this.pci = pciDeleted
-    this.pti = ptiDeleted
-    this.ti = tiDeleted
-    this.work = workDeleted
+  DeletionCounts(Integer pci, Integer pti, Integer ti, Integer work) {
+    this.pci = pci
+    this.pti = pti
+    this.ti = ti
+    this.work = work
   }
 
   @Override
