@@ -7,7 +7,6 @@ import com.k_int.folio.FolioClient;
 import com.k_int.folio.FolioClientConfig;
 import com.k_int.folio.FolioClientException;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -37,12 +36,60 @@ public class AcquisitionsClient extends FolioClient {
   }}, BASE_LIMIT_PARAM);
 
 
-  public AcquisitionUnitResponse getAcquisitionUnits(String[] headers, Map<String,String> queryParams) throws IOException, FolioClientException, InterruptedException {
-    return get(ACQUISITION_UNIT_PATH, headers, combineQueryParams(BASE_UNIT_QUERY_PARAMS, queryParams), AcquisitionUnitResponse.class);
+  /**
+   * Asynchronously fetches all acquisition units with default query params.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @return Future with acquisition unit response
+   */
+  public CompletableFuture<AcquisitionUnitResponse> getAsyncAcquisitionUnits(String[] headers, Map<String,String> queryParams) {
+    return getAsync(
+      ACQUISITION_UNIT_PATH,
+      headers,
+      combineQueryParams(BASE_UNIT_QUERY_PARAMS, queryParams),
+      AcquisitionUnitResponse.class
+    );
   }
 
-  public AcquisitionUnitMembershipResponse getAcquisitionUnitMemberships(String[] headers, Map<String,String> queryParams) throws IOException, FolioClientException, InterruptedException {
-    return get(ACQUISITION_UNIT_MEMBERSHIP_PATH, headers, combineQueryParams(BASE_LIMIT_PARAM, queryParams), AcquisitionUnitMembershipResponse.class);
+  /**
+   * Synchronously fetches all acquisition units with default query params.
+   *
+   * @param headers Headers for the request
+   * @param queryParams Extra query parameters
+   * @return AcquisitionUnitResponse
+   * @throws FolioClientException For failed or invalid responses
+   */
+  public AcquisitionUnitResponse getAcquisitionUnits(String[] headers, Map<String,String> queryParams) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> getAsyncAcquisitionUnits(headers, queryParams));
+  }
+
+  /**
+   * Asynchronously fetches all acquisition unit memberships with default limits.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @return Future with unit membership response
+   */
+  public CompletableFuture<AcquisitionUnitMembershipResponse> getAsyncAcquisitionUnitMemberships(String[] headers, Map<String,String> queryParams) {
+    return getAsync(
+      ACQUISITION_UNIT_MEMBERSHIP_PATH,
+      headers,
+      combineQueryParams(BASE_LIMIT_PARAM, queryParams),
+      AcquisitionUnitMembershipResponse.class
+    );
+  }
+
+  /**
+   * Synchronously fetches all acquisition unit memberships with default limits.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @return AcquisitionUnitMembershipResponse
+   * @throws FolioClientException For failed or invalid responses
+   */
+  public AcquisitionUnitMembershipResponse getAcquisitionUnitMemberships(String[] headers, Map<String,String> queryParams) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> getAsyncAcquisitionUnitMemberships(headers, queryParams));
   }
 
   /**
@@ -160,23 +207,18 @@ public class AcquisitionsClient extends FolioClient {
         .toList()
     );
 
-    CompletableFuture<UserAcquisitionUnits> combinedAcquisitionUnits = CompletableFuture.allOf(
+    return CompletableFuture.allOf(
         nonRestrictiveUnitsResponse,
         memberRestrictiveUnits,
         nonMemberRestrictiveUnits
       )
-      .thenApply(ignoredVoid -> {
-
-        return UserAcquisitionUnits
-          .builder()
-          .nonRestrictiveUnits(nonRestrictiveUnitsResponse.join().getAcquisitionsUnits())
-          .memberRestrictiveUnits(memberRestrictiveUnits.join())
-          .nonMemberRestrictiveUnits(nonMemberRestrictiveUnits.join())
-          .build();
-      });
-
-    return combinedAcquisitionUnits;
-  };
+      .thenApply(ignoredVoid -> UserAcquisitionUnits
+        .builder()
+        .nonRestrictiveUnits(nonRestrictiveUnitsResponse.join().getAcquisitionsUnits())
+        .memberRestrictiveUnits(memberRestrictiveUnits.join())
+        .nonMemberRestrictiveUnits(nonMemberRestrictiveUnits.join())
+        .build());
+  }
 
   /**
    * Synchronously constructs and returns the 3 acquisition unit lists for access control,
