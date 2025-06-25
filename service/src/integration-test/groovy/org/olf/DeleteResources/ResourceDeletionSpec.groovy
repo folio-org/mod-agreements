@@ -144,7 +144,7 @@ class ResourceDeletionSpec extends DeletionBaseSpec {
     Map finalKbStats = kbStatsBeforeActualDelete
     DeleteResponse actualDeleteResponse
 
-    if (testCase.doDelete && !operationError && operationResponse && !(operationResponse.pci.isEmpty() && operationResponse.pti.isEmpty() && operationResponse.ti.isEmpty() && operationResponse.work.isEmpty()) ) {
+    if (testCase.doDelete && !operationError && operationResponse) {
       // Only attempt delete if markForDelete was successful (no error, non-empty response)
       // And if there were items actually marked by the previous step
       log.info("Proceeding with delete operation for marked items: ${operationResponse}")

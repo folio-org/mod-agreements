@@ -3,6 +3,7 @@ package org.olf
 
 import org.hibernate.Hibernate
 import org.olf.erm.Entitlement
+import org.olf.general.ResourceDeletionJobType
 import org.olf.kb.ErmResource
 import org.olf.kb.PackageContentItem
 import org.olf.kb.Pkg
@@ -500,7 +501,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.info("ResourceController::deletePackage({})", deleteBody)
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.deleteResourcesFromPackage(ids)
+      return ermResourceService.createDeleteResourcesJob(ids, ResourceDeletionJobType.PackageDeletionJob)
     }
   }
 
@@ -509,7 +510,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.info("ResourceController::deletePcis({})", deleteBody)
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.deleteResources(ids, PackageContentItem.class)
+      return ermResourceService.deleteResources(ids, PackageContentItem)
     }
   }
 
@@ -518,7 +519,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.info("ResourceController::deletePtis({})", deleteBody)
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.deleteResources(ids, PlatformTitleInstance.class)
+      return ermResourceService.deleteResources(ids, PlatformTitleInstance)
     }
   }
 
@@ -527,7 +528,7 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
     log.info("ResourceController::deleteTis({})", deleteBody)
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.deleteResources(ids, TitleInstance.class)
+      return ermResourceService.deleteResources(ids, TitleInstance)
     }
   }
 

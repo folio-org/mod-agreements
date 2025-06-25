@@ -20,12 +20,12 @@ class ResourceDeletionJob extends PersistentJob implements MultiTenant<ResourceD
 
         case ResourceDeletionJobType.PackageDeletionJob:
           log.info "Executing PackageDeletionJob for IDs: ${idList}"
-          ermResourceService.deleteResourcesJob(idList, Pkg, jobId)
+          ermResourceService.deleteResourcesPkg(idList)
           break
 
         case ResourceDeletionJobType.PciDeletionJob:
           log.info "Executing PciDeletionJob for IDs: ${idList}"
-          ermResourceService.deleteResourcesJob(idList, Pci, jobId)
+          ermResourceService.deleteResources(idList, Pci)
           break
 
         default:

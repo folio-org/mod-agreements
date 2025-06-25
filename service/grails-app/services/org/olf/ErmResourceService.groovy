@@ -83,38 +83,15 @@ public class ErmResourceService {
     resourceList
   }
 
-  private Set<String> handleEmptyListMapping(Set<String> resourceSet) {
-    // Workaround for HQL 'NOT IN' bug: https://stackoverflow.com/questions/36879116/hibernate-hql-not-in-clause-doesnt-seem-to-work
-    return (resourceSet.size() == 0 ? ["PLACEHOLDER_RESOURCE"] : resourceSet) as Set<String>
-  }
-
-  private String getPcisForPackageSubquery(List<String> packageId) {
-    return """
-        SELECT pci.id FROM PackageContentItem pci
-        WHERE pci.pkg.id IN ${packageId.get(0)}
-      """.toString()
-  }
-
-  private Set<String> getPcisForPackage(List<String> packageId) {
-    return PackageContentItem.executeQuery(
-      """
-        SELECT pci.id FROM PackageContentItem pci
-        WHERE pci.pkg.id IN :packageId
-      """.toString(),
-      [packageId:packageId]
-    ) as Set
-  }
-
   public MarkForDeleteResponse markForDelete(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
     switch (resourceClass) {
       case Pkg.class:
         // Find the PCI ids that belong to the package, then markForDelete in the same way as for PCI endpoint.
-        return markForDeleteInternal(new HashSet<String>(getPcisForPackage(idInputs)), new HashSet<String>(), new HashSet<String>())
+        Set<String> pciIdsForPackage = PackageContentItem.executeQuery("SELECT pci.id FROM PackageContentItem pci WHERE pci.pkg.id IN :packageId".toString(), [packageId: idInputs]) as Set<String>
+        return markForDeleteInternal(new HashSet<String>(pciIdsForPackage), new HashSet<String>(), new HashSet<String>())
       case PackageContentItem.class:
         Set<String> pciIds = PackageContentItem.executeQuery("select p.id from PackageContentItem p where p.id in :ids", [ids: idInputs]) as Set<String>
         return markForDeleteInternal(pciIds, new HashSet<String>(), new HashSet<String>())
-
-//        return markForDeleteInternal("select p.id from PackageContentItem p where p.id in ${idInputs}", new HashSet<String>(), new HashSet<String>())
         break;
       case PlatformTitleInstance.class:
         Set<String> ptiIds = PlatformTitleInstance.executeQuery("select p.id from PlatformTitleInstance p where p.id in :ids", [ids: idInputs]) as Set<String>
@@ -326,11 +303,11 @@ public class ErmResourceService {
   }
 
   @CompileStatic(SKIP)
-  public deleteResourcesFromPackage(List<String> idInputs) {
+  public createDeleteResourcesJob(List<String> idInputs, ResourceDeletionJobType type) {
     ResourceDeletionJob job = new ResourceDeletionJob([
       name: "ResourceDeletionJob, package IDs: ${idInputs.toString()} ${Instant.now()}",
       packageIds: new JSON(idInputs).toString(),
-      deletionJobType: ResourceDeletionJobType.PackageDeletionJob
+      deletionJobType: type
     ])
 
     job.setStatusFromString('Queued')
@@ -339,17 +316,20 @@ public class ErmResourceService {
     return job;
   }
 
-  public Map deleteResourcesJob(List<String> idInputs, Class<? extends ErmResource> resourceClass, String jobId) {
+  public DeleteResponse deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
+    MarkForDeleteMap forDeletion = markForDelete(idInputs, resourceClass).resourceIds; // get ids marked for deletion.
+    return  deleteResourcesInternal(forDeletion)
+  }
+
+  public Map deleteResourcesPkg(List<String> pkgIds) {
     Map outputMap = [:]
 
-    idInputs.forEach{String id -> {
-      Map packageDeletionInfo = [:]
-      MarkForDeleteMap forDeletion = markForDelete([id], resourceClass).resourceIds;
-      packageDeletionInfo.put("jobId", jobId)
-      packageDeletionInfo.put("markedForDeletion", deleteResourcesInternal(forDeletion))
-      outputMap.put(id, packageDeletionInfo)
+    // Each package is passed to deleteResources individually.
+    pkgIds.forEach{ String id -> {
+      outputMap.put(id, deleteResources([id], Pkg))
     }}
 
+    // return a map of form: {pkgId1: {DeleteResponse}, pkdId2: {DeleteResponse}} or {}
     return outputMap;
   }
 
