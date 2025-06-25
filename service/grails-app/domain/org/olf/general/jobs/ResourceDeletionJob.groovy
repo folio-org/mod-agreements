@@ -4,6 +4,7 @@ import grails.converters.JSON
 import grails.gorm.MultiTenant
 import groovy.json.JsonSlurper
 import org.olf.general.ResourceDeletionJobType
+import org.olf.kb.PackageContentItem
 import org.olf.kb.Pkg
 
 class ResourceDeletionJob extends PersistentJob implements MultiTenant<ResourceDeletionJob>{
@@ -25,7 +26,7 @@ class ResourceDeletionJob extends PersistentJob implements MultiTenant<ResourceD
 
         case ResourceDeletionJobType.PciDeletionJob:
           log.info "Executing PciDeletionJob for IDs: ${idList}"
-          ermResourceService.deleteResources(idList, Pci)
+          ermResourceService.deleteResources(idList, PackageContentItem)
           break
 
         default:
