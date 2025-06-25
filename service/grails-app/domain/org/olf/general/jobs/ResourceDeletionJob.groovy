@@ -1,15 +1,13 @@
 package org.olf.general.jobs
 
-import grails.converters.JSON
 import grails.gorm.MultiTenant
 import groovy.json.JsonSlurper
 import org.olf.general.ResourceDeletionJobType
 import org.olf.kb.PackageContentItem
-import org.olf.kb.Pkg
 
 class ResourceDeletionJob extends PersistentJob implements MultiTenant<ResourceDeletionJob>{
-  String packageIds // This could just store the JSON that would go into the method as a param
-  ResourceDeletionJobType deletionJobType; // Type PackageDeletionJob
+  String packageIds // This comes in as a JSON string (List of string ids)
+  ResourceDeletionJobType deletionJobType; // Types PackageDeletionJob, PciDeletionJob
 
   final Closure getWork() {
     final Closure theWork = { final String jobId, final String tenantId ->
@@ -17,6 +15,7 @@ class ResourceDeletionJob extends PersistentJob implements MultiTenant<ResourceD
 
       List<String> idList = new JsonSlurper().parseText(packageIds) as List<String>
 
+      // Only PackageDeletionJob has an endpoint available, but could extend to PCI deletion jobs if needed.
       switch (deletionJobType) {
 
         case ResourceDeletionJobType.PackageDeletionJob:
@@ -24,6 +23,7 @@ class ResourceDeletionJob extends PersistentJob implements MultiTenant<ResourceD
           ermResourceService.deleteResourcesPkg(idList)
           break
 
+        // Unused currently, but creates a job that deletes PCIs as normal.
         case ResourceDeletionJobType.PciDeletionJob:
           log.info "Executing PciDeletionJob for IDs: ${idList}"
           ermResourceService.deleteResources(idList, PackageContentItem)
@@ -48,7 +48,7 @@ class ResourceDeletionJob extends PersistentJob implements MultiTenant<ResourceD
   static mapping = {
     table 'resource_deletion_job'
     version false
-    packageIds    column: 'package_ids', type: 'text'
+    packageIds    column: 'package_ids', type: 'text' // Store Id list as text
     deletionJobType column: 'deletion_job_type'
   }
 }

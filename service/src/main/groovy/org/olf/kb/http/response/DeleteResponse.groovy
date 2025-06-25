@@ -1,20 +1,24 @@
 package org.olf.kb.http.response
 
+// Store markForDelete data
 class MarkForDeletionGroup {
   MarkForDeleteMap resourceIds = new MarkForDeleteMap()
   DeletionCounts statistics = new DeletionCounts()
 }
 
+// Store deletion data
 class DeletedGroup {
   MarkForDeleteMap resourceIds = new MarkForDeleteMap()
   DeletionCounts statistics = new DeletionCounts()
 }
 
+// The final response object
 class DeleteResponse {
   MarkForDeletionGroup markedForDeletion = new MarkForDeletionGroup()
   DeletedGroup deleted = new DeletedGroup()
 }
 
+// Store the number of resources for markForDelete or delete methods.
 class DeletionCounts {
   Integer pci;
   Integer pti;

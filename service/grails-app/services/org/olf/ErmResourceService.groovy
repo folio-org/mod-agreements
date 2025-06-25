@@ -108,6 +108,8 @@ public class ErmResourceService {
 
   // We make use of the fact that these are Sets to deduplicate in the case that we have, say, two PCIs for a PTI
   // Normally a SELECT for PTIs from PCIs would return twice, but we can dedupe for free here.
+  // MarkForDeleteInternal uses temporary SQL tables (as opposed to batching with GORM) in order to
+  // handle lists of IDs > 65535 items long. It does not create a new transaction but uses the current one (opened by MarkForDelete())
   private MarkForDeleteResponse markForDeleteInternal(Set<String> pciIds, Set<String> ptiIds, Set<String> tiIds) {
     log.info("Initiating markForDelete with PCI ids: {}, PTI ids: {}, TI ids: {}", pciIds.size(), ptiIds.size(), tiIds.size())
     MarkForDeleteMap markForDeletion = new MarkForDeleteMap()
@@ -224,7 +226,7 @@ public class ErmResourceService {
           markForDeletion.ti.addAll(finalTisToDelete)
         }
 
-        // --- Teardown: Temp tables are dropped automatically at transaction end ---
+        //  Temp tables are dropped automatically at transaction end
       }
     }
 
@@ -238,10 +240,10 @@ public class ErmResourceService {
   }
 
   // --- HELPER METHODS ---
-  // Clears a table and populates it with a given set of IDs using efficient batching.
+  // Clears a table and populates it with a given set of IDs using batching.
   private void populateTempTable(Sql sql, String tableName, Collection<String> ids) {
-    String deleteSql = "DELETE FROM ${tableName}"
-    sql.execute(deleteSql)
+    String truncateSql = "TRUNCATE TABLE ${tableName}" // Clears all data from the table.
+    sql.execute(truncateSql)
     if (ids.isEmpty()) return
 
     sql.withBatch(1000, "INSERT INTO ${tableName} (id) VALUES (?)") { ps ->
@@ -259,14 +261,16 @@ public class ErmResourceService {
   @CompileStatic(SKIP)
   private Set<String> deleteIds(Class domainClass, Collection<String> ids) {
     Set<String> successfullyDeletedIds = new HashSet<>()
+
     ids.each { String id ->
+        // For each ID, find the domain instance (e.g. the PCI with id xyz)
         def instance = domainClass.get(id)
 
         if (instance) {
-          instance.delete()
-          successfullyDeletedIds.add(id)
+          instance.delete() // delete the instance using GORM (will cascade to related objects)
+          successfullyDeletedIds.add(id) // track the id that has been deleted
         } else {
-          log.warn("Could not find instance of {} with id {} to delete.", domainClass.name, id)
+          log.warn("Could not find instance of {} with id {} to delete.", domainClass.name, id) // we should never hit this, but useful to log incase.
         }
       }
 
@@ -333,6 +337,7 @@ public class ErmResourceService {
     return outputMap;
   }
 
+  // Helper method to get counts of resources from a resource ID map (MarkForDeleteMap)
   DeletionCounts getCountsFromDeletionMap(MarkForDeleteMap deleteMap) {
     return new DeletionCounts(deleteMap.pci.size(), deleteMap.pti.size(), deleteMap.ti.size(), deleteMap.work.size())
   }
@@ -350,10 +355,10 @@ public class ErmResourceService {
       return response
     }
 
+    // Delete each type of resource.
     if (resourcesToDelete.pci && !resourcesToDelete.pci.isEmpty()) {
       response.deleted.resourceIds.pci = deleteIds(PackageContentItem, resourcesToDelete.pci)
     }
-
 
     if (resourcesToDelete.pti && !resourcesToDelete.pti.isEmpty()) {
       response.deleted.resourceIds.pti = deleteIds(PlatformTitleInstance, resourcesToDelete.pti)
