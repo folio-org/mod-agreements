@@ -1,0 +1,16 @@
+import org.olf.kb.http.response.MarkForDeleteResponse
+
+model {
+    MarkForDeleteResponse results
+    boolean includeIds
+}
+
+json {
+    // Only include the 'resourceIds' key in the JSON if the includeIds flag is true.
+    if (includeIds) {
+        resourceIds results.resourceIds
+    }
+
+    // statistics (counts of resources) are always included.
+    statistics results.statistics
+}

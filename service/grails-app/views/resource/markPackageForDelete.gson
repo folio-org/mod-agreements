@@ -1,0 +1,30 @@
+import org.olf.kb.http.response.MarkForDeleteResponse
+
+model {
+    Map results
+    boolean includeIds
+}
+
+Map pkgs = results.packages as Map
+
+def renderedPackages = pkgs.collectEntries { pkgId, pkgData ->
+    def packageJson = [:]
+    MarkForDeleteResponse pkgDataCasted = pkgData as MarkForDeleteResponse
+
+    if (includeIds) {
+        packageJson.resourceIds = pkgData.resourceIds
+    }
+
+    packageJson.statistics = pkgData.statistics
+
+    [ (pkgId): packageJson ]
+}
+
+json {
+    // We simply assign our pre-rendered map to the 'packages' key.
+    // The JSON builder knows how to convert this Groovy map into a JSON object.
+    packages renderedPackages
+
+    // The top-level statistics are rendered as before.
+    statistics results.statistics
+}

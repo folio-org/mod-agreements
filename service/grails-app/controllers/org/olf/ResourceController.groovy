@@ -463,19 +463,43 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
   // For /erm/resources/markForDelete/pkg
   def markPackageForDelete(DeleteBody deleteBody) {
     log.info("ResourceController::markPackageForDelete({})", deleteBody)
+    def responseData = ermResourceService.markForDeleteFromPackage(deleteBody.resources)
 
-    handleDeleteCall(deleteBody) { ids ->
+    // 2. Get the flag from the URL parameters.
+    def includeIds = params.boolean('includeIds')
 
-      return ermResourceService.markForDeleteFromPackage(ids)
-    }
+    // 3. Render a NEW, specific JSON View for this response shape.
+    // Grails will look for /views/resource/markPackageForDelete.gson
+    render(view: 'markPackageForDelete', model: [
+      results: responseData,
+      includeIds: includeIds
+    ])
+
+//    handleDeleteCall(deleteBody) { ids ->
+//
+//      return ermResourceService.markForDeleteFromPackage(ids)
+//    }
   }
 
   // For /erm/resources/markForDelete/pcis
   def markPcisForDelete(DeleteBody deleteBody) {
     log.info("ResourceController::markPcisForDelete({})", deleteBody)
-    handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.markForDelete(ids, PackageContentItem.class)
-    }
+    def responseData = ermResourceService.markForDelete(deleteBody.resources, PackageContentItem.class)
+
+    // 2. Get the flag from the URL parameters.
+    def includeIds = params.boolean('includeIds')
+
+    // 3. Render the JSON View, passing the data and the flag to it as a "model".
+    // Grails will look for /views/resource/markForDeleteResponse.gson
+    render(view: 'markForDeleteResponse', model: [
+      results: responseData,
+      includeIds: includeIds
+    ])
+
+
+//    handleDeleteCall(deleteBody) { ids ->
+//      return ermResourceService.markForDelete(ids, PackageContentItem.class)
+//    }
   }
 
   // For /erm/resources/markForDelete/ptis
