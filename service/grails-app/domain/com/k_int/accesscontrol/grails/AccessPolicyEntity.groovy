@@ -3,6 +3,13 @@ package com.k_int.accesscontrol.grails
 import com.k_int.accesscontrol.core.AccessPolicy
 import grails.gorm.MultiTenant
 
+/**
+ * GORM entity representing persisted access policies within the Grails application.
+ * Extends the base AccessPolicy structure from AccessControl libraries.
+ *
+ * This class maps to the `access_policy` table and connects access control
+ * data with internal ERM resources (e.g., SubscriptionAgreements).
+ */
 class AccessPolicyEntity extends AccessPolicy implements MultiTenant<AccessPolicyEntity> {
 
   static mapping = {

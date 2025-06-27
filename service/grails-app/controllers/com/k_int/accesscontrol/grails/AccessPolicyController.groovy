@@ -1,20 +1,19 @@
 package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.acqunits.AcquisitionsClient
-import com.k_int.accesscontrol.acqunits.UserAcquisitionUnits
 import com.k_int.accesscontrol.core.PolicyRestriction
+import com.k_int.accesscontrol.core.PolicySubquery
+import com.k_int.accesscontrol.core.PolicySubqueryParameters
+
 import com.k_int.accesscontrol.main.PolicyEngine
 import com.k_int.accesscontrol.main.PolicyEngineConfiguration
-import com.k_int.accesscontrol.main.PolicyInformation
+
 import com.k_int.folio.FolioClientConfig
 import com.k_int.folio.FolioClientException
 
 import com.k_int.okapi.OkapiClient
-import com.k_int.okapi.OkapiTenantResolver
-
 import grails.converters.JSON
 import grails.gorm.multitenancy.CurrentTenant
-import grails.gorm.multitenancy.Tenants
 import groovy.util.logging.Slf4j
 import com.k_int.okapi.OkapiTenantAwareController
 import org.olf.erm.SubscriptionAgreement
@@ -91,23 +90,28 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
       /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
       long beforePolicy = System.nanoTime();
 
-      PolicyInformation policyInformationRead = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.READ);
-//      PolicyInformation policyInformationClaim = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.CLAIM);
-//      PolicyInformation policyInformationCreate = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.CREATE);
-//      PolicyInformation policyInformationUpdate = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.UPDATE);
-//      PolicyInformation policyInformationDelete = policyEngine.getPolicyInformation(folioAccessHeaders, PolicyRestriction.DELETE);
+      List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(folioAccessHeaders, PolicyRestriction.READ);
 
-      logUserAcquisitionUnits(policyInformationRead.getUserAcquisitionUnits(), "READ")
-//      logUserAcquisitionUnits(policyInformationClaim.getUserAcquisitionUnits(), "CLAIM")
-//      logUserAcquisitionUnits(policyInformationCreate.getUserAcquisitionUnits(), "CREATE")
-//      logUserAcquisitionUnits(policyInformationUpdate.getUserAcquisitionUnits(), "UPDATE")
-//      logUserAcquisitionUnits(policyInformationDelete.getUserAcquisitionUnits(), "DELETE")
+      // We build a parameter block to use on the policy subqueries. Some of these we can probably set up ahead of time...
+      PolicySubqueryParameters params = PolicySubqueryParameters
+        .builder()
+        .accessPolicyTableName("access_policy")
+        .accessPolicyTypeColumnName("acc_pol_type")
+        .accessPolicyIdColumnName("acc_pol_policy_id")
+        .accessPolicyResourceIdColumnName("acc_pol_resource_id")
+        .accessPolicyResourceClassColumnName("acc_pol_resource_class")
+        .resourceAlias("{alias}")
+        .resourceIdColumnName("sa_id") // FIXME we should be able to get these two from "PolicyControlled" trait
+        .resourceClass("org.olf.erm.SubscriptionAgreement")
+        .build()
+
       long beforeLookup = System.nanoTime();
 
-      // FIXME this is stupid
+      // FIXME Obviously this would need to go in the SubscriptionAgreementController...
       respond doTheLookup(SubscriptionAgreement) {
-        //FIXME We need to be able to template here I think
-        sqlRestriction(policyInformationRead.getAcquisitionSql())
+        policySubqueries.each {psq -> {
+          sqlRestriction(psq.getSql(params))
+        }};
       }
       long endTime = System.nanoTime();
 
@@ -138,16 +142,5 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
     Map results = ["didTheFetch": true];
 
     render results as JSON
-  }
-
-  // FIXME this shouoldn't be in the final code, here for logging while developing
-  private logUserAcquisitionUnits(UserAcquisitionUnits uau, String name = "Generic") {
-    log.info("LOGDEBUG (${name}) MemberRestrictiveUnits: ${uau.getMemberRestrictiveUnits()}")
-    log.info("LOGDEBUG (${name}) NonRestrictiveUnits: ${uau.getNonRestrictiveUnits()}")
-    log.info("LOGDEBUG (${name}) NonMemberRestrictiveUnits: ${uau.getNonMemberRestrictiveUnits()}")
-
-    log.info("LOGDEBUG (${name}) MemberRestrictiveUnits SIZE: ${uau.getMemberRestrictiveUnits().size()}")
-    log.info("LOGDEBUG (${name}) NonRestrictiveUnits SIZE: ${uau.getNonRestrictiveUnits().size()}")
-    log.info("LOGDEBUG (${name}) NonMemberRestrictiveUnits: ${uau.getNonMemberRestrictiveUnits().size()}")
   }
 }

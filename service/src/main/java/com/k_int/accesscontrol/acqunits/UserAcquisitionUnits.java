@@ -7,29 +7,15 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * In order to perform Acquisition unit querying on the Policies within one of our modules we need 3 lists.
- * The below example is for READ but the equivalent is true for any of the restrictions.
-  1.  **List A** – Acquisition units the user _is a member of_ and which _restrict READ_ access.
-  2.  **List B** – Acquisition units that _do not restrict READ_ access for anyone.
-  3.  **List C** – Acquisition units the user _is NOT a member of_ but _restrict READ_ access.
+ * Grouping of acquisition unit IDs relevant to a specific user and restriction type.
+ * Used to calculate the proper SQL conditions for access control. The unit sets are:
+ * 1. `memberRestrictiveUnits`: Do restrict, but user is explicitly listed as a member.
+ * 2. `nonMemberRestrictiveUnits`: Do restrict, and user is not a member — deny access.
+ * These groupings are used to compute the allow/deny logic in generated SQL.
  */
 @Data
 @Builder
 public class UserAcquisitionUnits {
-  List<AcquisitionUnit> nonRestrictiveUnits;
   List<AcquisitionUnit> memberRestrictiveUnits;
   List<AcquisitionUnit> nonMemberRestrictiveUnits;
-
-  // FIXME This string replacements is DEFINITELY NOT RIGHT,but it's quick for now
-  public List<String> getNonRestrictiveUnitIds() {
-    return nonRestrictiveUnits.stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList();
-  }
-
-  public List<String> getMemberRestrictiveUnitIds() {
-    return memberRestrictiveUnits.stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList();
-  }
-
-  public List<String> getNonMemberRestrictiveUnitIds() {
-    return nonMemberRestrictiveUnits.stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList();
-  }
 }

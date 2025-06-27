@@ -109,10 +109,10 @@ public class AcquisitionsClient extends FolioClient {
    * @param restrictBool Whether the restriction is expected to be true or false
    * @return Future with filtered acquisition units
    */
-  public CompletableFuture<AcquisitionUnitResponse> getAsyncRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, Restriction restriction, boolean restrictBool) {
+  public CompletableFuture<AcquisitionUnitResponse> getAsyncRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, AcquisitionUnitRestriction restriction, boolean restrictBool) {
     Map<String, String> restrictionQueryParams;
     // Handle "no restriction" case
-    if (restriction == Restriction.NONE) {
+    if (restriction == AcquisitionUnitRestriction.NONE) {
       restrictionQueryParams = new HashMap<>();
     } else {
       restrictionQueryParams = new HashMap<>() {{
@@ -141,7 +141,7 @@ public class AcquisitionsClient extends FolioClient {
    * @return Future with acquisition unit response
    */
   public CompletableFuture<AcquisitionUnitResponse> getAsyncAcquisitionUnits(String[] headers, Map<String,String> queryParams) {
-    return getAsyncRestrictionAcquisitionUnits(headers, combineQueryParams(BASE_UNIT_QUERY_PARAMS, queryParams), Restriction.NONE, false);
+    return getAsyncRestrictionAcquisitionUnits(headers, combineQueryParams(BASE_UNIT_QUERY_PARAMS, queryParams), AcquisitionUnitRestriction.NONE, false);
   }
 
   /**
@@ -166,7 +166,7 @@ public class AcquisitionsClient extends FolioClient {
    * @return Filtered acquisition units
    * @throws FolioClientException If the async path fails
    */
-  public AcquisitionUnitResponse getRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, Restriction restriction, boolean restrictBool) throws FolioClientException {
+  public AcquisitionUnitResponse getRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, AcquisitionUnitRestriction restriction, boolean restrictBool) throws FolioClientException {
     return asyncFolioClientExceptionHelper(() -> getAsyncRestrictionAcquisitionUnits(headers, queryParams, restriction, restrictBool));
   }
 
@@ -179,10 +179,9 @@ public class AcquisitionsClient extends FolioClient {
    * @param restriction Restriction type (READ, etc.)
    * @return Future with UserAcquisitionUnits object
    */
-  public CompletableFuture<UserAcquisitionUnits> getAsyncUserAcquisitionUnits(String[] headers, Restriction restriction) {
+  public CompletableFuture<UserAcquisitionUnits> getAsyncUserAcquisitionUnits(String[] headers, AcquisitionUnitRestriction restriction) {
     // When called for Restriction.NONE, the nonRestrictiveUnits will be all units, and the memberRestrictiveUnits/nonMemberRestrictiveUnits will comprise all the units the patron is/isn't a member of
 
-    CompletableFuture<AcquisitionUnitResponse> nonRestrictiveUnitsResponse = getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, false);
     CompletableFuture<AcquisitionUnitResponse> restrictiveUnitsResponse = getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, true);
     CompletableFuture<AcquisitionUnitMembershipResponse> acquisitionUnitMembershipsResponse = getAsyncUserAcquisitionUnitMemberships(headers, Collections.emptyMap());
 
@@ -213,13 +212,11 @@ public class AcquisitionsClient extends FolioClient {
     );
 
     return CompletableFuture.allOf(
-        nonRestrictiveUnitsResponse,
         memberRestrictiveUnits,
         nonMemberRestrictiveUnits
       )
       .thenApply(ignoredVoid -> UserAcquisitionUnits
         .builder()
-        .nonRestrictiveUnits(nonRestrictiveUnitsResponse.join().getAcquisitionsUnits())
         .memberRestrictiveUnits(memberRestrictiveUnits.join())
         .nonMemberRestrictiveUnits(nonMemberRestrictiveUnits.join())
         .build());
@@ -234,7 +231,7 @@ public class AcquisitionsClient extends FolioClient {
    * @return UserAcquisitionUnits
    * @throws FolioClientException If any async call fails
    */
-  public UserAcquisitionUnits getUserAcquisitionUnits(String[] headers, Restriction restriction) throws FolioClientException {
+  public UserAcquisitionUnits getUserAcquisitionUnits(String[] headers, AcquisitionUnitRestriction restriction) throws FolioClientException {
     return asyncFolioClientExceptionHelper(() -> getAsyncUserAcquisitionUnits(headers, restriction));
   }
 }

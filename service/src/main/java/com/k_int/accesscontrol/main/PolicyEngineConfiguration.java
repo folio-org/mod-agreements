@@ -4,6 +4,11 @@ import com.k_int.folio.FolioClientConfig;
 import lombok.Builder;
 import lombok.Data;
 
+/**
+ * Configuration holder for the `PolicyEngine`.
+ * Determines which policy types should be queried and supplies context
+ * (such as FOLIO connectivity config).
+ */
 @Builder
 @Data
 public class PolicyEngineConfiguration {

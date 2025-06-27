@@ -1,6 +1,14 @@
 package com.k_int.accesscontrol.core;
 
-// I don't know if we need these.
+/**
+ * Enum of supported restriction types applicable to policies.
+ * These map to high-level actions that can be restricted:
+ * - `READ`: Read access to a resource
+ * - `CREATE`: Creation of new records (not used with ACQ_UNIT)
+ * - `CLAIM`: Associating a policy to an existing resource
+ * - `UPDATE`: Modifying an existing record
+ * - `DELETE`: Removing a record
+ */
 public enum PolicyRestriction {
   READ,
   CREATE, // acq_units can't restrict CREATE in general

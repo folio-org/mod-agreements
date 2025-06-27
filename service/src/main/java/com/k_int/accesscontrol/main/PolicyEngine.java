@@ -1,14 +1,24 @@
 package com.k_int.accesscontrol.main;
 
 import com.k_int.accesscontrol.acqunits.AcquisitionUnitPolicySubquery;
+import com.k_int.accesscontrol.acqunits.AcquisitionUnitRestriction;
 import com.k_int.accesscontrol.acqunits.AcquisitionsClient;
-import com.k_int.accesscontrol.acqunits.Restriction;
 import com.k_int.accesscontrol.acqunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.core.PolicyRestriction;
+import com.k_int.accesscontrol.core.PolicySubquery;
 import com.k_int.folio.FolioClientException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Core entry point for evaluating policy restrictions within the access control system.
+ * The engine fetches necessary access policy data (e.g., from acquisition units)
+ * and composes SQL fragments that can be used to filter Hibernate queries.
+ * Configuration is driven by `PolicyEngineConfiguration`.
+ */
 @Slf4j
 public class PolicyEngine {
   private final PolicyEngineConfiguration config;
@@ -22,88 +32,30 @@ public class PolicyEngine {
     this.acqClient = new AcquisitionsClient(config.getFolioClientConfig());
   }
 
-  // Policy information object probably shouldn't be raw data, rather a shared set of named policy subqueries?
-  public PolicyInformation getPolicyInformation(String[] headers, PolicyRestriction pr) throws FolioClientException {
-    PolicyInformation.PolicyInformationBuilder policyInformationBuilder = PolicyInformation.builder();
-
+  public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr) throws FolioClientException {
+    List<PolicySubquery> policySubqueries = new ArrayList<>();
     if (config.acquisitionUnits) {
       // Do the acquisition unit logic
-      Restriction acqRestriction = Restriction.getRestrictionFromPolicyRestriction(pr);
-
+      AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
       // Temporarily lets have this here so we can build the sql ourselves...
       UserAcquisitionUnits temporaryUserAcquisitionUnits = acqClient.getUserAcquisitionUnits(headers, acqRestriction);
 
-      // We should probably have a `PolicyEngineImplementor` or something in acq units, which can take in the full PolicyEngineConfiguration
-      // and then spin up an acq client, get user acquisition units, then build the SQL and return it in a known subquery shape or something
-      String theSql = AcquisitionUnitPolicySubquery.returnSql(
-        "access_policy",
-        "acc_pol_type",
-        "acc_pol_policy_id",
-        "acc_pol_resource_id",
-        "acc_pol_resource_class",
-        "{alias}", // FIXME This is a SQL restriction thing, should be templated in the grails module....
-        "sa_id",
-        "org.olf.erm.SubscriptionAgreement",
-        String.join(",", temporaryUserAcquisitionUnits.getNonRestrictiveUnitIds()),
-        String.join(",", temporaryUserAcquisitionUnits.getMemberRestrictiveUnitIds()),
-        String.join(",", temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnitIds())
-        );
-      // FIXME still to do, use {alias} and sqlRestriction to actually apply this to a SubscriptionAgreement READ
-      log.info("LOGDEBUG THE SQL: {}", theSql);
+      log.info("LOGDEBUG ({}) MemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits());
+      log.info("LOGDEBUG ({}) NonMemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits());
 
-      policyInformationBuilder
-        .userAcquisitionUnits(temporaryUserAcquisitionUnits)
-        .acquisitionSql(theSql);
+      log.info("LOGDEBUG ({}) MemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits().size());
+      log.info("LOGDEBUG ({}) NonMemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits().size());
+
+      // FIXME We should probably have a `PolicyEngineImplementor` or something in acq units, which can take in the full PolicyEngineConfiguration
+      // and then spin up an acq client, get user acquisition units, then build the PolicySubquery
+      policySubqueries.add(
+        AcquisitionUnitPolicySubquery
+          .builder()
+          .userAcquisitionUnits(temporaryUserAcquisitionUnits)
+          .build()
+      );
     }
 
-    return policyInformationBuilder.build();
+    return policySubqueries;
   }
-
-  /*
-
-  RELEVANT FIELDS (In grails anyway... these need to come from an interface or something)
-  acc_pol_type
-  acc_pol_policy_id
-  acc_pol_resource_class
-  acc_pol_resource_id
-
-
-  SQL -- WE NEED
-
-  SELECT *
-  FROM subscription_agreement sa
-  WHERE NOT EXISTS (
-    SELECT 1 FROM access_policy ap1
-    WHERE
-      ap1.type = ACQ_UNIT AND
-      ap1.resource_id = sa.id
-  ) OR (
-    sa.id IN (
-      SELECT ap2.resource_id
-      FROM access_policy ap2
-      WHERE
-          ap2.type = ACQ_UNIT AND
-          ap2.policy_id IN (:listA)
-    )
-  ) OR (
-    sa.id IN (
-      SELECT ap3.resource_id
-      FROM access_policy ap3
-      WHERE
-          ap3.type = ACQ_UNIT AND
-          ap3.policy_id IN (:listB)
-    )
-    AND sa.id NOT IN (
-      SELECT ap4.resource_id
-      FROM access_policy ap4
-      WHERE
-          ap4.type = ACQ_UNIT AND
-          ap4.policy_id IN (:listC)
-    )
-  )
-
-
-  Specifically we need the "WHERE" clauses
-   */
-
 }
