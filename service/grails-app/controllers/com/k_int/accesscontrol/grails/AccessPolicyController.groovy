@@ -30,7 +30,6 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
   }
 
   public testRequestContext() {
-    long startTime = System.nanoTime();
     // FIXME okapiBaseUri/tenantName/patronId should be central in any controller doing AccessControl
     // And obviously shouldn't be hardcoded
 
@@ -65,7 +64,6 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
     log.info("LOGDEBUG PATRON ID: ${folioClientConfig.patronId}")
     log.info("LOGDEBUG USER LOGIN: ${folioClientConfig.userLogin}")
     log.info("LOGDEBUG USER PASSWORD: ${folioClientConfig.userPassword}")
-    long beforeTry = System.nanoTime();
 
     try {
       // FIXME This probably ought to be spun up once in a service, rather than per request.
@@ -115,17 +113,13 @@ class AccessPolicyController extends OkapiTenantAwareController<AccessPolicyEnti
       }
       long endTime = System.nanoTime();
 
-      Duration startToTry = Duration.ofNanos(beforeTry - startTime);
-      Duration tryToLogin = Duration.ofNanos(beforeLogin - beforeTry);
       Duration loginToPolicy = Duration.ofNanos(beforePolicy - beforeLogin);
       Duration policyToLookup = Duration.ofNanos(beforeLookup - beforePolicy);
       Duration lookupToEnd = Duration.ofNanos(endTime - beforeLookup);
 
-      log.debug("LOGDEBUG startToTry: ${startToTry}")
-      log.debug("LOGDEBUG tryToLogin: ${tryToLogin}")
-      log.debug("LOGDEBUG loginToPolicy: ${loginToPolicy}")
-      log.debug("LOGDEBUG policyToLookup: ${policyToLookup}")
-      log.debug("LOGDEBUG lookupToEnd: ${lookupToEnd}")
+      log.debug("LOGDEBUG login time: ${loginToPolicy}")
+      log.debug("LOGDEBUG policy lookup time: ${policyToLookup}")
+      log.debug("LOGDEBUG query time: ${lookupToEnd}")
 
       return null;
 
