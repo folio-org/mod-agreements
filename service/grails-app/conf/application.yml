@@ -159,6 +159,9 @@ hibernate:
 
   allow_update_outside_transaction: true #TODO: We should remove this in the near future and fix all dependants to wrap transactions.
   enable_lazy_load_no_trans: true
+  jdbc:
+    batch_size: 50
+    batch_versioned_data: true
 
 management:
   endpoints:
@@ -271,5 +274,4 @@ environments:
       service:
         host: localhost
         port: 9130
-
 
