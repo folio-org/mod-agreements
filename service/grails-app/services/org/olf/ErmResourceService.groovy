@@ -8,6 +8,7 @@ import org.olf.kb.Work
 import org.olf.kb.http.response.DeleteResponse
 import org.olf.kb.http.response.DeletionCounts
 import org.olf.kb.http.response.MarkForDeleteMap
+import org.olf.kb.http.response.PackageMarkForDeleteResponse
 import org.olf.kb.Pkg
 import org.olf.kb.http.response.MarkForDeleteResponse
 import org.olf.general.ResourceDeletionJobType
@@ -277,37 +278,32 @@ public class ErmResourceService {
     return successfullyDeletedIds
   }
 
-  public Map markForDeleteFromPackage(List<String> idInputs) {
-    Map<String, MarkForDeleteResponse> deleteResourcesResponseMap = [:]
+  public PackageMarkForDeleteResponse markForDeleteFromPackage(List<String> idInputs) {
+    def response = new PackageMarkForDeleteResponse()
+    def totalCounts = new DeletionCounts()
 
-    // Collect responses for each package in a Map.
-    idInputs.forEach{String id -> {
-      MarkForDeleteResponse forDeletion = markForDelete([id], Pkg.class); // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
-      deleteResourcesResponseMap.put(id, forDeletion)
-    }}
+    idInputs.forEach { String id ->
+      // Get the full response for this individual package
+      MarkForDeleteResponse singlePackageResponse = markForDelete([id], Pkg.class)
 
-    // Calculate total deletion counts
-    DeletionCounts totals = new DeletionCounts(0,0,0,0)
-    deleteResourcesResponseMap.keySet().forEach{String packageId -> {
-      totals.pci += deleteResourcesResponseMap.get(packageId).statistics.pci
-      totals.pti += deleteResourcesResponseMap.get(packageId).statistics.pti
-      totals.ti += deleteResourcesResponseMap.get(packageId).statistics.ti
-      totals.work += deleteResourcesResponseMap.get(packageId).statistics.work
-    }}
+      // Store it in the map
+      response.packages[id] = singlePackageResponse
 
-    Map outputMap = [:]
-    Map statisticsMap = [:]
+      // Add this package's stats to the running total
+      if (singlePackageResponse?.statistics) {
+        totalCounts.pci += singlePackageResponse.statistics.pci ?: 0
+        totalCounts.pti += singlePackageResponse.statistics.pti ?: 0
+        totalCounts.ti += singlePackageResponse.statistics.ti ?: 0
+        totalCounts.work += singlePackageResponse.statistics.work ?: 0
+      }
+    }
 
-    statisticsMap.put("total_markedForDeletion", totals)
-
-    outputMap.put("packages", deleteResourcesResponseMap)
-    outputMap.put("statistics", statisticsMap)
-
-    return outputMap;
+    response.statistics.total_markedForDeletion = totalCounts
+    return response
   }
 
   @CompileStatic(SKIP)
-  public createDeleteResourcesJob(List<String> idInputs, ResourceDeletionJobType type) {
+  public ResourceDeletionJob createDeleteResourcesJob(List<String> idInputs, ResourceDeletionJobType type) {
     ResourceDeletionJob job = new ResourceDeletionJob([
       name: "ResourceDeletionJob, package IDs: ${idInputs.toString()} ${Instant.now()}",
       packageIds: new JSON(idInputs).toString(),

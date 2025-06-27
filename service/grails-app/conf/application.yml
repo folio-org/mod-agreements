@@ -163,6 +163,10 @@ hibernate:
     batch_size: 50
     batch_versioned_data: true
 
+spring:
+  jackson:
+    default-property-inclusion: non_null
+
 management:
   endpoints:
     enabled-by-default: false

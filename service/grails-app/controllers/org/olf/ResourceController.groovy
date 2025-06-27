@@ -4,6 +4,7 @@ package org.olf
 import org.hibernate.Hibernate
 import org.olf.erm.Entitlement
 import org.olf.general.ResourceDeletionJobType
+import org.olf.general.jobs.ResourceDeletionJob
 import org.olf.kb.ErmResource
 import org.olf.kb.PackageContentItem
 import org.olf.kb.Pkg
@@ -16,6 +17,9 @@ import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
 import org.olf.kb.http.request.body.DeleteBody
+import org.olf.kb.http.response.DeleteResponse
+import org.olf.kb.http.response.MarkForDeleteResponse
+import org.olf.kb.http.response.PackageMarkForDeleteResponse
 import org.springframework.http.HttpStatus
 
 import java.time.Duration
@@ -461,67 +465,74 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
   }
 
   // For /erm/resources/markForDelete/pkg
-  def markPackageForDelete(DeleteBody deleteBody) {
+  PackageMarkForDeleteResponse markPackageForDelete(DeleteBody deleteBody) {
     log.info("ResourceController::markPackageForDelete({})", deleteBody)
-    def responseData = ermResourceService.markForDeleteFromPackage(deleteBody.resources)
+    Boolean includeIds = params.boolean('includeIds')
 
-    // 2. Get the flag from the URL parameters.
-    def includeIds = params.boolean('includeIds')
+    // The includeIds parameter is handled in the controller as it is the only query parameter, is a simple switch,
+    // And proved more complicated when using views.
+    handleDeleteCall(deleteBody) { ids ->
+      PackageMarkForDeleteResponse response = ermResourceService.markForDeleteFromPackage(ids)
 
-    // 3. Render a NEW, specific JSON View for this response shape.
-    // Grails will look for /views/resource/markPackageForDelete.gson
-    render(view: 'markPackageForDelete', model: [
-      results: responseData,
-      includeIds: includeIds
-    ])
+      if (!includeIds) {
+        // Workaround because Grails will respond with `"key": null` when setting deeply nested properties to null.
+        response.packages.keySet().each { packageId ->
+          def originalResponse = response.packages[packageId]
+          if (originalResponse) {
+            def newResponse = originalResponse.statistics
+            response.packages.put(packageId, newResponse)
+          }
+        }
+      }
 
-//    handleDeleteCall(deleteBody) { ids ->
-//
-//      return ermResourceService.markForDeleteFromPackage(ids)
-//    }
+      return response
+    }
   }
 
   // For /erm/resources/markForDelete/pcis
-  def markPcisForDelete(DeleteBody deleteBody) {
+  MarkForDeleteResponse markPcisForDelete(DeleteBody deleteBody) {
     log.info("ResourceController::markPcisForDelete({})", deleteBody)
-    def responseData = ermResourceService.markForDelete(deleteBody.resources, PackageContentItem.class)
+    Boolean includeIds = params.boolean('includeIds')
 
-    // 2. Get the flag from the URL parameters.
-    def includeIds = params.boolean('includeIds')
-
-    // 3. Render the JSON View, passing the data and the flag to it as a "model".
-    // Grails will look for /views/resource/markForDeleteResponse.gson
-    render(view: 'markForDeleteResponse', model: [
-      results: responseData,
-      includeIds: includeIds
-    ])
-
-
-//    handleDeleteCall(deleteBody) { ids ->
-//      return ermResourceService.markForDelete(ids, PackageContentItem.class)
-//    }
+    handleDeleteCall(deleteBody) { ids ->
+      MarkForDeleteResponse response = ermResourceService.markForDelete(ids, PackageContentItem.class)
+      if (!includeIds) {
+        response.resourceIds = null
+      }
+      return response
+    }
   }
 
   // For /erm/resources/markForDelete/ptis
-  def markPtisForDelete(DeleteBody deleteBody) {
+  MarkForDeleteResponse markPtisForDelete(DeleteBody deleteBody) {
     log.info("ResourceController::markPtisForDelete({})", deleteBody)
+    Boolean includeIds = params.boolean('includeIds')
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.markForDelete(ids, PlatformTitleInstance.class);
+      MarkForDeleteResponse response = ermResourceService.markForDelete(ids, PlatformTitleInstance.class)
+      if (!includeIds) {
+        response.resourceIds = null
+      }
+      return response
     }
   }
 
   // For /erm/resources/markForDelete/tis
-  def markTisForDelete(DeleteBody deleteBody) {
+  MarkForDeleteResponse markTisForDelete(DeleteBody deleteBody) {
     log.info("ResourceController::markTisForDelete({})", deleteBody)
+    Boolean includeIds = params.boolean('includeIds')
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.markForDelete(ids, TitleInstance.class);
+      MarkForDeleteResponse response = ermResourceService.markForDelete(ids, TitleInstance.class)
+      if (!includeIds) {
+        response.resourceIds = null
+      }
+      return response
     }
   }
 
   // For /erm/resources/delete/pkg
-  def deletePackage(DeleteBody deleteBody) {
+  ResourceDeletionJob deletePackage(DeleteBody deleteBody) {
     log.info("ResourceController::deletePackage({})", deleteBody)
 
     handleDeleteCall(deleteBody) { ids ->
@@ -530,29 +541,50 @@ class ResourceController extends OkapiTenantAwareController<ErmResource> {
   }
 
   // For /erm/resources/delete/pci
-  def deletePcis(DeleteBody deleteBody) {
+  DeleteResponse deletePcis(DeleteBody deleteBody) {
     log.info("ResourceController::deletePcis({})", deleteBody)
+    Boolean includeIds = params.boolean('includeIds')
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.deleteResources(ids, PackageContentItem)
+      DeleteResponse response = ermResourceService.deleteResources(ids, PackageContentItem)
+
+      if (!includeIds) {
+        response.markedForDeletion.resourceIds = null
+        response.deleted.resourceIds = null
+      }
+      return response
     }
   }
 
   // For /erm/resources/delete/ptis
-  def deletePtis(DeleteBody deleteBody) {
+  DeleteResponse deletePtis(DeleteBody deleteBody) {
     log.info("ResourceController::deletePtis({})", deleteBody)
+    Boolean includeIds = params.boolean('includeIds')
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.deleteResources(ids, PlatformTitleInstance)
+      DeleteResponse response = ermResourceService.deleteResources(ids, PlatformTitleInstance)
+
+      if (!includeIds) {
+        response.markedForDeletion.resourceIds = null
+        response.deleted.resourceIds = null
+      }
+      return response
     }
   }
 
   // For /erm/resources/delete/tis
-  def deleteTis(DeleteBody deleteBody) {
+  DeleteResponse deleteTis(DeleteBody deleteBody) {
     log.info("ResourceController::deleteTis({})", deleteBody)
+    Boolean includeIds = params.boolean('includeIds')
 
     handleDeleteCall(deleteBody) { ids ->
-      return ermResourceService.deleteResources(ids, TitleInstance)
+      DeleteResponse response = ermResourceService.deleteResources(ids, TitleInstance)
+
+      if (!includeIds) {
+        response.markedForDeletion.resourceIds = null
+        response.deleted.resourceIds = null
+      }
+      return response
     }
   }
 

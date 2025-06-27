@@ -197,6 +197,8 @@ The /delete/{pci/pti/ti} endpoint returns a response shape like:
 
 - ?includeIds={true/false} : includeIds is a boolean parameter that controls whether "resourceIds" fields are shown in the response body. The default is false. 
 
+### /pkg endpoints
+
 We would expect users to be deleting all resources inside a package. Therefore a /pkg endpoint exists:
 
 POST {{baseUrl}}/erm/resource/markForDelete/pkg 
