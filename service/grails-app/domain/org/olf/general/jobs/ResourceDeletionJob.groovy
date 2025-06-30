@@ -41,14 +41,14 @@ class ResourceDeletionJob extends PersistentJob implements MultiTenant<ResourceD
   }
 
   static constraints = {
-    packageIds     nullable:false
+    resourceInputs     nullable:false
     deletionJobType nullable: false
   }
 
   static mapping = {
     table 'resource_deletion_job'
     version false
-    packageIds    column: 'package_ids', type: 'text' // Store Id list as text
+    resourceInputs    column: 'resource_inputs', type: 'text' // Store Id list as text
     deletionJobType column: 'deletion_job_type'
   }
 }

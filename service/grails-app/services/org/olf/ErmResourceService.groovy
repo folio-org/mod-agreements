@@ -124,132 +124,129 @@ public class ErmResourceService {
       session.doWork { Connection connection ->
         def sql = new Sql(connection)
 
-        // Create two reusable temp tables:
-        // the "main_ids" table is the ids we want to check for deletion
-        // the "filter_ids" table is for joining to filter for (inner) or exclude (left join and null check) certain ids
-        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_main_ids (id VARCHAR(255) PRIMARY KEY)")
-        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_filter_ids (id VARCHAR(255) PRIMARY KEY)")
-        sql.execute("TRUNCATE TABLE temp_main_ids")
-        sql.execute("TRUNCATE TABLE temp_filter_ids")
+        // Create temp tables: the "initial" tables store any ids passed directly into the method (the starting ids)
+        // the "canditiate" tables store those that we start each step with (before checks) e.g. the PTI ids belonging to deletable PCIs.
+        // the "deletable" tables are those that contain the final IDs that are safe for deletion.
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_initial_pcis (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_initial_ptis (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_initial_tis (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_deletable_pcis (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_candidate_ptis (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_deletable_ptis (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_candidate_tis (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_candidate_works (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_deletable_works (id VARCHAR(255) PRIMARY KEY)")
+        sql.execute("CREATE TEMP TABLE IF NOT EXISTS temp_deletable_tis (id VARCHAR(255) PRIMARY KEY)")
 
-        // Mark PCIs for Delete
-        populateTempTable(sql, 'temp_main_ids', pciIds)
+        sql.execute("TRUNCATE TABLE temp_initial_pcis, temp_initial_ptis, temp_initial_tis, temp_deletable_pcis, temp_candidate_ptis, temp_deletable_ptis, temp_candidate_tis, temp_candidate_works, temp_deletable_works, temp_deletable_tis")
 
-        // PCI Ids in the temporary table are filtered for those that exist in the entitlements table (using inner join).
-        def pcisWithEntitlements = fetchIds(sql, """
-            SELECT DISTINCT t.id FROM temp_main_ids t
-            INNER JOIN entitlement ent ON t.id = ent.ent_resource_fk
-        """)
-        // We can delete the PCIs from the original set minus the ones with entitlements.
-        markForDeletion.pci.addAll(pciIds - pcisWithEntitlements)
+        // Populate initial ID tables from the input sets
+        populateTempTable(sql, 'temp_initial_pcis', pciIds)
+        populateTempTable(sql, 'temp_initial_ptis', ptiIds)
+        populateTempTable(sql, 'temp_initial_tis', tiIds)
+
+        log.info("Starting markForDelete() using pcis: {}, ptis: {}, tis: {}", pciIds.size(), ptiIds.size(), tiIds.size())
+
+        // Populate the table which contains the PCIs that don't have entitlements
+        sql.execute("""
+                INSERT INTO temp_deletable_pcis (id)
+                SELECT p.id FROM temp_initial_pcis p
+                LEFT JOIN entitlement ent ON p.id = ent.ent_resource_fk
+                WHERE ent.ent_resource_fk IS NULL
+            """)
 
         // Mark PTIs for Delete
-        // Populate the temp filter table with the PCI Ids we want to delete.
-        populateTempTable(sql, 'temp_filter_ids', markForDeletion.pci)
+        // Adds the initial set of PTI ids (if any)
+        sql.execute("""INSERT INTO temp_candidate_ptis (id) SELECT id FROM temp_initial_ptis ON CONFLICT DO NOTHING""")
 
-        // Filter the PCI table for those we want to delete, then select the PTI ids.
-        def ptisForDeleteCheck = fetchIds(sql, """
-            SELECT pci.pci_pti_fk FROM package_content_item pci
-            INNER JOIN temp_filter_ids t_del ON t_del.id = pci.id
-        """)
-        ptisForDeleteCheck.addAll(ptiIds) // Combine with initial ptiIds
-
-        // Load PTI ids into main temp table.
-        populateTempTable(sql, 'temp_main_ids', ptisForDeleteCheck)
-
-        // Get PTIs with entitlements
-        def ptisWithEntitlements = fetchIds(sql, """
-            SELECT DISTINCT t.id FROM temp_main_ids t
-            INNER JOIN entitlement ent ON t.id = ent.ent_resource_fk
-        """)
-
-        // Take the PCI table, and filter for PCIs belonging to PTIs we marked for deletion.
-        // THEN, join back on the PCIs we have marked for deletion using the PCI Id.
-        // If a PTI that was marked for deletion does not have a PCI that was also marked for deletion (i.e. it is referenced by another pci),
-        // then it will be NULL in the t_del.id column.
-        def ptisWithRemainingPcis = fetchIds(sql, """
-            SELECT DISTINCT pci.pci_pti_fk FROM package_content_item pci
-            INNER JOIN temp_main_ids t_pti ON pci.pci_pti_fk = t_pti.id
-            LEFT JOIN temp_filter_ids t_del ON pci.id = t_del.id
-            WHERE t_del.id IS NULL
-        """)
-
-        markForDeletion.pti.addAll(ptisForDeleteCheck - (ptisWithEntitlements + ptisWithRemainingPcis))
-
-        // Mark TIs and Works for Delete
-        populateTempTable(sql, 'temp_filter_ids', markForDeletion.pti) // Load deletable PTIs into filter table
-
-        // Get TI ids for TIs that belong to a PTI that is markedForDeletion.
-        def tisFromDeletablePtis = fetchIds(sql, """
-            SELECT DISTINCT pti.pti_ti_fk FROM platform_title_instance pti
-            INNER JOIN temp_filter_ids t ON pti.id = t.id
-        """)
-        def allTisForPtis = new HashSet<>(tiIds)
-        allTisForPtis.addAll(tisFromDeletablePtis)
-
-        populateTempTable(sql, 'temp_main_ids', allTisForPtis) // Load all candidate TIs from the last step into main table
-
-        // First- the inner join filters for any PTIs which reference the TIs which we found from "deletable PTIs"
-        // Note that this could include PTIs that were not marked for deletion, but still happen to reference a TI
-        // that does belong to a different PTI marked for deletion.
-        // THEN, we join back on the temp table containing the deletable PTI ids. Any PTI existing that is not in the
-        // original deletable PTIs table will be NULL in this new column.
-        def tisWithRemainingPtis = fetchIds(sql, """
-            SELECT DISTINCT pti.pti_ti_fk FROM platform_title_instance pti
-            INNER JOIN temp_main_ids t_ti ON pti.pti_ti_fk = t_ti.id 
-            LEFT JOIN temp_filter_ids t_del_pti ON pti.id = t_del_pti.id
-            WHERE t_del_pti.id IS NULL
-        """)
-
-        // Remove the tisWithRemaining (non-deletable) PTIs- we now have a list of TI ids that are safe to delete.
-        def tisForWorkChecking = allTisForPtis - tisWithRemainingPtis
-
-        populateTempTable(sql, 'temp_main_ids', tisForWorkChecking) // Load TIs for work check into main table
-
-        // We now need to find the works that are safe to delete, then work our way back up the tree to find all
-        // the TIs that reference these works.
-        def workIdsToCheck = fetchIds(sql, """
-            SELECT DISTINCT ti.ti_work_fk FROM title_instance ti
-            INNER JOIN temp_main_ids t ON ti.id = t.id
-        """)
-
-        populateTempTable(sql, 'temp_main_ids', workIdsToCheck) // Load candidate Works into main table
-
-        // Start with the PTIs table, and join on the title instance table
-        // The second inner join can then filter the table for workIds that belong to deletable TIs
-        // The left join then joins back on the table of deletable PTIs. If a PTI exists for one of our "deletable works"
-        // that is not eligible for deletion, it will be NULL.
-        def worksWithRemainingPtis = fetchIds(sql, """
-            SELECT DISTINCT ti.ti_work_fk FROM platform_title_instance pti
-            INNER JOIN title_instance ti ON pti.pti_ti_fk = ti.id
-            INNER JOIN temp_main_ids t_work ON ti.ti_work_fk = t_work.id
-            LEFT JOIN temp_filter_ids t_del_pti ON pti.id = t_del_pti.id
-            WHERE t_del_pti.id IS NULL
-        """)
-
-        markForDeletion.work.addAll(workIdsToCheck - worksWithRemainingPtis)
-
-        if (!markForDeletion.work.isEmpty()) {
-          // Load final deletable Works to mark all related TIs for deletion.
-          populateTempTable(sql, 'temp_main_ids', markForDeletion.work)
-          def finalTisToDelete = fetchIds(sql, """
-                SELECT ti.id FROM title_instance ti
-                INNER JOIN temp_main_ids t ON ti.ti_work_fk = t.id
+        // Inserts PTIs linked to deletable PCIs.
+        sql.execute("""
+                INSERT INTO temp_candidate_ptis (id)
+                SELECT DISTINCT pci.pci_pti_fk
+                FROM package_content_item pci
+                INNER JOIN temp_deletable_pcis d ON pci.id = d.id
+                ON CONFLICT DO NOTHING;
             """)
-          markForDeletion.ti.addAll(finalTisToDelete)
-        }
 
-        //  Temp tables are dropped automatically at transaction end
+        // A candidate PTI can be deleted if it has no entitlements AND it is not linked to any PCI that is not being deleted.
+        sql.execute("""
+                INSERT INTO temp_deletable_ptis (id)
+                SELECT c.id FROM temp_candidate_ptis c
+                WHERE
+                  -- Condition 1: The PTI itself is not an entitled resource
+                  NOT EXISTS (SELECT 1 FROM entitlement ent WHERE ent.ent_resource_fk = c.id)
+                  AND
+                  -- Condition 2: The PTI is not linked to any PCI that is NOT in our deletable list
+                  NOT EXISTS (
+                    SELECT 1 FROM package_content_item pci
+                    WHERE pci.pci_pti_fk = c.id
+                    AND pci.id NOT IN (SELECT id FROM temp_deletable_pcis)
+                  )
+            """)
+
+        // 4. Mark TIs and Works for Delete
+        // First, determine candidate TIs: those from the initial set plus those linked to deletable PTIs.
+        sql.execute("""INSERT INTO temp_candidate_tis (id) SELECT id FROM temp_initial_tis ON CONFLICT DO NOTHING""")
+        sql.execute("""
+                INSERT INTO temp_candidate_tis (id)
+                SELECT DISTINCT pti.pti_ti_fk
+                FROM platform_title_instance pti
+                INNER JOIN temp_deletable_ptis d ON pti.id = d.id
+                ON CONFLICT DO NOTHING;
+            """)
+
+        // Find all Works linked to our deletable TIs
+        // Create a table that contains works linked to deletable TIs
+        sql.execute("""
+                INSERT INTO temp_candidate_works (id)
+                SELECT DISTINCT ti.ti_work_fk
+                FROM title_instance ti
+                INNER JOIN temp_candidate_tis c_ti ON ti.id = c_ti.id;
+            """)
+
+        // A Work can be deleted if it is not referenced by any PTI that is not being deleted.
+        // Use the not exists clause to say get me the deletable works that aren't linked to a PTI that isn't in temp_deletable_ptis
+        sql.execute("""
+                INSERT INTO temp_deletable_works (id)
+                SELECT c.id FROM temp_candidate_works c
+                WHERE
+                  NOT EXISTS (
+                    SELECT 1
+                    FROM title_instance ti
+                    INNER JOIN platform_title_instance pti ON ti.id = pti.pti_ti_fk
+                    WHERE ti.ti_work_fk = c.id
+                    AND pti.id NOT IN (SELECT id FROM temp_deletable_ptis)
+                  )
+            """)
+
+        // Finally, all TIs that reference a deletable Work can be marked for deletion.
+        sql.execute("""
+                INSERT INTO temp_deletable_tis (id)
+                SELECT ti.id
+                FROM title_instance ti
+                INNER JOIN temp_deletable_works dw ON ti.ti_work_fk = dw.id;
+            """)
+
+
+        // Populate response using ids from temp tables
+        def finalPciIds = fetchIds(sql, "SELECT id FROM temp_deletable_pcis")
+        def finalPtiIds = fetchIds(sql, "SELECT id FROM temp_deletable_ptis")
+        def finalTiIds = fetchIds(sql, "SELECT id FROM temp_deletable_tis")
+        def finalWorkIds = fetchIds(sql, "SELECT id FROM temp_deletable_works")
+
+        response.resourceIds.pci.addAll(finalPciIds)
+        response.resourceIds.pti.addAll(finalPtiIds)
+        response.resourceIds.ti.addAll(finalTiIds)
+        response.resourceIds.work.addAll(finalWorkIds)
+
+        log.info("Mark for delete finished. PCIs: {}, PTIs: {}, TIs: {}, Works: {}",
+          response.resourceIds.pci.size(),
+          response.resourceIds.pti.size(),
+          response.resourceIds.ti.size(),
+          response.resourceIds.work.size())
       }
     }
-
-    log.info("Marked resources for delete completed: {} PCIs, {} PTIs, {} TIs, {} Works",
-      markForDeletion.pci.size(), markForDeletion.pti.size(), markForDeletion.ti.size(), markForDeletion.work.size())
-
-
-    response.resourceIds = markForDeletion
-    response.statistics = getCountsFromDeletionMap(markForDeletion)
-    return response;
+    return response
   }
 
   // --- HELPER METHODS ---
@@ -332,8 +329,8 @@ public class ErmResourceService {
   @CompileStatic(SKIP)
   public createDeleteResourcesJob(List<String> idInputs, ResourceDeletionJobType type) {
     ResourceDeletionJob job = new ResourceDeletionJob([
-      name: "ResourceDeletionJob, package IDs: ${idInputs.toString()} ${Instant.now()}",
-      packageIds: new JSON(idInputs).toString(),
+      name: "ResourceDeletionJob, resource IDs: ${idInputs.toString()} ${Instant.now()}",
+      resourceInputs: new JSON(idInputs).toString(),
       deletionJobType: type
     ])
 

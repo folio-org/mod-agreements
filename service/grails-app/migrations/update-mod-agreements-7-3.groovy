@@ -4,7 +4,7 @@ databaseChangeLog = {
       column(name: "id", type: "VARCHAR(36)") {
         constraints(nullable: "false")
       }
-      column(name: "package_ids", type: "TEXT")
+      column(name: "resource_inputs", type: "TEXT")
       column(name: "deletion_job_type", type: "VARCHAR(255)") {
         constraints(nullable: "false")
       }
