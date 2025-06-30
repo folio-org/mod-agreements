@@ -179,6 +179,7 @@ public class ErmResourceService {
         // Mark TIs and Works for Delete
         populateTempTable(sql, 'temp_filter_ids', markForDeletion.pti) // Load deletable PTIs into filter table
 
+        // Get TI ids for TIs that belong to a PTI that is markedForDeletion.
         def tisFromDeletablePtis = fetchIds(sql, """
             SELECT DISTINCT pti.pti_ti_fk FROM platform_title_instance pti
             INNER JOIN temp_filter_ids t ON pti.id = t.id
@@ -186,19 +187,27 @@ public class ErmResourceService {
         def allTisForPtis = new HashSet<>(tiIds)
         allTisForPtis.addAll(tisFromDeletablePtis)
 
-        populateTempTable(sql, 'temp_main_ids', allTisForPtis) // Load all candidate TIs into main table
+        populateTempTable(sql, 'temp_main_ids', allTisForPtis) // Load all candidate TIs from the last step into main table
 
+        // First- the inner join filters for any PTIs which reference the TIs which we found from "deletable PTIs"
+        // Note that this could include PTIs that were not marked for deletion, but still happen to reference a TI
+        // that does belong to a different PTI marked for deletion.
+        // THEN, we join back on the temp table containing the deletable PTI ids. Any PTI existing that is not in the
+        // original deletable PTIs table will be NULL in this new column.
         def tisWithRemainingPtis = fetchIds(sql, """
             SELECT DISTINCT pti.pti_ti_fk FROM platform_title_instance pti
-            INNER JOIN temp_main_ids t_ti ON pti.pti_ti_fk = t_ti.id
+            INNER JOIN temp_main_ids t_ti ON pti.pti_ti_fk = t_ti.id 
             LEFT JOIN temp_filter_ids t_del_pti ON pti.id = t_del_pti.id
             WHERE t_del_pti.id IS NULL
         """)
 
+        // Remove the tisWithRemaining (non-deletable) PTIs- we now have a list of TI ids that are safe to delete.
         def tisForWorkChecking = allTisForPtis - tisWithRemainingPtis
 
         populateTempTable(sql, 'temp_main_ids', tisForWorkChecking) // Load TIs for work check into main table
 
+        // We now need to find the works that are safe to delete, then work our way back up the tree to find all
+        // the TIs that reference these works.
         def workIdsToCheck = fetchIds(sql, """
             SELECT DISTINCT ti.ti_work_fk FROM title_instance ti
             INNER JOIN temp_main_ids t ON ti.id = t.id
@@ -206,6 +215,10 @@ public class ErmResourceService {
 
         populateTempTable(sql, 'temp_main_ids', workIdsToCheck) // Load candidate Works into main table
 
+        // Start with the PTIs table, and join on the title instance table
+        // The second inner join can then filter the table for workIds that belong to deletable TIs
+        // The left join then joins back on the table of deletable PTIs. If a PTI exists for one of our "deletable works"
+        // that is not eligible for deletion, it will be NULL.
         def worksWithRemainingPtis = fetchIds(sql, """
             SELECT DISTINCT ti.ti_work_fk FROM platform_title_instance pti
             INNER JOIN title_instance ti ON pti.pti_ti_fk = ti.id
