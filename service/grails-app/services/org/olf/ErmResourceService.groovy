@@ -262,17 +262,26 @@ public class ErmResourceService {
   private Set<String> deleteIds(Class domainClass, Collection<String> ids) {
     Set<String> successfullyDeletedIds = new HashSet<>()
 
-    ids.each { String id ->
-        // For each ID, find the domain instance (e.g. the PCI with id xyz)
-        def instance = domainClass.get(id)
+    domainClass.withSession { currentSess ->
+      domainClass.withTransaction {
+        domainClass.withNewSession { newSess ->
+          domainClass.withTransaction {
+            ids.each { String id ->
+              // For each ID, find the domain instance (e.g. the PCI with id xyz)
+              def instance = domainClass.get(id)
 
-        if (instance) {
-          instance.delete() // delete the instance using GORM (will cascade to related objects)
-          successfullyDeletedIds.add(id) // track the id that has been deleted
-        } else {
-          log.warn("Could not find instance of {} with id {} to delete.", domainClass.name, id) // we should never hit this, but useful to log incase.
+              if (instance) {
+                instance.delete() // delete the instance using GORM (will cascade to related objects)
+                successfullyDeletedIds.add(id) // track the id that has been deleted
+              } else {
+                log.warn("Could not find instance of {} with id {} to delete.", domainClass.name, id)
+                // we should never hit this, but useful to log incase.
+              }
+            }
+          }
         }
       }
+    }
 
     return successfullyDeletedIds
   }
