@@ -161,12 +161,10 @@ The /delete/{pci/pti/ti} endpoint returns a response shape like:
     }
   },
   "statistics": {
-    "total_markedForDeletion": {
-      "pci": 1,
-      "pti": 1,
-      "ti": 2,
-      "work": 1
-    }
+    "pci": 1,
+    "pti": 1,
+    "ti": 2,
+    "work": 1
   }
 }
 ```

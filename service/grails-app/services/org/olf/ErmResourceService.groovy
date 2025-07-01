@@ -403,12 +403,9 @@ public class ErmResourceService {
     }}
 
     Map outputMap = [:]
-    Map statisticsMap = [:]
-
-    statisticsMap.put("total_markedForDeletion", totals)
 
     outputMap.put("packages", deleteResourcesResponseMap)
-    outputMap.put("statistics", statisticsMap)
+    outputMap.put("statistics", totals)
 
     return outputMap;
   }
