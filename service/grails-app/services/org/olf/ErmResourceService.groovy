@@ -83,6 +83,9 @@ public class ErmResourceService {
     resourceList
   }
 
+
+  // ---- RESOURCE DELETION ----
+  // MarkForDelete - this is the method the controller hits, which parses the user input into valid ID lists and then calls markForDeleteInternal which does the work.
   public MarkForDeleteResponse markForDelete(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
     // HQL is used here to filter the users IDs for IDs that actually exist in the database. AND it sanitizes against SQL injection.
     switch (resourceClass) {
@@ -109,7 +112,7 @@ public class ErmResourceService {
 
   // We make use of the fact that these are Sets to deduplicate in the case that we have, say, two PCIs for a PTI
   // Normally a SELECT for PTIs from PCIs would return twice, but we can dedupe for free here.
-  // MarkForDeleteInternal uses temporary SQL tables (as opposed to batching with GORM) in order to
+  // MarkForDeleteInternal uses temporary SQL tables (as opposed to batching or nested subqueries) in order to
   // handle lists of IDs > 65535 items long. It does not create a new transaction but uses the current one (opened by MarkForDelete())
   private MarkForDeleteResponse markForDeleteInternal(Set<String> pciIds, Set<String> ptiIds, Set<String> tiIds) {
     log.info("Initiating markForDelete with PCI ids: {}, PTI ids: {}, TI ids: {}", pciIds.size(), ptiIds.size(), tiIds.size())
@@ -257,7 +260,7 @@ public class ErmResourceService {
     return response
   }
 
-  // --- HELPER METHODS ---
+  // --- HELPER METHODS for MarkForDelete()  ---
   // Clears a table and populates it with a given set of IDs using batching.
   private void populateTempTable(Sql sql, String tableName, Collection<String> ids) {
     String truncateSql = "TRUNCATE TABLE ${tableName}" // Clears all data from the table.
@@ -278,100 +281,12 @@ public class ErmResourceService {
     sql.rows(query).collect { it[0] } as Set<String>
   }
 
-  @CompileStatic(SKIP)
-  private Set<String> deleteIds(Class domainClass, Collection<String> ids) {
-    Set<String> successfullyDeletedIds = new HashSet<>()
-
-    domainClass.withSession { currentSess ->
-      domainClass.withTransaction {
-        domainClass.withNewSession { newSess ->
-          domainClass.withTransaction {
-            ids.each { String id ->
-              // For each ID, find the domain instance (e.g. the PCI with id xyz)
-              def instance = domainClass.get(id)
-
-              if (instance) {
-                instance.delete() // delete the instance using GORM (will cascade to related objects)
-                successfullyDeletedIds.add(id) // track the id that has been deleted
-              } else {
-                log.warn("Could not find instance of {} with id {} to delete.", domainClass.name, id)
-                // we should never hit this, but useful to log incase.
-              }
-            }
-          }
-          newSess.clear()
-        }
-      }
-    }
-
-    return successfullyDeletedIds
-  }
-
-  public Map markForDeleteFromPackage(List<String> idInputs) {
-    Map<String, MarkForDeleteResponse> deleteResourcesResponseMap = [:]
-
-    // Collect responses for each package in a Map.
-    idInputs.forEach{String id -> {
-      MarkForDeleteResponse forDeletion = markForDelete([id], Pkg.class); // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
-      deleteResourcesResponseMap.put(id, forDeletion)
-    }}
-
-    // Calculate total deletion counts
-    DeletionCounts totals = new DeletionCounts(0,0,0,0)
-    deleteResourcesResponseMap.keySet().forEach{String packageId -> {
-      totals.pci += deleteResourcesResponseMap.get(packageId).statistics.pci
-      totals.pti += deleteResourcesResponseMap.get(packageId).statistics.pti
-      totals.ti += deleteResourcesResponseMap.get(packageId).statistics.ti
-      totals.work += deleteResourcesResponseMap.get(packageId).statistics.work
-    }}
-
-    Map outputMap = [:]
-    Map statisticsMap = [:]
-
-    statisticsMap.put("total_markedForDeletion", totals)
-
-    outputMap.put("packages", deleteResourcesResponseMap)
-    outputMap.put("statistics", statisticsMap)
-
-    return outputMap;
-  }
-
-  @CompileStatic(SKIP)
-  public createDeleteResourcesJob(List<String> idInputs, ResourceDeletionJobType type) {
-    ResourceDeletionJob job = new ResourceDeletionJob([
-      name: "ResourceDeletionJob, resource IDs: ${idInputs.toString()} ${Instant.now()}",
-      resourceInputs: new JSON(idInputs).toString(),
-      deletionJobType: type
-    ])
-
-    job.setStatusFromString('Queued')
-    job.save(failOnError: true, flush: true)
-
-    return job;
-  }
-
-  public DeleteResponse deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
-    MarkForDeleteMap forDeletion = markForDelete(idInputs, resourceClass).resourceIds; // get ids marked for deletion.
-    return  deleteResourcesInternal(forDeletion)
-  }
-
-  public Map deleteResourcesPkg(List<String> pkgIds) {
-    Map outputMap = [:]
-
-    // Each package is passed to deleteResources individually.
-    pkgIds.forEach{ String id -> {
-      outputMap.put(id, deleteResources([id], Pkg))
-    }}
-
-    // return a map of form: {pkgId1: {DeleteResponse}, pkdId2: {DeleteResponse}} or {}
-    return outputMap;
-  }
-
   // Helper method to get counts of resources from a resource ID map (MarkForDeleteMap)
   DeletionCounts getCountsFromDeletionMap(MarkForDeleteMap deleteMap) {
     return new DeletionCounts(deleteMap.pci.size(), deleteMap.pti.size(), deleteMap.ti.size(), deleteMap.work.size())
   }
 
+  // Delete Resources Internal --- steps through resource types and deletes at each step. Collects IDs and counts of deleted resources for response.
   @CompileStatic(SKIP)
   @Transactional
   private DeleteResponse deleteResourcesInternal(MarkForDeleteMap resourcesToDelete) {
@@ -409,5 +324,109 @@ public class ErmResourceService {
 
     return response
   }
+
+  // --- HELPER METHODS for delete() --- //
+
+  @CompileStatic(SKIP)
+  private Set<String> deleteIds(Class domainClass, Collection<String> ids) {
+    Set<String> successfullyDeletedIds = new HashSet<>()
+
+    // Transaction magic is crucial for this method to run efficiently.
+    domainClass.withSession { currentSess ->
+      domainClass.withTransaction {
+        domainClass.withNewSession { newSess ->
+          domainClass.withTransaction {
+            ids.each { String id ->
+              // For each ID, find the domain instance (e.g. the PCI with id xyz)
+              def instance = domainClass.get(id)
+
+              if (instance) {
+                instance.delete() // delete the instance using GORM (will cascade to related objects)
+                successfullyDeletedIds.add(id) // track the id that has been deleted
+              } else {
+                log.warn("Could not find instance of {} with id {} to delete.", domainClass.name, id)
+                // we should never hit this, but useful to log incase.
+              }
+            }
+          }
+          newSess.clear()
+        }
+      }
+    }
+
+    return successfullyDeletedIds
+  }
+
+
+
+  // --- Higher-level methods, package deletion and deletion jobs ---
+
+  public DeleteResponse deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
+    // This method runs both MarkForDelete() and DeleteResources in one step for the /delete endpoint.
+
+    MarkForDeleteMap forDeletion = markForDelete(idInputs, resourceClass).resourceIds; // get ids marked for deletion.
+    return  deleteResourcesInternal(forDeletion)
+  }
+
+  public Map deleteResourcesPkg(List<String> pkgIds) {
+    // When the /delete/pkg endpoint is passed a list of package IDs, we want to iterate through these
+    // and call deleteResources for each one, aggregating the responses into a pkg: response Map.
+    Map outputMap = [:]
+
+    // Each package is passed to deleteResources individually.
+    pkgIds.forEach{ String id -> {
+      outputMap.put(id, deleteResources([id], Pkg))
+    }}
+
+    // return a map of form: {pkgId1: {DeleteResponse}, pkdId2: {DeleteResponse}} or {}
+    return outputMap;
+  }
+
+  // Mark a list of package IDs for delete and aggregate responses into one output Map.
+  // Also combine statistics for all packages.
+  public Map markForDeleteFromPackage(List<String> idInputs) {
+    Map<String, MarkForDeleteResponse> deleteResourcesResponseMap = [:]
+
+    // Collect responses for each package in a Map.
+    idInputs.forEach{String id -> {
+      MarkForDeleteResponse forDeletion = markForDelete([id], Pkg.class); // Finds all PCIs for package and deletes as though the PCI Ids were passed in.
+      deleteResourcesResponseMap.put(id, forDeletion)
+    }}
+
+    // Calculate total deletion counts
+    DeletionCounts totals = new DeletionCounts(0,0,0,0)
+    deleteResourcesResponseMap.keySet().forEach{String packageId -> {
+      totals.pci += deleteResourcesResponseMap.get(packageId).statistics.pci
+      totals.pti += deleteResourcesResponseMap.get(packageId).statistics.pti
+      totals.ti += deleteResourcesResponseMap.get(packageId).statistics.ti
+      totals.work += deleteResourcesResponseMap.get(packageId).statistics.work
+    }}
+
+    Map outputMap = [:]
+    Map statisticsMap = [:]
+
+    statisticsMap.put("total_markedForDeletion", totals)
+
+    outputMap.put("packages", deleteResourcesResponseMap)
+    outputMap.put("statistics", statisticsMap)
+
+    return outputMap;
+  }
+
+  @CompileStatic(SKIP)
+  public createDeleteResourcesJob(List<String> idInputs, ResourceDeletionJobType type) {
+    ResourceDeletionJob job = new ResourceDeletionJob([
+      name: "ResourceDeletionJob, resource IDs: ${idInputs.toString()} ${Instant.now()}",
+      resourceInputs: new JSON(idInputs).toString(), // Should always be a list of strings for now.
+      deletionJobType: type
+    ])
+
+    job.setStatusFromString('Queued')
+    job.save(failOnError: true, flush: true)
+
+    return job;
+  }
+
+
 }
 
