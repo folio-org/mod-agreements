@@ -12,8 +12,22 @@ class ResourceDeletionJob extends PersistentJob implements MultiTenant<ResourceD
   final Closure getWork() {
     final Closure theWork = { final String jobId, final String tenantId ->
       log.info "Attempting to run job type: ${deletionJobType}"
+      List<String> idList // Currently, we assume the parsed JSON is always a List of String IDs.
 
-      List<String> idList = new JsonSlurper().parseText(resourceInputs) as List<String> // For now, the resource input shape is always a list of strings
+      try {
+        def parsedJson = new JsonSlurper().parseText(resourceInputs)
+        if (!(parsedJson instanceof List)) {
+          throw new IllegalArgumentException("resourceInputs JSON is not a list. Found type: ${parsedJson.getClass().name}")
+        }
+
+        idList = parsedJson as List<String>
+      } catch (Exception e) {
+        log.error "Failed to parse resourceInputs for job ${jobId}. Input was: '${resourceInputs}'. Error: ${e.message}", e
+        this.status = PersistentJob.lookupStatus('Ended')
+        this.result = PersistentJob.lookupStatus('Failure')
+        this.save(flush: true)
+        return
+      }
 
       // Only PackageDeletionJob has an endpoint available, but could extend to PCI deletion jobs if needed.
       switch (deletionJobType) {
@@ -31,8 +45,8 @@ class ResourceDeletionJob extends PersistentJob implements MultiTenant<ResourceD
 
         default:
           log.error "Unknown or unhandled ResourceDeletionJobType: ${deletionJobType}. Aborting job."
-          this.status = Job.Status.FAILED
-          this.result = [ message: "Unknown job type: ${deletionJobType}" ]
+          this.status = PersistentJob.lookupStatus('Ended')
+          this.result = PersistentJob.lookupStatus('Failure')
           this.save(flush: true)
           break
       }

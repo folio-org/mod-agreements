@@ -239,6 +239,8 @@ public class ErmResourceService {
         response.resourceIds.ti.addAll(finalTiIds)
         response.resourceIds.work.addAll(finalWorkIds)
 
+        response.statistics = getCountsFromDeletionMap(response.resourceIds)
+
         log.info("Mark for delete finished. PCIs: {}, PTIs: {}, TIs: {}, Works: {}",
           response.resourceIds.pci.size(),
           response.resourceIds.pti.size(),
