@@ -20,8 +20,9 @@ A diagram below shows all four structures that might exist between resources and
 ## ErmResourceService::markForDelete() and ErmResourceService::deleteResources()
 
 
-### Mark For Delete ([Code](https://github.com/folio-org/mod-agreements/blob/da1f030fd174d3efab1aa38aca5b7553331f58c0/service/grails-app/services/org/olf/ErmResourceService.groovy#L134))
+### Mark For Delete ([Code](https://github.com/folio-org/mod-agreements/blob/7846ef876b4ea679f55f8ef71c3fcd44a767d8cb/service/grails-app/services/org/olf/ErmResourceService.groovy#L117)
 
+See the Code Breakdown section below for a more detailed explanation of the logic.
 
 There are four stages in the mark for deletion process:
 
@@ -41,7 +42,7 @@ Each step effectively involves checking resources at the current level which are
 
 ![diagram 2](./deleteResourcesDiagram.png)
 
-The delete resources method [Code](https://github.com/folio-org/mod-agreements/blob/da1f030fd174d3efab1aa38aca5b7553331f58c0/service/grails-app/services/org/olf/ErmResourceService.groovy#L295):
+The delete resources method [Code](https://github.com/folio-org/mod-agreements/blob/7846ef876b4ea679f55f8ef71c3fcd44a767d8cb/service/grails-app/services/org/olf/ErmResourceService.groovy#L292):
 
 Deletes each resource type and saves which IDs are deleted in the response. Any directly linked entities such as Identifier Occurrences for TIs, or Embargos for PCIs, get deleted via Grail's orphan removal cascade.
 
@@ -326,6 +327,137 @@ If we decided another structure needed testing, several updates would need to be
 - DeletionBaseSpec::findPackageName() must define the new package name.
 - DeletionBaseSpec::parseResource() might need to be updated to define how to find any new resources in the database. 
 
+### Code Breakdown
+
+#### MarkForDeleteInternal()
+
+The main constraint we faced is that some packages have >65535 items in them. This means that when trying to markForDelete() a package, we end up with a set of more than 65535 strings (ids for PCIs). Carrying out the MarkForDelete logic using HQL and named query parameters means doing something like:
+
+```
+Account.executeQuery("select distinct a.number from Account a " +
+                     "where a.branch IN :branch",
+                     [branch: ['a', 'b', 'c', 'd']])
+```
+
+However, this is very slow for larger lists of values, and will error when the number of values is near to 65535.
+
+As a result, we swapped to using Java's sql library and a temporary table approach.
+
+### Step 1: Creating tables 
+(https://github.com/folio-org/mod-agreements/blob/7846ef876b4ea679f55f8ef71c3fcd44a767d8cb/service/grails-app/services/org/olf/ErmResourceService.groovy#L133-L156)
+
+We create the temporary tables, and use three of them to store the initial values, e.g. temp_initial_pcis, which stores the IDs passed by the user (after some validation). 
+
+Each resource type (pci, pti, ti, work) has a separate temporary table for storing the final set of IDs that are okay to delete, e.g. temp_deletable_pcis.
+
+Another three tables are used to store an initial set of IDs for each resource that will be the starting point before checking if they are valid for deletion, e.g. temp_candidate_ptis.
+
+### Step 2: Find deletable PCIs
+https://github.com/folio-org/mod-agreements/blob/7846ef876b4ea679f55f8ef71c3fcd44a767d8cb/service/grails-app/services/org/olf/ErmResourceService.groovy#L161-L166
+
+The first SQL statement takes the table of initial PCI ids and joins on the entitlements table using the ent_resource_fk column. Where the ent_resource_fk column is null after the join, this indicates a PCI that does NOT have an entitlement. Hence, we can filter for when ent_resource_fk is null to get all the PCI ids that do not have any entitlements.
+
+```
+sql.execute("""
+      INSERT INTO temp_deletable_pcis (id)
+      SELECT p.id FROM temp_initial_pcis p
+      LEFT JOIN entitlement ent ON p.id = ent.ent_resource_fk
+      WHERE ent.ent_resource_fk IS NULL
+  """)
+```
+
+### Step 3: Find deletable PTIs
+https://github.com/folio-org/mod-agreements/blob/7846ef876b4ea679f55f8ef71c3fcd44a767d8cb/service/grails-app/services/org/olf/ErmResourceService.groovy#L170-L196
+
+The first SQL statement simply inserts any initial PTIs into the "candidate_PTIs" table. We then want to find any other candidate PTIs, i.e. PTIs that belong to PCIs which have been marked for deletion.
+
+The process is to take the PCI table, and join on the temporary table full of deletable PCIs. Making an inner join means that any rows in the PCI table where the id doesn't match an id in temp_deletable_pcis is dropped. So we are left with only PCIs that are deletable, and from these entities can select the pci_pti_fk (i.e. the PTI id) and insert it into the temp_canditate_ptis table.
+
+```
+sql.execute("""
+      INSERT INTO temp_candidate_ptis (id)
+      SELECT DISTINCT pci.pci_pti_fk
+      FROM package_content_item pci
+      INNER JOIN temp_deletable_pcis d ON pci.id = d.id
+      ON CONFLICT DO NOTHING;
+  """)
+```
+
+The next step is to take these candidate PTIs and check whether they are actually valid to delete.
+
+We take each row in the candidate PTIs table, and say
+1) Does an entitlement exist for this id in the entitlements table?
+AND
+2) Does a PCI exist which references this PTI that has not been marked for deletion? This step involves taking the PCIs table, and joining on the temp table of deletable PCIs. Where the deletable PCI id column is null AND the pti ID is a candidate for deletion, this means that another PCI must exist in the PCI table for that candidate PTI.
+
+If neither of the two above conditions exist, we can insert that PTI id into our final temp_deletable_ptis table. 
+
+```
+sql.execute("""
+      INSERT INTO temp_deletable_ptis (id)
+      SELECT c.id FROM temp_candidate_ptis c
+      WHERE
+        NOT EXISTS (SELECT 1 FROM entitlement ent WHERE ent.ent_resource_fk = c.id)
+        AND
+        NOT EXISTS (
+          SELECT 1 FROM package_content_item pci
+          LEFT JOIN temp_deletable_pcis dp ON pci.id = dp.id
+          WHERE pci.pci_pti_fk = c.id
+          AND dp.id IS NULL 
+        )
+  """)
+```
+
+### Step 4: Find deletable TIs and Works
+https://github.com/folio-org/mod-agreements/blob/7846ef876b4ea679f55f8ef71c3fcd44a767d8cb/service/grails-app/services/org/olf/ErmResourceService.groovy#L198-L238
+
+The first two SQL statements are the same as above- in order to get our list of candidate TIs from the deletable PTIs.
+
+We then make the same statement again, using candidate TIs to create a table of candidate Works:
+
+```
+sql.execute("""
+      INSERT INTO temp_candidate_works (id)
+      SELECT DISTINCT ti.ti_work_fk
+      FROM title_instance ti
+      INNER JOIN temp_candidate_tis c_ti ON ti.id = c_ti.id;
+  """)
+```
+
+To check if a candidate work can be deleted, we need to make sure there isn't a PTI that references it which hasn't been marked for deletion.
+
+To do this we say, take the table of title instances, and join on the PTI information for each title instance, then left join on the deleteable PTIs using the pti id column.
+
+We now have a table of TIs and a column saying which of them have deletable PTIs. If the deletable pti column is null and the ti's work is a candidate work, then this means that a non-deletable PTI exists for that candidate work and we can't delete it. Therefore we use the Where NOT EXISTS statement to filter for candidate works that don't match this criteria.
+
+These are our deletable works.
+
+```
+sql.execute("""
+      INSERT INTO temp_deletable_works (id)
+      SELECT c.id FROM temp_candidate_works c
+      WHERE
+        NOT EXISTS (
+          SELECT 1
+          FROM title_instance ti
+          INNER JOIN platform_title_instance pti ON ti.id = pti.pti_ti_fk
+          LEFT JOIN temp_deletable_ptis dp ON pti.id = dp.id -- The Fix
+          WHERE ti.ti_work_fk = c.id
+          AND dp.id IS NULL 
+        )
+  """)
+```
+
+The final step is to simply work our way back up using the candidate works and filter the titleInstances table to find all TIs related to deletable works.
+
+```
+sql.execute("""
+          INSERT INTO temp_deletable_tis (id)
+          SELECT ti.id
+          FROM title_instance ti
+          INNER JOIN temp_deletable_works dw ON ti.ti_work_fk = dw.id;
+      """)
+```
 
 
 ## Notes
