@@ -12,6 +12,7 @@ import io.micronaut.http.uri.UriBuilder
 
 import java.time.Duration
 
+// The (Micronaut) client implementation for GoKbOAIAdapter
 class GoKbClient implements AdapterClient {
 
   HttpClient httpClient

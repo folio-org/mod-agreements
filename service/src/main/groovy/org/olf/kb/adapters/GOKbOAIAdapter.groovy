@@ -42,7 +42,7 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   protected static final String PATH_TITLES = '/titles'
 
   GOKbOAIAdapter() {
-    super(new GoKbClient())
+    super(new GoKbClient()) // Use the GoKbClient implementation of the AdapterClient interface.
   }
 
   @CompileStatic(SKIP)

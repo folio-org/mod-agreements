@@ -18,9 +18,7 @@ import groovyx.net.http.FromServer
 @CompileStatic
 public abstract class WebSourceAdapter {
 
-  private static HttpBuilder GLOBAL_CLIENT
-
-  protected final AdapterClient httpClient
+  protected final AdapterClient httpClient // Classes that extend WSA MUST inject a httpClient in their constructor.
 
   WebSourceAdapter(AdapterClient client) {
     if (client == null) {
@@ -52,10 +50,14 @@ public abstract class WebSourceAdapter {
   }
 
   protected final def getSync (final String url, final Map params) {
+    // todo: do headers need to be an argument, or are they always the same for a given client implementation?
+    // todo: e.g. does the GoKb client always need the header below (in which case it can be on the client implementation, not here).
 //    def header = "Folio mod-agreements / ${Tenants.currentId()}"
 
     return httpClient.getData(url, params)
   }
+
+  // Todo: Need to rework the remaining methods in webSourceAdapter to use AdapterClient methods. These are currently unused though.
   
 //  protected final def post (final String url, final def jsonData, @DelegatesTo(HttpConfig.class) final Closure expand = null) {
 //    post(url, jsonData, null, expand)
