@@ -78,6 +78,9 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
     String memberRestrictiveUnits = String.join(",", userAcquisitionUnits.getMemberRestrictiveUnits().stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList());
     String nonMemberRestrictiveUnits = String.join(",", userAcquisitionUnits.getNonMemberRestrictiveUnits().stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList());
 
+    if (memberRestrictiveUnits.isEmpty()) memberRestrictiveUnits = "'this-is-a-made-up-impossible-value'";
+    if (nonMemberRestrictiveUnits.isEmpty()) nonMemberRestrictiveUnits = "'this-is-a-made-up-impossible-value'";
+
     return SQL_TEMPLATE
       .replaceAll("#ACCESS_POLICY_TABLE_NAME", parameters.getAccessPolicyTableName())
       .replaceAll("#ACCESS_POLICY_TYPE_COLUMN_NAME", parameters.getAccessPolicyTypeColumnName())

@@ -11,6 +11,9 @@ import com.k_int.folio.FolioClientConfig
 import com.k_int.folio.FolioClientException
 import com.k_int.okapi.OkapiClient
 import com.k_int.okapi.OkapiTenantAwareController
+import com.k_int.okapi.OkapiTenantResolver
+import grails.gorm.multitenancy.Tenants
+import org.springframework.security.core.userdetails.UserDetails
 
 import java.time.Duration
 
@@ -57,31 +60,23 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     // FIXME okapiBaseUri/tenantName/patronId should be central in any controller doing AccessControl
     // And obviously shouldn't be hardcoded
 
-//    // Dynamic folio client config
-//    FolioClientConfig folioClientConfig = FolioClientConfig.builder()
-//      .baseOkapiUri("https://${okapiClient.getOkapiHost()}:${okapiClient.getOkapiPort()}")
-//      .tenantName(OkapiTenantResolver.schemaNameToTenantId(Tenants.currentId()))
-//      .patronId(getPatron().id)
-//      .build()
+    // This should work regardless of whether we're in a proper FOLIO space or not now.
+    // I'm not convinced this is the best way to do it but hey ho
+    UserDetails patron = getPatron()
+    String defaultPatronId = 'defaultPatronId'
+    if (patron.hasProperty("id")) {
+      defaultPatronId = patron.id
+    }
 
-    // BF Sunflower folio client config
+    // Build the folio information via ENV_VARS, grailsApplication defaults OR fallback to "this folio".
+    // Should allow devs to control where code is pointing dynamically without needing to comment/uncomment different folioConfigs here
     FolioClientConfig folioClientConfig = FolioClientConfig.builder()
-      .baseOkapiUri("https://kong-bugfest-sunflower.int.aws.folio.org")
-      .tenantName("fs09000000")
-      .patronId("9eb67301-6f6e-468f-9b1a-6134dc39a684")
-      .userLogin("folio")
-      .userPassword("folio")
+      .baseOkapiUri(grailsApplication.config.getProperty('accesscontrol.folio.baseokapiurl', String, "https://${okapiClient.getOkapiHost()}:${okapiClient.getOkapiPort()}"))
+      .tenantName(grailsApplication.config.getProperty('accesscontrol.folio.tenantname', String, OkapiTenantResolver.schemaNameToTenantId(Tenants.currentId())))
+      .patronId(grailsApplication.config.getProperty('accesscontrol.folio.patronid', String, OkapiTenantResolver.schemaNameToTenantId(defaultPatronId)))
+      .userLogin(grailsApplication.config.getProperty('accesscontrol.folio.userlogin', String))
+      .userPassword(grailsApplication.config.getProperty('accesscontrol.folio.userpassword', String))
       .build()
-
-
-//    // Eureka Snapshot folio client config
-//    FolioClientConfig folioClientConfig = FolioClientConfig.builder()
-//      .baseOkapiUri("https://folio-etesting-snapshot-kong.ci.folio.org")
-//      .tenantName("diku")
-//      .patronId("a432e091-e445-40e7-a7a6-e31c035cd51a")
-//      .userLogin("diku_admin")
-//      .userPassword("admin")
-//      .build()
 
     log.info("LOGDEBUG BASE OKAPI URI: ${folioClientConfig.baseOkapiUri}")
     log.info("LOGDEBUG TENANT ID: ${folioClientConfig.tenantName}")
@@ -101,6 +96,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     return policyEngine
   }
 
+  // TODO perhaps this ought to be service methods instead -- and allow for a GENERIC Class<T has annotation>
   List<String> getPolicySql() {
     try {
       /* ------------------------------- LOGIN LOGIC ------------------------------- */
