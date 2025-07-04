@@ -1,5 +1,8 @@
 package org.olf
 
+import com.k_int.accesscontrol.grails.AccessPolicyAwareController
+
+import java.time.Duration
 import java.time.LocalDate
 import org.grails.web.json.JSONObject
 import org.hibernate.sql.JoinType
@@ -19,9 +22,6 @@ import groovy.util.logging.Slf4j
 
 import static org.springframework.http.HttpStatus.*
 
-import java.time.Duration
-import java.time.Instant
-
 /**
  * Control access to subscription agreements.
  * A subscription agreement (SA) is the connection between a set of resources (Which could be packages or individual titles) and a license. 
@@ -29,7 +29,7 @@ import java.time.Instant
  */
 @Slf4j
 @CurrentTenant
-class SubscriptionAgreementController extends OkapiTenantAwareController<SubscriptionAgreement>  {
+class SubscriptionAgreementController extends AccessPolicyAwareController<SubscriptionAgreement> {
   
   CoverageService coverageService
   ExportService exportService
@@ -46,6 +46,24 @@ class SubscriptionAgreementController extends OkapiTenantAwareController<Subscri
   @Transactional(readOnly=true)
   def show() {
     super.show()
+  }
+
+  // FIXME this will need to go on the ACTUAL lookup etc etc... potentially done at the AccessPolicyAwareController level.
+  //  For now it can be a test method
+  public testRequestContext() {
+    List<String> policySql = getPolicySql();
+
+    long beforeLookup = System.nanoTime();
+    respond doTheLookup(SubscriptionAgreement) {
+      policySql.each {psql -> {
+        sqlRestriction(psql)
+      }};
+    }
+
+    long endTime = System.nanoTime();
+    Duration lookupToEnd = Duration.ofNanos(endTime - beforeLookup);
+    log.debug("LOGDEBUG query time: ${lookupToEnd}")
+    return null // Probably not necessary, prevent fallthrough after response
   }
   
   @Transactional(readOnly=true)

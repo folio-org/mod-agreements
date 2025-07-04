@@ -73,6 +73,9 @@ class UrlMappings {
         "/validate/$prop?" (controller: 'validate', method: 'POST') {
           domain = SubscriptionAgreement.class.name
         }
+
+        // FIXME this won't end up in the final version as a standalone endpoint
+        '/testRequestContext' (controller: "subscriptionAgreement", action: "testRequestContext", method: 'GET')
       }
     }
 
@@ -238,6 +241,9 @@ class UrlMappings {
       collection {
         "/namespaces" (controller: 'identifier', action: 'namespaces', method: 'GET')
       }
+    }
+
+    "/erm/accessControl" (resources: 'accessPolicy') {
     }
   }
 }
