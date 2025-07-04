@@ -1,4 +1,4 @@
-package com.k_int.accesscontrol.acqunits.responses;
+package com.k_int.accesscontrol.acqunits.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;

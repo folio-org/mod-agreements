@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.acqunits;
 
-import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnit;
+import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembershipResponse;
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitResponse;
 import com.k_int.folio.FolioClient;

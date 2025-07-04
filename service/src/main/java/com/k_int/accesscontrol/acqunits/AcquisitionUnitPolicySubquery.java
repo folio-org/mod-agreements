@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.acqunits;
 
-import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnit;
+import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
 import com.k_int.accesscontrol.core.PolicySubquery;
 import com.k_int.accesscontrol.core.PolicySubqueryParameters;
 import lombok.Builder;

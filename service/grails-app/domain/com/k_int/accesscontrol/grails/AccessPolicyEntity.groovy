@@ -1,6 +1,7 @@
 package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.core.AccessPolicy
+
 import grails.gorm.MultiTenant
 
 /**
@@ -11,20 +12,31 @@ import grails.gorm.MultiTenant
  * data with internal ERM resources (e.g., SubscriptionAgreements).
  */
 class AccessPolicyEntity extends AccessPolicy implements MultiTenant<AccessPolicyEntity> {
+  static String TABLE_NAME = 'access_policy'
+
+  static String ID_COLUMN = 'id'
+
+  static String TYPE_COLUMN = 'acc_pol_type'
+  static String DESCRIPTION_COLUMN = 'acc_pol_description'
+  static String DATE_CREATED_COLUMN = 'acc_pol_date_created'
+  static String POLICY_ID_COLUMN = 'acc_pol_policy_id'
+
+  static String RESOURCE_CLASS_COLUMN = 'acc_pol_resource_class'
+  static String RESOURCE_ID_COLUMN = 'acc_pol_resource_id'
 
   static mapping = {
-            table 'access_policy'
-               id column: 'id', generator: 'uuid2', length:36
+            table TABLE_NAME
+               id column: ID_COLUMN, generator: 'uuid2', length:36
           version column: 'version'
 
-             type column: 'acc_pol_type'
-      description column: 'acc_pol_description'
-      dateCreated column: 'acc_pol_date_created'
-         policyId column: 'acc_pol_policy_id'
+             type column: TYPE_COLUMN
+      description column: DESCRIPTION_COLUMN
+      dateCreated column: DATE_CREATED_COLUMN
+         policyId column: POLICY_ID_COLUMN
 
     // Map the foreign key to the AccessPolicyContainer
-    resourceClass column: 'acc_pol_resource_class'
-       resourceId column: 'acc_pol_resource_id'
+    resourceClass column: RESOURCE_CLASS_COLUMN
+       resourceId column: RESOURCE_ID_COLUMN
   }
 
   static constraints = {
