@@ -14,6 +14,8 @@ import java.net.http.HttpResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.*;
@@ -171,11 +173,17 @@ public class FolioClient {
   }
 
   public String[] getBaseHeaders() {
-    return new String[] {
-        "X-Okapi-Tenant", tenant,
-        "Content-Type", "application/json",
-        "accept", "application/json",
-    };
+    List<String> headers = new ArrayList<>();
+
+    // Make sure we hard coded the tenant header
+    headers.add("X-Okapi-Tenant");
+    headers.add(tenant);
+
+    for (List<String> pair : FolioHeaders.BASE_HEADERS) {
+        headers.add(pair.get(0));
+        headers.add(pair.get(1));
+    }
+    return headers.toArray(new String[0]);
   };
 
   /**
@@ -236,6 +244,21 @@ public class FolioClient {
     }
 
     return new String[] { "Cookie", folioAccessToken };
+  }
+
+  public static String[] getFolioHeaders(String[] flatHeaders) {
+    List<String> result = new ArrayList<>();
+
+    for (int i = 0; i < flatHeaders.length - 1; i += 2) {
+      String name = flatHeaders[i];
+      String value = flatHeaders[i + 1];
+      if (FolioHeaders.isFolioHeader(name.toLowerCase(), value)) {
+        result.add(name);
+        result.add(value);
+      }
+    }
+
+    return result.toArray(new String[0]);
   }
 
   /**

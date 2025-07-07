@@ -1,9 +1,8 @@
 package com.k_int.accesscontrol.main;
 
-import com.k_int.accesscontrol.acqunits.AcquisitionUnitPolicySubquery;
-import com.k_int.accesscontrol.acqunits.AcquisitionUnitRestriction;
-import com.k_int.accesscontrol.acqunits.AcquisitionsClient;
-import com.k_int.accesscontrol.acqunits.UserAcquisitionUnits;
+import com.k_int.accesscontrol.acqunits.*;
+import com.k_int.accesscontrol.core.AccessPolicyQueryType;
+import com.k_int.accesscontrol.core.PolicyEngineException;
 import com.k_int.accesscontrol.core.PolicyRestriction;
 import com.k_int.accesscontrol.core.PolicySubquery;
 import com.k_int.folio.FolioClientException;
@@ -23,37 +22,28 @@ import java.util.List;
 public class PolicyEngine {
   private final PolicyEngineConfiguration config;
 
-  @Getter
-  private final AcquisitionsClient acqClient;
-
   public PolicyEngine(PolicyEngineConfiguration config) {
     this.config = config;
-
-    this.acqClient = new AcquisitionsClient(config.getFolioClientConfig());
   }
 
-  public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr) throws FolioClientException {
+  /**
+   * There are two types of AccessPolicy query that we might want to handle, subQueries: "Show me all records for which I can do RESTRICTION" and booleanQueries: "Can I do RESTRICTION for resource X?"
+   *
+   * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
+   * @param pr The policy restriction which we want to filter by
+   * @return A list of PolicySubqueries, either for boolean restriction or for filtering.
+   */
+  public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
     List<PolicySubquery> policySubqueries = new ArrayList<>();
+
+    if (pr.equals(PolicyRestriction.CLAIM)) {
+      throw new PolicyEngineException("PolicySubquery list is not valid for PolicyRestriction.CLAIM", PolicyEngineException.INVALID_RESTRICTION);
+    }
+
     if (config.acquisitionUnits) {
-      // Do the acquisition unit logic
-      AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
-      // Temporarily lets have this here so we can build the sql ourselves...
-      UserAcquisitionUnits temporaryUserAcquisitionUnits = acqClient.getUserAcquisitionUnits(headers, acqRestriction);
-
-      log.info("LOGDEBUG ({}) MemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits());
-      log.info("LOGDEBUG ({}) NonMemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits());
-
-      log.info("LOGDEBUG ({}) MemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits().size());
-      log.info("LOGDEBUG ({}) NonMemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits().size());
-
-      // FIXME We should probably have a `PolicyEngineImplementor` or something in acq units, which can take in the full PolicyEngineConfiguration
-      // and then spin up an acq client, get user acquisition units, then build the PolicySubquery
-      policySubqueries.add(
-        AcquisitionUnitPolicySubquery
-          .builder()
-          .userAcquisitionUnits(temporaryUserAcquisitionUnits)
-          .build()
-      );
+      AcquisitionUnitPolicyEngineImplementor acqUnitPolicyEngine = new AcquisitionUnitPolicyEngineImplementor(config);
+      // TODO do we want to catch the PolicyEngineException here or throw and 500? -- likely the latter
+      policySubqueries.addAll(acqUnitPolicyEngine.getPolicySubqueries(headers, pr, AccessPolicyQueryType.LIST));
     }
 
     return policySubqueries;

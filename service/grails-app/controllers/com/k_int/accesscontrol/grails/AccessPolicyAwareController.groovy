@@ -15,8 +15,7 @@ import com.k_int.okapi.OkapiTenantResolver
 import grails.gorm.multitenancy.Tenants
 import org.springframework.security.core.userdetails.UserDetails
 
-import java.time.Duration
-
+import javax.servlet.http.HttpServletRequest
 
 // Extend OkapiTenantAwareController with PolicyEngine stuff
 class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
@@ -30,6 +29,19 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
           "${clazz.name} is not annotated."
       )
     }
+  }
+
+  private static String[] convertGrailsHeadersToStringArray(HttpServletRequest req) {
+    List<String> result = new ArrayList<>();
+
+    Collections.list(req.getHeaderNames()).forEach(headerName -> {
+      Collections.list(req.getHeaders(headerName)).forEach(headerValue -> {
+        result.add(headerName);
+        result.add(headerValue);
+      });
+    });
+
+    return result as String[];
   }
 
   AccessPolicyAwareController(Class<T> resource) {
@@ -70,13 +82,21 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
 
     // Build the folio information via ENV_VARS, grailsApplication defaults OR fallback to "this folio".
     // Should allow devs to control where code is pointing dynamically without needing to comment/uncomment different folioConfigs here
+    String baseOkapiUrl = grailsApplication.config.getProperty('accesscontrol.folio.baseokapiurl', String);
+    boolean folioIsExternal = true;
+    if (baseOkapiUrl == null) {
+      folioIsExternal = false;
+      baseOkapiUrl = "https://${okapiClient.getOkapiHost()}:${okapiClient.getOkapiPort()}"
+    }
+
     FolioClientConfig folioClientConfig = FolioClientConfig.builder()
-      .baseOkapiUri(grailsApplication.config.getProperty('accesscontrol.folio.baseokapiurl', String, "https://${okapiClient.getOkapiHost()}:${okapiClient.getOkapiPort()}"))
+      .baseOkapiUri(baseOkapiUrl)
       .tenantName(grailsApplication.config.getProperty('accesscontrol.folio.tenantname', String, OkapiTenantResolver.schemaNameToTenantId(Tenants.currentId())))
       .patronId(grailsApplication.config.getProperty('accesscontrol.folio.patronid', String, OkapiTenantResolver.schemaNameToTenantId(defaultPatronId)))
       .userLogin(grailsApplication.config.getProperty('accesscontrol.folio.userlogin', String))
       .userPassword(grailsApplication.config.getProperty('accesscontrol.folio.userpassword', String))
       .build()
+
 
     log.info("LOGDEBUG BASE OKAPI URI: ${folioClientConfig.baseOkapiUri}")
     log.info("LOGDEBUG TENANT ID: ${folioClientConfig.tenantName}")
@@ -89,6 +109,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       PolicyEngineConfiguration
         .builder()
         .folioClientConfig(folioClientConfig)
+        .externalFolioLogin(folioIsExternal)
         .acquisitionUnits(true) // This currently ASSUMES that we're ALWAYS using acquisitionUnits
         .build()
     )
@@ -96,58 +117,30 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     return policyEngine
   }
 
-  // TODO perhaps this ought to be service methods instead -- and allow for a GENERIC Class<T has annotation>
   List<String> getPolicySql() {
-    try {
-      /* ------------------------------- LOGIN LOGIC ------------------------------- */
-      AcquisitionsClient acqClient = policyEngine.getAcqClient()
-      // FIXME in the final work we will just pass down request context headers instead, not do a separate login
-      long beforeLogin = System.nanoTime()
+    /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
 
-      String[] folioAccessHeaders = acqClient.getFolioAccessTokenCookie([] as String[])
+    // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
+    String[] grailsHeaders = convertGrailsHeadersToStringArray(request);
 
-      log.info("LOGDEBUG LOGIN COOKIE: ${folioAccessHeaders}")
-      /* ------------------------------- END LOGIN LOGIC ------------------------------- */
+    List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, PolicyRestriction.READ)
+    PolicyControlledMetadata policyControlledMetadataForClass = resolvePolicyControlledMetadata(resourceClass)
 
-      /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
-      long beforePolicy = System.nanoTime()
+    // We build a parameter block to use on the policy subqueries. Some of these we can probably set up ahead of time...
+    PolicySubqueryParameters params = PolicySubqueryParameters
+      .builder()
+      .accessPolicyTableName(AccessPolicyEntity.TABLE_NAME)
+      .accessPolicyTypeColumnName(AccessPolicyEntity.TYPE_COLUMN)
+      .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
+      .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
+      .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
+      .resourceAlias("{alias}") // FIXME this is a hibernate thing... not sure if we need to deal with this right now.
+      .resourceIdColumnName(policyControlledMetadataForClass.resourceIdColumn)
+      .resourceClass(policyControlledMetadataForClass.resourceClass)
+      .build()
 
-      List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(folioAccessHeaders, PolicyRestriction.READ)
+    log.info("LOGDEBUG PARAMS: ${params}")
 
-      PolicyControlledMetadata policyControlledMetadataForClass = resolvePolicyControlledMetadata(resourceClass)
-
-      // We build a parameter block to use on the policy subqueries. Some of these we can probably set up ahead of time...
-      PolicySubqueryParameters params = PolicySubqueryParameters
-        .builder()
-        .accessPolicyTableName(AccessPolicyEntity.TABLE_NAME)
-        .accessPolicyTypeColumnName(AccessPolicyEntity.TYPE_COLUMN)
-        .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
-        .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
-        .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
-        .resourceAlias("{alias}") // FIXME this is a hibernate thing... not sure if we need to deal with this right now.
-        .resourceIdColumnName(policyControlledMetadataForClass.resourceIdColumn)
-        .resourceClass(policyControlledMetadataForClass.resourceClass)
-        .build()
-
-      log.info("LOGDEBUG PARAMS: ${params}")
-
-      long beforeReturn = System.nanoTime()
-
-      Duration loginToPolicy = Duration.ofNanos(beforePolicy - beforeLogin)
-      Duration policyToLookup = Duration.ofNanos(beforeReturn - beforePolicy)
-
-      log.debug("LOGDEBUG login time: ${loginToPolicy}")
-      log.debug("LOGDEBUG policy lookup time: ${policyToLookup}")
-      return policySubqueries.collect { psq -> psq.getSql(params)}
-    } catch (FolioClientException e) {
-      if (e.cause) {
-        log.error("Something went wrong in folio call: ${e}: CAUSE:", e.cause)
-      } else {
-        log.error("Something went wrong in folio call", e)
-      }
-
-      // Something has gone wrong, return an empty list
-      return []
-    }
+    return policySubqueries.collect { psq -> psq.getSql(params)}
   }
 }

@@ -60,9 +60,8 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
       }};
     }
 
-    long endTime = System.nanoTime();
-    Duration lookupToEnd = Duration.ofNanos(endTime - beforeLookup);
-    log.debug("LOGDEBUG query time: ${lookupToEnd}")
+    long afterLookup = System.nanoTime();
+    log.debug("LOGDEBUG query time: {}", Duration.ofNanos(afterLookup - beforeLookup))
     return null // Probably not necessary, prevent fallthrough after response
   }
   

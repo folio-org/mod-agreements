@@ -14,6 +14,7 @@ import lombok.Data;
 public class PolicyEngineConfiguration {
   boolean acquisitionUnits; // An ON/OFF switch for whether to make queries for acquisition units or ignore
   FolioClientConfig folioClientConfig; // Include the folioConfig in the policy engine configuration
+  boolean externalFolioLogin; // When configured for an EXTERNAL folio client, ensure we perform a login first.
 
   // boolean kiGrants; // An ON/OFF switch for whether to make queries for kiGrants or ignore. This is an EXTENSION for later
 }
