@@ -46,7 +46,6 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
       } else {
         finalHeaders = AcquisitionsClient.getFolioHeaders(headers);
       }
-      log.info("LOGDEBUG FINAL HEADERS: {}", finalHeaders);
 
       /* ------------------------------- END LOGIN LOGIC ------------------------------- */
       long afterLogin = System.nanoTime();
@@ -58,17 +57,16 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
       // Temporarily lets have this here so we can build the sql ourselves...
       UserAcquisitionUnits temporaryUserAcquisitionUnits = acqClient.getUserAcquisitionUnits(finalHeaders, acqRestriction);
 
+      long afterPolicyLookup = System.nanoTime();
+      log.debug("LOGDEBUG policy lookup time: {}", Duration.ofNanos(afterPolicyLookup - beforePolicyLookup));
+
       log.info("LOGDEBUG ({}) MemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits());
       log.info("LOGDEBUG ({}) NonMemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits());
 
       log.info("LOGDEBUG ({}) MemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits().size());
       log.info("LOGDEBUG ({}) NonMemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits().size());
-      long afterPolicyLookup = System.nanoTime();
-      log.debug("LOGDEBUG policy lookup time: {}", Duration.ofNanos(afterPolicyLookup - beforePolicyLookup));
 
 
-      // FIXME We should probably have a `PolicyEngineImplementor` or something in acq units, which can take in the full PolicyEngineConfiguration
-      // and then spin up an acq client, get user acquisition units, then build the PolicySubquery
       policySubqueries.add(
         AcquisitionUnitPolicySubquery
           .builder()
