@@ -1,6 +1,8 @@
 package com.k_int.accesscontrol.acqunits;
 
 import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
+import com.k_int.accesscontrol.core.AccessPolicyQueryType;
+import com.k_int.accesscontrol.core.PolicyEngineException;
 import com.k_int.accesscontrol.core.PolicySubquery;
 import com.k_int.accesscontrol.core.PolicySubqueryParameters;
 import lombok.Builder;
@@ -57,7 +59,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
           SELECT 1 FROM #ACCESS_POLICY_TABLE_NAME ap1
           WHERE
             ap1.#ACCESS_POLICY_TYPE_COLUMN_NAME = 'ACQ_UNIT' AND
-            ap1.#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME = #RESOURCE_ALIAS.#RESOURCE_ID_COLUMN_NAME AND
+            ap1.#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME = #RESOURCE_ID_MATCH AND
             ap1.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = '#RESOURCE_CLASS' AND
             ap1.#ACCESS_POLICY_ID_COLUMN_NAME IN (#NON_MEMBER_RESTRICTIVE_UNITS)
           LIMIT 1
@@ -65,7 +67,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
           SELECT 1 FROM #ACCESS_POLICY_TABLE_NAME ap2
           WHERE
             ap2.#ACCESS_POLICY_TYPE_COLUMN_NAME = 'ACQ_UNIT' AND
-            ap2.#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME = #RESOURCE_ALIAS.#RESOURCE_ID_COLUMN_NAME AND
+            ap2.#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME = #RESOURCE_ID_MATCH AND
             ap2.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = '#RESOURCE_CLASS' AND
             ap2.#ACCESS_POLICY_ID_COLUMN_NAME IN (#MEMBER_RESTRICTIVE_UNITS)
           LIMIT 1
@@ -81,14 +83,22 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
     if (memberRestrictiveUnits.isEmpty()) memberRestrictiveUnits = "'this-is-a-made-up-impossible-value'";
     if (nonMemberRestrictiveUnits.isEmpty()) nonMemberRestrictiveUnits = "'this-is-a-made-up-impossible-value'";
 
+    // If parameters.type == LIST then we need #RESOURCEIDMATCH = {alias}.id (for hibernate), IF TYPE SINGLE THEN #RESOURCEIDMATCH = <UUID of resource>
+    String resourceIdMatch = parameters.getResourceAlias() + "." + parameters.getResourceIdColumnName();
+    if (parameters.getType() == AccessPolicyQueryType.SINGLE) {
+      if (parameters.getResourceId() == null) {
+        throw new PolicyEngineException("PolicySubqueryParameters for AccessPolicyQueryType.SINGLE must include resourceId", PolicyEngineException.INVALID_QUERY_PARAMETERS);
+      }
+      resourceIdMatch = "'" + parameters.getResourceId() + "'";
+    }
+
     return SQL_TEMPLATE
       .replaceAll("#ACCESS_POLICY_TABLE_NAME", parameters.getAccessPolicyTableName())
       .replaceAll("#ACCESS_POLICY_TYPE_COLUMN_NAME", parameters.getAccessPolicyTypeColumnName())
       .replaceAll("#ACCESS_POLICY_ID_COLUMN_NAME", parameters.getAccessPolicyIdColumnName())
       .replaceAll("#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME", parameters.getAccessPolicyResourceIdColumnName())
       .replaceAll("#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME", parameters.getAccessPolicyResourceClassColumnName())
-      .replaceAll("#RESOURCE_ALIAS", parameters.getResourceAlias())
-      .replaceAll("#RESOURCE_ID_COLUMN_NAME", parameters.getResourceIdColumnName())
+      .replaceAll("#RESOURCE_ID_MATCH", resourceIdMatch)
       .replaceAll("#RESOURCE_CLASS", parameters.getResourceClass())
       .replaceAll("#MEMBER_RESTRICTIVE_UNITS", memberRestrictiveUnits)
       .replaceAll("#NON_MEMBER_RESTRICTIVE_UNITS", nonMemberRestrictiveUnits);

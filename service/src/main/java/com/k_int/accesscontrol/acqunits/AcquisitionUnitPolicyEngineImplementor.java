@@ -3,7 +3,6 @@ package com.k_int.accesscontrol.acqunits;
 import com.k_int.accesscontrol.core.*;
 import com.k_int.accesscontrol.main.PolicyEngineConfiguration;
 import com.k_int.folio.FolioClientException;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -30,14 +29,15 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
   public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType) {
     List<PolicySubquery> policySubqueries = new ArrayList<>();
 
-    if (queryType.equals(AccessPolicyQueryType.SINGLE)) {
-      throw new PolicyEngineException("AccessPolicyQueryType.SINGLE is not yet implemented for AcquisitionUnits", PolicyEngineException.INVALID_QUERY_TYPE);
-    }
+    // EXAMPLE if we can ONLY perform one-at-a-time or LIST subqueries, then we can enforce that like so
+//    if (queryType.equals(AccessPolicyQueryType.SINGLE)) {
+//      throw new PolicyEngineException("AccessPolicyQueryType.SINGLE is not yet implemented for AcquisitionUnits", PolicyEngineException.INVALID_QUERY_TYPE);
+//    }
 
     try {
       long beforeLogin = System.nanoTime();
       /* ------------------------------- LOGIN LOGIC ------------------------------- */
-      String[] finalHeaders = new String[]{};
+      String[] finalHeaders;
 
       if (config.isExternalFolioLogin()) {
         // Only perform a separate login if configured to
@@ -67,6 +67,7 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
       log.info("LOGDEBUG ({}) NonMemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits().size());
 
 
+      // FIXME should we instead be adding Restriction type here and then simply reading directly? Boundaries are hard
       policySubqueries.add(
         AcquisitionUnitPolicySubquery
           .builder()
@@ -74,8 +75,18 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
           .build()
       );
 
-    } catch (FolioClientException | InterruptedException | IOException exc) {
-      throw new PolicyEngineException("Something went wrong fetching acquisition units", exc);
+    } catch (FolioClientException fce) {
+      Throwable cause = fce.getCause();
+      if (cause != null) {
+        throw new PolicyEngineException("FolioClientException thrown fetching Acquisition units: " + fce.getCause().getMessage(), fce);
+      }
+      throw new PolicyEngineException("FolioClientException thrown fetching Acquisition units", fce);
+    } catch (InterruptedException | IOException exc) {
+      Throwable cause = exc.getCause();
+      if (cause != null) {
+        throw new PolicyEngineException("Something went wrong fetching Acquisition units: " + cause.getMessage(), exc);
+      }
+      throw new PolicyEngineException("Something went wrong fetching Acquisition units", exc);
     }
 
     return policySubqueries;

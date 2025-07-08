@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.grails
 
-import com.k_int.accesscontrol.acqunits.AcquisitionsClient
+import com.k_int.accesscontrol.core.AccessPolicyQueryType
 import com.k_int.accesscontrol.core.PolicyControlledMetadata
 import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.PolicySubquery
@@ -8,7 +8,6 @@ import com.k_int.accesscontrol.core.PolicySubqueryParameters
 import com.k_int.accesscontrol.main.PolicyEngine
 import com.k_int.accesscontrol.main.PolicyEngineConfiguration
 import com.k_int.folio.FolioClientConfig
-import com.k_int.folio.FolioClientException
 import com.k_int.okapi.OkapiClient
 import com.k_int.okapi.OkapiTenantAwareController
 import com.k_int.okapi.OkapiTenantResolver
@@ -32,16 +31,16 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   }
 
   private static String[] convertGrailsHeadersToStringArray(HttpServletRequest req) {
-    List<String> result = new ArrayList<>();
+    List<String> result = new ArrayList<>()
 
     Collections.list(req.getHeaderNames()).forEach(headerName -> {
       Collections.list(req.getHeaders(headerName)).forEach(headerValue -> {
-        result.add(headerName);
-        result.add(headerValue);
-      });
-    });
+        result.add(headerName)
+        result.add(headerValue)
+      })
+    })
 
-    return result as String[];
+    return result as String[]
   }
 
   AccessPolicyAwareController(Class<T> resource) {
@@ -82,10 +81,10 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
 
     // Build the folio information via ENV_VARS, grailsApplication defaults OR fallback to "this folio".
     // Should allow devs to control where code is pointing dynamically without needing to comment/uncomment different folioConfigs here
-    String baseOkapiUrl = grailsApplication.config.getProperty('accesscontrol.folio.baseokapiurl', String);
-    boolean folioIsExternal = true;
+    String baseOkapiUrl = grailsApplication.config.getProperty('accesscontrol.folio.baseokapiurl', String)
+    boolean folioIsExternal = true
     if (baseOkapiUrl == null) {
-      folioIsExternal = false;
+      folioIsExternal = false
       baseOkapiUrl = "https://${okapiClient.getOkapiHost()}:${okapiClient.getOkapiPort()}"
     }
 
@@ -117,18 +116,19 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     return policyEngine
   }
 
-  List<String> getPolicySql() {
+  private List<String> getPolicySql(AccessPolicyQueryType type, PolicyRestriction restriction, String resourceId) {
     /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
 
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
-    String[] grailsHeaders = convertGrailsHeadersToStringArray(request);
+    String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 
-    List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, PolicyRestriction.READ)
+    List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, restriction)
     PolicyControlledMetadata policyControlledMetadataForClass = resolvePolicyControlledMetadata(resourceClass)
 
     // We build a parameter block to use on the policy subqueries. Some of these we can probably set up ahead of time...
     PolicySubqueryParameters params = PolicySubqueryParameters
       .builder()
+      .type(type)
       .accessPolicyTableName(AccessPolicyEntity.TABLE_NAME)
       .accessPolicyTypeColumnName(AccessPolicyEntity.TYPE_COLUMN)
       .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
@@ -136,6 +136,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
       .resourceAlias("{alias}") // FIXME this is a hibernate thing... not sure if we need to deal with this right now.
       .resourceIdColumnName(policyControlledMetadataForClass.resourceIdColumn)
+      .resourceId(resourceId) // This might be null (For LIST type queries)
       .resourceClass(policyControlledMetadataForClass.resourceClass)
       .build()
 
@@ -143,4 +144,32 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
 
     return policySubqueries.collect { psq -> psq.getSql(params)}
   }
+
+
+  // IMPORTANT this assumes that "id" is the parameter available for the UUID in the SINGLE cases
+  List<String> getReadRestrictedList() {
+    return getPolicySql(AccessPolicyQueryType.LIST, PolicyRestriction.READ, null)
+  }
+
+  List<String> getReadRestrictedSingle() {
+    return getPolicySql(AccessPolicyQueryType.SINGLE, PolicyRestriction.READ, params.id)
+  }
+
+  List<String> getUpdateRestrictedList() {
+    return getPolicySql(AccessPolicyQueryType.LIST, PolicyRestriction.UPDATE, null)
+  }
+
+  List<String> getUpdateRestrictedSingle() {
+    return getPolicySql(AccessPolicyQueryType.SINGLE, PolicyRestriction.UPDATE, params.id)
+  }
+
+  List<String> getDeleteRestrictedList() {
+    return getPolicySql(AccessPolicyQueryType.LIST, PolicyRestriction.DELETE, null)
+  }
+
+  List<String> getDeleteRestrictedSingle() {
+    return getPolicySql(AccessPolicyQueryType.SINGLE, PolicyRestriction.DELETE, params.id)
+  }
+
+  // TODO CLAIM and CREATE are a little different :/ Maybe the restriction type has to go all the way down to the PolicySubquery too
 }

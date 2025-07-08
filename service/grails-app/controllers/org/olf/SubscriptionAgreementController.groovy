@@ -1,7 +1,10 @@
 package org.olf
 
 import com.k_int.accesscontrol.grails.AccessPolicyAwareController
+import groovy.sql.Sql
+import org.hibernate.Session
 
+import java.sql.Connection
 import java.time.Duration
 import java.time.LocalDate
 import org.grails.web.json.JSONObject
@@ -50,18 +53,35 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
 
   // FIXME this will need to go on the ACTUAL lookup etc etc... potentially done at the AccessPolicyAwareController level.
   //  For now it can be a test method
-  public testRequestContext() {
-    List<String> policySql = getPolicySql();
+  def testReadRestrictedList() {
+    List<String> policySql = getReadRestrictedList()
 
-    long beforeLookup = System.nanoTime();
+    long beforeLookup = System.nanoTime()
     respond doTheLookup(SubscriptionAgreement) {
       policySql.each {psql -> {
         sqlRestriction(psql)
-      }};
+      }}
     }
 
-    long afterLookup = System.nanoTime();
+    long afterLookup = System.nanoTime()
     log.debug("LOGDEBUG query time: {}", Duration.ofNanos(afterLookup - beforeLookup))
+    return null // Probably not necessary, prevent fallthrough after response
+  }
+
+  def testReadRestrictedSingle() {
+    List<String> policySql = getReadRestrictedSingle()
+
+    log.debug("WHAT IS POLICYSQL: ${policySql.join(', ')}")
+    boolean result = false
+
+    SubscriptionAgreement.withSession { Session sess ->
+      String bigSql = policySql.collect {"(${it})" }.join(" AND ") // JOIN all sql subqueries together here.
+
+      result = sess.createNativeQuery("SELECT ${bigSql} AS access_allowed".toString()).list()[0]
+      log.debug("WHAT IS RESULT: ${result}")
+    }
+
+    respond([canRead: result]) // FIXME should be a proper response here
     return null // Probably not necessary, prevent fallthrough after response
   }
   
@@ -536,7 +556,7 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
   }
 
   private String buildStaticResourceIdsHQL(String subset) {
-    String topLine = """SELECT res.id FROM PackageContentItem as res""";
+    String topLine = """SELECT res.id FROM PackageContentItem as res"""
 
     switch (subset) {
       case 'current':
@@ -575,7 +595,7 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
               res.accessEnd > :today
             )
           )
-        """.toString();
+        """.toString()
       case 'dropped':
         return """${topLine}
           LEFT OUTER JOIN res.entitlements AS direct_ent
@@ -603,7 +623,7 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
               res.accessEnd < :today
             )
           )
-        """.toString();
+        """.toString()
       case 'future':
         return """${topLine}
           LEFT OUTER JOIN res.entitlements AS direct_ent
@@ -631,7 +651,7 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
               res.accessStart > :today
             )
           )
-        """.toString();
+        """.toString()
       case 'all':
       default:
         return """${topLine}
@@ -656,23 +676,23 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
     String subquery = """(
       ${buildStaticResourceIdsHQL(subset)}
     )
-    """;
+    """
 
     return """
       SELECT ${isCount ? 'COUNT(res.id)' : 'res'} FROM PackageContentItem as res
       WHERE res.id IN ${subquery}
       ${isCount ? '' : 'ORDER BY res.pti.titleInstance.name'}
-    """.toString();
+    """.toString()
   }
 
   // I'd like to move this "static fetch" code into a shared space if we get a chance before some kind of OS/ES implementation
   @Transactional(readOnly=true)
   private def doStaticResourcesFetch (final String subset = 'all') {
     final String subscriptionAgreementId = params.get("subscriptionAgreementId")
-    final Integer perPage = (params.get("perPage") ?: "10").toInteger();
+    final Integer perPage = (params.get("perPage") ?: "10").toInteger()
     
     // Funky things will happen if you pass 0 or negative numbers...
-    final Integer page = (params.get("page") ?: "1").toInteger();
+    final Integer page = (params.get("page") ?: "1").toInteger()
 
     if (subscriptionAgreementId) {
       // Now
@@ -695,13 +715,13 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
           offset: (page - 1) * perPage
           //readOnly: true -- handled in the transaction, no?
         ]
-      );
+      )
 
       if (params.boolean('stats')) {
         final Integer count = PackageContentItem.executeQuery(
           finalQueryCount,
           queryParams,
-        )[0].toInteger();
+        )[0].toInteger()
 
         final def resultsMap = [
           pageSize: perPage,
@@ -711,15 +731,15 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
           totalRecords: count,
           total: count,
           results: results
-        ];
+        ]
         // This method writes to the web request if there is one (which of course there should be as we are in a controller method)
-        coverageService.lookupCoverageOverrides(resultsMap, "${subscriptionAgreementId}");
+        coverageService.lookupCoverageOverrides(resultsMap, "${subscriptionAgreementId}")
 
         // respond with full result set
-        return resultsMap;
+        return resultsMap
       } else {
 
-        final def resultsMap = [ results: results ];
+        final def resultsMap = [ results: results ]
         // This method writes to the web request if there is one (which of course there should be as we are in a controller method)
         coverageService.lookupCoverageOverrides(resultsMap, "${subscriptionAgreementId}")
 
@@ -730,19 +750,19 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
   }
 
   List<ErmResource> staticResources () {
-    respond doStaticResourcesFetch();
+    respond doStaticResourcesFetch()
   }
 
   List<ErmResource> staticCurrentResources () {
-    respond doStaticResourcesFetch('current');
+    respond doStaticResourcesFetch('current')
   }
 
   List<ErmResource> staticDroppedResources () {
-    respond doStaticResourcesFetch('dropped');
+    respond doStaticResourcesFetch('dropped')
   }
 
   List<ErmResource> staticFutureResources () {
-    respond doStaticResourcesFetch('future');
+    respond doStaticResourcesFetch('future')
   }
   
   private static final Map<String, List<String>> CLONE_GROUPING = [

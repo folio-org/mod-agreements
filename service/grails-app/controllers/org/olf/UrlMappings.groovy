@@ -75,8 +75,11 @@ class UrlMappings {
         }
 
         // FIXME this won't end up in the final version as a standalone endpoint
-        '/testRequestContext' (controller: "subscriptionAgreement", action: "testRequestContext", method: 'GET')
+        '/testReadRestrictedList' (controller: "subscriptionAgreement", action: "testReadRestrictedList", method: 'GET')
+        // FIXME NOT SPECIFYNG CONTROLLER COULD CAUSE US SOME ISSUES HERE
+        "/$id/testReadRestrictedSingle" (controller: "subscriptionAgreement", action: "testReadRestrictedSingle", method: 'GET')
       }
+
     }
 
     '/erm/sts' (resources: 'stringTemplate') {

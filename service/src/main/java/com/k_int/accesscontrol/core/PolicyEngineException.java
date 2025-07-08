@@ -4,6 +4,8 @@ public class PolicyEngineException extends RuntimeException {
   public static final Long GENERIC_ERROR = 0L;
   public static final Long INVALID_RESTRICTION = 1L;
   public static final Long INVALID_QUERY_TYPE = 2L;
+  public static final Long INVALID_QUERY_PARAMETERS = 3L;
+
 
   final Long code;
   final Throwable cause;
