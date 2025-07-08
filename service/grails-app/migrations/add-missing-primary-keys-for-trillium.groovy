@@ -195,22 +195,6 @@ databaseChangeLog = {
     addPrimaryKey(tableName: "subscription_agreement_document_attachment", columnNames: "subscription_agreement_docs_id", constraintName: "subscription_agreement_document_attachmentPK")
   }
 
-  // docs changelog
-  changeSet(author: "mchaib (manual)", id: "20250627-1424-026") {
-    preConditions(onFail: 'MARK_RAN') {
-      not { primaryKeyExists(tableName: 'subscription_agreement_ext_lic_doc') }
-    }
-    addPrimaryKey(tableName: "subscription_agreement_ext_lic_doc", columnNames: "saeld_sa_fk", constraintName: "subscription_agreement_ext_lic_docPK")
-  }
-
-  // suppl docs changelog
-  changeSet(author: "mchaib (manual)", id: "20250627-1424-027") {
-    preConditions(onFail: 'MARK_RAN') {
-      not { primaryKeyExists(tableName: 'subscription_agreement_supp_doc') }
-    }
-    addPrimaryKey(tableName: "subscription_agreement_supp_doc", columnNames: "sasd_sa_fk", constraintName: "subscription_agreement_supp_docPK")
-  }
-
   // initial model changelog
   changeSet(author: "mchaib (manual)", id: "20250627-1424-028") {
     preConditions(onFail: 'MARK_RAN') {
