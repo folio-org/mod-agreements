@@ -1,10 +1,15 @@
 package org.olf
 
+import com.k_int.accesscontrol.grails.AccessControlUrlMapping
 import org.olf.erm.SubscriptionAgreement
 
 class UrlMappings {
-
   static mappings = {
+    Closure buildAccessControlRoutes = AccessControlUrlMapping.buildRoutes([
+      [path: '/erm/sas', controller: 'subscriptionAgreement']
+    ])
+    buildAccessControlRoutes.delegate = delegate // Ensure we call the helper closure from the UrlMapping context
+    buildAccessControlRoutes.call()
 
     "/erm/compare" (controller: 'comparison', action: 'compare', method: 'POST')
 
@@ -76,10 +81,7 @@ class UrlMappings {
 
         // FIXME this won't end up in the final version as a standalone endpoint
         '/testReadRestrictedList' (controller: "subscriptionAgreement", action: "testReadRestrictedList", method: 'GET')
-        // FIXME NOT SPECIFYNG CONTROLLER COULD CAUSE US SOME ISSUES HERE
-        "/$id/testReadRestrictedSingle" (controller: "subscriptionAgreement", action: "testReadRestrictedSingle", method: 'GET')
       }
-
     }
 
     '/erm/sts' (resources: 'stringTemplate') {

@@ -68,23 +68,6 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
     return null // Probably not necessary, prevent fallthrough after response
   }
 
-  def testReadRestrictedSingle() {
-    List<String> policySql = getReadRestrictedSingle()
-
-    log.debug("WHAT IS POLICYSQL: ${policySql.join(', ')}")
-    boolean result = false
-
-    SubscriptionAgreement.withSession { Session sess ->
-      String bigSql = policySql.collect {"(${it})" }.join(" AND ") // JOIN all sql subqueries together here.
-
-      result = sess.createNativeQuery("SELECT ${bigSql} AS access_allowed".toString()).list()[0]
-      log.debug("WHAT IS RESULT: ${result}")
-    }
-
-    respond([canRead: result]) // FIXME should be a proper response here
-    return null // Probably not necessary, prevent fallthrough after response
-  }
-  
   @Transactional(readOnly=true)
   def publicLookup () {
     final List<String> referenceIds = params.list('referenceId')

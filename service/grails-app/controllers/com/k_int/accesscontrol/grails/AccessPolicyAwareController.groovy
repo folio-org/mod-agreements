@@ -2,6 +2,7 @@ package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
 import com.k_int.accesscontrol.core.PolicyControlledMetadata
+import com.k_int.accesscontrol.core.PolicyEngineException
 import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.PolicySubquery
 import com.k_int.accesscontrol.core.PolicySubqueryParameters
@@ -12,9 +13,11 @@ import com.k_int.okapi.OkapiClient
 import com.k_int.okapi.OkapiTenantAwareController
 import com.k_int.okapi.OkapiTenantResolver
 import grails.gorm.multitenancy.Tenants
+import org.hibernate.Session
 import org.springframework.security.core.userdetails.UserDetails
 
 import javax.servlet.http.HttpServletRequest
+import javax.transaction.Transactional
 
 // Extend OkapiTenantAwareController with PolicyEngine stuff
 class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
@@ -172,4 +175,52 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   }
 
   // TODO CLAIM and CREATE are a little different :/ Maybe the restriction type has to go all the way down to the PolicySubquery too
+
+  /* --------------------- DYNAMICALLY ASSIGNED ACCESSCONTROL METHODS --------------------- */
+  private boolean canAccess(PolicyRestriction pr) {
+    List<String> policySql = []
+    switch (pr) {
+      case PolicyRestriction.READ:
+        policySql = getReadRestrictedSingle()
+        break
+      case PolicyRestriction.UPDATE:
+        policySql = getUpdateRestrictedSingle()
+        break
+      case PolicyRestriction.DELETE:
+        policySql = getDeleteRestrictedSingle()
+        break
+      default:
+        throw new PolicyEngineException("Restriction: ${pr.toString()} is not accessible here", PolicyEngineException.INVALID_RESTRICTION)
+        break
+    }
+      log.debug("LOGDEBUG WHAT IS POLICYSQL: ${policySql.join(', ')}")
+      boolean result = false
+
+      AccessPolicyEntity.withNewSession { Session sess ->
+        String bigSql = policySql.collect {"(${it})" }.join(" AND ") // JOIN all sql subqueries together here.
+
+        result = sess.createNativeQuery("SELECT ${bigSql} AS access_allowed".toString()).list()[0]
+        log.debug("LOGDEBUG WHAT IS RESULT: ${result}")
+      }
+
+      return result
+  }
+
+  @Transactional
+  def canRead() {
+    log.debug("AccessPolicyAwareController::canRead")
+    respond([canRead: canAccess(PolicyRestriction.READ)]) // FIXME should be a proper response here
+  }
+
+  @Transactional
+  def canUpdate() {
+    log.debug("AccessPolicyAwareController::canUpdate")
+    respond([canUpdate: canAccess(PolicyRestriction.UPDATE)]) // FIXME should be a proper response here
+  }
+
+  @Transactional
+  def canDelete() {
+    log.debug("AccessPolicyAwareController::canDelete")
+    respond([canDelete: canAccess(PolicyRestriction.DELETE)]) // FIXME should be a proper response here
+  }
 }
