@@ -20,10 +20,12 @@ import java.lang.annotation.Target
 @PolicyControlled(
   resourceClass = "",      // These are required by Java annotations, but will be overridden below
   resourceIdColumn = ""
+  // ownerField = null // FIXME work in progress -- ownership is harder than it should be :/
 )
 @Retention(RetentionPolicy.RUNTIME)
 @Target([ElementType.TYPE])
 @interface GrailsPolicyControlled {
   String resourceClass()
   String resourceIdColumn()
+  String ownerField() default ""
 }

@@ -8,4 +8,5 @@ import lombok.Data;
 public class PolicyControlledMetadata {
   String resourceClass;
   String resourceIdColumn;
+  String ownerField;
 }

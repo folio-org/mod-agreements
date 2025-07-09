@@ -13,11 +13,11 @@ import com.k_int.okapi.OkapiClient
 import com.k_int.okapi.OkapiTenantAwareController
 import com.k_int.okapi.OkapiTenantResolver
 import grails.gorm.multitenancy.Tenants
+import grails.gorm.transactions.Transactional
 import org.hibernate.Session
 import org.springframework.security.core.userdetails.UserDetails
 
 import javax.servlet.http.HttpServletRequest
-import javax.transaction.Transactional
 
 // Extend OkapiTenantAwareController with PolicyEngine stuff
 class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
@@ -67,6 +67,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     return PolicyControlledMetadata.builder()
       .resourceClass(annotation.resourceClass())
       .resourceIdColumn(annotation.resourceIdColumn())
+      .ownerField(annotation.ownerField())
       .build()
   }
 
@@ -120,14 +121,14 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     return policyEngine
   }
 
-  private List<String> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId) {
+  protected List<String> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId) {
     /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
 
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 
     List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, restriction, queryType)
-    PolicyControlledMetadata policyControlledMetadataForClass = resolvePolicyControlledMetadata(resourceClass)
+    PolicyControlledMetadata policyControlledMetadataForClass = resolvePolicyControlledMetadata(resourceClass) // We should be able to get this for a class NOT from the controller too (Say, licenses for agreement?)
 
     // We build a parameter block to use on the policy subqueries. Some of these we can probably set up ahead of time...
     PolicySubqueryParameters params = PolicySubqueryParameters
@@ -137,7 +138,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
       .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
       .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
-      .resourceAlias("{alias}") // FIXME this is a hibernate thing... not sure if we need to deal with this right now.
+      .resourceAlias("{alias}") // FIXME this is a hibernate thing... not sure if we need to deal with this right now. Not sure how this will interract with "owner" type queries
       .resourceIdColumnName(policyControlledMetadataForClass.resourceIdColumn)
       .resourceId(resourceId) // This might be null (For LIST type queries)
       .resourceClass(policyControlledMetadataForClass.resourceClass)
@@ -149,50 +150,35 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   }
 
 
-  // IMPORTANT this assumes that "id" is the parameter available for the UUID in the SINGLE cases
-  List<String> getReadRestrictedList() {
-    return getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null)
-  }
-
-  List<String> getReadRestrictedSingle() {
-    return getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.SINGLE, (String) params.id)
-  }
-
-  List<String> getUpdateRestrictedList() {
-    return getPolicySql(PolicyRestriction.UPDATE, AccessPolicyQueryType.LIST, null)
-  }
-
-  List<String> getUpdateRestrictedSingle() {
-    return getPolicySql(PolicyRestriction.UPDATE, AccessPolicyQueryType.SINGLE, (String) params.id)
-  }
-
-  List<String> getDeleteRestrictedList() {
-    return getPolicySql(PolicyRestriction.DELETE, AccessPolicyQueryType.LIST, null)
-  }
-
-  List<String> getDeleteRestrictedSingle() {
-    return getPolicySql(PolicyRestriction.DELETE, AccessPolicyQueryType.SINGLE, (String) params.id)
-  }
-
   // TODO CLAIM and CREATE are a little different :/ Maybe the restriction type has to go all the way down to the PolicySubquery too
-
   /* --------------------- DYNAMICALLY ASSIGNED ACCESSCONTROL METHODS --------------------- */
-  private boolean canAccess(PolicyRestriction pr) {
-    List<String> policySql = []
-    switch (pr) {
-      case PolicyRestriction.READ:
-        policySql = getReadRestrictedSingle()
-        break
-      case PolicyRestriction.UPDATE:
-        policySql = getUpdateRestrictedSingle()
-        break
-      case PolicyRestriction.DELETE:
-        policySql = getDeleteRestrictedSingle()
-        break
-      default:
+  // This is SINGLE only, canRead, canUpdate, canDelete.
+  protected boolean canAccess(PolicyRestriction pr) {
+    AccessPolicyEntity.withNewSession {
+      // Handle OWNER logic
+      // FIXME I think there's a LOT left to do here on ownership, especially if there's an ownership chain :/
+      PolicyControlledMetadata policyControlledMetadataForClass = resolvePolicyControlledMetadata(resourceClass)
+      // We should be able to get this for a class NOT from the controller too (Say, licenses for agreement?)
+
+      String queryResourceId = (String) params.id
+      String ownerField = policyControlledMetadataForClass.getOwnerField()
+      if (ownerField != "") {
+        T resource = queryForResource(params.id)
+        queryResourceId = (String) resource.getAt(ownerField)?.id // FIXME this seems v fragile
+      }
+
+      List<String> policySql = []
+      if (
+        !pr.equals(PolicyRestriction.READ) &&
+          !pr.equals(PolicyRestriction.UPDATE) &&
+          !pr.equals(PolicyRestriction.DELETE)
+      ) {
         throw new PolicyEngineException("Restriction: ${pr.toString()} is not accessible here", PolicyEngineException.INVALID_RESTRICTION)
-        break
-    }
+      }
+
+      // We have a valid restriction, lets get the policySql
+      policySql = getPolicySql(pr, AccessPolicyQueryType.SINGLE, queryResourceId)
+
       log.trace("AccessControl generated PolicySql: ${policySql.join(', ')}")
       boolean result = false
 
@@ -203,6 +189,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       }
 
       return result
+    }
   }
 
   @Transactional

@@ -1,5 +1,7 @@
 package org.olf.erm
 
+import com.k_int.accesscontrol.grails.GrailsPolicyControlled
+
 import java.time.LocalDate
 
 import javax.persistence.Transient
@@ -30,6 +32,11 @@ import groovy.util.logging.Slf4j
  *
  */
 @Slf4j
+@GrailsPolicyControlled(
+  resourceClass = "org.olf.erm.SubscriptionAgreement", // Control via the OWNER SubscriptionAgreement, not the Entitlement.
+  resourceIdColumn = "ent_owner_fk",
+  ownerField = 'owner'
+)
 public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitlement> {
   public static final Class<? extends ErmResource>[] ALLOWED_RESOURCES = [Pkg, PackageContentItem, PlatformTitleInstance] as Class[]
   
