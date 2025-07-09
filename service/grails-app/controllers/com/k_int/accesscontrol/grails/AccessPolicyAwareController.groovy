@@ -8,12 +8,14 @@ import com.k_int.accesscontrol.core.PolicySubquery
 import com.k_int.accesscontrol.core.PolicySubqueryParameters
 import com.k_int.accesscontrol.main.PolicyEngine
 import com.k_int.accesscontrol.main.PolicyEngineConfiguration
+import com.k_int.accesscontrol.grails.extensions.MultipleAliasSQLCriterion
 import com.k_int.folio.FolioClientConfig
 import com.k_int.okapi.OkapiClient
 import com.k_int.okapi.OkapiTenantAwareController
 import com.k_int.okapi.OkapiTenantResolver
 import grails.gorm.multitenancy.Tenants
 import grails.gorm.transactions.Transactional
+import org.hibernate.Criteria
 import org.hibernate.Session
 import org.springframework.security.core.userdetails.UserDetails
 
@@ -25,13 +27,60 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   OkapiClient okapiClient
   final Class<T> resourceClass
 
-  private static void ensurePolicyControlled(Class<?> clazz) {
-    if (!clazz.isAnnotationPresent(GrailsPolicyControlled)) {
+  final PolicyControlledMetadata policyControlledMetadata
+
+  // Method to BOTH find out the ownership pattern for our SQL and also ensure PolicyControlled makes sense
+  private static PolicyControlledMetadata ensurePolicyControlled(Class<?> clazz) {
+
+    GrailsPolicyControlled annotation = clazz.getAnnotation(GrailsPolicyControlled)
+
+    if (!annotation) {
       throw new IllegalArgumentException(
         "AccessPolicyAwareController can only be used for @GrailsPolicyControlled classes. " +
           "${clazz.name} is not annotated."
       )
     }
+
+    // Now parse ownership tree
+    // Validate ownership chain
+    // FIXME We do this parsing in a couple of places,
+    //  should probably store the important parts here and use later
+    int ownerLevel = 0 // Track how deep we've gotten
+    List<Map> aliases = new ArrayList<>()
+
+    String ownerField = annotation.ownerField()
+    Class<?> parseClazz = annotation.ownerClass()
+    Set<Class<?>> seen = new HashSet<>()
+    PolicyControlledMetadata tempPCM = resolvePolicyControlledMetadata(clazz)
+
+    while (parseClazz != Object.class) {
+      if (!seen.add(parseClazz)) {
+        throw new IllegalArgumentException("Cycle detected in ownerClass declarations involving ${parseClazz.name}")
+      }
+
+      log.trace("PolicyControlledMetadata: Checking policyControlled on owner class: ${parseClazz.getName()}")
+      GrailsPolicyControlled ownerAnnotation = parseClazz.getAnnotation(GrailsPolicyControlled)
+      if (!ownerAnnotation) {
+        throw new IllegalArgumentException("Missing @GrailsPolicyControlled on owner class ${parseClazz.getName()}")
+      }
+
+      // Now we know we have a valid owner, track information about it
+      aliases.push([ownerField: ownerField, name: "owner_alias_${ownerLevel}".toString()])
+      ownerField = ownerAnnotation.ownerField()
+      tempPCM = resolvePolicyControlledMetadata(parseClazz)
+      parseClazz = ownerAnnotation.ownerClass()
+      ownerLevel += 1
+    }
+
+    // FIXME can we improve this?
+    // IF we have an owner, we want to make sure that the owner field
+
+
+    return PolicyControlledMetadata.builder()
+      .aliases(aliases)
+      .resourceClass(tempPCM.resourceClass)
+      .resourceIdColumn(tempPCM.resourceIdColumn)
+      .build()
   }
 
   private static String[] convertGrailsHeadersToStringArray(HttpServletRequest req) {
@@ -50,18 +99,17 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   AccessPolicyAwareController(Class<T> resource) {
     super(resource)
     resourceClass = resource
-    ensurePolicyControlled(resource)
+    policyControlledMetadata = ensurePolicyControlled(resource)
   }
 
   AccessPolicyAwareController(Class<T> resource, boolean readOnly) {
     super(resource, readOnly)
     resourceClass = resource
-    ensurePolicyControlled(resource)
+    policyControlledMetadata = ensurePolicyControlled(resource)
   }
 
   protected static PolicyControlledMetadata resolvePolicyControlledMetadata(Class<?> clazz) {
-    def annotation = clazz.getAnnotation(GrailsPolicyControlled)
-
+    GrailsPolicyControlled annotation = clazz.getAnnotation(GrailsPolicyControlled)
     // This _shouldn't_ be possible thanks to the ensurePolicyControlled method above in the constructor
     if (!annotation) throw new IllegalArgumentException("Missing @GrailsPolicyControlled on ${clazz.name}")
 
@@ -69,6 +117,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       .resourceClass(annotation.resourceClass())
       .resourceIdColumn(annotation.resourceIdColumn())
       .ownerField(annotation.ownerField())
+      .ownerClass(annotation.ownerClass())
       .build()
   }
 
@@ -129,7 +178,11 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 
     List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, restriction, queryType)
-    PolicyControlledMetadata policyControlledMetadataForClass = resolvePolicyControlledMetadata(resourceClass) // We should be able to get this for a class NOT from the controller too (Say, licenses for agreement?)
+
+    String resourceAlias = '{alias}'
+    if (policyControlledMetadata.aliases.size() != 0) {
+      resourceAlias = policyControlledMetadata.aliases[policyControlledMetadata.aliases.size() - 1].name
+    }
 
     // We build a parameter block to use on the policy subqueries. Some of these we can probably set up ahead of time...
     PolicySubqueryParameters params = PolicySubqueryParameters
@@ -139,10 +192,10 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
       .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
       .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
-      .resourceAlias("{alias}") // FIXME this is a hibernate thing... not sure if we need to deal with this right now. Not sure how this will interract with "owner" type queries
-      .resourceIdColumnName(policyControlledMetadataForClass.resourceIdColumn)
+      .resourceAlias(resourceAlias) // FIXME this is a hibernate thing... not sure if we need to deal with this right now. Not sure how this will interract with "owner" type queries
+      .resourceIdColumnName(policyControlledMetadata.resourceIdColumn)
       .resourceId(resourceId) // This might be null (For LIST type queries)
-      .resourceClass(policyControlledMetadataForClass.resourceClass)
+      .resourceClass(policyControlledMetadata.resourceClass)
       .build()
 
     log.trace("PolicySubqueryParameters configured: ${params}")
@@ -216,13 +269,21 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   @Transactional
   def readRestrictedList() {
     AccessPolicyEntity.withNewSession {
-      List<String> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null);
+      List<String> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null)
+      log.trace("AccessControl generated PolicySql: ${policySql.join(', ')}")
 
       long beforeLookup = System.nanoTime()
       respond doTheLookup(resourceClass) {
-        policySql.each {psql -> {
-          sqlRestriction(psql)
-        }}
+
+        MultipleAliasSQLCriterion.SubCriteriaAliasContainer[] subCriteria = policyControlledMetadata.aliases.collect { aliasMap ->
+          Criteria aliasCriteria = criteria.createCriteria(aliasMap.ownerField, aliasMap.name)
+          return new MultipleAliasSQLCriterion.SubCriteriaAliasContainer(aliasMap.name, aliasCriteria)
+        } as MultipleAliasSQLCriterion.SubCriteriaAliasContainer[]
+
+
+        policySql.each {psql ->
+          criteria.add(new MultipleAliasSQLCriterion(psql, subCriteria))
+        }
       }
 
       long afterLookup = System.nanoTime()

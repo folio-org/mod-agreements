@@ -25,7 +25,11 @@ import java.lang.annotation.Target
 @Retention(RetentionPolicy.RUNTIME)
 @Target([ElementType.TYPE])
 @interface GrailsPolicyControlled {
-  String resourceClass()
-  String resourceIdColumn()
+  String resourceClass() default ""
+  String resourceIdColumn() default ""
+
+
+  // Allow us to roam up an ownership tree?
   String ownerField() default ""
+  Class ownerClass() default Object.class
 }
