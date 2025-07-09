@@ -176,7 +176,7 @@ databaseChangeLog = {
     preConditions(onFail: 'MARK_RAN') {
       not { primaryKeyExists(tableName: 'string_template_scopes') }
     }
-    addPrimaryKey(tableName: "string_template_scopes", columnNames: "string_template_id", constraintName: "string_template_scopesPK")
+    addPrimaryKey(tableName: "string_template_scopes", columnNames: "id_scope", constraintName: "string_template_scopesPK")
   }
 
   //5-5
