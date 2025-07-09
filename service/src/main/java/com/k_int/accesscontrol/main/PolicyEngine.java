@@ -31,9 +31,11 @@ public class PolicyEngine {
    *
    * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
    * @param pr The policy restriction which we want to filter by
+   * @param queryType Whether to return boolean queries for single use or filter queries for all records
    * @return A list of PolicySubqueries, either for boolean restriction or for filtering.
+   * @throws PolicyEngineException -- the understanding is that within a request context this should be caught and return a 500
    */
-  public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
+  public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType) throws PolicyEngineException {
     List<PolicySubquery> policySubqueries = new ArrayList<>();
 
     if (pr.equals(PolicyRestriction.CLAIM)) {
@@ -42,8 +44,7 @@ public class PolicyEngine {
 
     if (config.acquisitionUnits) {
       AcquisitionUnitPolicyEngineImplementor acqUnitPolicyEngine = new AcquisitionUnitPolicyEngineImplementor(config);
-      // TODO do we want to catch the PolicyEngineException here or throw and 500? -- likely the latter
-      policySubqueries.addAll(acqUnitPolicyEngine.getPolicySubqueries(headers, pr, AccessPolicyQueryType.LIST));
+      policySubqueries.addAll(acqUnitPolicyEngine.getPolicySubqueries(headers, pr, queryType));
     }
 
     return policySubqueries;

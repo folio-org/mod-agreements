@@ -99,14 +99,15 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       .userPassword(grailsApplication.config.getProperty('accesscontrol.folio.userpassword', String))
       .build()
 
+    // Keep logs to "trace" and ensure we only log INFO for prod
+    log.trace("FolioClientConfig configured baseOkapiUri: ${folioClientConfig.baseOkapiUri}")
+    log.trace("FolioClientConfig configured tenantName: ${folioClientConfig.tenantName}")
+    log.trace("FolioClientConfig configured patronId: ${folioClientConfig.patronId}")
+    log.trace("FolioClientConfig configured userLogin: ${folioClientConfig.userLogin}")
+    log.trace("FolioClientConfig configured userPassword: ${folioClientConfig.userPassword}")
 
-    log.info("LOGDEBUG BASE OKAPI URI: ${folioClientConfig.baseOkapiUri}")
-    log.info("LOGDEBUG TENANT ID: ${folioClientConfig.tenantName}")
-    log.info("LOGDEBUG PATRON ID: ${folioClientConfig.patronId}")
-    log.info("LOGDEBUG USER LOGIN: ${folioClientConfig.userLogin}")
-    log.info("LOGDEBUG USER PASSWORD: ${folioClientConfig.userPassword}")
-
-    // FIXME This being spun up per request doesn't seem amazingly efficient
+    // TODO This being spun up per request doesn't seem amazingly efficient -- but equally
+    //  it's really just a POJO and each request could be from a different tenant so maybe it's fine
     PolicyEngine policyEngine = new PolicyEngine(
       PolicyEngineConfiguration
         .builder()
@@ -119,19 +120,18 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     return policyEngine
   }
 
-  private List<String> getPolicySql(AccessPolicyQueryType type, PolicyRestriction restriction, String resourceId) {
+  private List<String> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId) {
     /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
 
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 
-    List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, restriction)
+    List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, restriction, queryType)
     PolicyControlledMetadata policyControlledMetadataForClass = resolvePolicyControlledMetadata(resourceClass)
 
     // We build a parameter block to use on the policy subqueries. Some of these we can probably set up ahead of time...
     PolicySubqueryParameters params = PolicySubqueryParameters
       .builder()
-      .type(type)
       .accessPolicyTableName(AccessPolicyEntity.TABLE_NAME)
       .accessPolicyTypeColumnName(AccessPolicyEntity.TYPE_COLUMN)
       .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
@@ -143,7 +143,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       .resourceClass(policyControlledMetadataForClass.resourceClass)
       .build()
 
-    log.info("LOGDEBUG PARAMS: ${params}")
+    log.trace("PolicySubqueryParameters configured: ${params}")
 
     return policySubqueries.collect { psq -> psq.getSql(params)}
   }
@@ -151,27 +151,27 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
 
   // IMPORTANT this assumes that "id" is the parameter available for the UUID in the SINGLE cases
   List<String> getReadRestrictedList() {
-    return getPolicySql(AccessPolicyQueryType.LIST, PolicyRestriction.READ, null)
+    return getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null)
   }
 
   List<String> getReadRestrictedSingle() {
-    return getPolicySql(AccessPolicyQueryType.SINGLE, PolicyRestriction.READ, params.id)
+    return getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.SINGLE, (String) params.id)
   }
 
   List<String> getUpdateRestrictedList() {
-    return getPolicySql(AccessPolicyQueryType.LIST, PolicyRestriction.UPDATE, null)
+    return getPolicySql(PolicyRestriction.UPDATE, AccessPolicyQueryType.LIST, null)
   }
 
   List<String> getUpdateRestrictedSingle() {
-    return getPolicySql(AccessPolicyQueryType.SINGLE, PolicyRestriction.UPDATE, params.id)
+    return getPolicySql(PolicyRestriction.UPDATE, AccessPolicyQueryType.SINGLE, (String) params.id)
   }
 
   List<String> getDeleteRestrictedList() {
-    return getPolicySql(AccessPolicyQueryType.LIST, PolicyRestriction.DELETE, null)
+    return getPolicySql(PolicyRestriction.DELETE, AccessPolicyQueryType.LIST, null)
   }
 
   List<String> getDeleteRestrictedSingle() {
-    return getPolicySql(AccessPolicyQueryType.SINGLE, PolicyRestriction.DELETE, params.id)
+    return getPolicySql(PolicyRestriction.DELETE, AccessPolicyQueryType.SINGLE, (String) params.id)
   }
 
   // TODO CLAIM and CREATE are a little different :/ Maybe the restriction type has to go all the way down to the PolicySubquery too
@@ -193,14 +193,13 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
         throw new PolicyEngineException("Restriction: ${pr.toString()} is not accessible here", PolicyEngineException.INVALID_RESTRICTION)
         break
     }
-      log.debug("LOGDEBUG WHAT IS POLICYSQL: ${policySql.join(', ')}")
+      log.trace("AccessControl generated PolicySql: ${policySql.join(', ')}")
       boolean result = false
 
       AccessPolicyEntity.withNewSession { Session sess ->
         String bigSql = policySql.collect {"(${it})" }.join(" AND ") // JOIN all sql subqueries together here.
 
         result = sess.createNativeQuery("SELECT ${bigSql} AS access_allowed".toString()).list()[0]
-        log.debug("LOGDEBUG WHAT IS RESULT: ${result}")
       }
 
       return result
@@ -208,19 +207,19 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
 
   @Transactional
   def canRead() {
-    log.debug("AccessPolicyAwareController::canRead")
+    log.trace("AccessPolicyAwareController::canRead")
     respond([canRead: canAccess(PolicyRestriction.READ)]) // FIXME should be a proper response here
   }
 
   @Transactional
   def canUpdate() {
-    log.debug("AccessPolicyAwareController::canUpdate")
+    log.trace("AccessPolicyAwareController::canUpdate")
     respond([canUpdate: canAccess(PolicyRestriction.UPDATE)]) // FIXME should be a proper response here
   }
 
   @Transactional
   def canDelete() {
-    log.debug("AccessPolicyAwareController::canDelete")
+    log.trace("AccessPolicyAwareController::canDelete")
     respond([canDelete: canAccess(PolicyRestriction.DELETE)]) // FIXME should be a proper response here
   }
 }

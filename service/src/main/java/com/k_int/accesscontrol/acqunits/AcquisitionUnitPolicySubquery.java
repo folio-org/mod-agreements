@@ -24,6 +24,8 @@ import lombok.Data;
 @Builder
 public class AcquisitionUnitPolicySubquery implements PolicySubquery {
   UserAcquisitionUnits userAcquisitionUnits;
+  // The subquery must have a queryType. In some cases this will impact the SQL, but not for ACQ units
+  AccessPolicyQueryType queryType;
 
     /* Original query was to find situations where
      *
@@ -83,9 +85,9 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
     if (memberRestrictiveUnits.isEmpty()) memberRestrictiveUnits = "'this-is-a-made-up-impossible-value'";
     if (nonMemberRestrictiveUnits.isEmpty()) nonMemberRestrictiveUnits = "'this-is-a-made-up-impossible-value'";
 
-    // If parameters.type == LIST then we need #RESOURCEIDMATCH = {alias}.id (for hibernate), IF TYPE SINGLE THEN #RESOURCEIDMATCH = <UUID of resource>
+    // If getQueryType() == LIST then we need #RESOURCEIDMATCH = {alias}.id (for hibernate), IF TYPE SINGLE THEN #RESOURCEIDMATCH = <UUID of resource>
     String resourceIdMatch = parameters.getResourceAlias() + "." + parameters.getResourceIdColumnName();
-    if (parameters.getType() == AccessPolicyQueryType.SINGLE) {
+    if (getQueryType() == AccessPolicyQueryType.SINGLE) {
       if (parameters.getResourceId() == null) {
         throw new PolicyEngineException("PolicySubqueryParameters for AccessPolicyQueryType.SINGLE must include resourceId", PolicyEngineException.INVALID_QUERY_PARAMETERS);
       }

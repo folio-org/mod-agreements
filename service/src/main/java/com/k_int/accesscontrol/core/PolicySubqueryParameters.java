@@ -25,7 +25,4 @@ public class PolicySubqueryParameters {
   // Allows individual id matching
   @Nullable
   String resourceId;
-
-  // Sometimes subquery getSql will differ drastically depending on LIST vs SINGLE queries
-  AccessPolicyQueryType type;
 }

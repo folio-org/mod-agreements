@@ -29,11 +29,6 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
   public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType) {
     List<PolicySubquery> policySubqueries = new ArrayList<>();
 
-    // EXAMPLE if we can ONLY perform one-at-a-time or LIST subqueries, then we can enforce that like so
-//    if (queryType.equals(AccessPolicyQueryType.SINGLE)) {
-//      throw new PolicyEngineException("AccessPolicyQueryType.SINGLE is not yet implemented for AcquisitionUnits", PolicyEngineException.INVALID_QUERY_TYPE);
-//    }
-
     try {
       long beforeLogin = System.nanoTime();
       /* ------------------------------- LOGIN LOGIC ------------------------------- */
@@ -49,7 +44,7 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
 
       /* ------------------------------- END LOGIN LOGIC ------------------------------- */
       long afterLogin = System.nanoTime();
-      log.debug("LOGDEBUG login time: {}", Duration.ofNanos(afterLogin - beforeLogin));
+      log.trace("AcquisitionUnitPolicyEngineImplementor login time: {}", Duration.ofNanos(afterLogin - beforeLogin));
 
       long beforePolicyLookup = System.nanoTime();
       // Do the acquisition unit logic
@@ -58,20 +53,19 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
       UserAcquisitionUnits temporaryUserAcquisitionUnits = acqClient.getUserAcquisitionUnits(finalHeaders, acqRestriction);
 
       long afterPolicyLookup = System.nanoTime();
-      log.debug("LOGDEBUG policy lookup time: {}", Duration.ofNanos(afterPolicyLookup - beforePolicyLookup));
+      log.trace("AcquisitionUnitPolicyEngineImplementor policy lookup time: {}", Duration.ofNanos(afterPolicyLookup - beforePolicyLookup));
 
-      log.info("LOGDEBUG ({}) MemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits());
-      log.info("LOGDEBUG ({}) NonMemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits());
+//      log.trace("LOGDEBUG ({}) MemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits());
+//      log.trace("LOGDEBUG ({}) NonMemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits());
+//
+//      log.trace("LOGDEBUG ({}) MemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits().size());
+//      log.trace("LOGDEBUG ({}) NonMemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits().size());
 
-      log.info("LOGDEBUG ({}) MemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits().size());
-      log.info("LOGDEBUG ({}) NonMemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits().size());
-
-
-      // FIXME should we instead be adding Restriction type here and then simply reading directly? Boundaries are hard
       policySubqueries.add(
         AcquisitionUnitPolicySubquery
           .builder()
           .userAcquisitionUnits(temporaryUserAcquisitionUnits)
+          .queryType(queryType) // Ensure the subqueries are for the type at hand (LIST vs SINGLE)
           .build()
       );
 

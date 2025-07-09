@@ -11,14 +11,17 @@
     </encoder>
   </appender>
 
-  <!-- FIXME DO NOT MERGE THESE TWO -->
+  <!-- ACCESS CONTROL -->
+  <!-- TODO Decisions should be made about the levels for these -->
   <logger name="com.k_int.folio">
-    <level value="DEBUG" />
+    <level value="INFO" />
   </logger>
 
   <logger name="com.k_int.accesscontrol">
-    <level value="DEBUG" />
+    <level value="INFO" />
   </logger>
+  <!-- /ACCESS CONTROL -->
+
 
   <logger name="org.hibernate.orm.deprecation">
     <level value="ERROR" />
