@@ -284,6 +284,8 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
         policySql.each {psql ->
           criteria.add(new MultipleAliasSQLCriterion(psql, subCriteria))
         }
+        // Ensure we return cirteria at the bottom?
+        return criteria
       }
 
       long afterLookup = System.nanoTime()

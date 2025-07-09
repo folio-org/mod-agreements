@@ -1,14 +1,17 @@
 package com.k_int.accesscontrol.grails.extensions;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.hibernate.Criteria;
 import org.hibernate.HibernateException;
 import org.hibernate.criterion.CriteriaQuery;
 import org.hibernate.criterion.SQLCriterion;
+import org.hibernate.internal.CriteriaImpl;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.collections.ArrayHelper;
 
 // NOTE -- This is an unfortunate side effect of us needing to continue to use the deprecated HibernateCriteriaBuilder for our
+@Slf4j
 public class MultipleAliasSQLCriterion extends SQLCriterion
 {
   /**
@@ -70,19 +73,19 @@ public class MultipleAliasSQLCriterion extends SQLCriterion
   }
 
   @Override
-  public String toSqlString(Criteria criteria, CriteriaQuery criteriaQuery) throws HibernateException
-  {
-    // First replace the alias of the base table {alias}
+  public String toSqlString(Criteria criteria, CriteriaQuery criteriaQuery) throws HibernateException {
     String sql = super.toSqlString(criteria, criteriaQuery);
 
-    if (!ArrayUtils.isEmpty(this.subCriteriaAliases))
-    {
-      for (final SubCriteriaAliasContainer subCriteriaAlias : this.subCriteriaAliases)
-      {
-        sql = StringHelper.replace(sql, subCriteriaAlias.getAlias(), criteriaQuery.getSQLAlias(subCriteriaAlias.getSubCriteria()));
+    if (!ArrayUtils.isEmpty(this.subCriteriaAliases)) {
+      for (final SubCriteriaAliasContainer subCriteriaAlias : this.subCriteriaAliases) {
+      String alias = subCriteriaAlias.alias;
+        // FIXME Cheat the system by appending "." to the end of alias. This will force it to lookup by alias name
+        //  not just the criteria which will have a different hash if totalCount is called
+        String actualAlias = criteriaQuery.getSQLAlias(subCriteriaAlias.getSubCriteria(), alias + ".");
+        sql = StringHelper.replace(sql, subCriteriaAlias.getAlias(), actualAlias);
       }
     }
-
     return sql;
   }
+
 }
