@@ -18,6 +18,7 @@ import org.hibernate.Session
 import org.springframework.security.core.userdetails.UserDetails
 
 import javax.servlet.http.HttpServletRequest
+import java.time.Duration
 
 // Extend OkapiTenantAwareController with PolicyEngine stuff
 class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
@@ -208,5 +209,24 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   def canDelete() {
     log.trace("AccessPolicyAwareController::canDelete")
     respond([canDelete: canAccess(PolicyRestriction.DELETE)]) // FIXME should be a proper response here
+  }
+
+  // FIXME this will need to go on the ACTUAL lookup etc etc...
+  //  For now it can be a test method
+  @Transactional
+  def readRestrictedList() {
+    AccessPolicyEntity.withNewSession {
+      List<String> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null);
+
+      long beforeLookup = System.nanoTime()
+      respond doTheLookup(resourceClass) {
+        policySql.each {psql -> {
+          sqlRestriction(psql)
+        }}
+      }
+
+      long afterLookup = System.nanoTime()
+      log.trace("AccessPolicyAwareController::testReadRestrictedList query time: {}", Duration.ofNanos(afterLookup - beforeLookup))
+    }
   }
 }

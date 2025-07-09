@@ -1,11 +1,6 @@
 package org.olf
 
 import com.k_int.accesscontrol.grails.AccessPolicyAwareController
-import groovy.sql.Sql
-import org.hibernate.Session
-
-import java.sql.Connection
-import java.time.Duration
 import java.time.LocalDate
 import org.grails.web.json.JSONObject
 import org.hibernate.sql.JoinType
@@ -14,9 +9,6 @@ import org.olf.kb.ErmResource
 import org.olf.kb.PackageContentItem
 import org.olf.kb.Pkg
 import org.olf.kb.PlatformTitleInstance
-import org.olf.erm.Entitlement
-
-import com.k_int.okapi.OkapiTenantAwareController
 
 import grails.gorm.DetachedCriteria
 import grails.gorm.multitenancy.CurrentTenant
@@ -49,23 +41,6 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
   @Transactional(readOnly=true)
   def show() {
     super.show()
-  }
-
-  // FIXME this will need to go on the ACTUAL lookup etc etc... potentially done at the AccessPolicyAwareController level.
-  //  For now it can be a test method
-  def testReadRestrictedList() {
-    List<String> policySql = getReadRestrictedList()
-
-    long beforeLookup = System.nanoTime()
-    respond doTheLookup(SubscriptionAgreement) {
-      policySql.each {psql -> {
-        sqlRestriction(psql)
-      }}
-    }
-
-    long afterLookup = System.nanoTime()
-    log.debug("LOGDEBUG query time: {}", Duration.ofNanos(afterLookup - beforeLookup))
-    return null // Probably not necessary, prevent fallthrough after response
   }
 
   @Transactional(readOnly=true)

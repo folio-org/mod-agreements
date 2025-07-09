@@ -10,6 +10,9 @@ class AccessControlUrlMapping {
         "${path}/$id/canRead"(controller: controller, action: "canRead", method: 'GET')
         "${path}/$id/canUpdate"(controller: controller, action: "canUpdate", method: 'GET')
         "${path}/$id/canDelete"(controller: controller, action: "canDelete", method: 'GET')
+
+        // FIXME this won't end up in the final work, just here as a test to compare/contract with normal read.
+        "${path}/testReadRestrictedList" (controller: controller, action: "readRestrictedList", method: 'GET')
       }
     }
   }
