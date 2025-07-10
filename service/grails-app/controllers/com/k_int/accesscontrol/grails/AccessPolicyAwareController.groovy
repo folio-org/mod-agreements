@@ -9,11 +9,14 @@ import com.k_int.accesscontrol.core.PolicySubquery
 import com.k_int.accesscontrol.core.PolicySubqueryParameters
 import com.k_int.accesscontrol.main.PolicyEngine
 import com.k_int.accesscontrol.main.PolicyEngineConfiguration
-import com.k_int.accesscontrol.grails.extensions.MultipleAliasSQLCriterion
+import com.k_int.accesscontrol.grails.criteria.MultipleAliasSQLCriterion
+
 import com.k_int.folio.FolioClientConfig
+
 import com.k_int.okapi.OkapiClient
 import com.k_int.okapi.OkapiTenantAwareController
 import com.k_int.okapi.OkapiTenantResolver
+
 import grails.gorm.multitenancy.Tenants
 import grails.gorm.transactions.Transactional
 import org.hibernate.Criteria
@@ -23,13 +26,34 @@ import org.springframework.security.core.userdetails.UserDetails
 import javax.servlet.http.HttpServletRequest
 import java.time.Duration
 
-// Extend OkapiTenantAwareController with PolicyEngine stuff
+/**
+ * Extends com.k_int.okapi.OkapiTenantAwareController to incorporate access policy enforcement for resources.
+ * This controller provides methods to check read, update, and delete permissions based on defined
+ * access policies, including handling complex ownership chains and dynamic policy evaluation.
+ *
+ * @param <T> The type of the resource entity managed by this controller.
+ */
 class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
+  /**
+   * The Okapi client used for interacting with the FOLIO Okapi gateway.
+   */
   OkapiClient okapiClient
+  /**
+   * The Class object representing the resource entity type managed by this controller.
+   */
   final Class<T> resourceClass
 
+  /**
+   * Manages policy-controlled metadata and ownership chains for the resource.
+   */
   final PolicyControlledManager policyControlledManager
 
+  /**
+   * Converts HTTP request headers into a simple String array of key-value pairs.
+   * This is used to pass headers to the policy engine for context.
+   * @param req The HttpServletRequest object.
+   * @return A String array where elements alternate between header names and header values.
+   */
   private static String[] convertGrailsHeadersToStringArray(HttpServletRequest req) {
     List<String> result = new ArrayList<>()
 
@@ -43,18 +67,36 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     return result as String[]
   }
 
+  /**
+   * Constructs an {@code AccessPolicyAwareController} for a given resource class.
+   * @param resource The Class object of the resource entity.
+   */
   AccessPolicyAwareController(Class<T> resource) {
     super(resource)
     this.resourceClass = resource
     this.policyControlledManager = new PolicyControlledManager(resource)
   }
 
+  /**
+   * Constructs an {@code AccessPolicyAwareController} for a given resource class,
+   * with an option to mark it as read-only.
+   * @param resource The Class object of the resource entity.
+   * @param readOnly A boolean indicating if the controller should operate in read-only mode.
+   */
   AccessPolicyAwareController(Class<T> resource, boolean readOnly) {
     super(resource, readOnly)
     this.resourceClass = resource
     this.policyControlledManager = new PolicyControlledManager(resource)
   }
 
+  /**
+   * Resolves the ID of the ultimate owner (root) in an ownership chain, starting from a leaf resource ID.
+   * If no ownership chain is configured, the leaf resource itself is considered the root.
+   * This method dynamically constructs an HQL query to traverse the chain and fetch the root ID.
+   *
+   * @param leafResourceId The ID of the leaf resource for which to find the root owner.
+   * @return The ID of the root owner, or the {@code leafResourceId} if no owners are configured or resolution fails.
+   */
   protected String resolveRootOwnerId(String leafResourceId) {
     if (!policyControlledManager.hasOwners()) {
       // If there are no configured owners, the leaf resource itself is the "root" for policy purposes
@@ -86,10 +128,15 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     return resolvedRootId ?: leafResourceId
   }
 
+  /**
+   * Configures and returns a {@link PolicyEngine} instance.
+   * This method determines the FOLIO client configuration based on environment variables,
+   * Grails application configuration, or falls back to internal Okapi client details.
+   * A new PolicyEngine is spun up per request, which is a consideration for efficiency.
+   *
+   * @return A configured {@link PolicyEngine} instance.
+   */
   protected PolicyEngine getPolicyEngine() {
-    // FIXME okapiBaseUri/tenantName/patronId should be central in any controller doing AccessControl
-    // And obviously shouldn't be hardcoded
-
     // This should work regardless of whether we're in a proper FOLIO space or not now.
     // I'm not convinced this is the best way to do it but hey ho
     UserDetails patron = getPatron()
@@ -136,6 +183,17 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     return policyEngine
   }
 
+  /**
+   * Generates a list of SQL fragments (policy subqueries) based on a given policy restriction,
+   * query type, and the resource ID to which the policy applies.
+   * This method communicates with the {@link PolicyEngine} to retrieve the policy definitions
+   * and formats them into SQL suitable for database queries.
+   *
+   * @param restriction The type of policy restriction (e.g., READ, UPDATE, DELETE).
+   * @param queryType The type of query (e.g., SINGLE for individual resource checks, LIST for collection checks).
+   * @param resourceId The ID of the resource to apply the policy to. Can be {@code null} for LIST queries.
+   * @return A list of SQL string fragments representing the access policies.
+   */
   protected List<String> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId) {
     /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
 
@@ -172,15 +230,21 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
 
   // TODO CLAIM and CREATE are a little different :/ Maybe the restriction type has to go all the way down to the PolicySubquery too
   /* --------------------- DYNAMICALLY ASSIGNED ACCESSCONTROL METHODS --------------------- */
-  // This is SINGLE only, canRead, canUpdate, canDelete.
+  /**
+   * Determines if a single resource can be accessed for a given {@link PolicyRestriction}.
+   * This method resolves the root owner ID (if applicable), retrieves policy SQL fragments,
+   * and executes a native SQL query combining these fragments to check access.
+   *
+   * @param pr The {@link PolicyRestriction} to check (READ, UPDATE, or DELETE).
+   * @return {@code true} if access is allowed according to the policies, {@code false} otherwise.
+   */
   protected boolean canAccess(PolicyRestriction pr) {
-    AccessPolicyEntity.withNewSession {
+    AccessPolicyEntity.withNewSession { Session sess ->
       // Handle OWNER logic
 
       // If there are NO owners, we can use the queryResourceId from the request itself
       String queryResourceId = resolveRootOwnerId(params.id)
 
-      List<String> policySqlFragments = []
       if (
         !pr.equals(PolicyRestriction.READ) &&
           !pr.equals(PolicyRestriction.UPDATE) &&
@@ -190,33 +254,42 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       }
 
       // We have a valid restriction, lets get the policySql
-      policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, queryResourceId)
+      List<String> policySqlFragments = policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, queryResourceId)
 
       log.trace("AccessControl generated PolicySql: ${policySqlFragments.join(', ')}")
-      boolean result = false
 
       // We're going to do this with hibernate criteria builder to match doTheLookup logic
-      AccessPolicyEntity.withNewSession { Session sess ->
-        String bigSql = policySqlFragments.collect {"(${it})" }.join(" AND ") // JOIN all sql subqueries together here.
-        result = sess.createNativeQuery("SELECT ${bigSql} AS access_allowed".toString()).list()[0]
-      }
+      String bigSql = policySqlFragments.collect {"(${it})" }.join(" AND ") // JOIN all sql subqueries together here.
+      boolean result = sess.createNativeQuery("SELECT ${bigSql} AS access_allowed".toString()).list()[0]
 
       return result
     }
   }
 
+  /**
+   * Checks if the currently authenticated user has read access to the resource identified by {@code params.id}.
+   * The result is returned in the response map.
+   */
   @Transactional
   def canRead() {
     log.trace("AccessPolicyAwareController::canRead")
     respond([canRead: canAccess(PolicyRestriction.READ)]) // FIXME should be a proper response here
   }
 
+  /**
+ * Checks if the currently authenticated user has update access to the resource identified by {@code params.id}.
+ * The result is returned in the response map.
+ */
   @Transactional
   def canUpdate() {
     log.trace("AccessPolicyAwareController::canUpdate")
     respond([canUpdate: canAccess(PolicyRestriction.UPDATE)]) // FIXME should be a proper response here
   }
 
+  /**
+   * Checks if the currently authenticated user has delete access to the resource identified by {@code params.id}.
+   * The result is returned in the response map.
+   */
   @Transactional
   def canDelete() {
     log.trace("AccessPolicyAwareController::canDelete")
@@ -225,6 +298,14 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
 
   // FIXME this will need to go on the ACTUAL lookup etc etc...
   //  For now it can be a test method
+  /**
+   * Retrieves a list of resources that the current user has read access to,
+   * applying access policy restrictions to the list query.
+   * This method leverages the {@code doTheLookup} mechanism and injects policy-based
+   * criteria using {@link MultipleAliasSQLCriterion}.
+   *
+   * @return A response object containing the list of accessible resources.
+   */
   @Transactional
   def readRestrictedList() {
     AccessPolicyEntity.withNewSession {

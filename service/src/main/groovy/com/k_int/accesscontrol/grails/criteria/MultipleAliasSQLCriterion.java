@@ -1,4 +1,4 @@
-package com.k_int.accesscontrol.grails.extensions;
+package com.k_int.accesscontrol.grails.criteria;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
