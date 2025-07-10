@@ -3,18 +3,27 @@ package com.k_int.accesscontrol.core.policycontrolled;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.List;
-import java.util.Map;
+import javax.annotation.Nullable;
 
 @Data
 @Builder
 public class PolicyControlledMetadata {
   String resourceClassName;
-  String resourceIdReference;
+  String resourceIdColumn;
+  String resourceIdField;
 
-  String ownerReference;
+  // Ownership metadata
+  String ownerColumn;
+  String ownerField;
   Class<?> ownerClass;
+  // Track how "far up" the heirarchy this PolicyControlledMetadata is. -1 is the "base class", 0 is its owner class, etc etc
+  @Builder.Default
+  int ownerLevel = -1;
 
-  // FIXME Massively a work in progress. This is likely not how this will go
-  List<Map<String, String>> aliases;
+  // Owner alias fields
+  @Nullable
+  String aliasName;
+  @Nullable
+  String aliasOwnerColumn; // Stores the reference TO THIS PCM, ie how to alias to this from the LAST level.
+  String aliasOwnerField; // Stores the reference TO THIS PCM, ie how to alias to this from the LAST level.
 }

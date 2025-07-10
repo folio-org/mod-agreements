@@ -5,9 +5,11 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface PolicyControlled {
-  String resourceIdReference() default ""; // Could be column (For sql usage) or field (hibernate stuff?)
+  String resourceIdColumn() default "";
+  String resourceIdField() default "";
 
   // Allow us to roam up an ownership tree
-  String ownerReference() default "";  // Could be column (For sql usage) or field (hibernate stuff?)
+  String ownerColumn() default "";
+  String ownerField() default "";
   Class<?> ownerClass() default Object.class;
 }

@@ -31,7 +31,8 @@ import javax.persistence.Transient
  */
 @Slf4j
 @PolicyControlled(
-  resourceIdReference = "sa_id" // For grails modules we use SQL Column name for resourceId
+  resourceIdColumn = "sa_id", // For grails modules we use SQL Column name for resourceId
+  resourceIdField = "id"
 )
 public class SubscriptionAgreement extends ErmTitleList implements CustomProperties,MultiTenant<SubscriptionAgreement>, Clonable<SubscriptionAgreement> {
 

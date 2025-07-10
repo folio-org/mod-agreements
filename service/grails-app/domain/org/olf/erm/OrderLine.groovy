@@ -8,7 +8,8 @@ import groovy.util.logging.Slf4j
 
 @Slf4j
 @PolicyControlled(
-	ownerReference = 'owner', // For grails modules we use FIELD for ownership
+	ownerField = 'owner',
+	ownerColumn = 'pol_owner_fk',
 	ownerClass = Entitlement.class
 )
 public class OrderLine implements MultiTenant<OrderLine>, Clonable<OrderLine> {

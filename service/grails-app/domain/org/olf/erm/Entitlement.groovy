@@ -33,7 +33,8 @@ import groovy.util.logging.Slf4j
  */
 @Slf4j
 @PolicyControlled(
-  ownerReference = 'owner', // For grails modules we use FIELD for ownership
+  ownerColumn = 'ent_owner_fk',
+  ownerField = 'owner',
   ownerClass = SubscriptionAgreement.class
 )
 public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitlement> {
