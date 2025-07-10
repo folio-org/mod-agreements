@@ -254,7 +254,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       }
 
       // We have a valid restriction, lets get the policySql
-      List<String> policySqlFragments = policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, queryResourceId)
+      List<String> policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, queryResourceId)
 
       log.trace("AccessControl generated PolicySql: ${policySqlFragments.join(', ')}")
 
