@@ -16,7 +16,7 @@ import org.olf.erm.OrderLine
  */
 @Slf4j
 @CurrentTenant
-class OrderLineController extends OkapiTenantAwareController<OrderLine> {
+class OrderLineController extends AccessPolicyAwareController<OrderLine> {
   OrderLineController() {
     super(OrderLine)
   }

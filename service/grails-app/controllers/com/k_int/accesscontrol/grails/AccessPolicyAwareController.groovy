@@ -64,8 +64,10 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
         throw new IllegalArgumentException("Missing @GrailsPolicyControlled on owner class ${parseClazz.getName()}")
       }
 
+      // Ensure the aliases track back up the tree
+      String ownerAlias = ownerLevel > 0 ? "owner_alias_${ownerLevel - 1}.${ownerField}" : ownerField
       // Now we know we have a valid owner, track information about it
-      aliases.push([ownerField: ownerField, name: "owner_alias_${ownerLevel}".toString()])
+      aliases.push([ownerField: ownerAlias, name: "owner_alias_${ownerLevel}".toString(), level: ownerLevel])
       ownerField = ownerAnnotation.ownerField()
       tempPCM = resolvePolicyControlledMetadata(parseClazz)
       parseClazz = ownerAnnotation.ownerClass()
@@ -181,7 +183,8 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
 
     String resourceAlias = '{alias}'
     if (policyControlledMetadata.aliases.size() != 0) {
-      resourceAlias = policyControlledMetadata.aliases[policyControlledMetadata.aliases.size() - 1].name
+      // Ensure we grab the HIGHEST level owner
+      resourceAlias = policyControlledMetadata.aliases.sort { it.level }[policyControlledMetadata.aliases.size() - 1].name
     }
 
     // We build a parameter block to use on the policy subqueries. Some of these we can probably set up ahead of time...
@@ -275,6 +278,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       long beforeLookup = System.nanoTime()
       respond doTheLookup(resourceClass) {
 
+        // To handle nested levels of ownership, we have pre-parsed the owner tree
         MultipleAliasSQLCriterion.SubCriteriaAliasContainer[] subCriteria = policyControlledMetadata.aliases.collect { aliasMap ->
           Criteria aliasCriteria = criteria.createCriteria(aliasMap.ownerField, aliasMap.name)
           return new MultipleAliasSQLCriterion.SubCriteriaAliasContainer(aliasMap.name, aliasCriteria)
