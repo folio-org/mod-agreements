@@ -1,7 +1,8 @@
 package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
-import com.k_int.accesscontrol.core.PolicyControlledMetadata
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlled
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata
 import com.k_int.accesscontrol.core.PolicyEngineException
 import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.PolicySubquery
@@ -32,11 +33,11 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   // Method to BOTH find out the ownership pattern for our SQL and also ensure PolicyControlled makes sense
   private static PolicyControlledMetadata ensurePolicyControlled(Class<?> clazz) {
 
-    GrailsPolicyControlled annotation = clazz.getAnnotation(GrailsPolicyControlled)
+    PolicyControlled annotation = clazz.getAnnotation(PolicyControlled)
 
     if (!annotation) {
       throw new IllegalArgumentException(
-        "AccessPolicyAwareController can only be used for @GrailsPolicyControlled classes. " +
+        "AccessPolicyAwareController can only be used for @PolicyControlled classes. " +
           "${clazz.name} is not annotated."
       )
     }
@@ -48,7 +49,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     int ownerLevel = 0 // Track how deep we've gotten
     List<Map> aliases = new ArrayList<>()
 
-    String ownerField = annotation.ownerField()
+    String ownerField = annotation.ownerReference()
     Class<?> parseClazz = annotation.ownerClass()
     Set<Class<?>> seen = new HashSet<>()
     PolicyControlledMetadata tempPCM = resolvePolicyControlledMetadata(clazz)
@@ -59,16 +60,16 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       }
 
       log.trace("PolicyControlledMetadata: Checking policyControlled on owner class: ${parseClazz.getName()}")
-      GrailsPolicyControlled ownerAnnotation = parseClazz.getAnnotation(GrailsPolicyControlled)
+      PolicyControlled ownerAnnotation = parseClazz.getAnnotation(PolicyControlled)
       if (!ownerAnnotation) {
-        throw new IllegalArgumentException("Missing @GrailsPolicyControlled on owner class ${parseClazz.getName()}")
+        throw new IllegalArgumentException("Missing @PolicyControlled on owner class ${parseClazz.getName()}")
       }
 
       // Ensure the aliases track back up the tree
       String ownerAlias = ownerLevel > 0 ? "owner_alias_${ownerLevel - 1}.${ownerField}" : ownerField
       // Now we know we have a valid owner, track information about it
       aliases.push([ownerField: ownerAlias, name: "owner_alias_${ownerLevel}".toString(), level: ownerLevel])
-      ownerField = ownerAnnotation.ownerField()
+      ownerField = ownerAnnotation.ownerReference()
       tempPCM = resolvePolicyControlledMetadata(parseClazz)
       parseClazz = ownerAnnotation.ownerClass()
       ownerLevel += 1
@@ -80,8 +81,8 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
 
     return PolicyControlledMetadata.builder()
       .aliases(aliases)
-      .resourceClass(tempPCM.resourceClass)
-      .resourceIdColumn(tempPCM.resourceIdColumn)
+      .resourceClassName(tempPCM.resourceClassName)
+      .resourceIdReference(tempPCM.resourceIdReference)
       .build()
   }
 
@@ -111,14 +112,14 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   }
 
   protected static PolicyControlledMetadata resolvePolicyControlledMetadata(Class<?> clazz) {
-    GrailsPolicyControlled annotation = clazz.getAnnotation(GrailsPolicyControlled)
+    PolicyControlled annotation = clazz.getAnnotation(PolicyControlled)
     // This _shouldn't_ be possible thanks to the ensurePolicyControlled method above in the constructor
-    if (!annotation) throw new IllegalArgumentException("Missing @GrailsPolicyControlled on ${clazz.name}")
+    if (!annotation) throw new IllegalArgumentException("Missing @PolicyControlled on ${clazz.name}")
 
     return PolicyControlledMetadata.builder()
-      .resourceClass(annotation.resourceClass())
-      .resourceIdColumn(annotation.resourceIdColumn())
-      .ownerField(annotation.ownerField())
+      .resourceClassName(clazz.getCanonicalName())
+      .resourceIdReference(annotation.resourceIdReference())
+      .ownerReference(annotation.ownerReference())
       .ownerClass(annotation.ownerClass())
       .build()
   }
@@ -196,9 +197,9 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
       .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
       .resourceAlias(resourceAlias) // FIXME this is a hibernate thing... not sure if we need to deal with this right now. Not sure how this will interract with "owner" type queries
-      .resourceIdColumnName(policyControlledMetadata.resourceIdColumn)
+      .resourceIdColumnName(policyControlledMetadata.resourceIdReference)
       .resourceId(resourceId) // This might be null (For LIST type queries)
-      .resourceClass(policyControlledMetadata.resourceClass)
+      .resourceClass(policyControlledMetadata.resourceClassName)
       .build()
 
     log.trace("PolicySubqueryParameters configured: ${params}")
@@ -218,7 +219,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       // We should be able to get this for a class NOT from the controller too (Say, licenses for agreement?)
 
       String queryResourceId = (String) params.id
-      String ownerField = policyControlledMetadataForClass.getOwnerField()
+      String ownerField = policyControlledMetadataForClass.getOwnerReference()
       if (ownerField != "") {
         T resource = queryForResource(params.id)
         queryResourceId = (String) resource.getAt(ownerField)?.id // FIXME this seems v fragile
@@ -288,7 +289,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
         policySql.each {psql ->
           criteria.add(new MultipleAliasSQLCriterion(psql, subCriteria))
         }
-        // Ensure we return cirteria at the bottom?
+        // Ensure we return criteria at the bottom?
         return criteria
       }
 

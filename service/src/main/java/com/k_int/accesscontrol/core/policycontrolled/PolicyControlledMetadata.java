@@ -1,4 +1,4 @@
-package com.k_int.accesscontrol.core;
+package com.k_int.accesscontrol.core.policycontrolled;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,10 +9,10 @@ import java.util.Map;
 @Data
 @Builder
 public class PolicyControlledMetadata {
-  String resourceClass;
-  String resourceIdColumn;
+  String resourceClassName;
+  String resourceIdReference;
 
-  String ownerField;
+  String ownerReference;
   Class<?> ownerClass;
 
   // FIXME Massively a work in progress. This is likely not how this will go

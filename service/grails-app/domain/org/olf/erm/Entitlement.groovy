@@ -1,7 +1,6 @@
 package org.olf.erm
 
-import com.k_int.accesscontrol.grails.GrailsPolicyControlled
-import groovy.transform.CompileDynamic
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlled
 
 import java.time.LocalDate
 
@@ -33,8 +32,8 @@ import groovy.util.logging.Slf4j
  *
  */
 @Slf4j
-@GrailsPolicyControlled(
-  ownerField = 'owner',
+@PolicyControlled(
+  ownerReference = 'owner', // For grails modules we use FIELD for ownership
   ownerClass = SubscriptionAgreement.class
 )
 public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitlement> {

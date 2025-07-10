@@ -6,11 +6,16 @@ import org.hibernate.Criteria;
 import org.hibernate.HibernateException;
 import org.hibernate.criterion.CriteriaQuery;
 import org.hibernate.criterion.SQLCriterion;
-import org.hibernate.internal.CriteriaImpl;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.collections.ArrayHelper;
 
-// NOTE -- This is an unfortunate side effect of us needing to continue to use the deprecated HibernateCriteriaBuilder for our
+/** NOTE -- This is an unfortunate side effect of us needing to continue to use the deprecated HibernateCriteriaBuilder for our doTheLookup.
+ * <hr/>
+ *
+ * We require multiple aliases to be available when an ownership chain longer than 1 exists.
+ * Say SubscriptionAgreement -> Entitlement -> OrderLine. When fetching OrderLines we need to be able to reference
+ * SubscriptionAgreement id since the policy will be against that.
+ */
 @Slf4j
 public class MultipleAliasSQLCriterion extends SQLCriterion
 {
