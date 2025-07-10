@@ -14,7 +14,7 @@ import grails.gorm.transactions.Transactional
  */
 @Slf4j
 @CurrentTenant
-class EntitlementController extends AccessPolicyAwareController<EntitlementController> {
+class EntitlementController extends AccessPolicyAwareController<Entitlement> {
   EntitlementController() {
     super(Entitlement)
   }
