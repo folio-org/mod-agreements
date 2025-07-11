@@ -171,14 +171,6 @@ databaseChangeLog = {
     addPrimaryKey(tableName: "string_template", columnNames: "strt_id", constraintName: "string_templatePK")
   }
 
-  // 4-0
-  changeSet(author: "mchaib (manual)", id: "20250627-1424-023") {
-    preConditions(onFail: 'MARK_RAN') {
-      not { primaryKeyExists(tableName: 'string_template_scopes') }
-    }
-    addPrimaryKey(tableName: "string_template_scopes", columnNames: "id_scope", constraintName: "string_template_scopesPK")
-  }
-
   //5-5
   changeSet(author: "mchaib (manual)", id: "20250627-1424-024") {
     preConditions(onFail: 'MARK_RAN') {
