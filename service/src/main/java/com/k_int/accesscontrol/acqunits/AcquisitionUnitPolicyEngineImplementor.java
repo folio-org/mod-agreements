@@ -57,18 +57,21 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
 
 //      log.trace("LOGDEBUG ({}) MemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits());
 //      log.trace("LOGDEBUG ({}) NonMemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits());
-//
-//      log.trace("LOGDEBUG ({}) MemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits().size());
-//      log.trace("LOGDEBUG ({}) NonMemberRestrictiveUnits SIZE: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits().size());
 
+      /* In theory we could have a separate individual PolicySubquery class for every Restriction,
+       * but READ/UPDPATE/DELETE are all the same for Acq Units (with slight tweak when LIST vs SINGLE),
+       * and CREATE is simple, so we'll do all the work on one class.
+       *
+       * If we want to make this more performant we could shortcut in the "CREATE" case since that doesn't need the acquisition unit fetch
+       */
       policySubqueries.add(
         AcquisitionUnitPolicySubquery
           .builder()
           .userAcquisitionUnits(temporaryUserAcquisitionUnits)
-          .queryType(queryType) // Ensure the subqueries are for the type at hand (LIST vs SINGLE)
+          .queryType(queryType)
+          .restriction(pr)
           .build()
       );
-
     } catch (FolioClientException fce) {
       Throwable cause = fce.getCause();
       if (cause != null) {

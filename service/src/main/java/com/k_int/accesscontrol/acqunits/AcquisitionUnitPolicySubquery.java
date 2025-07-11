@@ -1,10 +1,7 @@
 package com.k_int.accesscontrol.acqunits;
 
 import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
-import com.k_int.accesscontrol.core.AccessPolicyQueryType;
-import com.k_int.accesscontrol.core.PolicyEngineException;
-import com.k_int.accesscontrol.core.PolicySubquery;
-import com.k_int.accesscontrol.core.PolicySubqueryParameters;
+import com.k_int.accesscontrol.core.*;
 import lombok.Builder;
 import lombok.Data;
 
@@ -24,8 +21,8 @@ import lombok.Data;
 @Builder
 public class AcquisitionUnitPolicySubquery implements PolicySubquery {
   UserAcquisitionUnits userAcquisitionUnits;
-  // The subquery must have a queryType. In some cases this will impact the SQL, but not for ACQ units
   AccessPolicyQueryType queryType;
+  PolicyRestriction restriction;
 
     /* Original query was to find situations where
      *
@@ -78,6 +75,17 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
     """;
 
   public String getSql(PolicySubqueryParameters parameters) {
+    // This shouldn't be possible thanks to PolicyEngine checks
+    if (getRestriction() == PolicyRestriction.CLAIM) {
+      throw new PolicyEngineException("AcquisitionUnitPolicySubquery::getSql is not valid for PolicyRestriction.CLAIM", PolicyEngineException.INVALID_RESTRICTION);
+    }
+
+    // Firstly we can handle the "CREATE" logic, since Acq Units never restricts CREATE
+    if (getRestriction() == PolicyRestriction.CREATE) {
+      return "1";
+    }
+
+    // For any other restriction we can set up our SQL subquery
     // TODO is it worth having a "getIdsList" helper method?
     String memberRestrictiveUnits = String.join(",", userAcquisitionUnits.getMemberRestrictiveUnits().stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList());
     String nonMemberRestrictiveUnits = String.join(",", userAcquisitionUnits.getNonMemberRestrictiveUnits().stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList());

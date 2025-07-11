@@ -9,7 +9,8 @@ import org.hibernate.criterion.SQLCriterion;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.collections.ArrayHelper;
 
-/** NOTE -- This is an unfortunate side effect of us needing to continue to use the deprecated HibernateCriteriaBuilder for our doTheLookup.
+/** NOTE -- This is an unfortunate side effect of us needing to continue to use the deprecated HibernateCriteriaBuilder for our doTheLookup. <br/>
+ * Adapted from <a href="https://stackoverflow.com/a/19378756">StackOverflow</a>
  * <hr/>
  *
  * We require multiple aliases to be available when an ownership chain longer than 1 exists.

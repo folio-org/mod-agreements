@@ -228,15 +228,42 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   }
 
 
-  // TODO CLAIM and CREATE are a little different :/ Maybe the restriction type has to go all the way down to the PolicySubquery too
+  // TODO CLAIM is a little different.. TBD
   /* --------------------- DYNAMICALLY ASSIGNED ACCESSCONTROL METHODS --------------------- */
+
+  /**
+   * Returns a set of {@link PolicyRestriction} enums that are considered valid
+   * for single resource access checks (e.g., in {@code canAccess} method).
+   *
+   * <p>Individual controllers can override this method to customize which
+   * policy restrictions are supported for direct access checks.</p>
+   *
+   * <p>The {@code @SuppressWarnings('GrMethodMayBeStatic')} annotation is used
+   * to suppress IDE warnings, as this method might be overridden in subclasses
+   * where it could potentially depend on instance state.</p>
+   *
+   * @return An {@link EnumSet} containing the valid policy restrictions for access checks.
+   */
+  @SuppressWarnings('GrMethodMayBeStatic') // Intellij won't shut up about making this static
+  protected Set<PolicyRestriction> getCanAccessValidPolicyRestrictions() {
+    return EnumSet.of(
+      PolicyRestriction.CREATE,
+      PolicyRestriction.DELETE,
+      PolicyRestriction.UPDATE,
+      PolicyRestriction.READ
+    )
+  }
+
   /**
    * Determines if a single resource can be accessed for a given {@link PolicyRestriction}.
    * This method resolves the root owner ID (if applicable), retrieves policy SQL fragments,
    * and executes a native SQL query combining these fragments to check access.
    *
-   * @param pr The {@link PolicyRestriction} to check (READ, UPDATE, or DELETE).
+   * @param pr The {@link PolicyRestriction} to check. The validity of this restriction
+   * is determined by {@link #getCanAccessValidPolicyRestrictions()}.
    * @return {@code true} if access is allowed according to the policies, {@code false} otherwise.
+   *
+   * @throws PolicyEngineException if the provided restriction type is not supported as per {@link #getCanAccessValidPolicyRestrictions()}.
    */
   protected boolean canAccess(PolicyRestriction pr) {
     AccessPolicyEntity.withNewSession { Session sess ->
@@ -245,11 +272,7 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
       // If there are NO owners, we can use the queryResourceId from the request itself
       String queryResourceId = resolveRootOwnerId(params.id)
 
-      if (
-        !pr.equals(PolicyRestriction.READ) &&
-          !pr.equals(PolicyRestriction.UPDATE) &&
-          !pr.equals(PolicyRestriction.DELETE)
-      ) {
+      if (!getCanAccessValidPolicyRestrictions().contains(pr)) {
         throw new PolicyEngineException("Restriction: ${pr.toString()} is not accessible here", PolicyEngineException.INVALID_RESTRICTION)
       }
 
@@ -294,6 +317,12 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   def canDelete() {
     log.trace("AccessPolicyAwareController::canDelete")
     respond([canDelete: canAccess(PolicyRestriction.DELETE)]) // FIXME should be a proper response here
+  }
+
+  @Transactional
+  def canCreate() {
+    log.trace("AccessPolicyAwareController::canCreate")
+    respond([canCreate: canAccess(PolicyRestriction.CREATE)]) // FIXME should be a proper response here
   }
 
   // FIXME this will need to go on the ACTUAL lookup etc etc...

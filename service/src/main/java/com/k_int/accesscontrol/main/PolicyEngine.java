@@ -5,8 +5,6 @@ import com.k_int.accesscontrol.core.AccessPolicyQueryType;
 import com.k_int.accesscontrol.core.PolicyEngineException;
 import com.k_int.accesscontrol.core.PolicyRestriction;
 import com.k_int.accesscontrol.core.PolicySubquery;
-import com.k_int.folio.FolioClientException;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -39,7 +37,7 @@ public class PolicyEngine {
     List<PolicySubquery> policySubqueries = new ArrayList<>();
 
     if (pr.equals(PolicyRestriction.CLAIM)) {
-      throw new PolicyEngineException("PolicySubquery list is not valid for PolicyRestriction.CLAIM", PolicyEngineException.INVALID_RESTRICTION);
+      throw new PolicyEngineException("getPolicySubqueries is not valid for PolicyRestriction.CLAIM", PolicyEngineException.INVALID_RESTRICTION);
     }
 
     if (config.acquisitionUnits) {
