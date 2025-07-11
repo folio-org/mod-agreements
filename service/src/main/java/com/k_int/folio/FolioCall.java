@@ -1,7 +1,5 @@
 package com.k_int.folio;
 
-import java.io.IOException;
-
 /**
  * Functional interface representing a call to the FOLIO client.
  * <p>

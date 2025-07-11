@@ -166,7 +166,7 @@ public class FolioClient {
         String value = URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8);
         joiner.add(key + "=" + value);
       }
-      url.append("?").append(joiner.toString());
+      url.append("?").append(joiner);
     }
 
     return URI.create(url.toString());
@@ -184,7 +184,7 @@ public class FolioClient {
         headers.add(pair.get(1));
     }
     return headers.toArray(new String[0]);
-  };
+  }
 
   /**
    * Combines two string header arrays into one.
@@ -218,9 +218,8 @@ public class FolioClient {
    * @return Array with a single "Cookie" header including folioAccessToken
    * @throws IOException If I/O error occurs
    * @throws InterruptedException If the thread is interrupted
-   * @throws FolioClientException For any error during login
    */
-  public String[] getFolioAccessTokenCookie(String[] headers) throws FolioClientException, IOException, InterruptedException {
+  public String[] getFolioAccessTokenCookie(String[] headers) throws IOException, InterruptedException {
     URI uri = URI.create(baseUrl + LOGIN_PATH);
     String credBody = "{ \"username\": \"" + userLogin + "\",  \"password\": \"" + userPassword + "\"}";
 

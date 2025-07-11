@@ -121,9 +121,6 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
       long afterPolicyLookup = System.nanoTime();
       log.trace("AcquisitionUnitPolicyEngineImplementor policy lookup time: {}", Duration.ofNanos(afterPolicyLookup - beforePolicyLookup));
 
-//      log.trace("LOGDEBUG ({}) MemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getMemberRestrictiveUnits());
-//      log.trace("LOGDEBUG ({}) NonMemberRestrictiveUnits: {}", pr, temporaryUserAcquisitionUnits.getNonMemberRestrictiveUnits());
-
       /* In theory we could have a separate individual PolicySubquery class for every Restriction,
        * but READ/UPDPATE/DELETE are all the same for Acq Units (with slight tweak when LIST vs SINGLE),
        * and CREATE is simple, so we'll do all the work on one class.
