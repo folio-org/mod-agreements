@@ -247,7 +247,15 @@ class UrlMappings {
       }
     }
 
+    // FIXME these should be in the grails plugin urlMappings
     "/erm/accessControl"(resources: 'accessPolicy') {
+      collection {
+        "/readPolicies"(controller: 'accessPolicy', action: 'getReadPolicyIds', method: 'GET')
+        "/deletePolicies"(controller: 'accessPolicy', action: 'getDeletePolicyIds', method: 'GET')
+        "/updatePolicies"(controller: 'accessPolicy', action: 'getUpdatePolicyIds', method: 'GET')
+        "/createPolicies"(controller: 'accessPolicy', action: 'getCreatePolicyIds', method: 'GET')
+        "/claimPolicies"(controller: 'accessPolicy', action: 'getClaimPolicyIds', method: 'GET')
+      }
     }
 
     "/erm/orderLines"(resources: 'orderLine') {

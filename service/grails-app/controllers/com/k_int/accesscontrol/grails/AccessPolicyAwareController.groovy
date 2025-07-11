@@ -34,7 +34,7 @@ import java.time.Duration
  *
  * @param <T> The type of the resource entity managed by this controller.
  */
-class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
+class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   /**
    * The Okapi client used for interacting with the FOLIO Okapi gateway.
    */
@@ -48,25 +48,6 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
    * Manages policy-controlled metadata and ownership chains for the resource.
    */
   final PolicyControlledManager policyControlledManager
-
-  /**
-   * Converts HTTP request headers into a simple String array of key-value pairs.
-   * This is used to pass headers to the policy engine for context.
-   * @param req The HttpServletRequest object.
-   * @return A String array where elements alternate between header names and header values.
-   */
-  private static String[] convertGrailsHeadersToStringArray(HttpServletRequest req) {
-    List<String> result = new ArrayList<>()
-
-    Collections.list(req.getHeaderNames()).forEach(headerName -> {
-      Collections.list(req.getHeaders(headerName)).forEach(headerValue -> {
-        result.add(headerName)
-        result.add(headerValue)
-      })
-    })
-
-    return result as String[]
-  }
 
   /**
    * Constructs an {@code AccessPolicyAwareController} for a given resource class.
@@ -129,60 +110,6 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     return resolvedRootId ?: leafResourceId
   }
 
-  /**
-   * Configures and returns a {@link PolicyEngine} instance.
-   * This method determines the FOLIO client configuration based on environment variables,
-   * Grails application configuration, or falls back to internal Okapi client details.
-   * A new PolicyEngine is spun up per request, which is a consideration for efficiency.
-   *
-   * @return A configured {@link PolicyEngine} instance.
-   */
-  protected PolicyEngine getPolicyEngine() {
-    // This should work regardless of whether we're in a proper FOLIO space or not now.
-    // I'm not convinced this is the best way to do it but hey ho
-    UserDetails patron = getPatron()
-    String defaultPatronId = 'defaultPatronId'
-    if (patron.hasProperty("id")) {
-      defaultPatronId = patron.id
-    }
-
-    // Build the folio information via ENV_VARS, grailsApplication defaults OR fallback to "this folio".
-    // Should allow devs to control where code is pointing dynamically without needing to comment/uncomment different folioConfigs here
-    String baseOkapiUrl = grailsApplication.config.getProperty('accesscontrol.folio.baseokapiurl', String)
-    boolean folioIsExternal = true
-    if (baseOkapiUrl == null) {
-      folioIsExternal = false
-      baseOkapiUrl = "https://${okapiClient.getOkapiHost()}:${okapiClient.getOkapiPort()}"
-    }
-
-    FolioClientConfig folioClientConfig = FolioClientConfig.builder()
-      .baseOkapiUri(baseOkapiUrl)
-      .tenantName(grailsApplication.config.getProperty('accesscontrol.folio.tenantname', String, OkapiTenantResolver.schemaNameToTenantId(Tenants.currentId())))
-      .patronId(grailsApplication.config.getProperty('accesscontrol.folio.patronid', String, OkapiTenantResolver.schemaNameToTenantId(defaultPatronId)))
-      .userLogin(grailsApplication.config.getProperty('accesscontrol.folio.userlogin', String))
-      .userPassword(grailsApplication.config.getProperty('accesscontrol.folio.userpassword', String))
-      .build()
-
-    // Keep logs to "trace" and ensure we only log INFO for prod
-    log.trace("FolioClientConfig configured baseOkapiUri: ${folioClientConfig.baseOkapiUri}")
-    log.trace("FolioClientConfig configured tenantName: ${folioClientConfig.tenantName}")
-    log.trace("FolioClientConfig configured patronId: ${folioClientConfig.patronId}")
-    log.trace("FolioClientConfig configured userLogin: ${folioClientConfig.userLogin}")
-    log.trace("FolioClientConfig configured userPassword: ${folioClientConfig.userPassword}")
-
-    // TODO This being spun up per request doesn't seem amazingly efficient -- but equally
-    //  it's really just a POJO and each request could be from a different tenant so maybe it's fine
-    PolicyEngine policyEngine = new PolicyEngine(
-      PolicyEngineConfiguration
-        .builder()
-        .folioClientConfig(folioClientConfig)
-        .externalFolioLogin(folioIsExternal)
-        .acquisitionUnits(true) // This currently ASSUMES that we're ALWAYS using acquisitionUnits
-        .build()
-    )
-
-    return policyEngine
-  }
 
   /**
    * Generates a list of SQL fragments (policy subqueries) based on a given policy restriction,
@@ -226,14 +153,6 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
     log.trace("PolicySubqueryParameters configured: ${params}")
 
     return policySubqueries.collect { psq -> psq.getSql(params)}
-  }
-
-
-  List<AccessPolicyTypeIds> getPolicyIds(PolicyRestriction restriction) {
-    // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
-    String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
-
-    List<PolicySubquery> policySubqueries = policyEngine.getPolicyIds(grailsHeaders, restriction)
   }
 
 
@@ -332,13 +251,6 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   def canCreate() {
     log.trace("AccessPolicyAwareController::canCreate")
     respond([canCreate: canAccess(PolicyRestriction.CREATE)]) // FIXME should be a proper response here
-  }
-
-  @Transactional
-  def canClaim() {
-    log.trace("AccessPolicyAwareController::canClaim")
-
-    respond([canClaim: getPolicyIds(PolicyRestriction.CLAIM)]) // FIXME should be a proper response here
   }
 
   // FIXME this will need to go on the ACTUAL lookup etc etc...
