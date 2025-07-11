@@ -1,6 +1,18 @@
 package com.k_int.accesscontrol.grails
 
+/**
+ * AccessControlUrlMapping is a utility class that builds URL mappings for access control operations.
+ * It defines routes for checking permissions on creating, reading, updating, and deleting resources.
+ */
 class AccessControlUrlMapping {
+
+  /**
+   * Builds URL mappings for access control operations based on the provided list of mappings.
+   * Each mapping contains a path and a controller name.
+   *
+   * @param mappings A list of maps, each containing 'path' and 'controller' keys.
+   * @return A Closure that defines the URL mappings.
+   */
   static Closure buildRoutes(List<Map<String, String>> mappings) {
     return {
       mappings.each { mapping ->

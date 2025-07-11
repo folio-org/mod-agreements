@@ -36,6 +36,15 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
     this.acqClient = new AcquisitionsClient(config.getFolioClientConfig());
   }
 
+  /**
+   * Handles exceptions thrown by FOLIO client calls, wrapping them in a PolicyEngineException.
+   *
+   * @param context the context of the operation being performed
+   * @param call    the FOLIO client call to execute
+   * @param <T>     the type of the result expected from the FOLIO client call
+   * @return the result of the FOLIO client call
+   * @throws PolicyEngineException if an error occurs during the FOLIO client call
+   */
   protected <T> T folioClientExceptionHandler(String context, FolioCall<T> call) {
     try {
       return call.execute();
@@ -51,9 +60,21 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
         throw new PolicyEngineException("Something went wrong while " + context + ": " + cause.getMessage(), exc);
       }
       throw new PolicyEngineException("Something went wrong while " + context, exc);
+    } catch (Exception exc) {
+      Throwable cause = exc.getCause();
+      if (cause != null) {
+        throw new PolicyEngineException("Unexpected exception thrown while " + context + ": " + cause.getMessage(), exc);
+      }
+      throw new PolicyEngineException("Unexpected exception thrown while " + context, exc);
     }
   }
 
+  /**
+   * Handles FOLIO login and retrieves the necessary headers for subsequent requests.
+   *
+   * @param headers the request context headers, used for FOLIO/internal service authentication
+   * @return an array of headers including the FOLIO access token cookie
+   */
   private String[] handleLoginAndGetHeaders(String[] headers) {
     return folioClientExceptionHandler("performing FOLIO login", () -> {
       long beforeLogin = System.nanoTime();
@@ -122,6 +143,13 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
     });
   }
 
+  /**
+   * Retrieves a list of access policy IDs grouped by their type for the given policy restriction.
+   *
+   * @param headers the request context headers, used for FOLIO/internal service authentication
+   * @param pr      the policy restriction to filter by
+   * @return a list of {@link AccessPolicyTypeIds} containing policy IDs grouped by type
+   */
   public List<AccessPolicyTypeIds> getPolicyIds(String[] headers, PolicyRestriction pr) {
     String[] finalHeaders = handleLoginAndGetHeaders(headers);
 

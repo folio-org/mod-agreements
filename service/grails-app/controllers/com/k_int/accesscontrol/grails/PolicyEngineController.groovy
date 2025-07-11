@@ -49,6 +49,13 @@ class PolicyEngineController<T> extends OkapiTenantAwareController<T> {
     return result as String[]
   }
 
+  /**
+   * Retrieves the PolicyEngine instance configured for the current request.
+   * This method builds the FolioClientConfig based on environment variables or Grails application configuration.
+   * It also resolves the tenant and patron information.
+   *
+   * @return A PolicyEngine instance configured for the current request.
+   */
   protected PolicyEngine getPolicyEngine() {
     // This should work regardless of whether we're in a proper FOLIO space or not now.
     // I'm not convinced this is the best way to do it but hey ho

@@ -174,13 +174,14 @@ public class AcquisitionsClient extends FolioClient {
   }
 
   /**
-   * Asynchronously constructs and returns the 3 acquisition unit lists used for access control.
-   * This includes non-restrictive units, restrictive units the user is a member of,
-   * and restrictive units the user is not a member of.
+   * Asynchronously fetches user acquisition units based on the specified restriction and subsets.
+   * This method fetches the required acquisition units and memberships, returning a UserAcquisitionUnits
+   * object containing the results and metadata to ascertain which subsets were fetched.
    *
    * @param headers Request headers
-   * @param restriction Restriction type (READ, etc.)
-   * @return Future with UserAcquisitionUnits object
+   * @param restriction Restriction type (READ, CREATE, etc.)
+   * @param fetchSubsets Subset of user acquisition units to fetch
+   * @return CompletableFuture with UserAcquisitionUnits
    */
   public CompletableFuture<UserAcquisitionUnits> getAsyncUserAcquisitionUnits(String[] headers, AcquisitionUnitRestriction restriction, Set<UserAcquisitionsUnitSubset> fetchSubsets) {
     // When called for Restriction.NONE, the nonRestrictiveUnits will be all units, and the memberRestrictiveUnits/nonMemberRestrictiveUnits will comprise all the units the patron is/isn't a member of
@@ -188,32 +189,38 @@ public class AcquisitionsClient extends FolioClient {
     // Construct metadata for the user acquisition units we're about to fetch
     UserAcquisitionUnitsMetadata userAcquisitionUnitsMetadata = new UserAcquisitionUnitsMetadata(fetchSubsets);
 
-
-    // Set up fetches for those units we're planning to fetch.
-    // We will have a completableFuture for each of the 3 lists,
-    // which will resolve to a list or "null" if that subset is
-    // not to be fetched.
-
-
-    // Only fetch restrictive units if we're aiming to end up with memberRestrictiveUnits or nonMemberRestrictiveUnits.
+    /*
+     * If the userAcquisitionUnitsMetadata indicates that we want to fetch memberRestrictive or nonMemberRestrictive units,
+     * we will fetch the restrictive units. Otherwise, we will complete the future with null.
+     */
     CompletableFuture<AcquisitionUnitResponse> restrictiveUnitsResponse =
       (userAcquisitionUnitsMetadata.isMemberRestrictive() || userAcquisitionUnitsMetadata.isNonMemberRestrictive())
         ? getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, true)
         : CompletableFuture.completedFuture(null);
 
-    // Only fetch non-restrictive units if we're aiming to end up with nonRestrictiveUnits.
+    /*
+     * If the userAcquisitionUnitsMetadata indicates that we want to fetch nonRestrictive units,
+     * we will fetch them. Otherwise, we will complete the future with null.
+     */
     CompletableFuture<AcquisitionUnitResponse> nonRestrictiveUnitsResponse =
       (userAcquisitionUnitsMetadata.isNonRestrictive())
         ? getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, false)
         : CompletableFuture.completedFuture(null);
 
-    // Only fetch memberships if we are aiming to end up with anything. It is VALID (albeit useless) to have a UserAcquisitionUnits with nothing fetched.
+    /*
+     * If the userAcquisitionUnitsMetadata indicates that we want to fetch any memberships,
+     * we will fetch the acquisition unit memberships. Otherwise, we will complete the future with null.
+     */
     CompletableFuture<AcquisitionUnitMembershipResponse> acquisitionUnitMembershipsResponse =
       (userAcquisitionUnitsMetadata.isNonRestrictive() || userAcquisitionUnitsMetadata.isMemberRestrictive() || userAcquisitionUnitsMetadata.isNonMemberRestrictive())
         ?  getAsyncUserAcquisitionUnitMemberships(headers, Collections.emptyMap())
         : CompletableFuture.completedFuture(null);
 
-    // Only bother doing this work if we want to end up with memberRestrictiveUnits;
+    /*
+     * If the userAcquisitionUnitsMetadata indicates that we want to fetch memberRestrictive units,
+     * we will filter the restrictive units response to get only those units where the user is a member.
+     * Otherwise, we will complete the future with null.
+     */
     CompletableFuture<List<AcquisitionUnit>> memberRestrictiveUnits = userAcquisitionUnitsMetadata.isMemberRestrictive() ?
       restrictiveUnitsResponse.thenCombine(acquisitionUnitMembershipsResponse, (rur, aumr) ->
         rur.getAcquisitionsUnits()
@@ -228,6 +235,11 @@ public class AcquisitionsClient extends FolioClient {
           .toList()
       ) : CompletableFuture.completedFuture(null);
 
+    /*
+     * If the userAcquisitionUnitsMetadata indicates that we want to fetch nonMemberRestrictive units,
+     * we will filter the restrictive units response to get only those units where the user is not a member.
+     * Otherwise, we will complete the future with null.
+     */
     CompletableFuture<List<AcquisitionUnit>> nonMemberRestrictiveUnits = userAcquisitionUnitsMetadata.isNonMemberRestrictive() ?
       restrictiveUnitsResponse.thenCombine(acquisitionUnitMembershipsResponse, (nrur, aumr) ->
         nrur.getAcquisitionsUnits()
@@ -242,6 +254,9 @@ public class AcquisitionsClient extends FolioClient {
           .toList()
       ) : CompletableFuture.completedFuture(null);
 
+    /*
+     * Combine all the futures and return a UserAcquisitionUnits object containing the results.
+     */
     return CompletableFuture.allOf(
         memberRestrictiveUnits,
         nonMemberRestrictiveUnits,
