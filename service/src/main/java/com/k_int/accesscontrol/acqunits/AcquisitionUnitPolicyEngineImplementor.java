@@ -162,6 +162,7 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
       policyIds.add(
         AccessPolicyTypeIds
           .builder()
+          .type(AccessPolicyType.ACQ_UNIT)
           .policyIds(
             userAcquisitionUnits
               .getMemberRestrictiveUnits()
@@ -177,6 +178,7 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
       policyIds.add(
         AccessPolicyTypeIds
           .builder()
+          .type(AccessPolicyType.ACQ_UNIT)
           .policyIds(
             userAcquisitionUnits
               .getNonRestrictiveUnits()
