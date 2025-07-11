@@ -67,7 +67,7 @@ public class PolicyEngine {
   // Helper method to get all valid policy IDs for a given policy restriction.
   // We handle CLAIM restrictions in this manner, canClaim should return the "PolicyId" list that a user can claim against a resource.
   // For Acq units these PolicyIds are acquisition unit IDs, for KI_GRANT they may be ownership strings "GBV%", "GBV/Rostock", "%" etc
-  List<AccessPolicyTypeIds> getPolicyIds(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
+  public List<AccessPolicyTypeIds> getPolicyIds(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
     List<AccessPolicyTypeIds> policyIds = new ArrayList<>();
 
     if (acquisitionUnitPolicyEngine != null) {
