@@ -21,4 +21,13 @@ public interface PolicyEngineImplementor {
    * @throws PolicyEngineException if an error occurs while generating policy subqueries
    */
   List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType);
+
+  /**
+   * Retrieves a list of access policy IDs grouped by their type for the given policy restriction.
+   *
+   * @param headers the request context headers, used for FOLIO/internal service authentication
+   * @param pr      the policy restriction to filter by
+   * @return a list of {@link AccessPolicyTypeIds} containing policy IDs grouped by type
+   */
+  List<AccessPolicyTypeIds> getPolicyIds(String[] headers, PolicyRestriction pr);
 }

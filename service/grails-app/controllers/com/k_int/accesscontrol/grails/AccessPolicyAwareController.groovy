@@ -1,6 +1,7 @@
 package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
+import com.k_int.accesscontrol.core.AccessPolicyTypeIds
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata
 import com.k_int.accesscontrol.core.PolicyEngineException
@@ -228,6 +229,14 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   }
 
 
+  List<AccessPolicyTypeIds> getPolicyIds(PolicyRestriction restriction) {
+    // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
+    String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
+
+    List<PolicySubquery> policySubqueries = policyEngine.getPolicyIds(grailsHeaders, restriction)
+  }
+
+
   // TODO CLAIM is a little different.. TBD
   /* --------------------- DYNAMICALLY ASSIGNED ACCESSCONTROL METHODS --------------------- */
 
@@ -323,6 +332,13 @@ class AccessPolicyAwareController<T> extends OkapiTenantAwareController<T> {
   def canCreate() {
     log.trace("AccessPolicyAwareController::canCreate")
     respond([canCreate: canAccess(PolicyRestriction.CREATE)]) // FIXME should be a proper response here
+  }
+
+  @Transactional
+  def canClaim() {
+    log.trace("AccessPolicyAwareController::canClaim")
+
+    respond([canClaim: getPolicyIds(PolicyRestriction.CLAIM)]) // FIXME should be a proper response here
   }
 
   // FIXME this will need to go on the ACTUAL lookup etc etc...

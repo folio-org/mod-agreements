@@ -8,6 +8,7 @@ class AccessControlUrlMapping {
         String controller = mapping.controller
 
         "${path}/canCreate"(controller: controller, action: "canCreate", method: 'GET')
+        "${path}/canClaim"(controller: controller, action: "canClaim", method: 'GET')
 
         "${path}/$id/canRead"(controller: controller, action: "canRead", method: 'GET')
         "${path}/$id/canUpdate"(controller: controller, action: "canUpdate", method: 'GET')

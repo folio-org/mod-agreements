@@ -1,10 +1,8 @@
 package com.k_int.accesscontrol.main;
 
 import com.k_int.accesscontrol.acqunits.*;
-import com.k_int.accesscontrol.core.AccessPolicyQueryType;
-import com.k_int.accesscontrol.core.PolicyEngineException;
-import com.k_int.accesscontrol.core.PolicyRestriction;
-import com.k_int.accesscontrol.core.PolicySubquery;
+import com.k_int.accesscontrol.core.*;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -18,14 +16,32 @@ import java.util.List;
  */
 @Slf4j
 public class PolicyEngine {
+  /**
+   * Configuration for the policy engine, including whether to use acquisition units.
+   * This is set during construction and used to determine which policy types to query.
+   */
+  @Getter
   private final PolicyEngineConfiguration config;
+
+  /**
+   * The acquisition unit policy engine implementor, which handles policy subquery generation
+   * for acquisition units. This is initialized based on the configuration.
+   */
+  @Getter
+  private final AcquisitionUnitPolicyEngineImplementor acquisitionUnitPolicyEngine;
 
   public PolicyEngine(PolicyEngineConfiguration config) {
     this.config = config;
+
+    if (config.acquisitionUnits) {
+      this.acquisitionUnitPolicyEngine = new AcquisitionUnitPolicyEngineImplementor(config);
+    } else {
+      this.acquisitionUnitPolicyEngine = null;
+    }
   }
 
   /**
-   * There are two types of AccessPolicy query that we might want to handle, subQueries: "Show me all records for which I can do RESTRICTION" and booleanQueries: "Can I do RESTRICTION for resource X?"
+   * There are two types of AccessPolicy query that we might want to handle, LIST: "Show me all records for which I can do RESTRICTION" and SINGLE: "Can I do RESTRICTION for resource X?"
    *
    * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
    * @param pr The policy restriction which we want to filter by
@@ -40,11 +56,24 @@ public class PolicyEngine {
       throw new PolicyEngineException("getPolicySubqueries is not valid for PolicyRestriction.CLAIM", PolicyEngineException.INVALID_RESTRICTION);
     }
 
-    if (config.acquisitionUnits) {
-      AcquisitionUnitPolicyEngineImplementor acqUnitPolicyEngine = new AcquisitionUnitPolicyEngineImplementor(config);
-      policySubqueries.addAll(acqUnitPolicyEngine.getPolicySubqueries(headers, pr, queryType));
+    if (acquisitionUnitPolicyEngine != null) {
+      policySubqueries.addAll(acquisitionUnitPolicyEngine.getPolicySubqueries(headers, pr, queryType));
     }
 
     return policySubqueries;
+  }
+
+
+  // Helper method to get all valid policy IDs for a given policy restriction.
+  // We handle CLAIM restrictions in this manner, canClaim should return the "PolicyId" list that a user can claim against a resource.
+  // For Acq units these PolicyIds are acquisition unit IDs, for KI_GRANT they may be ownership strings "GBV%", "GBV/Rostock", "%" etc
+  List<AccessPolicyTypeIds> getPolicyIds(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
+    List<AccessPolicyTypeIds> policyIds = new ArrayList<>();
+
+    if (acquisitionUnitPolicyEngine != null) {
+      policyIds.addAll(acquisitionUnitPolicyEngine.getPolicyIds(headers, pr));
+    }
+
+    return policyIds;
   }
 }

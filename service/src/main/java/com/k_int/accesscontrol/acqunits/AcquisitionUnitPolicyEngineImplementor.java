@@ -1,7 +1,11 @@
 package com.k_int.accesscontrol.acqunits;
 
+import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
+import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
+import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionsUnitSubset;
 import com.k_int.accesscontrol.core.*;
 import com.k_int.accesscontrol.main.PolicyEngineConfiguration;
+import com.k_int.folio.FolioCall;
 import com.k_int.folio.FolioClientException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -9,6 +13,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Policy engine implementor for acquisition units.
@@ -31,23 +36,29 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
     this.acqClient = new AcquisitionsClient(config.getFolioClientConfig());
   }
 
-
-  /**
-   * Generates policy subqueries for acquisition unit restrictions.
-   *
-   * @param headers   the request context headers, used for FOLIO/internal service authentication
-   * @param pr        the policy restriction to filter by
-   * @param queryType the type of query to generate (boolean or filter)
-   * @return a list of {@link PolicySubquery} objects for the given restriction and query type
-   * @throws PolicyEngineException if acquisition unit lookup fails or FOLIO client errors occur
-   */
-  public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType) {
-    List<PolicySubquery> policySubqueries = new ArrayList<>();
-
+  protected <T> T folioClientExceptionHandler(String context, FolioCall<T> call) {
     try {
+      return call.execute();
+    } catch (FolioClientException fce) {
+      Throwable cause = fce.getCause();
+      if (cause != null) {
+        throw new PolicyEngineException("FolioClientException thrown while " + context + ": " + fce.getCause().getMessage(), fce);
+      }
+      throw new PolicyEngineException("FolioClientException thrown while " + context, fce);
+    } catch (InterruptedException | IOException exc) {
+      Throwable cause = exc.getCause();
+      if (cause != null) {
+        throw new PolicyEngineException("Something went wrong while " + context + ": " + cause.getMessage(), exc);
+      }
+      throw new PolicyEngineException("Something went wrong while " + context, exc);
+    }
+  }
+
+  private String[] handleLoginAndGetHeaders(String[] headers) {
+    return folioClientExceptionHandler("performing FOLIO login", () -> {
       long beforeLogin = System.nanoTime();
-      /* ------------------------------- LOGIN LOGIC ------------------------------- */
       String[] finalHeaders;
+      /* ------------------------------- LOGIN LOGIC ------------------------------- */
 
       if (config.isExternalFolioLogin()) {
         // Only perform a separate login if configured to
@@ -61,11 +72,30 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
       long afterLogin = System.nanoTime();
       log.trace("AcquisitionUnitPolicyEngineImplementor login time: {}", Duration.ofNanos(afterLogin - beforeLogin));
 
+      return finalHeaders;
+    });
+  }
+
+  /**
+   * Generates policy subqueries for acquisition unit restrictions.
+   *
+   * @param headers   the request context headers, used for FOLIO/internal service authentication
+   * @param pr        the policy restriction to filter by
+   * @param queryType the type of query to generate (boolean or filter)
+   * @return a list of {@link PolicySubquery} objects for the given restriction and query type
+   * @throws PolicyEngineException if acquisition unit lookup fails or FOLIO client errors occur
+   */
+  public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType) {
+    String[] finalHeaders = handleLoginAndGetHeaders(headers);
+
+    return folioClientExceptionHandler("fetching Acquisition units", () -> {
+      List<PolicySubquery> policySubqueries = new ArrayList<>();
+
       long beforePolicyLookup = System.nanoTime();
       // Do the acquisition unit logic
       AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
-      // Temporarily lets have this here so we can build the sql ourselves...
-      UserAcquisitionUnits temporaryUserAcquisitionUnits = acqClient.getUserAcquisitionUnits(finalHeaders, acqRestriction);
+      // Fetch the acquisition units for the user (MemberRestrictiveUnits and NonMemberRestrictiveUnits);
+      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(finalHeaders, acqRestriction, Set.of(UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE, UserAcquisitionsUnitSubset.NON_MEMBER_RESTRICTIVE));
 
       long afterPolicyLookup = System.nanoTime();
       log.trace("AcquisitionUnitPolicyEngineImplementor policy lookup time: {}", Duration.ofNanos(afterPolicyLookup - beforePolicyLookup));
@@ -82,25 +112,55 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
       policySubqueries.add(
         AcquisitionUnitPolicySubquery
           .builder()
-          .userAcquisitionUnits(temporaryUserAcquisitionUnits)
+          .userAcquisitionUnits(userAcquisitionUnits)
           .queryType(queryType)
           .restriction(pr)
           .build()
       );
-    } catch (FolioClientException fce) {
-      Throwable cause = fce.getCause();
-      if (cause != null) {
-        throw new PolicyEngineException("FolioClientException thrown fetching Acquisition units: " + fce.getCause().getMessage(), fce);
-      }
-      throw new PolicyEngineException("FolioClientException thrown fetching Acquisition units", fce);
-    } catch (InterruptedException | IOException exc) {
-      Throwable cause = exc.getCause();
-      if (cause != null) {
-        throw new PolicyEngineException("Something went wrong fetching Acquisition units: " + cause.getMessage(), exc);
-      }
-      throw new PolicyEngineException("Something went wrong fetching Acquisition units", exc);
-    }
 
-    return policySubqueries;
+      return policySubqueries;
+    });
+  }
+
+  public List<AccessPolicyTypeIds> getPolicyIds(String[] headers, PolicyRestriction pr) {
+    String[] finalHeaders = handleLoginAndGetHeaders(headers);
+
+    AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
+    return folioClientExceptionHandler("fetching Acquisition units", () -> {
+      List<AccessPolicyTypeIds> policyIds = new ArrayList<>();
+      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(finalHeaders, acqRestriction, Set.of(UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE, UserAcquisitionsUnitSubset.NON_RESTRICTIVE));
+
+      // Add all the member restrictive unit policy IDs to the list
+      policyIds.add(
+        AccessPolicyTypeIds
+          .builder()
+          .policyIds(
+            userAcquisitionUnits
+              .getMemberRestrictiveUnits()
+              .stream()
+              .map(AcquisitionUnit::getId)
+              .toList()
+          )
+          .name(UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE.toString())
+          .build()
+      );
+
+      // Add all the non-restrictive unit policy IDs to the list
+      policyIds.add(
+        AccessPolicyTypeIds
+          .builder()
+          .policyIds(
+            userAcquisitionUnits
+              .getNonRestrictiveUnits()
+              .stream()
+              .map(AcquisitionUnit::getId)
+              .toList()
+          )
+          .name(UserAcquisitionsUnitSubset.NON_RESTRICTIVE.toString())
+          .build()
+      );
+
+      return policyIds;
+    });
   }
 }

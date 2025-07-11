@@ -3,6 +3,9 @@ package com.k_int.accesscontrol.acqunits;
 import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembershipResponse;
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitResponse;
+import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
+import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnitsMetadata;
+import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionsUnitSubset;
 import com.k_int.folio.FolioClient;
 import com.k_int.folio.FolioClientConfig;
 import com.k_int.folio.FolioClientException;
@@ -179,46 +182,78 @@ public class AcquisitionsClient extends FolioClient {
    * @param restriction Restriction type (READ, etc.)
    * @return Future with UserAcquisitionUnits object
    */
-  public CompletableFuture<UserAcquisitionUnits> getAsyncUserAcquisitionUnits(String[] headers, AcquisitionUnitRestriction restriction) {
+  public CompletableFuture<UserAcquisitionUnits> getAsyncUserAcquisitionUnits(String[] headers, AcquisitionUnitRestriction restriction, Set<UserAcquisitionsUnitSubset> fetchSubsets) {
     // When called for Restriction.NONE, the nonRestrictiveUnits will be all units, and the memberRestrictiveUnits/nonMemberRestrictiveUnits will comprise all the units the patron is/isn't a member of
 
-    CompletableFuture<AcquisitionUnitResponse> restrictiveUnitsResponse = getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, true);
-    CompletableFuture<AcquisitionUnitMembershipResponse> acquisitionUnitMembershipsResponse = getAsyncUserAcquisitionUnitMemberships(headers, Collections.emptyMap());
+    // Construct metadata for the user acquisition units we're about to fetch
+    UserAcquisitionUnitsMetadata userAcquisitionUnitsMetadata = new UserAcquisitionUnitsMetadata(fetchSubsets);
 
-    CompletableFuture<List<AcquisitionUnit>> memberRestrictiveUnits = restrictiveUnitsResponse.thenCombine(acquisitionUnitMembershipsResponse, (rur, aumr) ->
-      rur.getAcquisitionsUnits()
-        .stream()
-        .filter(au -> aumr.getAcquisitionsUnitMemberships()
-          .stream()
-          .anyMatch(aum ->
-            Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
-              Objects.equals(aum.getUserId(), this.getPatronId())
-          )
-        )
-        .toList()
-    );
 
-    CompletableFuture<List<AcquisitionUnit>> nonMemberRestrictiveUnits = restrictiveUnitsResponse.thenCombine(acquisitionUnitMembershipsResponse, (nrur, aumr) ->
-      nrur.getAcquisitionsUnits()
-        .stream()
-        .filter(au -> aumr.getAcquisitionsUnitMemberships()
+    // Set up fetches for those units we're planning to fetch.
+    // We will have a completableFuture for each of the 3 lists,
+    // which will resolve to a list or "null" if that subset is
+    // not to be fetched.
+
+
+    // Only fetch restrictive units if we're aiming to end up with memberRestrictiveUnits or nonMemberRestrictiveUnits.
+    CompletableFuture<AcquisitionUnitResponse> restrictiveUnitsResponse =
+      (userAcquisitionUnitsMetadata.isMemberRestrictive() || userAcquisitionUnitsMetadata.isNonMemberRestrictive())
+        ? getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, true)
+        : CompletableFuture.completedFuture(null);
+
+    // Only fetch non-restrictive units if we're aiming to end up with nonRestrictiveUnits.
+    CompletableFuture<AcquisitionUnitResponse> nonRestrictiveUnitsResponse =
+      (userAcquisitionUnitsMetadata.isNonRestrictive())
+        ? getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, false)
+        : CompletableFuture.completedFuture(null);
+
+    // Only fetch memberships if we are aiming to end up with anything. It is VALID (albeit useless) to have a UserAcquisitionUnits with nothing fetched.
+    CompletableFuture<AcquisitionUnitMembershipResponse> acquisitionUnitMembershipsResponse =
+      (userAcquisitionUnitsMetadata.isNonRestrictive() || userAcquisitionUnitsMetadata.isMemberRestrictive() || userAcquisitionUnitsMetadata.isNonMemberRestrictive())
+        ?  getAsyncUserAcquisitionUnitMemberships(headers, Collections.emptyMap())
+        : CompletableFuture.completedFuture(null);
+
+    // Only bother doing this work if we want to end up with memberRestrictiveUnits;
+    CompletableFuture<List<AcquisitionUnit>> memberRestrictiveUnits = userAcquisitionUnitsMetadata.isMemberRestrictive() ?
+      restrictiveUnitsResponse.thenCombine(acquisitionUnitMembershipsResponse, (rur, aumr) ->
+        rur.getAcquisitionsUnits()
           .stream()
-          .noneMatch(aum ->
-            Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
-              Objects.equals(aum.getUserId(), this.getPatronId())
+          .filter(au -> aumr.getAcquisitionsUnitMemberships()
+            .stream()
+            .anyMatch(aum ->
+              Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
+                Objects.equals(aum.getUserId(), this.getPatronId())
+            )
           )
-        )
-        .toList()
-    );
+          .toList()
+      ) : CompletableFuture.completedFuture(null);
+
+    CompletableFuture<List<AcquisitionUnit>> nonMemberRestrictiveUnits = userAcquisitionUnitsMetadata.isNonMemberRestrictive() ?
+      restrictiveUnitsResponse.thenCombine(acquisitionUnitMembershipsResponse, (nrur, aumr) ->
+        nrur.getAcquisitionsUnits()
+          .stream()
+          .filter(au -> aumr.getAcquisitionsUnitMemberships()
+            .stream()
+            .noneMatch(aum ->
+              Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
+                Objects.equals(aum.getUserId(), this.getPatronId())
+            )
+          )
+          .toList()
+      ) : CompletableFuture.completedFuture(null);
 
     return CompletableFuture.allOf(
         memberRestrictiveUnits,
-        nonMemberRestrictiveUnits
+        nonMemberRestrictiveUnits,
+        nonRestrictiveUnitsResponse
       )
       .thenApply(ignoredVoid -> UserAcquisitionUnits
         .builder()
         .memberRestrictiveUnits(memberRestrictiveUnits.join())
         .nonMemberRestrictiveUnits(nonMemberRestrictiveUnits.join())
+        // If we didn't fetch non-restrictive units, this will be null, so we should handle that gracefully.
+        .nonRestrictiveUnits(nonRestrictiveUnitsResponse.join() != null ? nonRestrictiveUnitsResponse.join().getAcquisitionsUnits() : null)
+        .userAcquisitionUnitsMetadata(userAcquisitionUnitsMetadata)
         .build());
   }
 
@@ -231,7 +266,7 @@ public class AcquisitionsClient extends FolioClient {
    * @return UserAcquisitionUnits
    * @throws FolioClientException If any async call fails
    */
-  public UserAcquisitionUnits getUserAcquisitionUnits(String[] headers, AcquisitionUnitRestriction restriction) throws FolioClientException {
-    return asyncFolioClientExceptionHelper(() -> getAsyncUserAcquisitionUnits(headers, restriction));
+  public UserAcquisitionUnits getUserAcquisitionUnits(String[] headers, AcquisitionUnitRestriction restriction, Set<UserAcquisitionsUnitSubset> fetchSubsets) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> getAsyncUserAcquisitionUnits(headers, restriction, fetchSubsets));
   }
 }

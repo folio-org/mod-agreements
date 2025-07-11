@@ -1,4 +1,4 @@
-package com.k_int.accesscontrol.acqunits;
+package com.k_int.accesscontrol.acqunits.useracquisitionunits;
 
 import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
 import lombok.Builder;
@@ -27,4 +27,15 @@ public class UserAcquisitionUnits {
    * These units deny access for the user.
    */
   List<AcquisitionUnit> nonMemberRestrictiveUnits;
+
+  /**
+   * Acquisition units that do not restrict access.
+   * These units allow access for the user regardless of membership.
+   */
+  List<AcquisitionUnit> nonRestrictiveUnits;
+
+  /**
+   * Metadata about the fetched acquisition units, indicating which subsets are present.
+   */
+  UserAcquisitionUnitsMetadata userAcquisitionUnitsMetadata;
 }
