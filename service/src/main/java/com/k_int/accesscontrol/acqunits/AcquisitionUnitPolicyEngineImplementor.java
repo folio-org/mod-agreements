@@ -10,21 +10,36 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Policy engine implementor for acquisition units.
+ * <p>
+ * Handles policy subquery generation based on acquisition unit restrictions,
+ * using FOLIO integration for user acquisition unit lookups.
+ */
 @Slf4j
 public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImplementor {
   private final AcquisitionsClient acqClient;
   private final PolicyEngineConfiguration config;
 
+  /**
+   * Constructs a new AcquisitionUnitPolicyEngineImplementor.
+   *
+   * @param config the policy engine configuration, including FOLIO client config
+   */
   public AcquisitionUnitPolicyEngineImplementor(PolicyEngineConfiguration config) {
     this.config = config;
     this.acqClient = new AcquisitionsClient(config.getFolioClientConfig());
   }
 
+
   /**
-   * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
-   * @param pr The policy restriction which we want to filter by
-   * @param queryType Whether to return boolean queries for single use or filter queries for all records
-   * @return A list of PolicySubqueries, either for boolean restriction or for filtering.
+   * Generates policy subqueries for acquisition unit restrictions.
+   *
+   * @param headers   the request context headers, used for FOLIO/internal service authentication
+   * @param pr        the policy restriction to filter by
+   * @param queryType the type of query to generate (boolean or filter)
+   * @return a list of {@link PolicySubquery} objects for the given restriction and query type
+   * @throws PolicyEngineException if acquisition unit lookup fails or FOLIO client errors occur
    */
   public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType) {
     List<PolicySubquery> policySubqueries = new ArrayList<>();

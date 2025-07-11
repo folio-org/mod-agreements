@@ -7,8 +7,12 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * The HTTP response we get from acquisition units
- * */
+ * Represents the response containing a list of acquisition units.
+ * <p>
+ * This class encapsulates the response structure for acquisition units,
+ * including a list of acquisition units and the total number of records.
+ * </p>
+ */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AcquisitionUnitResponse {

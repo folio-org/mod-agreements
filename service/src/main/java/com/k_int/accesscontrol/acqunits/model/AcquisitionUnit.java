@@ -4,6 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import javax.annotation.Nullable;
 
+/**
+ * Represents an acquisition unit in the access control system.
+ * <p>
+ * This class encapsulates the properties of an acquisition unit, including its ID,
+ * name, description, and various protection flags that determine the permissions
+ * for creating, deleting, reading, and updating the unit.
+ * </p>
+ */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AcquisitionUnit {

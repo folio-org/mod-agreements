@@ -6,6 +6,13 @@ import lombok.Data;
 
 import javax.annotation.Nullable;
 
+/**
+ * Configuration class for Folio client settings.
+ * <p>
+ * This class encapsulates the necessary configuration parameters for connecting to
+ * a Folio instance, including the base URI, tenant name, patron ID, and optional user credentials.
+ * </p>
+ */
 @Data
 @AllArgsConstructor
 @Builder

@@ -6,7 +6,12 @@ import lombok.Data;
 import javax.annotation.Nullable;
 
 /**
- * A class to parameterise the inputs for a getSql call on a PolicySubquery
+ * Parameters for generating SQL subqueries based on access policy restrictions.
+ * <p>
+ * This class encapsulates the necessary parameters to create a subquery that filters
+ * records according to access policies, including details about the policy table,
+ * resource class, and specific resource IDs.
+ * </p>
  */
 @Data
 @Builder

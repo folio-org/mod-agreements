@@ -7,15 +7,24 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * Grouping of acquisition unit IDs relevant to a specific user and restriction type.
- * Used to calculate the proper SQL conditions for access control. The unit sets are:
- * 1. `memberRestrictiveUnits`: Do restrict, but user is explicitly listed as a member.
- * 2. `nonMemberRestrictiveUnits`: Do restrict, and user is not a member — deny access.
- * These groupings are used to compute the allow/deny logic in generated SQL.
+ * Represents acquisition units associated with a user, grouped by restriction type.
+ * <p>
+ * Used to determine access control logic based on whether the user is a member of
+ * restrictive acquisition units.
+ * </p>
  */
 @Data
 @Builder
 public class UserAcquisitionUnits {
+  /**
+   * Acquisition units that restrict access, but the user is explicitly listed as a member.
+   * These units allow access for the user.
+   */
   List<AcquisitionUnit> memberRestrictiveUnits;
+
+  /**
+   * Acquisition units that restrict access and the user is not a member.
+   * These units deny access for the user.
+   */
   List<AcquisitionUnit> nonMemberRestrictiveUnits;
 }
