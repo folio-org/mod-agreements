@@ -24,13 +24,12 @@ public class AccessControlHibernateTypeMapper {
     initializeMappings();
   }
 
-
   private void initializeMappings() {
     // Map your AccessControlParameterType enum to Hibernate Type instances
     typeMapping.put(AccessControlSqlType.STRING, basicTypeRegistry.getRegisteredType(StandardBasicTypes.STRING.getName()));
     typeMapping.put(AccessControlSqlType.INTEGER, basicTypeRegistry.getRegisteredType(StandardBasicTypes.INTEGER.getName()));
     typeMapping.put(AccessControlSqlType.BOOLEAN, basicTypeRegistry.getRegisteredType(StandardBasicTypes.BOOLEAN.getName()));
-    typeMapping.put(AccessControlSqlType.UUID, basicTypeRegistry.getRegisteredType("uuid")); // "uuid" is the name for UUIDType
+    typeMapping.put(AccessControlSqlType.UUID, basicTypeRegistry.getRegisteredType(StandardBasicTypes.UUID_CHAR.getName())); // "uuid" is the name for UUIDType
     typeMapping.put(AccessControlSqlType.DATE, basicTypeRegistry.getRegisteredType(StandardBasicTypes.DATE.getName()));
     typeMapping.put(AccessControlSqlType.TIMESTAMP, basicTypeRegistry.getRegisteredType(StandardBasicTypes.TIMESTAMP.getName()));
     typeMapping.put(AccessControlSqlType.BIG_DECIMAL, basicTypeRegistry.getRegisteredType(StandardBasicTypes.BIG_DECIMAL.getName()));
@@ -38,8 +37,8 @@ public class AccessControlHibernateTypeMapper {
   }
 
   /**
-   * Get the Hibernate Type for a given AccessControlParameterType.
-   * @param paramType Your custom AccessControlParameterType.
+   * Get the Hibernate Type for a given AccessControlSqlType.
+   * @param paramType An AccessControlSqlType.
    * @return The corresponding Hibernate Type.
    * @throws IllegalArgumentException if no mapping is found for the given type.
    */

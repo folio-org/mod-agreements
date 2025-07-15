@@ -2,6 +2,7 @@ package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.core.AccessPolicyTypeIds
 import com.k_int.accesscontrol.core.PolicyRestriction
+import com.k_int.accesscontrol.core.responses.PolicyIdsResponse
 import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
@@ -41,8 +42,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getReadPolicyIds() {
     log.trace("AccessPolicyController::getReadPolicyIds")
-
-    respond([readPolicyIds: getPolicyIds(PolicyRestriction.READ)]) // FIXME should be a proper response here
+    respond PolicyIdsResponse.builder().readPolicyIds(getPolicyIds(PolicyRestriction.READ)).build()
   }
 
   /**
@@ -54,8 +54,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getUpdatePolicyIds() {
     log.trace("AccessPolicyController::getUpdatePolicyIds")
-
-    respond([updatePolicyIds: getPolicyIds(PolicyRestriction.UPDATE)]) // FIXME should be a proper response here
+    respond PolicyIdsResponse.builder().updatePolicyIds(getPolicyIds(PolicyRestriction.UPDATE)).build()
   }
 
   /**
@@ -67,8 +66,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getCreatePolicyIds() {
     log.trace("AccessPolicyController::getCreatePolicyIds")
-
-    respond([createPolicyIds: getPolicyIds(PolicyRestriction.CREATE)]) // FIXME should be a proper response here
+    respond PolicyIdsResponse.builder().createPolicyIds(getPolicyIds(PolicyRestriction.CREATE)).build()
   }
 
   /**
@@ -80,8 +78,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getDeletePolicyIds() {
     log.trace("AccessPolicyController::getDeletePolicyIds")
-
-    respond([deletePolicyIds: getPolicyIds(PolicyRestriction.DELETE)]) // FIXME should be a proper response here
+    respond PolicyIdsResponse.builder().deletePolicyIds(getPolicyIds(PolicyRestriction.DELETE)).build()
   }
 
   /**
@@ -93,7 +90,6 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getClaimPolicyIds() {
     log.trace("AccessPolicyController::getClaimPolicyIds")
-
-    respond([claimPolicyIds: getPolicyIds(PolicyRestriction.CLAIM)]) // FIXME should be a proper response here
+    respond PolicyIdsResponse.builder().claimPolicyIds(getPolicyIds(PolicyRestriction.CLAIM)).build()
   }
 }

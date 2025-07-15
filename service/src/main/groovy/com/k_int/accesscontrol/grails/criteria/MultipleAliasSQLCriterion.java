@@ -109,7 +109,7 @@ public class MultipleAliasSQLCriterion extends SQLCriterion {
     if (!ArrayUtils.isEmpty(this.subCriteriaAliases)) {
       for (final SubCriteriaAliasContainer subCriteriaAlias : this.subCriteriaAliases) {
       String alias = subCriteriaAlias.alias;
-        // FIXME Cheat the system by appending "." to the end of alias. This will force it to lookup by alias name
+        // Cheat the system by appending "." to the end of alias. This will force it to lookup by alias name
         //  not just the criteria which will have a different hash if totalCount is called
         String actualAlias = criteriaQuery.getSQLAlias(subCriteriaAlias.getSubCriteria(), alias + ".");
         sql = StringHelper.replace(sql, subCriteriaAlias.getAlias(), actualAlias);

@@ -1,5 +1,6 @@
 package com.k_int.accesscontrol.grails
 
+import com.k_int.accesscontrol.core.responses.CanAccessResponse
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager
@@ -161,7 +162,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
       .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
       .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
-      .resourceAlias(resourceAlias) // FIXME this is a hibernate thing... not sure if we need to deal with this right now. Not sure how this will interract with "owner" type queries
+      .resourceAlias(resourceAlias) // This alias can be deeply nested from owner or '{alias}' for hibernate top level queries
       .resourceIdColumnName(rootPolicyControlledMetadata.resourceIdColumn)
       .resourceId(resourceId) // This might be null (For LIST type queries)
       .resourceClass(rootPolicyControlledMetadata.resourceClassName)
@@ -253,7 +254,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def canRead() {
     log.trace("AccessPolicyAwareController::canRead")
-    respond([canRead: canAccess(PolicyRestriction.READ)]) // FIXME should be a proper response here
+    respond CanAccessResponse.builder().canRead(canAccess(PolicyRestriction.READ)).build()
   }
 
   /**
@@ -263,7 +264,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def canUpdate() {
     log.trace("AccessPolicyAwareController::canUpdate")
-    respond([canUpdate: canAccess(PolicyRestriction.UPDATE)]) // FIXME should be a proper response here
+    respond CanAccessResponse.builder().canUpdate(canAccess(PolicyRestriction.UPDATE)).build()
   }
 
   /**
@@ -273,13 +274,13 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def canDelete() {
     log.trace("AccessPolicyAwareController::canDelete")
-    respond([canDelete: canAccess(PolicyRestriction.DELETE)]) // FIXME should be a proper response here
+    respond CanAccessResponse.builder().canDelete(canAccess(PolicyRestriction.DELETE)).build()
   }
 
   @Transactional
   def canCreate() {
     log.trace("AccessPolicyAwareController::canCreate")
-    respond([canCreate: canAccess(PolicyRestriction.CREATE)]) // FIXME should be a proper response here
+    respond CanAccessResponse.builder().canCreate(canAccess(PolicyRestriction.CREATE)).build()
   }
 
   // FIXME this will need to go on the ACTUAL lookup etc etc...
