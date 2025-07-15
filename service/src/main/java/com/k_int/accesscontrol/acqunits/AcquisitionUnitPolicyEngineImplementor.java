@@ -4,6 +4,7 @@ import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionsUnitSubset;
 import com.k_int.accesscontrol.core.*;
+import com.k_int.accesscontrol.core.sql.PolicySubquery;
 import com.k_int.accesscontrol.main.PolicyEngineConfiguration;
 import com.k_int.folio.FolioCall;
 import com.k_int.folio.FolioClientException;

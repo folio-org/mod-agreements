@@ -3,8 +3,16 @@ package com.k_int.accesscontrol.acqunits;
 import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.core.*;
+import com.k_int.accesscontrol.core.sql.AccessControlSql;
+import com.k_int.accesscontrol.core.sql.AccessControlSqlType;
+import com.k_int.accesscontrol.core.sql.PolicySubquery;
+import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters;
 import lombok.Builder;
 import lombok.Data;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Builder for generating SQL WHERE clause subqueries for acquisition unit access control.
@@ -75,7 +83,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
       )
     """;
 
-  public String getSql(PolicySubqueryParameters parameters) {
+  public AccessControlSql getSql(PolicySubqueryParameters parameters) {
     // This shouldn't be possible thanks to PolicyEngine checks
     if (getRestriction() == PolicyRestriction.CLAIM) {
       throw new PolicyEngineException("AcquisitionUnitPolicySubquery::getSql is not valid for PolicyRestriction.CLAIM", PolicyEngineException.INVALID_RESTRICTION);
@@ -83,16 +91,24 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
 
     // Firstly we can handle the "CREATE" logic, since Acq Units never restricts CREATE
     if (getRestriction() == PolicyRestriction.CREATE) {
-      return "1";
+      return AccessControlSql.builder()
+        .sqlString("1")
+        .build();
     }
+
+    // Spin up a list of all SQL parameters;
+    List<String> allParameters = new ArrayList<>();
+    // Keep track of their types as well.
+    List<AccessControlSqlType> allTypes = new ArrayList<>();
 
     // For any other restriction we can set up our SQL subquery
     // TODO is it worth having a "getIdsList" helper method?
-    String memberRestrictiveUnits = String.join(",", userAcquisitionUnits.getMemberRestrictiveUnits().stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList());
-    String nonMemberRestrictiveUnits = String.join(",", userAcquisitionUnits.getNonMemberRestrictiveUnits().stream().map(AcquisitionUnit::getId).map(id -> "'" + id + "'").toList());
+    List<String> memberRestrictiveUnits = userAcquisitionUnits.getMemberRestrictiveUnits().stream().map(AcquisitionUnit::getId).toList();
+    List<String> nonMemberRestrictiveUnits = userAcquisitionUnits.getNonMemberRestrictiveUnits().stream().map(AcquisitionUnit::getId).toList();
 
-    if (memberRestrictiveUnits.isEmpty()) memberRestrictiveUnits = "'this-is-a-made-up-impossible-value'";
-    if (nonMemberRestrictiveUnits.isEmpty()) nonMemberRestrictiveUnits = "'this-is-a-made-up-impossible-value'";
+    if (memberRestrictiveUnits.isEmpty()) memberRestrictiveUnits = List.of("this-is-a-made-up-impossible-value");
+    if (nonMemberRestrictiveUnits.isEmpty()) nonMemberRestrictiveUnits = List.of("this-is-a-made-up-impossible-value");
+
 
     // If getQueryType() == LIST then we need #RESOURCEIDMATCH = {alias}.id (for hibernate), IF TYPE SINGLE THEN #RESOURCEIDMATCH = <UUID of resource>
     String resourceIdMatch = parameters.getResourceAlias() + "." + parameters.getResourceIdColumnName();
@@ -100,18 +116,43 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
       if (parameters.getResourceId() == null) {
         throw new PolicyEngineException("PolicySubqueryParameters for AccessPolicyQueryType.SINGLE must include resourceId", PolicyEngineException.INVALID_QUERY_PARAMETERS);
       }
-      resourceIdMatch = "'" + parameters.getResourceId() + "'";
+      resourceIdMatch = "?"; // We will bind an extra parameter for these, using parameters.getResourceId().
+      //resourceIdMatch = "'" + parameters.getResourceId() + "'";
     }
 
-    return SQL_TEMPLATE
-      .replaceAll("#ACCESS_POLICY_TABLE_NAME", parameters.getAccessPolicyTableName())
-      .replaceAll("#ACCESS_POLICY_TYPE_COLUMN_NAME", parameters.getAccessPolicyTypeColumnName())
-      .replaceAll("#ACCESS_POLICY_ID_COLUMN_NAME", parameters.getAccessPolicyIdColumnName())
-      .replaceAll("#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME", parameters.getAccessPolicyResourceIdColumnName())
-      .replaceAll("#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME", parameters.getAccessPolicyResourceClassColumnName())
-      .replaceAll("#RESOURCE_ID_MATCH", resourceIdMatch)
-      .replaceAll("#RESOURCE_CLASS", parameters.getResourceClass())
-      .replaceAll("#MEMBER_RESTRICTIVE_UNITS", memberRestrictiveUnits)
-      .replaceAll("#NON_MEMBER_RESTRICTIVE_UNITS", nonMemberRestrictiveUnits);
+    // Fill out the SQL parameters with the non-member and member restrictive units, as well as their types (STRING for all)
+
+    // Resource id match for non member clause
+    if (getQueryType() == AccessPolicyQueryType.SINGLE) {
+      allParameters.add(parameters.getResourceId());
+      allTypes.add(AccessControlSqlType.STRING); // Assuming resourceId is a UUID, we use STRING type.
+    }
+    allParameters.addAll(nonMemberRestrictiveUnits);
+    allTypes.addAll(Collections.nCopies(nonMemberRestrictiveUnits.size(), AccessControlSqlType.STRING));
+
+    // Resource id match for member clause
+    if (getQueryType() == AccessPolicyQueryType.SINGLE) {
+      allParameters.add(parameters.getResourceId());
+      allTypes.add(AccessControlSqlType.STRING); // Assuming resourceId is a UUID, we use STRING type.
+    }
+    allParameters.addAll(memberRestrictiveUnits);
+    allTypes.addAll(Collections.nCopies(memberRestrictiveUnits.size(), AccessControlSqlType.STRING));
+
+    return AccessControlSql.builder()
+      .sqlString(SQL_TEMPLATE
+        .replaceAll("#ACCESS_POLICY_TABLE_NAME", parameters.getAccessPolicyTableName())
+        .replaceAll("#ACCESS_POLICY_TYPE_COLUMN_NAME", parameters.getAccessPolicyTypeColumnName())
+        .replaceAll("#ACCESS_POLICY_ID_COLUMN_NAME", parameters.getAccessPolicyIdColumnName())
+        .replaceAll("#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME", parameters.getAccessPolicyResourceIdColumnName())
+        .replaceAll("#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME", parameters.getAccessPolicyResourceClassColumnName())
+        .replaceAll("#RESOURCE_ID_MATCH", resourceIdMatch)
+        .replaceAll("#RESOURCE_CLASS", parameters.getResourceClass())
+        // Fill out "?" placeholders, one per id
+        .replaceAll("#NON_MEMBER_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(nonMemberRestrictiveUnits.size(), "?")))
+        .replaceAll("#MEMBER_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(memberRestrictiveUnits.size(), "?")))
+      )
+      .parameters(allParameters.toArray())
+      .types(allTypes.toArray(new AccessControlSqlType[0]))
+      .build();
   }
 }

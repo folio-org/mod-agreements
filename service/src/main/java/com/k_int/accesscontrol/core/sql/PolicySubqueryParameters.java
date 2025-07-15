@@ -1,4 +1,4 @@
-package com.k_int.accesscontrol.core;
+package com.k_int.accesscontrol.core.sql;
 
 import lombok.Builder;
 import lombok.Data;

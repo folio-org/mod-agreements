@@ -1,5 +1,7 @@
 package com.k_int.accesscontrol.core;
 
+import com.k_int.accesscontrol.core.sql.PolicySubquery;
+
 import java.util.List;
 
 /**

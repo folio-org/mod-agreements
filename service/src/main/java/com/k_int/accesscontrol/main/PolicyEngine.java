@@ -2,6 +2,7 @@ package com.k_int.accesscontrol.main;
 
 import com.k_int.accesscontrol.acqunits.*;
 import com.k_int.accesscontrol.core.*;
+import com.k_int.accesscontrol.core.sql.PolicySubquery;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 

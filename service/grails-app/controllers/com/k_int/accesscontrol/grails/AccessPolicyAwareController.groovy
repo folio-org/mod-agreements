@@ -1,30 +1,28 @@
 package com.k_int.accesscontrol.grails
 
+import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
-import com.k_int.accesscontrol.core.AccessPolicyTypeIds
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata
 import com.k_int.accesscontrol.core.PolicyEngineException
 import com.k_int.accesscontrol.core.PolicyRestriction
-import com.k_int.accesscontrol.core.PolicySubquery
-import com.k_int.accesscontrol.core.PolicySubqueryParameters
+import com.k_int.accesscontrol.core.sql.AccessControlSqlType
+import com.k_int.accesscontrol.core.sql.PolicySubquery
+import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters
+import com.k_int.accesscontrol.grails.criteria.AccessControlHibernateTypeMapper
 import com.k_int.accesscontrol.main.PolicyEngine
-import com.k_int.accesscontrol.main.PolicyEngineConfiguration
 import com.k_int.accesscontrol.grails.criteria.MultipleAliasSQLCriterion
-
-import com.k_int.folio.FolioClientConfig
-
 import com.k_int.okapi.OkapiClient
-import com.k_int.okapi.OkapiTenantAwareController
-import com.k_int.okapi.OkapiTenantResolver
-
-import grails.gorm.multitenancy.Tenants
 import grails.gorm.transactions.Transactional
 import org.hibernate.Criteria
 import org.hibernate.Session
-import org.springframework.security.core.userdetails.UserDetails
+import org.hibernate.SessionFactory
+import org.hibernate.engine.spi.SessionFactoryImplementor
+import org.hibernate.query.NativeQuery
+import org.hibernate.type.Type
+import org.springframework.beans.factory.annotation.Autowired
 
-import javax.servlet.http.HttpServletRequest
+import javax.annotation.PostConstruct
 import java.time.Duration
 
 /**
@@ -49,6 +47,16 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    */
   final PolicyControlledManager policyControlledManager
 
+  // We need to inject the hibernate session factory to map between AccessControl types and Hibernate types while obeying dialect etc etc.
+  @Autowired
+  SessionFactory hibernateSessionFactory
+
+  /**
+   * A mapper for converting AccessControl SQL types to Hibernate types.
+   */
+  AccessControlHibernateTypeMapper typeMapper // Initialised in PostConstruct
+
+
   /**
    * Constructs an {@code AccessPolicyAwareController} for a given resource class.
    * @param resource The Class object of the resource entity.
@@ -69,6 +77,15 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     super(resource, readOnly)
     this.resourceClass = resource
     this.policyControlledManager = new PolicyControlledManager(resource)
+  }
+
+  /**
+   * Initializes the AccessControlHibernateTypeMapper once dependencies are injected.
+   */
+  @PostConstruct
+  void initTypeMapper() {
+    // hibernateSessionFactory is guaranteed to be injected by now
+    this.typeMapper = new AccessControlHibernateTypeMapper(hibernateSessionFactory as SessionFactoryImplementor)
   }
 
   /**
@@ -104,7 +121,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     hql.append(" WHERE t0.id = :leafResourceId") // Filter by the requested leaf resource ID
 
     // Execute the HQL query and return the id at hand
-    String resolvedRootId = AccessPolicyEntity.executeQuery(hql.toString(), ["leafResourceId": leafResourceId])[0]
+    String resolvedRootId = AccessPolicyEntity.executeQuery(hql.toString(), ["leafResourceId": leafResourceId])[0 as String]
 
     // Return the resolved ID, or fallback to the leaf ID if resolution fails (e.g., entity not found)
     return resolvedRootId ?: leafResourceId
@@ -122,7 +139,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    * @param resourceId The ID of the resource to apply the policy to. Can be {@code null} for LIST queries.
    * @return A list of SQL string fragments representing the access policies.
    */
-  protected List<String> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId) {
+  protected List<AccessControlSql> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId) {
     /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
 
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
@@ -205,13 +222,25 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       }
 
       // We have a valid restriction, lets get the policySql
-      List<String> policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, queryResourceId)
+      List<AccessControlSql> policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, queryResourceId)
 
       log.trace("AccessControl generated PolicySql: ${policySqlFragments.join(', ')}")
 
       // We're going to do this with hibernate criteria builder to match doTheLookup logic
-      String bigSql = policySqlFragments.collect {"(${it})" }.join(" AND ") // JOIN all sql subqueries together here.
-      boolean result = sess.createNativeQuery("SELECT ${bigSql} AS access_allowed".toString()).list()[0]
+      String bigSql = policySqlFragments.collect {"(${it.getSqlString()})" }.join(" AND ") // JOIN all sql subqueries together here.
+      NativeQuery accessAllowedQuery = sess.createNativeQuery("SELECT ${bigSql} AS access_allowed".toString())
+
+      // Now bind all parameters for all sql fragments. We ASSUME they're all using ? for bind params.
+      // Track where we're up to with hibernateParamIndex -- hibernate is 1-indexed
+      int hibernateParamIndex = 1
+      policySqlFragments.each { AccessControlSql entry ->
+        entry.getParameters().eachWithIndex { Object param, int paramIndex  ->
+          accessAllowedQuery.setParameter(hibernateParamIndex, param, (Type) typeMapper.getHibernateType((AccessControlSqlType) entry.getTypes()[paramIndex]))
+          hibernateParamIndex++ // Iterate the outer index
+        }
+      }
+
+      boolean result = accessAllowedQuery.list()[0]
 
       return result
     }
@@ -266,7 +295,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def readRestrictedList() {
     AccessPolicyEntity.withNewSession {
-      List<String> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null)
+      List<AccessControlSql> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null)
       log.trace("AccessControl generated PolicySql: ${policySql.join(', ')}")
 
       long beforeLookup = System.nanoTime()
@@ -279,7 +308,11 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         }
 
         policySql.each {psql ->
-          criteria.add(new MultipleAliasSQLCriterion(psql, subCriteria))
+          String sqlString = psql.getSqlString()
+          Object[] parameters = psql.getParameters()
+          Type[] types = psql.getTypes().collect { acst -> typeMapper.getHibernateType(acst) } as Type[]
+
+          criteria.add(new MultipleAliasSQLCriterion(sqlString, parameters, types, subCriteria))
         }
         // Ensure we return criteria at the bottom?
         return criteria
