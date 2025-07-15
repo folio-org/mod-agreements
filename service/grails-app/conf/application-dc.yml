@@ -46,7 +46,7 @@ accesscontrol:
 #  folio:
 #    baseokapiurl: "https://folio-etesting-snapshot-kong.ci.folio.org"
 #    tenantname: "diku"
-#    patronid: "a432e091-e445-40e7-a7a6-e31c035cd51a" # THIS WILL CHANGE DAILY
+#    patronid: "7d17383e-c8b5-40ab-a0a3-4a06a1bff3e1" # THIS WILL CHANGE DAILY
 #    userlogin: "diku_admin"
 #    userpassword: "admin"
 

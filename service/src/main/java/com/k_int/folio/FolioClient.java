@@ -192,7 +192,7 @@ public class FolioClient {
 
   /**
    * Asynchronously executes a GET request to the specified path with given headers and query parameters.
-   * The response body is automatically deserialized into the specified Java class using {@link ObjectMapperBodyHandler}.
+   * The response body is automatically deserialized into the specified Java class using {@link FolioClientBodyHandler}.
    * This method returns the full {@link HttpResponse} object, allowing access to headers and status code.
    *
    * @param path The relative path of the resource to fetch (e.g., "/users/{id}").
@@ -214,7 +214,7 @@ public class FolioClient {
       .headers(finalHeaders)
       .build();
 
-    return httpClient.sendAsync(request, new ObjectMapperBodyHandler<>(responseType))
+    return httpClient.sendAsync(request, new FolioClientBodyHandler<>(responseType))
       .exceptionally((ex) -> {
         throw new CompletionException("Something went wrong with GET call", new FolioClientException("GET request failed: " + ex.getMessage(), FolioClientException.GENERIC_ERROR, ex));
       });
@@ -276,7 +276,7 @@ public class FolioClient {
   // --------------- POST Methods ---------------
   /**
    * Asynchronously posts a string body to the specified path with given headers and query parameters.
-   * The response body is automatically deserialized into the specified Java class using {@link ObjectMapperBodyHandler}.
+   * The response body is automatically deserialized into the specified Java class using {@link FolioClientBodyHandler}.
    * This method returns the full {@link HttpResponse} object, allowing access to headers and status code.
    *
    * @param path The relative path of the resource to post to (e.g., "/circulation/loans").
@@ -299,7 +299,7 @@ public class FolioClient {
       .headers(finalHeaders)
       .build();
 
-    return httpClient.sendAsync(request, new ObjectMapperBodyHandler<>(responseType))
+    return httpClient.sendAsync(request, new FolioClientBodyHandler<>(responseType))
       .exceptionally((ex) -> {
         throw new CompletionException("Something went wrong with POST call", new FolioClientException("POST request failed: " + ex.getMessage(), FolioClientException.GENERIC_ERROR, ex));
       });
@@ -361,10 +361,9 @@ public class FolioClient {
     return asyncFolioClientExceptionHelper(() -> postStringBodyAsync(path, body, headers, queryParams, responseType));
   }
 
-  // TODO extend this to PUT, DELETE etc
   /**
    * Asynchronously puts a string body to the specified path with given headers and query parameters.
-   * The response body is automatically deserialized into the specified Java class using {@link ObjectMapperBodyHandler}.
+   * The response body is automatically deserialized into the specified Java class using {@link FolioClientBodyHandler}.
    * This method returns the full {@link HttpResponse} object, allowing access to headers and status code.
    *
    * @param path The relative path of the resource to put to (e.g., "/users/{id}").
@@ -387,7 +386,7 @@ public class FolioClient {
       .headers(finalHeaders)
       .build();
 
-    return httpClient.sendAsync(request, new ObjectMapperBodyHandler<>(responseType))
+    return httpClient.sendAsync(request, new FolioClientBodyHandler<>(responseType))
       .exceptionally((ex) -> {
         throw new CompletionException("Something went wrong with PUT call", new FolioClientException("PUT request failed: " + ex.getMessage(), FolioClientException.GENERIC_ERROR, ex));
       });
@@ -450,7 +449,7 @@ public class FolioClient {
   }
 
   /**   * Asynchronously executes a DELETE request to the specified path with given headers and query parameters.
-   * The response body is automatically deserialized into the specified Java class using {@link ObjectMapperBodyHandler}.
+   * The response body is automatically deserialized into the specified Java class using {@link FolioClientBodyHandler}.
    * This method returns the full {@link HttpResponse} object, allowing access to headers and status code.
    *
    * @param path The relative path of the resource to delete (e.g., "/users/{id}").
@@ -472,7 +471,7 @@ public class FolioClient {
       .headers(finalHeaders)
       .build();
 
-    return httpClient.sendAsync(request, new ObjectMapperBodyHandler<>(responseType))
+    return httpClient.sendAsync(request, new FolioClientBodyHandler<>(responseType))
       .exceptionally((ex) -> {
         throw new CompletionException("Something went wrong with DELETE call", new FolioClientException("DELETE request failed: " + ex.getMessage(), FolioClientException.GENERIC_ERROR, ex));
       });
@@ -707,18 +706,24 @@ public class FolioClient {
    */
   protected <T> T asyncFolioClientExceptionHelper(Supplier<CompletableFuture<T>> supplier) throws FolioClientException {
     try {
-      return supplier.get().get(5, TimeUnit.SECONDS); // configurable timeout
+      return supplier.get().get(20, TimeUnit.SECONDS); // configurable timeout -- OKAPI can be sloooooow
     } catch (ExecutionException e) {
       if (e.getCause() instanceof FolioClientException) {
+        log.error("Async execution failed with FolioClientException: {}", e.getCause().getMessage(), e);
         throw (FolioClientException) e.getCause(); // rethrow as-is
       }
+
+      log.error("Unhandled async execution error", e);
       throw new FolioClientException("Unhandled async execution error", FolioClientException.GENERIC_ERROR, e.getCause());
     } catch (TimeoutException e) {
+      log.error("Async call timed out", e);
       throw new FolioClientException("Async call timed out", FolioClientException.TIMEOUT_ERROR, e);
     } catch (InterruptedException e) {
+      log.error("Async call interrupted", e);
       Thread.currentThread().interrupt();
       throw new FolioClientException("Async call interrupted", FolioClientException.INTERRUPTED_ERROR, e);
     } catch (Exception e) {
+      log.error("Unhandled error", e);
       throw new FolioClientException("Unhandled error", FolioClientException.GENERIC_ERROR, e);
     }
   }
