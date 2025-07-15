@@ -174,7 +174,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   }
 
 
-  // TODO CLAIM is a little different.. TBD
+  // CLAIM is not supported with canAccess, and is instead handled by the AccessPolicyController
   /* --------------------- DYNAMICALLY ASSIGNED ACCESSCONTROL METHODS --------------------- */
 
   /**

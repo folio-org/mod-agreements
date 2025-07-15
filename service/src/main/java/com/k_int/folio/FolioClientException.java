@@ -7,7 +7,7 @@ package com.k_int.folio;
  * for various types of errors that may occur while interacting with the Folio API.
  * </p>
  */
-public class FolioClientException extends Exception {
+public class FolioClientException extends RuntimeException {
   /**
    * Generic error code, used when no more specific code is applicable.
    */

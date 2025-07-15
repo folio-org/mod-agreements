@@ -1,10 +1,10 @@
 package com.k_int.folio;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.k_int.folio.responses.LoginUsersResponse;
+import com.k_int.folio.responses.TokenExpirationResponse;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.net.URI;
 
 import java.net.URLEncoder;
@@ -14,10 +14,7 @@ import java.net.http.HttpResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -34,8 +31,8 @@ import java.util.stream.Stream;
 public class FolioClient {
   private final HttpClient httpClient;
   private final String baseUrl;
-  private final ObjectMapper objectMapper;
   private final String tenant;
+
 
   @Getter
   private final String patronId;
@@ -43,10 +40,23 @@ public class FolioClient {
   private final String userLogin;
   private final String userPassword;
 
-  private static final String LOGIN_PATH = "/authn/login-with-expiry";
+  private static final String AUTHN_PATH = "/authn";
+  private static final String USERS_BL_PATH = "/bl-users";
 
-  // BASEURL is going to need to be passed in because this is an external lib NOT a spring framework plugin
-  // OkapiClient uses @Value('${okapi.service.host:}') and @Value('${okapi.service.port:80}')
+  private static final String LOGIN_PATH = AUTHN_PATH + "/login-with-expiry"; // This is the path used by the authn module for login, returns a TokenExpirationResponse
+  private static final String USERS_LOGIN_PATH = USERS_BL_PATH + "/login-with-expiry"; // This is the path used by the bl-users module for login, returns a LoginUsersResponse
+
+
+  /**
+   * Constructs a new FolioClient instance with specified configuration.
+   * The {@code ObjectMapper} is initialized internally with {@code JavaTimeModule}.
+   *
+   * @param baseUrl The base URL of the FOLIO Okapi service (e.g., http://localhost:9130).
+   * @param tenant The FOLIO tenant ID (e.g., "diku").
+   * @param patronId The ID of the patron associated with this client's operations, if applicable.
+   * @param userLogin The username for FOLIO authentication. Can be null.
+   * @param userPassword The password for FOLIO authentication. Can be null.
+   */
   public FolioClient(
     String baseUrl,
     String tenant,
@@ -60,102 +70,36 @@ public class FolioClient {
         .connectTimeout(Duration.ofSeconds(10))
         .build();
 
-    this.objectMapper= new ObjectMapper();
     this.patronId = patronId;
 
     this.userLogin = userLogin;
     this.userPassword = userPassword;
   }
 
+  /**
+   * Constructs a new FolioClient instance using a configuration object.
+   * This provides an alternative constructor for easier configuration management.
+   *
+   * @param config The {@link FolioClientConfig} object containing all necessary client configuration.
+   */
   public FolioClient(
     FolioClientConfig config
   ) {
     this(config.baseOkapiUri, config.tenantName, config.patronId, config.userLogin, config.userPassword);
   }
 
-  /**
-   * Synchronously executes a GET request and maps the response to the given class.
-   *
-   * @param path Relative path of the resource to fetch
-   * @param headers Headers to pass in the request
-   * @param queryParams Map of query parameters
-   * @param responseType Target class for response mapping
-   * @param <T> Type of the expected result
-   * @return Parsed object from JSON response
-   * @throws IOException If I/O error occurs
-   * @throws InterruptedException If the thread is interrupted
-   * @throws FolioClientException For response decoding or non-2xx responses
-   */
-  public <T> T get(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException, IOException, InterruptedException {
-    URI uri = buildUri(path, queryParams);
+  // ------------------- Utility Methods ---------------
 
-    String[] finalHeaders = combineHeaders(getBaseHeaders(), headers);
-
-    HttpRequest request = HttpRequest.newBuilder()
-        .uri(uri)
-        .GET()
-        .headers(finalHeaders)
-        .build();
-
-    HttpResponse<String> response;
-      response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-    if (response.statusCode() >= 200 && response.statusCode() < 300) {
-      if (response.body() == null || response.body().isEmpty()) {
-        return null;
-      }
-      try {
-        return objectMapper.readValue(response.body(), responseType);
-      } catch (Exception e) {
-        log.error("Failed to cast response body: {} to type: {}", response.body(), responseType.getSimpleName(), e);
-        throw new FolioClientException("Failed to cast response body: " + response.body() + " to type: " + responseType.getSimpleName(), FolioClientException.RESPONSE_WRONG_SHAPE, e);
-      }
-    } else {
-      throw new FolioClientException("GET request failed: " + response.statusCode() + " - " + response.body(), FolioClientException.REQUEST_NOT_OK);
-    }
-  }
-
-  /**
-   * Asynchronously executes a GET request and maps the response to the given class.
-   *
-   * @param path Relative path of the resource to fetch
-   * @param headers Headers to pass in the request
-   * @param queryParams Map of query parameters
-   * @param responseType Target class for response mapping
-   * @param <T> Type of the expected result
-   * @return CompletableFuture containing the mapped response or exception
-   */
-  public <T> CompletableFuture<T> getAsync(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) {
-    URI uri = buildUri(path, queryParams);
-    String[] finalHeaders = combineHeaders(getBaseHeaders(), headers);
-
-    HttpRequest request = HttpRequest.newBuilder()
-      .uri(uri)
-      .GET()
-      .headers(finalHeaders)
-      .build();
-
-    return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-      .thenApply(response -> {
-        if (response.statusCode() >= 200 && response.statusCode() < 300) {
-          if (response.body() == null || response.body().isEmpty()) {
-            return null;
-          }
-          try {
-            return objectMapper.readValue(response.body(), responseType);
-          } catch (Exception e) {
-            String exceptionMessage = "Failed to cast response body: " + response.body() + " to type: " + responseType.getSimpleName();
-            log.error(exceptionMessage, e);
-            throw new CompletionException(exceptionMessage, new FolioClientException(exceptionMessage, FolioClientException.RESPONSE_WRONG_SHAPE, e));
-          }
-        } else {
-          String exceptionMessage = "GET request failed: " + response.statusCode() + " - " + response.body();
-          log.error(exceptionMessage);
-          throw new CompletionException(exceptionMessage, new FolioClientException(exceptionMessage, FolioClientException.REQUEST_NOT_OK));
-        }
-      });
-  }
   // There's almost definitely a better way to build this URI... this will do for now
+  /**
+   * Builds a complete URI for a FOLIO API request by combining the base URL,
+   * a relative path, and URL-encoded query parameters.
+   *
+   * @param path The relative path of the resource (e.g., "/users", "/circulation/loans").
+   * @param queryParams A {@link Map} of query parameter names and their values.
+   * Keys and values will be URL-encoded. Can be {@code null} or empty if no query parameters are needed.
+   * @return A {@link URI} object representing the full request URL.
+   */
   private URI buildUri(String path, Map<String, String> queryParams) {
     StringBuilder url = new StringBuilder(baseUrl).append(path);
 
@@ -172,6 +116,14 @@ public class FolioClient {
     return URI.create(url.toString());
   }
 
+  /**
+   * Retrieves an array of fundamental HTTP headers required for interacting with FOLIO APIs.
+   * This includes the "X-Okapi-Tenant" header configured for this client,
+   * along with other base headers defined in {@link FolioHeaders}.
+   *
+   * @return A String array where each pair of elements represents a header name and its corresponding value
+   * (e.g., {@code {"Header-Name", "Header-Value", "Another-Header", "Another-Value"}}).
+   */
   public String[] getBaseHeaders() {
     List<String> headers = new ArrayList<>();
 
@@ -187,11 +139,12 @@ public class FolioClient {
   }
 
   /**
-   * Combines two string header arrays into one.
+   * Combines two flat string arrays of HTTP headers into a single new array.
+   * Each input array is expected to be in the format {@code {"Name1", "Value1", "Name2", "Value2", ...}}.
    *
-   * @param headers1 First array
-   * @param headers2 Second array
-   * @return Combined array
+   * @param headers1 The first array of header name-value pairs.
+   * @param headers2 The second array of header name-value pairs.
+   * @return A new String array containing all header name-value pairs from both input arrays.
    */
   public static String[] combineHeaders(String[] headers1, String[] headers2) {
     return Stream.concat(Stream.of(headers1), Stream.of(headers2))
@@ -199,11 +152,12 @@ public class FolioClient {
   }
 
   /**
-   * Merges two query parameter maps into a single map.
+   * Merges two maps of query parameters into a single, new map.
+   * If a key exists in both maps, the value from {@code map2} will overwrite the value from {@code map1}.
    *
-   * @param map1 First map
-   * @param map2 Second map
-   * @return Combined map
+   * @param map1 The first {@link Map} of query parameters.
+   * @param map2 The second {@link Map} of query parameters.
+   * @return A new {@link Map} containing all key-value pairs from both input maps.
    */
   public static Map<String, String> combineQueryParams(Map<String,String> map1, Map<String, String> map2) {
     return Stream.concat(map1.entrySet().stream(), map2.entrySet().stream()).collect(
@@ -211,40 +165,12 @@ public class FolioClient {
   }
 
   /**
-   * Returns a new Cookie header containing a valid folioAccessToken.
-   * This method performs a blocking login using provided credentials.
+   * Filters a flat array of HTTP headers, returning only those that are recognized as FOLIO-specific headers.
+   * This is determined by consulting {@link FolioHeaders#isFolioHeader(String, String)}.
    *
-   * @param headers Additional headers to use during login
-   * @return Array with a single "Cookie" header including folioAccessToken
-   * @throws IOException If I/O error occurs
-   * @throws InterruptedException If the thread is interrupted
+   * @param flatHeaders A flat array of header name-value pairs (e.g., {@code {"Content-Type", "application/json", "X-Okapi-Token", "token-value"}}).
+   * @return A new flat String array containing only the identified FOLIO-specific header name-value pairs.
    */
-  public String[] getFolioAccessTokenCookie(String[] headers) throws IOException, InterruptedException {
-    URI uri = URI.create(baseUrl + LOGIN_PATH);
-    String credBody = "{ \"username\": \"" + userLogin + "\",  \"password\": \"" + userPassword + "\"}";
-
-    // Concatenate baseHeaders and headers
-    String[] finalHeaders = combineHeaders(getBaseHeaders(), headers);
-
-    HttpRequest request = HttpRequest.newBuilder()
-        .uri(uri)
-        .POST(HttpRequest.BodyPublishers.ofString(credBody))
-        .headers(finalHeaders)
-        .build();
-
-    HttpResponse<String> response;
-    response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-    String folioAccessToken = "";
-    for (String string : response.headers().map().get("set-cookie")) {
-      if (string.matches("folioAccessToken=.*")) {
-        folioAccessToken = string;
-      }
-    }
-
-    return new String[] { "Cookie", folioAccessToken };
-  }
-
   public static String[] getFolioHeaders(String[] flatHeaders) {
     List<String> result = new ArrayList<>();
 
@@ -260,14 +186,524 @@ public class FolioClient {
     return result.toArray(new String[0]);
   }
 
+  // --------------- HTTP Methods ---------------
+
+  // --------------- GET Methods ---------------
+
   /**
-   * Combines async method with a blocking wrapper that unwraps exceptions
-   * into a FolioClientException. Used by synchronous wrappers.
+   * Asynchronously executes a GET request to the specified path with given headers and query parameters.
+   * The response body is automatically deserialized into the specified Java class using {@link ObjectMapperBodyHandler}.
+   * This method returns the full {@link HttpResponse} object, allowing access to headers and status code.
    *
-   * @param supplier Supplier of a CompletableFuture
-   * @param <T> The result type
-   * @return The resolved result of the CompletableFuture
-   * @throws FolioClientException If the future fails, times out, or is interrupted
+   * @param path The relative path of the resource to fetch (e.g., "/users/{id}").
+   * @param headers An array of header name-value pairs to include in the request. Can be empty or {@code null}.
+   * @param queryParams A {@link Map} of query parameters. Can be {@code null} or empty.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return A {@link CompletableFuture} that completes with the {@link HttpResponse} containing
+   * the deserialized object of type {@code T} in its body.
+   * @throws FolioClientException If there's an error during request construction.
+   */
+  public <T> CompletableFuture<HttpResponse<T>> getAsyncWithResponse(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) {
+    URI uri = buildUri(path, queryParams);
+    String[] finalHeaders = combineHeaders(getBaseHeaders(), headers);
+
+    HttpRequest request = HttpRequest.newBuilder()
+      .uri(uri)
+      .GET()
+      .headers(finalHeaders)
+      .build();
+
+    return httpClient.sendAsync(request, new ObjectMapperBodyHandler<>(responseType))
+      .exceptionally((ex) -> {
+        throw new CompletionException("Something went wrong with GET call", new FolioClientException("GET request failed: " + ex.getMessage(), FolioClientException.GENERIC_ERROR, ex));
+      });
+  }
+
+  /**
+   * Synchronously executes a GET request and deserializes the response body into the specified class.
+   * This is a blocking convenience method that wraps {@link #getAsyncWithResponse(String, String[], Map, Class)}
+   * and handles common asynchronous exceptions (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param path The relative path of the resource to fetch.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return The {@link HttpResponse} containing the deserialized object of type {@code T} in its body.
+   * @throws FolioClientException If the request fails (e.g., network error, non-2xx status, deserialization error),
+   * times out, or is interrupted.
+   */
+  public <T> HttpResponse<T> getWithResponse(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) {
+    return asyncFolioClientExceptionHelper(() -> getAsyncWithResponse(path, headers, queryParams, responseType));
+  }
+
+  /**
+   * Asynchronously executes a GET request and returns only the deserialized response body.
+   * This is a convenience method that builds on {@link #getAsyncWithResponse(String, String[], Map, Class)}
+   * by directly mapping the {@link HttpResponse} to its body.
+   *
+   * @param path The relative path of the resource to fetch.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return A {@link CompletableFuture} that completes with the deserialized object of type {@code T}.
+   * @throws FolioClientException If the request fails, as the underlying {@code getAsyncWithResponse} will propagate it.
+   */
+  public <T> CompletableFuture<T> getAsync(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) {
+    return getAsyncWithResponse(path, headers, queryParams, responseType)
+      .thenApply(HttpResponse::body);
+  }
+
+  /**
+   * Synchronously executes a GET request and returns only the deserialized response body.
+   * This is a blocking convenience method that wraps {@link #getAsync(String, String[], Map, Class)}
+   * and handles common asynchronous exceptions (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param path The relative path of the resource to fetch.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return The deserialized object of type {@code T}.
+   * @throws FolioClientException If the request fails or if the response is not as expected.
+   */
+  public <T> T get(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> getAsync(path, headers, queryParams, responseType));
+  }
+
+  // --------------- POST Methods ---------------
+  /**
+   * Asynchronously posts a string body to the specified path with given headers and query parameters.
+   * The response body is automatically deserialized into the specified Java class using {@link ObjectMapperBodyHandler}.
+   * This method returns the full {@link HttpResponse} object, allowing access to headers and status code.
+   *
+   * @param path The relative path of the resource to post to (e.g., "/circulation/loans").
+   * @param body The string content to send as the request body (e.g., a JSON string representing a new entity).
+   * @param headers An array of header name-value pairs to include in the request. Can be empty or {@code null}.
+   * @param queryParams A {@link Map} of query parameters. Can be {@code null} or empty.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return A {@link CompletableFuture} that completes with the {@link HttpResponse} containing
+   * the deserialized object of type {@code T} in its body.
+   * @throws FolioClientException If there's an error during request construction.
+   */
+  public <T> CompletableFuture<HttpResponse<T>> postStringBodyAsyncWithResponse(String path, String body, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    URI uri = buildUri(path, queryParams);
+    String[] finalHeaders = combineHeaders(getBaseHeaders(), headers);
+
+    HttpRequest request = HttpRequest.newBuilder()
+      .uri(uri)
+      .POST(HttpRequest.BodyPublishers.ofString(body))
+      .headers(finalHeaders)
+      .build();
+
+    return httpClient.sendAsync(request, new ObjectMapperBodyHandler<>(responseType))
+      .exceptionally((ex) -> {
+        throw new CompletionException("Something went wrong with POST call", new FolioClientException("POST request failed: " + ex.getMessage(), FolioClientException.GENERIC_ERROR, ex));
+      });
+  }
+
+  /**
+   * Synchronously posts a string body to the specified path and deserializes the response body into the specified class.
+   * This is a blocking convenience method that wraps {@link #postStringBodyAsyncWithResponse(String, String, String[], Map, Class)}
+   * and handles common asynchronous exceptions (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param path The relative path of the resource to post to.
+   * @param body The string content to send as the request body.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return The {@link HttpResponse} containing the deserialized object of type {@code T} in its body.
+   * @throws FolioClientException If the request fails (e.g., network error, non-2xx status, deserialization error),
+   * times out, or is interrupted.
+   */
+  public <T> HttpResponse<T> postStringBodyWithResponse(String path, String body, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> postStringBodyAsyncWithResponse(path, body, headers, queryParams, responseType));
+  }
+
+  /**
+   * Asynchronously posts a string body to the specified path and returns only the deserialized response body.
+   * This is a convenience method that builds on {@link #postStringBodyAsyncWithResponse(String, String, String[], Map, Class)}
+   * by directly mapping the {@link HttpResponse} to its body.
+   *
+   * @param path The relative path of the resource to post to.
+   * @param body The string content to send as the request body.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return A {@link CompletableFuture} that completes with the deserialized object of type {@code T}.
+   * @throws FolioClientException If the request fails, as the underlying {@code postStringBodyAsyncWithResponse} will propagate it.
+   */
+  public <T> CompletableFuture<T> postStringBodyAsync(String path, String body, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    return postStringBodyAsyncWithResponse(path, body, headers, queryParams, responseType)
+      .thenApply(HttpResponse::body);
+  }
+
+  /**
+   * Synchronously posts a string body to the specified path and returns only the deserialized response body.
+   * This is a blocking convenience method that wraps {@link #postStringBodyAsync(String, String, String[], Map, Class)}
+   * and handles common asynchronous exceptions (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param path The relative path of the resource to post to.
+   * @param body The string content to send as the request body.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return The deserialized object of type {@code T}.
+   * @throws FolioClientException If the request fails or if the response is not as expected.
+   */
+  public <T> T postStringBody(String path, String body, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> postStringBodyAsync(path, body, headers, queryParams, responseType));
+  }
+
+  // TODO extend this to PUT, DELETE etc
+  /**
+   * Asynchronously puts a string body to the specified path with given headers and query parameters.
+   * The response body is automatically deserialized into the specified Java class using {@link ObjectMapperBodyHandler}.
+   * This method returns the full {@link HttpResponse} object, allowing access to headers and status code.
+   *
+   * @param path The relative path of the resource to put to (e.g., "/users/{id}").
+   * @param body The string content to send as the request body (e.g., a JSON string representing an updated entity).
+   * @param headers An array of header name-value pairs to include in the request. Can be empty or {@code null}.
+   * @param queryParams A {@link Map} of query parameters. Can be {@code null} or empty.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return A {@link CompletableFuture} that completes with the {@link HttpResponse} containing
+   * the deserialized object of type {@code T} in its body.
+   * @throws FolioClientException If there's an error during request construction.
+   */
+  public <T> CompletableFuture<HttpResponse<T>> putStringBodyAsyncWithResponse(String path, String body, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    URI uri = buildUri(path, queryParams);
+    String[] finalHeaders = combineHeaders(getBaseHeaders(), headers);
+
+    HttpRequest request = HttpRequest.newBuilder()
+      .uri(uri)
+      .PUT(HttpRequest.BodyPublishers.ofString(body))
+      .headers(finalHeaders)
+      .build();
+
+    return httpClient.sendAsync(request, new ObjectMapperBodyHandler<>(responseType))
+      .exceptionally((ex) -> {
+        throw new CompletionException("Something went wrong with PUT call", new FolioClientException("PUT request failed: " + ex.getMessage(), FolioClientException.GENERIC_ERROR, ex));
+      });
+  }
+
+  /**
+   * Synchronously puts a string body to the specified path and deserializes the response body into the specified class.
+   * This is a blocking convenience method that wraps {@link #putStringBodyAsyncWithResponse(String, String, String[], Map, Class)}
+   * and handles common asynchronous exceptions (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param path The relative path of the resource to put to.
+   * @param body The string content to send as the request body.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return The {@link HttpResponse} containing the deserialized object of type {@code T} in its body.
+   * @throws FolioClientException If the request fails (e.g., network error, non-2xx status, deserialization error),
+   * times out, or is interrupted.
+   */
+  public <T> HttpResponse<T> putStringBodyWithResponse(String path, String body, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> putStringBodyAsyncWithResponse(path, body, headers, queryParams, responseType));
+  }
+
+  /**
+   * Asynchronously puts a string body to the specified path and returns only the deserialized response body.
+   * This is a convenience method that builds on {@link #putStringBodyAsyncWithResponse(String, String, String[], Map, Class)}
+   * by directly mapping the {@link HttpResponse} to its body.
+   *
+   * @param path The relative path of the resource to put to.
+   * @param body The string content to send as the request body.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return A {@link CompletableFuture} that completes with the deserialized object of type {@code T}.
+   * @throws FolioClientException If the request fails, as the underlying {@code putStringBodyAsyncWithResponse} will propagate it.
+   */
+  public <T> CompletableFuture<T> putStringBodyAsync(String path, String body, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    return putStringBodyAsyncWithResponse(path, body, headers, queryParams, responseType)
+      .thenApply(HttpResponse::body);
+  }
+
+  /**
+   * Synchronously puts a string body to the specified path and returns only the deserialized response body.
+   * This is a blocking convenience method that wraps {@link #putStringBodyAsync(String, String, String[], Map, Class)}
+   * and handles common asynchronous exceptions (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param path The relative path of the resource to put to.
+   * @param body The string content to send as the request body.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return The deserialized object of type {@code T}.
+   * @throws FolioClientException If the request fails or if the response is not as expected.
+   */
+  public <T> T putStringBody(String path, String body, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> putStringBodyAsync(path, body, headers, queryParams, responseType));
+  }
+
+  /**   * Asynchronously executes a DELETE request to the specified path with given headers and query parameters.
+   * The response body is automatically deserialized into the specified Java class using {@link ObjectMapperBodyHandler}.
+   * This method returns the full {@link HttpResponse} object, allowing access to headers and status code.
+   *
+   * @param path The relative path of the resource to delete (e.g., "/users/{id}").
+   * @param headers An array of header name-value pairs to include in the request. Can be empty or {@code null}.
+   * @param queryParams A {@link Map} of query parameters. Can be {@code null} or empty.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return A {@link CompletableFuture} that completes with the {@link HttpResponse} containing
+   * the deserialized object of type {@code T} in its body.
+   * @throws FolioClientException If there's an error during request construction.
+   */
+  public <T> CompletableFuture<HttpResponse<T>> deleteAsyncWithResponse(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    URI uri = buildUri(path, queryParams);
+    String[] finalHeaders = combineHeaders(getBaseHeaders(), headers);
+
+    HttpRequest request = HttpRequest.newBuilder()
+      .uri(uri)
+      .DELETE()
+      .headers(finalHeaders)
+      .build();
+
+    return httpClient.sendAsync(request, new ObjectMapperBodyHandler<>(responseType))
+      .exceptionally((ex) -> {
+        throw new CompletionException("Something went wrong with DELETE call", new FolioClientException("DELETE request failed: " + ex.getMessage(), FolioClientException.GENERIC_ERROR, ex));
+      });
+  }
+
+  /**
+   * Synchronously executes a DELETE request and deserializes the response body into the specified class.
+   * This is a blocking convenience method that wraps {@link #deleteAsyncWithResponse(String, String[], Map, Class)}
+   * and handles common asynchronous exceptions (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param path The relative path of the resource to delete.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return The {@link HttpResponse} containing the deserialized object of type {@code T} in its body.
+   * @throws FolioClientException If the request fails (e.g., network error, non-2xx status, deserialization error),
+   * times out, or is interrupted.
+   */
+  public <T> HttpResponse<T> deleteWithResponse(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> deleteAsyncWithResponse(path, headers, queryParams, responseType));
+  }
+
+  /**
+   * Asynchronously executes a DELETE request and returns only the deserialized response body.
+   * This is a convenience method that builds on {@link #deleteAsyncWithResponse(String, String[], Map, Class)}
+   * by directly mapping the {@link HttpResponse} to its body.
+   *
+   * @param path The relative path of the resource to delete.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return A {@link CompletableFuture} that completes with the deserialized object of type {@code T}.
+   * @throws FolioClientException If the request fails, as the underlying {@code deleteAsyncWithResponse} will propagate it.
+   */
+  public <T> CompletableFuture<T> deleteAsync(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    return deleteAsyncWithResponse(path, headers, queryParams, responseType)
+      .thenApply(HttpResponse::body);
+  }
+
+  /**
+   * Synchronously executes a DELETE request and returns only the deserialized response body.
+   * This is a blocking convenience method that wraps {@link #deleteAsync(String, String[], Map, Class)}
+   * and handles common asynchronous exceptions (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param path The relative path of the resource to delete.
+   * @param headers An array of header name-value pairs to include in the request.
+   * @param queryParams A {@link Map} of query parameters.
+   * @param responseType The {@link Class} representing the target type for deserializing the JSON response body.
+   * @param <T> The type of the expected deserialized response object.
+   * @return The deserialized object of type {@code T}.
+   * @throws FolioClientException If the request fails or if the response is not as expected.
+   */
+  public <T> T delete(String path, String[] headers, Map<String, String> queryParams, Class<T> responseType) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> deleteAsync(path, headers, queryParams, responseType));
+  }
+  // --------------- Login Methods ---------------
+
+  /**
+   * Asynchronously initiates a login request using the client's configured credentials
+   * and the {@code /bl-users/login-with-expiry} endpoint. The full {@link HttpResponse}
+   * containing a {@link LoginUsersResponse} object is returned within a {@link CompletableFuture}.
+   *
+   * @param headers Additional HTTP headers to include with the login request. Can be empty or {@code null}.
+   * @return A {@link CompletableFuture} that completes with an {@link HttpResponse} containing the deserialized
+   * {@link LoginUsersResponse} object upon successful login.
+   * @throws FolioClientException If there's an issue constructing the request, which results in a synchronous exception.
+   */
+  public CompletableFuture<HttpResponse<LoginUsersResponse>> loginWithUsersAsyncWithResponse(String[] headers) {
+    String credBody = "{ \"username\": \"" + userLogin + "\",  \"password\": \"" + userPassword + "\"}";
+
+    return postStringBodyAsyncWithResponse(
+      USERS_LOGIN_PATH,
+      credBody,
+      headers,
+      Collections.emptyMap(),
+      LoginUsersResponse.class
+    );
+  }
+
+  /**
+   * Synchronously performs a login request using the client's configured credentials
+   * and the {@code /bl-users/login-with-expiry} endpoint. This is a blocking convenience method
+   * that wraps {@link #loginWithUsersAsyncWithResponse(String[])} and handles common asynchronous exceptions
+   * (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param headers Additional HTTP headers to include with the login request. Can be empty or {@code null}.
+   * @return The {@link HttpResponse} containing the deserialized {@link LoginUsersResponse} object upon successful login.
+   * @throws FolioClientException If the request fails (e.g., network error, non-2xx status, deserialization error),
+   * times out, or is interrupted.
+   */
+  public HttpResponse<LoginUsersResponse> loginWithUsersWithResponse(String[] headers) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> loginWithUsersAsyncWithResponse(headers));
+  }
+
+  /**
+   * Asynchronously performs a login request using the client's configured credentials
+   * and the {@code /bl-users/login-with-expiry} endpoint. This method returns only the deserialized
+   * response body, allowing for easier access to the {@link LoginUsersResponse} object.
+   *
+   * @param headers Additional HTTP headers to include with the login request. Can be empty or {@code null}.
+   * @return A {@link CompletableFuture} that completes with the deserialized {@link LoginUsersResponse} object upon successful login.
+   * @throws FolioClientException If the request fails, as the underlying {@code loginWithUsersAsyncWithResponse} will propagate it.
+   */
+  public CompletableFuture<LoginUsersResponse> loginWithUsersAsync(String[] headers) {
+    return loginWithUsersAsyncWithResponse(headers)
+      .thenApply(HttpResponse::body);
+  }
+
+  /**
+   * Synchronously performs a login request using the client's configured credentials
+   * and the {@code /bl-users/login-with-expiry} endpoint. This is a blocking convenience method
+   * that wraps {@link #loginWithUsersAsync(String[])} and handles common asynchronous exceptions
+   * (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param headers Additional HTTP headers to include with the login request. Can be empty or {@code null}.
+   * @return The deserialized {@link LoginUsersResponse} object upon successful login.
+   * @throws FolioClientException If the request fails or if the response is not as expected.
+   */
+  public LoginUsersResponse loginWithUsers(String[] headers) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> loginWithUsersAsync(headers));
+  }
+
+  /**
+   * Asynchronously initiates a login request using the client's configured credentials
+   * and the {@code /authn/login-with-expiry} endpoint. The full {@link HttpResponse}
+   * containing a {@link TokenExpirationResponse} object is returned within a {@link CompletableFuture}.
+   *
+   * @param headers Additional HTTP headers to include with the login request. Can be empty or {@code null}.
+   * @return A {@link CompletableFuture} that completes with an {@link HttpResponse} containing the deserialized
+   * {@link TokenExpirationResponse} object upon successful login.
+   * @throws FolioClientException If there's an issue constructing the request, which results in a synchronous exception.
+   */
+  public CompletableFuture<HttpResponse<TokenExpirationResponse>> loginAsyncWithResponse(String[] headers) {
+    String credBody = "{ \"username\": \"" + userLogin + "\",  \"password\": \"" + userPassword + "\"}";
+
+    return postStringBodyAsyncWithResponse(
+      LOGIN_PATH,
+      credBody,
+      headers,
+      Collections.emptyMap(),
+      TokenExpirationResponse.class
+    );
+  }
+
+  /**
+   * Synchronously performs a login request using the client's configured credentials
+   * and the {@code /authn/login-with-expiry} endpoint. This is a blocking convenience method
+   * that wraps {@link #loginAsyncWithResponse(String[])} and handles common asynchronous exceptions
+   * (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param headers Additional HTTP headers to include with the login request. Can be empty or {@code null}.
+   * @return The {@link HttpResponse} containing the deserialized {@link TokenExpirationResponse} object upon successful login.
+   * @throws FolioClientException If the request fails (e.g., network error, non-2xx status, deserialization error),
+   * times out, or is interrupted.
+   */
+  public HttpResponse<TokenExpirationResponse> loginWithResponse(String[] headers) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> loginAsyncWithResponse(headers));
+  }
+
+  /**
+   * Asynchronously performs a login request using the client's configured credentials
+   * and the {@code /authn/login-with-expiry} endpoint. This method returns only the deserialized
+   * response body, allowing for easier access to the {@link TokenExpirationResponse} object.
+   *
+   * @param headers Additional HTTP headers to include with the login request. Can be empty or {@code null}.
+   * @return A {@link CompletableFuture} that completes with the deserialized {@link TokenExpirationResponse} object upon successful login.
+   * @throws FolioClientException If the request fails, as the underlying {@code loginAsyncWithResponse} will propagate it.
+   */
+  public CompletableFuture<TokenExpirationResponse> loginAsync(String[] headers) {
+    return loginAsyncWithResponse(headers)
+      .thenApply(HttpResponse::body);
+  }
+
+  public TokenExpirationResponse login(String[] headers) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> loginAsync(headers));
+  }
+
+  /**
+   * Asynchronously performs a login and extracts the "folioAccessToken" cookie from the response headers.
+   * This method is crucial for obtaining the authentication token needed for subsequent FOLIO API calls.
+   *
+   * @param headers Additional HTTP headers to include with the login request. Can be empty or {@code null}.
+   * @return A {@link CompletableFuture} that, upon successful login and cookie extraction,
+   * provides a String array in the format {@code {"Cookie", "folioAccessToken=YOUR_TOKEN_VALUE"}}.
+   * @throws FolioClientException If the login fails (e.g., bad credentials, network issues),
+   * or if the "folioAccessToken" cookie is not found in the successful response.
+   */
+  public CompletableFuture<String[]> getFolioAccessTokenCookieAsync(String[] headers) throws FolioClientException {
+    return loginAsyncWithResponse(headers)
+      .thenApply(resp -> {
+        String folioAccessToken = "";
+        for (String string : resp.headers().map().get("set-cookie")) {
+          if (string.matches("folioAccessToken=.*")) {
+            folioAccessToken = string;
+          }
+        }
+
+        return new String[] { "Cookie", folioAccessToken };
+      });
+  }
+
+  /**
+   * Synchronously performs a login and retrieves the "folioAccessToken" cookie.
+   * This is a blocking convenience method that wraps the asynchronous {@link #getFolioAccessTokenCookieAsync(String[])}
+   * and handles common exceptions by rethrowing them as {@link FolioClientException}.
+   *
+   * @param headers Additional HTTP headers to include with the login request. Can be empty or {@code null}.
+   * @return A String array in the format {@code {"Cookie", "folioAccessToken=YOUR_TOKEN_VALUE"}}
+   * suitable for use in subsequent request headers.
+   * @throws FolioClientException If the underlying asynchronous call fails, times out, or is interrupted,
+   * or if the login fails or the cookie is not found.
+   */
+  public String[] getFolioAccessTokenCookie(String[] headers) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> getFolioAccessTokenCookieAsync(headers));
+  }
+
+  // --------------- Exception Handling ---------------
+
+  /**
+   * A protected helper method to bridge asynchronous {@link CompletableFuture} operations
+   * with synchronous blocking calls. It executes the provided {@link CompletableFuture}
+   * and unwraps common exceptions ({@link ExecutionException}, {@link TimeoutException}, {@link InterruptedException})
+   * into a more specific {@link FolioClientException}.
+   *
+   * @param supplier A {@link Supplier} that provides the {@link CompletableFuture} to be executed.
+   * @param <T> The type of the result returned by the {@link CompletableFuture}.
+   * @return The resolved result of the {@link CompletableFuture}.
+   * @throws FolioClientException If the future fails (its cause is a {@link FolioClientException} or another exception),
+   * if the call times out, or if the current thread is interrupted while waiting.
    */
   protected <T> T asyncFolioClientExceptionHelper(Supplier<CompletableFuture<T>> supplier) throws FolioClientException {
     try {
@@ -286,6 +722,4 @@ public class FolioClient {
       throw new FolioClientException("Unhandled error", FolioClientException.GENERIC_ERROR, e);
     }
   }
-
-  // TODO extend this to POST, PUT, etc
 }
