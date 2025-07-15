@@ -68,7 +68,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
           WHERE
             ap1.#ACCESS_POLICY_TYPE_COLUMN_NAME = 'ACQ_UNIT' AND
             ap1.#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME = #RESOURCE_ID_MATCH AND
-            ap1.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = '#RESOURCE_CLASS' AND
+            ap1.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = #RESOURCE_CLASS AND
             ap1.#ACCESS_POLICY_ID_COLUMN_NAME IN (#NON_MEMBER_RESTRICTIVE_UNITS)
           LIMIT 1
         ) OR EXISTS (
@@ -76,7 +76,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
           WHERE
             ap2.#ACCESS_POLICY_TYPE_COLUMN_NAME = 'ACQ_UNIT' AND
             ap2.#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME = #RESOURCE_ID_MATCH AND
-            ap2.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = '#RESOURCE_CLASS' AND
+            ap2.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = #RESOURCE_CLASS AND
             ap2.#ACCESS_POLICY_ID_COLUMN_NAME IN (#MEMBER_RESTRICTIVE_UNITS)
           LIMIT 1
         )
@@ -127,6 +127,11 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
       allParameters.add(parameters.getResourceId());
       allTypes.add(AccessControlSqlType.STRING); // Assuming resourceId is a UUID, we use STRING type.
     }
+
+    // Mapping resource class for non member clause
+    allParameters.add(parameters.getResourceClass());
+    allTypes.add(AccessControlSqlType.STRING); // Assuming resourceId is a UUID, we use STRING type.
+
     allParameters.addAll(nonMemberRestrictiveUnits);
     allTypes.addAll(Collections.nCopies(nonMemberRestrictiveUnits.size(), AccessControlSqlType.STRING));
 
@@ -135,6 +140,11 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
       allParameters.add(parameters.getResourceId());
       allTypes.add(AccessControlSqlType.STRING); // Assuming resourceId is a UUID, we use STRING type.
     }
+
+    // Mapping resource class for non member clause
+    allParameters.add(parameters.getResourceClass());
+    allTypes.add(AccessControlSqlType.STRING); // Assuming resourceId is a UUID, we use STRING type.
+
     allParameters.addAll(memberRestrictiveUnits);
     allTypes.addAll(Collections.nCopies(memberRestrictiveUnits.size(), AccessControlSqlType.STRING));
 
@@ -146,7 +156,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
         .replaceAll("#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME", parameters.getAccessPolicyResourceIdColumnName())
         .replaceAll("#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME", parameters.getAccessPolicyResourceClassColumnName())
         .replaceAll("#RESOURCE_ID_MATCH", resourceIdMatch)
-        .replaceAll("#RESOURCE_CLASS", parameters.getResourceClass())
+        .replaceAll("#RESOURCE_CLASS", "?") // Map resource class to a parameter
         // Fill out "?" placeholders, one per id
         .replaceAll("#NON_MEMBER_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(nonMemberRestrictiveUnits.size(), "?")))
         .replaceAll("#MEMBER_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(memberRestrictiveUnits.size(), "?")))
