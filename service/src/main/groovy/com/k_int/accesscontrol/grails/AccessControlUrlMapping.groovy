@@ -25,8 +25,22 @@ class AccessControlUrlMapping {
         "${path}/$id/canUpdate"(controller: controller, action: "canUpdate", method: 'GET')
         "${path}/$id/canDelete"(controller: controller, action: "canDelete", method: 'GET')
 
+        // FIXME we should probably also include a "${path}/$id/policies" to return the policies for a given resource, with the same shape as claimPolicies etc?
+
         // FIXME this won't end up in the final work, just here as a test to compare/contract with normal read.
         "${path}/testReadRestrictedList" (controller: controller, action: "readRestrictedList", method: 'GET')
+      }
+
+      // Should these be in this grails urlMappings?
+      // FIXME should we remove the ability to directly CRUD accessPolicies, and instead manage them through the resource controllers?
+      "/erm/accessControl"(resources: 'accessPolicy') {
+        collection {
+          "/readPolicies"(controller: 'accessPolicy', action: 'getReadPolicyIds', method: 'GET')
+          "/deletePolicies"(controller: 'accessPolicy', action: 'getDeletePolicyIds', method: 'GET')
+          "/updatePolicies"(controller: 'accessPolicy', action: 'getUpdatePolicyIds', method: 'GET')
+          "/createPolicies"(controller: 'accessPolicy', action: 'getCreatePolicyIds', method: 'GET')
+          "/claimPolicies"(controller: 'accessPolicy', action: 'getClaimPolicyIds', method: 'GET')
+        }
       }
     }
   }
