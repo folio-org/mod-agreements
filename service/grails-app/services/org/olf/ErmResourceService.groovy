@@ -331,25 +331,23 @@ public class ErmResourceService {
   private Set<String> deleteIds(Class domainClass, Collection<String> ids) {
     Set<String> successfullyDeletedIds = new HashSet<>()
 
-    // Transaction magic is crucial for this method to run efficiently.
-    domainClass.withSession { currentSess ->
-      domainClass.withTransaction {
-        domainClass.withNewSession { newSess ->
-          domainClass.withTransaction {
-            ids.each { String id ->
+    // Session magic is needed to keep the deletion efficient.
+    domainClass.withSession { session ->
+      ids.eachWithIndex { String id, int i ->
               // For each ID, find the domain instance (e.g. the PCI with id xyz)
               def instance = domainClass.get(id)
 
               if (instance) {
-                instance.delete() // delete the instance using GORM (will cascade to related objects)
+                instance.delete(flush: false) // Use flush:false to batch the deletes. The final flush happens on transaction commit.
                 successfullyDeletedIds.add(id) // track the id that has been deleted
               } else {
                 log.warn("Could not find instance of {} with id {} to delete.", domainClass.name, id)
                 // we should never hit this, but useful to log incase.
               }
-            }
-          }
-          newSess.clear()
+        if (i > 0 && i % 100 == 0) {
+          // The flush is basically used to clear memory by sending a batch of deletes to the DB (WITHOUT comitting them - which happens at the end of the transaction)
+          session.flush()
+          session.clear() // After the flush sends the deletes to the DB, we can clear the session, freeing up memory. Note - clear should never be called before flush.
         }
       }
     }
@@ -361,6 +359,7 @@ public class ErmResourceService {
 
   // --- Higher-level methods, package deletion and deletion jobs ---
 
+  @Transactional
   public DeleteResponse deleteResources(List<String> idInputs, Class<? extends ErmResource> resourceClass) {
     // This method runs both MarkForDelete() and DeleteResources in one step for the /delete endpoint.
 
@@ -375,7 +374,9 @@ public class ErmResourceService {
 
     // Each package is passed to deleteResources individually.
     pkgIds.forEach{ String id -> {
+      log.info("Starting delete for pkg: {} at {}", id, Instant.now())
       outputMap.put(id, deleteResources([id], Pkg))
+      log.info("Deletion finished for pkg: {} at {}", id, Instant.now())
     }}
 
     // return a map of form: {pkgId1: {DeleteResponse}, pkdId2: {DeleteResponse}} or {}
