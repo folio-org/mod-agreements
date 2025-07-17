@@ -1,5 +1,20 @@
 databaseChangeLog = {
   changeSet(author: "mchaib (manual)", id: "20250716-1620-001") {
+    // create the Pkg.LifecycleStatus category if it doesn't already exist
+    grailsChange {
+      change {
+        sql.execute("INSERT INTO ${database.defaultSchemaName}.refdata_category (rdc_id, rdc_version, rdc_description, internal) SELECT md5(random()::text || clock_timestamp()::text) as id, 0 as version, 'Pkg.LifecycleStatus' as description, false as internal WHERE NOT EXISTS (SELECT rdc_description FROM ${database.defaultSchemaName}.refdata_category WHERE (rdc_description)=('Pkg.LifecycleStatus') LIMIT 1);".toString())
+      }
+    }
+
+    // create the Pkg.AvailabilityScope category if it doesn't already exist
+    grailsChange {
+      change {
+        sql.execute("INSERT INTO ${database.defaultSchemaName}.refdata_category (rdc_id, rdc_version, rdc_description, internal) SELECT md5(random()::text || clock_timestamp()::text) as id, 0 as version, 'Pkg.AvailabilityScope' as description, false as internal WHERE NOT EXISTS (SELECT rdc_description FROM ${database.defaultSchemaName}.refdata_category WHERE (rdc_description)=('Pkg.AvailabilityScope') LIMIT 1);".toString())
+      }
+    }
+
+
     // Create the "missingLifecycleStatusRefDataValue" refDataValue for LifecycleStatus category
     grailsChange {
       change {
