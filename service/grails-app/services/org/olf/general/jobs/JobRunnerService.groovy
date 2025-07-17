@@ -364,7 +364,7 @@ order by pj.dateCreated
 			log.info "No free runners for jobs or tasks, active workers currently at ${activeCount}. Skipping"
 			return
 		}
-    PersistentJob.withNewTransaction {
+    //PersistentJob.withNewTransaction {
       folioLockService.federatedLockAndDo("agreements:job:queue") {
 
         if (shouldCheckForNewJobs()) {
@@ -498,7 +498,7 @@ order by pj.dateCreated
           }
         }
       }
-    }
+    //}
     log.debug("exiting JobRunnerService::findAndRunNextJob")
   }
   
