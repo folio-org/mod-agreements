@@ -1,7 +1,9 @@
-package org.olf.kb.adapters;
+package org.olf.kb.adapters
 
 import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.dataimport.internal.PackageSchema
+import org.olf.kb.GoKbClient
+import org.olf.kb.GoKbClientException
 import org.olf.kb.KBCache;
 import org.olf.kb.KBCacheUpdater;
 import org.springframework.validation.BindingResult
@@ -9,12 +11,16 @@ import org.springframework.validation.BindingResult
 import grails.web.databinding.DataBinder
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
-import groovyx.net.http.FromServer
 
 @Slf4j
 @CompileStatic
-public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, DataBinder {
+public class KIJPFAdapter implements KBCacheUpdater, DataBinder {
 
+  GoKbClient goKbClient;
+
+  KIJPFAdapter() {
+   goKbClient = new GoKbClient()
+  }
 
   public void freshenPackageData(final String source_name,
                                  final String base_url,
@@ -44,12 +50,12 @@ public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, Da
 
       spin_protection++
       boolean valid = true
-      Map<String, ?> jsonMap = (Map)getSync(base_url, query_params) {
-        
-        response.failure { FromServer fromServer ->
-          log.debug "Request failed with status ${fromServer.statusCode}"
-          valid = false
-        }
+      Map<String, ?> jsonMap
+      try {
+        jsonMap = (Map)  goKbClient.getPackageData(base_url, query_params as Map<String, Object>)
+      } catch (GoKbClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
+        valid = false
       }
  
       if (valid) {
@@ -106,13 +112,15 @@ public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, Da
     log.debug ("processPackage(${url},${source_name}) -- fetching");
     try {
       boolean valid = true
-      Map<String, ?> jsonMap = (Map) getSync(url) {
-        response.failure { FromServer fromServer ->
-          log.debug "Request failed with status ${fromServer.statusCode}"
-          valid = false
-        }
+      Map<String, ?> jsonMap
+      try {
+        jsonMap = (Map)  goKbClient.getPackageData(url)
+      } catch (GoKbClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
+        valid = false
       }
-      
+
+
       if (valid) {
         PackageSchema json_package_description = kbplusToERM(jsonMap)
         cache.onPackageChange(source_name, json_package_description)
