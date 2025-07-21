@@ -27,11 +27,11 @@ class AccessControlUrlMapping {
         "${path}/$id/canApplyPolicies"(controller: controller, action: "canApplyPolicies", method: 'GET')
 
         // FIXME we should probably also include a "${path}/$id/policies" to return the policies for a given resource, with the same shape as claimPolicies etc?
+        // CLAIM endpoint is needed to be able to apply policies to a resource
+        "${path}/$id/claim"(controller: controller, action: "claim", method: 'POST')
       }
 
-      // Should these be in this grails urlMappings?
-      // FIXME should we remove the ability to directly CRUD accessPolicies, and instead manage them through the resource controllers?
-      "/erm/accessControl"(resources: 'accessPolicy') {
+      "/erm/accessControl"(resources: 'accessPolicy', excludes: ['patch', 'save', 'create', 'edit', 'delete']) {
         collection {
           "/readPolicies"(controller: 'accessPolicy', action: 'getReadPolicyIds', method: 'GET')
           "/deletePolicies"(controller: 'accessPolicy', action: 'getDeletePolicyIds', method: 'GET')

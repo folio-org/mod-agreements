@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.grails
 
-import com.k_int.accesscontrol.core.responses.CanAccessResponse
+import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager
@@ -128,6 +128,17 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     return resolvedRootId ?: leafResourceId
   }
 
+  protected String resolveRootOwnerClass() {
+    PolicyControlledMetadata leafMetadata = policyControlledManager.getLeafPolicyControlledMetadata()
+
+    if (!policyControlledManager.hasOwners()) {
+      // If there are no configured owners, the leaf resource itself is the "root" for policy purposes
+
+      return leafMetadata?.resourceClassName;
+    }
+    PolicyControlledMetadata rootMetadata = policyControlledManager.getRootPolicyControlledMetadata()
+    return rootMetadata.resourceClassName
+  }
 
   /**
    * Generates a list of SQL fragments (policy subqueries) based on a given policy restriction,
@@ -299,46 +310,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     respond CanAccessResponse.builder().canApplyPolicies(canAccess(PolicyRestriction.APPLY_POLICIES)).build()
   }
 
-  // FIXME this will need to go on the ACTUAL lookup etc etc...
-  //  For now it can be a test method
-  /**
-   * Retrieves a list of resources that the current user has read access to,
-   * applying access policy restrictions to the list query.
-   * This method leverages the {@code doTheLookup} mechanism and injects policy-based
-   * criteria using {@link MultipleAliasSQLCriterion}.
-   *
-   * @return A response object containing the list of accessible resources.
-   */
-  @Transactional
-  def readRestrictedList() {
-    AccessPolicyEntity.withNewSession {
-      List<AccessControlSql> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null)
-      log.trace("AccessControl generated PolicySql: ${policySql.join(', ')}")
-
-      long beforeLookup = System.nanoTime()
-      respond doTheLookup(resourceClass) {
-
-        // To handle nested levels of ownership, we have pre-parsed the owner tree
-        MultipleAliasSQLCriterion.SubCriteriaAliasContainer[] subCriteria = policyControlledManager.getNonLeafOwnershipChain().collect { pcm ->
-          Criteria aliasCriteria = criteria.createCriteria(pcm.getAliasOwnerField(), pcm.getAliasName())
-          return new MultipleAliasSQLCriterion.SubCriteriaAliasContainer(pcm.getAliasName(), aliasCriteria)
-        }
-
-        policySql.each {psql ->
-          String sqlString = psql.getSqlString()
-          Object[] parameters = psql.getParameters()
-          Type[] types = psql.getTypes().collect { acst -> typeMapper.getHibernateType(acst) } as Type[]
-
-          criteria.add(new MultipleAliasSQLCriterion(sqlString, parameters, types, subCriteria))
-        }
-        // Ensure we return criteria at the bottom?
-        return criteria
-      }
-
-      long afterLookup = System.nanoTime()
-      log.trace("AccessPolicyAwareController::testReadRestrictedList query time: {}", Duration.ofNanos(afterLookup - beforeLookup))
-    }
-  }
 
   // Comment out to allow quick revert to default index behaviour for development
   /**
@@ -347,7 +318,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    * It constructs SQL criteria dynamically based on the configured ownership chain and policy restrictions.
    */
   @Transactional
-  def index() {
+  def index(Integer max) {
     // Protect the index method with access control -- replace the built in "index" method
     AccessPolicyEntity.withNewSession {
       List<AccessControlSql> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null)
@@ -389,6 +360,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   def show() {
     if (canAccess(PolicyRestriction.READ)) {
       super.show()
+      return
     }
 
     respond ([ message: "PolicyRestriction.READ check failed in access control" ], status: 403 )
@@ -404,6 +376,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   def save() {
     if (canAccess(PolicyRestriction.CREATE)) {
       super.save()
+      return
     }
 
     respond ([ message: "PolicyRestriction.CREATE check failed in access control" ], status: 403 )
@@ -420,6 +393,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   def update() {
     if (canAccess(PolicyRestriction.UPDATE)) {
       super.update()
+      return
     }
 
     respond ([ message: "PolicyRestriction.UPDATE check failed in access control" ], status: 403 )
@@ -436,8 +410,75 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   def delete() {
     if (canAccess(PolicyRestriction.DELETE)) {
       super.delete()
+      return
     }
 
     respond ([ message: "PolicyRestriction.DELETE check failed in access control" ], status: 403 )
+  }
+
+  // FIXME CLAIMing a resource should be handled at the resource level, rather than directly on the AccessPolicyController.
+  /**
+   * Handles the claiming of a resource by checking if the user has permission to apply policies.
+   * If the user has the {@link PolicyRestriction#APPLY_POLICIES} permission, it processes the claim.
+   * Otherwise, it responds with a 403 Forbidden status.
+   *
+   * The POST body should contain the policies to be applied to the resource,
+   * and these are expected to be valid for the {@link PolicyRestriction#CLAIM} restriction.
+   * Follows the normal _delete pattern for KIWT endpoints
+   *
+   * @return A response indicating the result of the claim operation.
+   */
+  def claim(GrailsClaimBody claimBody) {
+    if (claimBody.hasErrors()) {
+      // If there are errors, respond with a 400 Bad Request and the errors object
+      respond claimBody.errors, status: 400
+      return
+    }
+
+    // FIXME prevent setting access policies on non-root resources
+
+    // Strategy - Check whether APPLY_POLICIES is allowed on the resource, and if so, then check whether all policies in the request body are valid for CLAIM.
+    if (canAccess(PolicyRestriction.APPLY_POLICIES)) {
+      String resourceId = resolveRootOwnerId(params.id);
+      String resourceClass = resolveRootOwnerClass();
+      // FIXME move to service layer instead in hopes it fixes the weird transactional issues
+      AccessPolicyEntity.withTransaction {
+        // For each claim in the body, we need to first check whether the policy currently exists. If it does, we can update it (description ONLY)
+        claimBody.claims.each { GrailsClaimBody.GrailsPolicyClaim claim ->
+          if (claim.id) {
+            // If the claim has an ID, we assume it is an existing policy that needs to be updated
+            AccessPolicyEntity existingPolicy = AccessPolicyEntity.findById(claim.id)
+            if (existingPolicy != null) {
+              if (claim._delete) {
+                // If the claim has a _delete flag, we delete the existing policy
+                existingPolicy.delete()
+              } else {
+                // Update the description field ONLY... once a policy is created, we don't change any other information about it.
+                existingPolicy.setDescription(claim.description)
+                existingPolicy.save(flush: true, failOnError: true)
+              }
+            } else {
+              log.warning("Access policy with ID ${claim.id} does not exist, skipping update.")
+            }
+          } else {
+            // If no ID, we create a new policy
+            // FIXME We need to validate whether PolicyId is valid for CLAIM
+            AccessPolicyEntity newPolicy = new AccessPolicyEntity(
+              policyId: claim.policyId,
+              type: claim.type,
+              description: claim.description,
+              resourceId: resourceId,
+              resourceClass: resourceClass
+            ).save(flush: true, failOnError: true)
+          }
+        }
+      }
+
+      // FIXME obviously it's not always agreements
+      respond ([ message: "Access policies created for this agreement" ], status: 201 )
+      return
+    }
+
+    respond ([ message: "PolicyRestriction.APPLY_POLICIES check failed in access control" ], status: 403 )
   }
 }
