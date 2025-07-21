@@ -24,6 +24,7 @@ class AccessControlUrlMapping {
         "${path}/$id/canRead"(controller: controller, action: "canRead", method: 'GET')
         "${path}/$id/canUpdate"(controller: controller, action: "canUpdate", method: 'GET')
         "${path}/$id/canDelete"(controller: controller, action: "canDelete", method: 'GET')
+        "${path}/$id/canApplyPolicies"(controller: controller, action: "canApplyPolicies", method: 'GET')
 
         // FIXME we should probably also include a "${path}/$id/policies" to return the policies for a given resource, with the same shape as claimPolicies etc?
 
@@ -40,6 +41,7 @@ class AccessControlUrlMapping {
           "/updatePolicies"(controller: 'accessPolicy', action: 'getUpdatePolicyIds', method: 'GET')
           "/createPolicies"(controller: 'accessPolicy', action: 'getCreatePolicyIds', method: 'GET')
           "/claimPolicies"(controller: 'accessPolicy', action: 'getClaimPolicyIds', method: 'GET')
+          "/applyPolicies"(controller: 'accessPolicy', action: 'getApplyPolicyIds', method: 'GET')
         }
       }
     }

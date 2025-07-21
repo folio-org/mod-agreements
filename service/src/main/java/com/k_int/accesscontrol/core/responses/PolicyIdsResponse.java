@@ -20,4 +20,6 @@ public class PolicyIdsResponse {
   List<AccessPolicyTypeIds> deletePolicyIds;
   @Nullable
   List<AccessPolicyTypeIds> claimPolicyIds;
+  @Nullable
+  List<AccessPolicyTypeIds> applyPolicyIds;
 }

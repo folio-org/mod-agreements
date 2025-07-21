@@ -10,6 +10,7 @@ public enum PolicyRestriction {
    * If this restriction is active, a user may not be able to view the resource's data.
    */
   READ,
+
   /**
    * Represents the restriction on the creation of new records.
    * <p>Note: The mapping from `AcquisitionUnitRestriction.CREATE` is not always a direct relationship.
@@ -17,18 +18,32 @@ public enum PolicyRestriction {
    * `AcquisitionUnitRestriction.NONE` flag, since creation is never restricted by ACQ_UNITs.</p>
    */
   CREATE,
+
   /**
-   * Represents the restriction on associating a policy (e.g., an acquisition unit).
+   * Represents the restriction on associating with a given policy (e.g., an acquisition unit).
+   * Importantly, this is the restriction which is used to find the list of policies that are valid for the user,
+   * and NOT the restriction for assigning a policy to a resource (See {@link #APPLY_POLICIES}).
    * <p>Note: The mapping from `AcquisitionUnitRestriction.CLAIM` is not always a direct relationship.
    * In the context of Acquisition Units, {@code PolicyRestriction.CLAIM} maps to the
-   * `AcquisitionUnitRestriction.CREATE` flag.</p>
+   * {@code AcquisitionUnitRestriction.CREATE} flag.</p>
    */
   CLAIM,
+
+  /**
+   * Represents the restriction on applying a policy to a resource.
+   * If this restriction is active, a user may not be able to apply the policy to the resource.
+   *  <p>Note: The mapping from `AcquisitionUnitRestriction.CLAIM` is not always a direct relationship.
+   *    * In the context of Acquisition Units, {@code PolicyRestriction.APPLY_POLICIES} maps to the
+   *    * {@code AcquisitionUnitRestriction.UPDATE} flag.</p>
+   */
+  APPLY_POLICIES,
+
   /**
    * Represents the restriction on modifying an existing record.
    * If this restriction is active, a user may not be able to make changes to the resource.
    */
   UPDATE,
+
   /**
    * Represents the restriction on removing a record.
    * If this restriction is active, a user may not be able to delete the resource.

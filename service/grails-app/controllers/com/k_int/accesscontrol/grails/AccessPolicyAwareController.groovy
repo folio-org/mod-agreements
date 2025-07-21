@@ -196,7 +196,8 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       PolicyRestriction.CREATE,
       PolicyRestriction.DELETE,
       PolicyRestriction.UPDATE,
-      PolicyRestriction.READ
+      PolicyRestriction.READ,
+      PolicyRestriction.APPLY_POLICIES,
     )
   }
 
@@ -277,10 +278,25 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     respond CanAccessResponse.builder().canDelete(canAccess(PolicyRestriction.DELETE)).build()
   }
 
+  /**
+   * Checks if the currently authenticated user has permission to create new resources of the type managed by this controller.
+   * The result is returned in the response map.
+   */
   @Transactional
   def canCreate() {
     log.trace("AccessPolicyAwareController::canCreate")
     respond CanAccessResponse.builder().canCreate(canAccess(PolicyRestriction.CREATE)).build()
+  }
+
+  /**
+   * Checks if the currently authenticated user can apply policies to the resource identified by {@code params.id}.
+   * This method is used to determine if the user has permission to apply access policies to the resource.
+   * The result is returned in the response map.
+   */
+  @Transactional
+  def canApplyPolicies() {
+    log.trace("AccessPolicyAwareController::canApplyPolicies")
+    respond CanAccessResponse.builder().canApplyPolicies(canAccess(PolicyRestriction.APPLY_POLICIES)).build()
   }
 
   // FIXME this will need to go on the ACTUAL lookup etc etc...

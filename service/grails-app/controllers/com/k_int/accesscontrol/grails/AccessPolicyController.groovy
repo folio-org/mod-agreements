@@ -34,7 +34,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   }
 
   /**
-   * Retrieves the policy IDs for the READ restriction.
+   * Retrieves the policy IDs for the {@link PolicyRestriction#READ} restriction.
    * This method is transactional and responds with a list of policy IDs.
    *
    * @return A response containing the list of read policy IDs.
@@ -46,7 +46,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   }
 
   /**
-   * Retrieves the policy IDs for the UPDATE restriction.
+   * Retrieves the policy IDs for the {@link PolicyRestriction#UPDATE} restriction.
    * This method is transactional and responds with a list of policy IDs.
    *
    * @return A response containing the list of update policy IDs.
@@ -58,7 +58,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   }
 
   /**
-   * Retrieves the policy IDs for the CREATE restriction.
+   * Retrieves the policy IDs for the {@link PolicyRestriction#CREATE} restriction.
    * This method is transactional and responds with a list of policy IDs.
    *
    * @return A response containing the list of create policy IDs.
@@ -70,7 +70,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   }
 
   /**
-   * Retrieves the policy IDs for the DELETE restriction.
+   * Retrieves the policy IDs for the {@link PolicyRestriction#DELETE} restriction.
    * This method is transactional and responds with a list of policy IDs.
    *
    * @return A response containing the list of delete policy IDs.
@@ -82,7 +82,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   }
 
   /**
-   * Retrieves the policy IDs for the CLAIM restriction.
+   * Retrieves the policy IDs for the {@link PolicyRestriction#CLAIM} restriction.
    * This method is transactional and responds with a list of policy IDs.
    *
    * @return A response containing the list of claim policy IDs.
@@ -91,5 +91,17 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   def getClaimPolicyIds() {
     log.trace("AccessPolicyController::getClaimPolicyIds")
     respond PolicyIdsResponse.builder().claimPolicyIds(getPolicyIds(PolicyRestriction.CLAIM)).build()
+  }
+
+  /**
+   * Retrieves the policy IDs for the {@link PolicyRestriction#APPLY_POLICIES} restriction.
+   * This method is transactional and responds with a list of policy IDs.
+   *
+   * @return A response containing the list of apply policy IDs.
+   */
+  @Transactional
+  def getApplyPolicyIds() {
+    log.trace("AccessPolicyController::getApplyPolicyIds")
+    respond PolicyIdsResponse.builder().applyPolicyIds(getPolicyIds(PolicyRestriction.APPLY_POLICIES)).build()
   }
 }

@@ -18,4 +18,6 @@ public class CanAccessResponse {
   Boolean canCreate;
   @Nullable
   Boolean canClaim;
+  @Nullable
+  Boolean canApplyPolicies;
 }

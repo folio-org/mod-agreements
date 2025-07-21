@@ -79,6 +79,7 @@ public enum AcquisitionUnitRestriction {
    * <li>{@link PolicyRestriction#CLAIM} maps to {@link #CREATE} (as claiming/associating is seen as a 'create' operation for the acquisition unit link).</li>
    * <li>{@link PolicyRestriction#CREATE} maps to {@link #NONE} (as acquisition units do not directly restrict the act of creating a new record, but rather its association).</li>
    * <li>{@link PolicyRestriction#UPDATE} maps to {@link #UPDATE}.</li>
+   * <li>{@link PolicyRestriction#APPLY_POLICIES} maps to {@link #UPDATE} (as acquisition units are usually set in FOLIO on a field on the resource itself, and so protected by UPDATE)</li>
    * <li>{@link PolicyRestriction#DELETE} maps to {@link #DELETE}.</li>
    * </ul>
    *
@@ -91,7 +92,7 @@ public enum AcquisitionUnitRestriction {
       case READ -> AcquisitionUnitRestriction.READ;
       case CLAIM -> AcquisitionUnitRestriction.CREATE;
       case DELETE -> AcquisitionUnitRestriction.DELETE;
-      case UPDATE -> AcquisitionUnitRestriction.UPDATE;
+      case UPDATE, APPLY_POLICIES -> AcquisitionUnitRestriction.UPDATE;
       default -> AcquisitionUnitRestriction.NONE;
     };
   }
