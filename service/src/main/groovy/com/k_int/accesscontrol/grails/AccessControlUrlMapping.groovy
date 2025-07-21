@@ -27,9 +27,6 @@ class AccessControlUrlMapping {
         "${path}/$id/canApplyPolicies"(controller: controller, action: "canApplyPolicies", method: 'GET')
 
         // FIXME we should probably also include a "${path}/$id/policies" to return the policies for a given resource, with the same shape as claimPolicies etc?
-
-        // FIXME this won't end up in the final work, just here as a test to compare/contract with normal read.
-        "${path}/testReadRestrictedList" (controller: controller, action: "readRestrictedList", method: 'GET')
       }
 
       // Should these be in this grails urlMappings?

@@ -122,7 +122,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     hql.append(" WHERE t0.id = :leafResourceId") // Filter by the requested leaf resource ID
 
     // Execute the HQL query and return the id at hand
-    String resolvedRootId = AccessPolicyEntity.executeQuery(hql.toString(), ["leafResourceId": leafResourceId])[0 as String]
+    String resolvedRootId = AccessPolicyEntity.executeQuery(hql.toString(), ["leafResourceId": leafResourceId])[0]
 
     // Return the resolved ID, or fallback to the leaf ID if resolution fails (e.g., entity not found)
     return resolvedRootId ?: leafResourceId
@@ -338,5 +338,106 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       long afterLookup = System.nanoTime()
       log.trace("AccessPolicyAwareController::testReadRestrictedList query time: {}", Duration.ofNanos(afterLookup - beforeLookup))
     }
+  }
+
+  // Comment out to allow quick revert to default index behaviour for development
+  /**
+   * Overrides the default index method to apply access control policies when listing resources.
+   * This method uses the {@link AccessPolicyEntity} to enforce {@link PolicyRestriction#READ} restrictions based on the user's access policies.
+   * It constructs SQL criteria dynamically based on the configured ownership chain and policy restrictions.
+   */
+  @Transactional
+  def index() {
+    // Protect the index method with access control -- replace the built in "index" method
+    AccessPolicyEntity.withNewSession {
+      List<AccessControlSql> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null)
+      log.trace("AccessControl generated PolicySql: ${policySql.join(', ')}")
+
+      long beforeLookup = System.nanoTime()
+      respond doTheLookup(resourceClass) {
+
+        // To handle nested levels of ownership, we have pre-parsed the owner tree
+        MultipleAliasSQLCriterion.SubCriteriaAliasContainer[] subCriteria = policyControlledManager.getNonLeafOwnershipChain().collect { pcm ->
+          Criteria aliasCriteria = criteria.createCriteria(pcm.getAliasOwnerField(), pcm.getAliasName())
+          return new MultipleAliasSQLCriterion.SubCriteriaAliasContainer(pcm.getAliasName(), aliasCriteria)
+        }
+
+        policySql.each {psql ->
+          String sqlString = psql.getSqlString()
+          Object[] parameters = psql.getParameters()
+          Type[] types = psql.getTypes().collect { acst -> typeMapper.getHibernateType(acst) } as Type[]
+
+          criteria.add(new MultipleAliasSQLCriterion(sqlString, parameters, types, subCriteria))
+        }
+        // Ensure we return criteria at the bottom?
+        return criteria
+      }
+
+      long afterLookup = System.nanoTime()
+      log.trace("AccessPolicyAwareController::testReadRestrictedList query time: {}", Duration.ofNanos(afterLookup - beforeLookup))
+    }
+  }
+
+  /**
+   * Overrides the show method to apply access control policies when retrieving a single resource.
+   * This method checks if the user has read access to the resource identified by {@code params.id}
+   * and responds accordingly.
+   *
+   * @return A response containing the resource if access is granted, or an error message if access is denied.
+   */
+  @Transactional
+  def show() {
+    if (canAccess(PolicyRestriction.READ)) {
+      super.show()
+    }
+
+    respond ([ message: "PolicyRestriction.READ check failed in access control" ], status: 403 )
+  }
+
+  /**
+   * Overrides the save method to apply access control policies when creating a new resource.
+   * This method checks if the user has create access and responds accordingly.
+   *
+   * @return A response containing the created resource if access is granted, or an error message if access is denied.
+   */
+  @Transactional
+  def save() {
+    if (canAccess(PolicyRestriction.CREATE)) {
+      super.save()
+    }
+
+    respond ([ message: "PolicyRestriction.CREATE check failed in access control" ], status: 403 )
+  }
+
+  /**
+   * Overrides the update method to apply access control policies when updating an existing resource.
+   * This method checks if the user has update access to the resource identified by {@code params.id}
+   * and responds accordingly.
+   *
+   * @return A response containing the updated resource if access is granted, or an error message if access is denied.
+   */
+  @Transactional
+  def update() {
+    if (canAccess(PolicyRestriction.UPDATE)) {
+      super.update()
+    }
+
+    respond ([ message: "PolicyRestriction.UPDATE check failed in access control" ], status: 403 )
+  }
+
+  /**
+   * Overrides the delete method to apply access control policies when deleting a resource.
+   * This method checks if the user has delete access to the resource identified by {@code params.id}
+   * and responds accordingly.
+   *
+   * @return A response indicating successful deletion if access is granted, or an error message if access is denied.
+   */
+  @Transactional
+  def delete() {
+    if (canAccess(PolicyRestriction.DELETE)) {
+      super.delete()
+    }
+
+    respond ([ message: "PolicyRestriction.DELETE check failed in access control" ], status: 403 )
   }
 }
