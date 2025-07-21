@@ -82,8 +82,8 @@ public class Pkg extends ErmResource implements MultiTenant<Pkg> {
                        vendor(nullable:true, blank:false)
             sourceDataCreated(nullable:true, blank:false)
             sourceDataUpdated(nullable:true, blank:false)
-              lifecycleStatus(nullable:true, blank:false) // TODO - do we actually want this to be nullable?
-            availabilityScope(nullable:true, blank:false) // TODO - do we actually want this to be nullable?
+              lifecycleStatus(nullable:true, blank:false)
+            availabilityScope(nullable:true, blank:false)
   }
 
   /*
