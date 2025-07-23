@@ -20,7 +20,7 @@ databaseChangeLog = {
     Get the newly created 'missingLifecycleStatusRefDataValue' ID from the refDataValue table and set the pkg_lifecycle_status_fk
     column to that ID where the value currently in the pkg_lifecycle_status_fk DOES NOT CURRENTLY EXIST in the refDataValue table (where block below).
     */
-   grailsChange {
+    grailsChange {
       change {
         sql.execute("""
           UPDATE ${database.defaultSchemaName}.package
@@ -42,6 +42,9 @@ databaseChangeLog = {
         """.toString())
       }
     }
+
+    // Create the foreign key constraints on these columns so when a refDataValue is in use by a package, the refDataValue can't be deleted.
+    addForeignKeyConstraint(baseColumnNames: "pkg_lifecycle_status_fk", baseTableName: "package", constraintName: "lifecycle_status_to_rdv_fk", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "rdv_id", referencedTableName: "refdata_value")
   }
 
   changeSet(author: "mchaib (manual)", id: "20250716-1620-002") {
@@ -86,13 +89,8 @@ databaseChangeLog = {
         """.toString())
       }
     }
-  }
 
-  // Now that both the pkg_lifecycle_status_fk and pkg_availability_scope_fk columns are always referencing existing values in rdv table,
-  // Create the foreign key constraints on these columns so when a refDataValue is in use by a package, the refDataValue can't be deleted.
-  changeSet(author: "mchaib (manual)", id: "20250716-1620-003") {
-    addForeignKeyConstraint(baseColumnNames: "pkg_lifecycle_status_fk", baseTableName: "package", constraintName: "lifecycle_status_to_rdv_fk", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "rdv_id", referencedTableName: "refdata_value")
+    // Create the foreign key constraints on these columns so when a refDataValue is in use by a package, the refDataValue can't be deleted.
     addForeignKeyConstraint(baseColumnNames: "pkg_availability_scope_fk", baseTableName: "package", constraintName: "availability_scope_to_rdv_fk", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "rdv_id", referencedTableName: "refdata_value")
   }
-
 }
