@@ -134,7 +134,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     if (!policyControlledManager.hasOwners()) {
       // If there are no configured owners, the leaf resource itself is the "root" for policy purposes
 
-      return leafMetadata?.resourceClassName;
+      return leafMetadata?.resourceClassName
     }
     PolicyControlledMetadata rootMetadata = policyControlledManager.getRootPolicyControlledMetadata()
     return rootMetadata.resourceClassName
@@ -259,6 +259,26 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     }
   }
 
+  boolean canUserRead() {
+    return canAccess(PolicyRestriction.READ)
+  }
+
+  boolean canUserUpdate() {
+    return canAccess(PolicyRestriction.UPDATE)
+  }
+
+  boolean canUserDelete() {
+    return canAccess(PolicyRestriction.DELETE)
+  }
+
+  boolean canUserCreate() {
+    return canAccess(PolicyRestriction.CREATE)
+  }
+
+  boolean canUserApplyPolicies() {
+    return canAccess(PolicyRestriction.APPLY_POLICIES)
+  }
+
   /**
    * Checks if the currently authenticated user has read access to the resource identified by {@code params.id}.
    * The result is returned in the response map.
@@ -266,7 +286,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def canRead() {
     log.trace("AccessPolicyAwareController::canRead")
-    respond CanAccessResponse.builder().canRead(canAccess(PolicyRestriction.READ)).build()
+    respond CanAccessResponse.builder().canRead(canUserRead()).build()
   }
 
   /**
@@ -276,7 +296,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def canUpdate() {
     log.trace("AccessPolicyAwareController::canUpdate")
-    respond CanAccessResponse.builder().canUpdate(canAccess(PolicyRestriction.UPDATE)).build()
+    respond CanAccessResponse.builder().canUpdate(canUserUpdate()).build()
   }
 
   /**
@@ -286,7 +306,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def canDelete() {
     log.trace("AccessPolicyAwareController::canDelete")
-    respond CanAccessResponse.builder().canDelete(canAccess(PolicyRestriction.DELETE)).build()
+    respond CanAccessResponse.builder().canDelete(canUserDelete()).build()
   }
 
   /**
@@ -296,7 +316,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def canCreate() {
     log.trace("AccessPolicyAwareController::canCreate")
-    respond CanAccessResponse.builder().canCreate(canAccess(PolicyRestriction.CREATE)).build()
+    respond CanAccessResponse.builder().canCreate(canUserCreate()).build()
   }
 
   /**
@@ -307,7 +327,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def canApplyPolicies() {
     log.trace("AccessPolicyAwareController::canApplyPolicies")
-    respond CanAccessResponse.builder().canApplyPolicies(canAccess(PolicyRestriction.APPLY_POLICIES)).build()
+    respond CanAccessResponse.builder().canApplyPolicies(canUserApplyPolicies()).build()
   }
 
 
@@ -358,7 +378,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    */
   @Transactional
   def show() {
-    if (canAccess(PolicyRestriction.READ)) {
+    if (canUserRead()) {
       super.show()
       return
     }
@@ -374,7 +394,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    */
   @Transactional
   def save() {
-    if (canAccess(PolicyRestriction.CREATE)) {
+    if (canUserCreate()) {
       super.save()
       return
     }
@@ -391,7 +411,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    */
   @Transactional
   def update() {
-    if (canAccess(PolicyRestriction.UPDATE)) {
+    if (canUserUpdate()) {
       super.update()
       return
     }
@@ -408,7 +428,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    */
   @Transactional
   def delete() {
-    if (canAccess(PolicyRestriction.DELETE)) {
+    if (canUserDelete()) {
       super.delete()
       return
     }
@@ -424,7 +444,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    *
    * The POST body should contain the policies to be applied to the resource,
    * and these are expected to be valid for the {@link PolicyRestriction#CLAIM} restriction.
-   * Follows the normal _delete pattern for KIWT endpoints
+   * DOES NOT follow the _delete pattern, as it is not a GORM entity. Instead a POST without some AccessPolicyEntity id will remove said policy
    *
    * @return A response indicating the result of the claim operation.
    */
@@ -436,46 +456,82 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     }
 
     // FIXME prevent setting access policies on non-root resources
-
     // Strategy - Check whether APPLY_POLICIES is allowed on the resource, and if so, then check whether all policies in the request body are valid for CLAIM.
-    if (canAccess(PolicyRestriction.APPLY_POLICIES)) {
-      String resourceId = resolveRootOwnerId(params.id);
-      String resourceClass = resolveRootOwnerClass();
-      // FIXME move to service layer instead in hopes it fixes the weird transactional issues
-      AccessPolicyEntity.withTransaction {
-        // For each claim in the body, we need to first check whether the policy currently exists. If it does, we can update it (description ONLY)
-        claimBody.claims.each { GrailsClaimBody.GrailsPolicyClaim claim ->
-          if (claim.id) {
-            // If the claim has an ID, we assume it is an existing policy that needs to be updated
-            AccessPolicyEntity existingPolicy = AccessPolicyEntity.findById(claim.id)
-            if (existingPolicy != null) {
-              if (claim._delete) {
-                // If the claim has a _delete flag, we delete the existing policy
-                existingPolicy.delete()
-              } else {
-                // Update the description field ONLY... once a policy is created, we don't change any other information about it.
-                existingPolicy.setDescription(claim.description)
-                existingPolicy.save(flush: true, failOnError: true)
+    if (canUserApplyPolicies()) {
+      String resourceId = resolveRootOwnerId(params.id)
+      String resourceClass = resolveRootOwnerClass()
+      boolean success = true
+      String failureMessage = ''
+      int failureCode = 400
+      AccessPolicyEntity.withNewSession { sess ->
+        AccessPolicyEntity.withTransaction {
+          // For each claim in the body, we need to first check whether the policy currently exists. If it does, we can update it (description ONLY)
+          for(GrailsClaimBody.GrailsPolicyClaim claim  : claimBody.claims) {
+            if (claim.id) {
+              // If the claim has an ID, we assume it is an existing policy that needs to be updated
+              AccessPolicyEntity existingPolicy = AccessPolicyEntity.findById(claim.id)
+              // If we're handed a non existing policy ID, we should fail the request
+              if (existingPolicy == null) {
+                success = false
+                failureMessage = "Access policy with ID ${claim.id} does not exist."
+                log.error(failureMessage)
+                break
               }
+
+              // If existing policy is for a different resource, we should also fail the request
+              if (existingPolicy.resourceId != resourceId) {
+                success = false
+                failureMessage = "Access policy ${existingPolicy.id} has resource ID: ${existingPolicy.resourceId} which does not match resource ID ${resourceId}."
+                log.error(failureMessage)
+                break
+              }
+
+              // If existing policy is for a different class, we should also fail the request
+              if (existingPolicy.resourceClass != resourceClass) {
+                success = false
+                failureMessage = "Access policy ${existingPolicy.id} has resource class: ${existingPolicy.resourceClass} which does not match resource class ${resourceClass}."
+                log.error(failureMessage)
+                break
+              }
+
+              // Update the description field ONLY... once a policy is created, we don't change any other information about it.
+              existingPolicy.description = claim.description
+              existingPolicy.save(flush: true, failOnError: true)
             } else {
-              log.warning("Access policy with ID ${claim.id} does not exist, skipping update.")
+              // If no ID, we create a new policy
+              // FIXME We need to validate whether PolicyId is valid for CLAIM
+              // ALSO we should probably handle the case where a policy with the same ID already exists for this resource
+              new AccessPolicyEntity(
+                policyId: claim.policyId,
+                type: claim.type,
+                description: claim.description,
+                resourceId: resourceId,
+                resourceClass: resourceClass
+              ).save(flush: true, failOnError: true)
             }
-          } else {
-            // If no ID, we create a new policy
-            // FIXME We need to validate whether PolicyId is valid for CLAIM
-            AccessPolicyEntity newPolicy = new AccessPolicyEntity(
-              policyId: claim.policyId,
-              type: claim.type,
-              description: claim.description,
-              resourceId: resourceId,
-              resourceClass: resourceClass
-            ).save(flush: true, failOnError: true)
+          }
+
+          // Then for any AccessPolicyEntities for this resource NOT in the claimBody, we need to delete them
+          List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
+          for (AccessPolicyEntity policy : accessPoliciesForResource) {
+            if (!claimBody.claims.any { claim -> claim.id == policy.id || claim.id == null }) {
+              // If the policy is not in the claimBody, we delete it
+              def deleteOutput = policy.delete(flush: true, failOnError: true)
+            }
           }
         }
+
+        sess.flush() // Ensure all changes are flushed to the database
       }
 
-      // FIXME obviously it's not always agreements
-      respond ([ message: "Access policies created for this agreement" ], status: 201 )
+
+      // If the claims failed, respond with the failure message and code
+      if (!success) {
+        respond ([ message: failureMessage ], status: failureCode )
+        return
+      }
+
+      respond ([ message: "Access policies updated for this resource" ], status: 201 )
       return
     }
 

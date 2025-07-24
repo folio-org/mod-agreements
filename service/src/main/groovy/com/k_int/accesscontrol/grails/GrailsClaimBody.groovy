@@ -11,8 +11,6 @@ import grails.validation.Validateable
 class GrailsClaimBody extends ClaimBody implements Validateable {
   // Override the claims property to use a Grails-specific implementation which is ALSO validated
   class GrailsPolicyClaim extends ClaimBody.PolicyClaim implements Validateable {
-    boolean _delete = false; // Flag to indicate if the claim should be deleted
-
     static constraints = {
       id nullable: true, blank: false
       policyId nullable: false, blank: false
@@ -20,12 +18,12 @@ class GrailsClaimBody extends ClaimBody implements Validateable {
       description nullable: true, blank: false
     }
   }
-  List<GrailsPolicyClaim> claims;
+  List<GrailsPolicyClaim> claims
 
   static constraints = {
     claims validator: { val, _obj, errors ->
       if (!val) {
-        return false; // Don't allow null claims
+        return false // Don't allow null claims
       }
 
       val.eachWithIndex { claim, i ->

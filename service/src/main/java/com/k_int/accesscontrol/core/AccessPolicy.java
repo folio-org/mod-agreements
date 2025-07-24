@@ -1,29 +1,34 @@
 package com.k_int.accesscontrol.core;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
 import java.time.Instant;
 
 /**
- * Data model representing an access policy rule.
+ * Interface representing an access policy rule.
  * An access policy links a specific policy ID to a target resource class and ID,
  * and is typed according to a known `AccessPolicyType` (e.g., ACQ_UNIT).
+ * Each implementation (Grails, micronaut, etc) will need to provide its own "entity" class implementing this interface.
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class AccessPolicy {
-  private String id;
+public interface AccessPolicy {
+  String getId();
+  void setId(String id);
 
   // Access policy itself
-  private String description;
-  private Instant dateCreated;
-  private AccessPolicyType type;
-  private String policyId;
+  String getDescription();
+  void setDescription(String description);
+
+  Instant getDateCreated();
+  void setDateCreated(Instant dateCreated);
+
+  AccessPolicyType getType();
+  void setType(AccessPolicyType type);
+
+  String getPolicyId();
+  void setPolicyId(String policyId);
 
   // On what resource
-  private String resourceClass;
-  private String resourceId;
+  String getResourceClass();
+  void setResourceClass(String resourceClass);
+
+  String getResourceId();
+  void setResourceId(String resourceId);
 }

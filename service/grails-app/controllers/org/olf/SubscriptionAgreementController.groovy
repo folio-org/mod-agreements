@@ -787,41 +787,48 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
     }
     respond ([statusCode: 404])
   }
-  
+
+  // EXAMPLE where CRUD operations are overriden in accessControlled controllers, we may need to manually implement checks for access control
+  // This can be done directly with canAccess(PolicyRestriction restriction) or via helper methods canUserCreate() etc.
   @Transactional
   def delete() {
-    SubscriptionAgreement sa = queryForResource(params.id)
-    
-    // Not found.
-    if (sa == null) {
-      transactionStatus.setRollbackOnly()
-      notFound()
+    if (canUserDelete()) {
+      SubscriptionAgreement sa = queryForResource(params.id)
+
+      // Not found.
+      if (sa == null) {
+        transactionStatus.setRollbackOnly()
+        notFound()
+        return
+      }
+
+      // Return the relevant status if not allowed to delete.
+      if ((sa.items?.size() ?: 0) > 0) {
+        transactionStatus.setRollbackOnly()
+        render status: METHOD_NOT_ALLOWED, text: "Agreement has agreement lines"
+        return
+      }
+
+      // Return the relevant status if not allowed to delete.
+      if ((sa.linkedLicenses?.size() ?: 0) > 0) {
+        transactionStatus.setRollbackOnly()
+        render status: METHOD_NOT_ALLOWED, text: "Agreement has license lines"
+        return
+      }
+
+      // Return the relevant status if not allowed to delete.
+      if ((sa.inwardRelationships?.size() ?: 0) > 0 || (sa.outwardRelationships?.size() ?: 0) > 0) {
+        transactionStatus.setRollbackOnly()
+        render status: METHOD_NOT_ALLOWED, text: "Agreement has related agreements"
+        return
+      }
+
+      // Finally delete the license if we get this far and respond.
+      deleteResource sa
+      render status: NO_CONTENT
       return
     }
-    
-    // Return the relevant status if not allowed to delete.
-    if ((sa.items?.size() ?: 0) > 0) {
-      transactionStatus.setRollbackOnly()
-      render status: METHOD_NOT_ALLOWED, text: "Agreement has agreement lines"
-      return
-    }
-    
-    // Return the relevant status if not allowed to delete.
-    if ((sa.linkedLicenses?.size() ?: 0) > 0) {
-      transactionStatus.setRollbackOnly()
-      render status: METHOD_NOT_ALLOWED, text: "Agreement has license lines"
-      return
-    }
-    
-    // Return the relevant status if not allowed to delete.
-    if ((sa.inwardRelationships?.size() ?: 0) > 0 || (sa.outwardRelationships?.size() ?: 0) > 0) {
-      transactionStatus.setRollbackOnly()
-      render status: METHOD_NOT_ALLOWED, text: "Agreement has related agreements"
-      return
-    }
-    
-    // Finally delete the license if we get this far and respond.
-    deleteResource sa
-    render status: NO_CONTENT
+
+    respond ([ message: "PolicyRestriction.DELETE check failed in access control" ], status: 403 )
   }
 }
