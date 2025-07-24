@@ -455,6 +455,12 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
+    if (policyControlledManager.hasOwners()) {
+      // If there are owners, then don't allow claiming (for now)
+      respond ([ message: 'Claiming is not supported on resources PolicyControlled via an owner' ], status: 400 )
+      return
+    }
+
     // FIXME prevent setting access policies on non-root resources
     // Strategy - Check whether APPLY_POLICIES is allowed on the resource, and if so, then check whether all policies in the request body are valid for CLAIM.
     if (!canUserApplyPolicies()) {
