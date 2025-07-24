@@ -457,84 +457,101 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
     // FIXME prevent setting access policies on non-root resources
     // Strategy - Check whether APPLY_POLICIES is allowed on the resource, and if so, then check whether all policies in the request body are valid for CLAIM.
-    if (canUserApplyPolicies()) {
-      String resourceId = resolveRootOwnerId(params.id)
-      String resourceClass = resolveRootOwnerClass()
-      boolean success = true
-      String failureMessage = ''
-      int failureCode = 400
-      AccessPolicyEntity.withNewSession { sess ->
-        AccessPolicyEntity.withTransaction {
-          // For each claim in the body, we need to first check whether the policy currently exists. If it does, we can update it (description ONLY)
-          for(GrailsClaimBody.GrailsPolicyClaim claim  : claimBody.claims) {
-            if (claim.id) {
-              // If the claim has an ID, we assume it is an existing policy that needs to be updated
-              AccessPolicyEntity existingPolicy = AccessPolicyEntity.findById(claim.id)
-              // If we're handed a non existing policy ID, we should fail the request
-              if (existingPolicy == null) {
-                success = false
-                failureMessage = "Access policy with ID ${claim.id} does not exist."
-                log.error(failureMessage)
-                break
-              }
-
-              // If existing policy is for a different resource, we should also fail the request
-              if (existingPolicy.resourceId != resourceId) {
-                success = false
-                failureMessage = "Access policy ${existingPolicy.id} has resource ID: ${existingPolicy.resourceId} which does not match resource ID ${resourceId}."
-                log.error(failureMessage)
-                break
-              }
-
-              // If existing policy is for a different class, we should also fail the request
-              if (existingPolicy.resourceClass != resourceClass) {
-                success = false
-                failureMessage = "Access policy ${existingPolicy.id} has resource class: ${existingPolicy.resourceClass} which does not match resource class ${resourceClass}."
-                log.error(failureMessage)
-                break
-              }
-
-              // Update the description field ONLY... once a policy is created, we don't change any other information about it.
-              existingPolicy.description = claim.description
-              existingPolicy.save(flush: true, failOnError: true)
-            } else {
-              // If no ID, we create a new policy
-              // FIXME We need to validate whether PolicyId is valid for CLAIM
-              // ALSO we should probably handle the case where a policy with the same ID already exists for this resource
-              new AccessPolicyEntity(
-                policyId: claim.policyId,
-                type: claim.type,
-                description: claim.description,
-                resourceId: resourceId,
-                resourceClass: resourceClass
-              ).save(flush: true, failOnError: true)
-            }
-          }
-
-          // Then for any AccessPolicyEntities for this resource NOT in the claimBody, we need to delete them
-          List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
-          for (AccessPolicyEntity policy : accessPoliciesForResource) {
-            if (!claimBody.claims.any { claim -> claim.id == policy.id || claim.id == null }) {
-              // If the policy is not in the claimBody, we delete it
-              def deleteOutput = policy.delete(flush: true, failOnError: true)
-            }
-          }
-        }
-
-        sess.flush() // Ensure all changes are flushed to the database
-      }
-
-
-      // If the claims failed, respond with the failure message and code
-      if (!success) {
-        respond ([ message: failureMessage ], status: failureCode )
-        return
-      }
-
-      respond ([ message: "Access policies updated for this resource" ], status: 201 )
+    if (!canUserApplyPolicies()) {
+      respond ([ message: "PolicyRestriction.APPLY_POLICIES check failed in access control" ], status: 403 )
       return
     }
 
-    respond ([ message: "PolicyRestriction.APPLY_POLICIES check failed in access control" ], status: 403 )
+    String resourceId = resolveRootOwnerId(params.id)
+    String resourceClass = resolveRootOwnerClass()
+    boolean success = true
+    String failureMessage = ''
+    int failureCode = 400
+    AccessPolicyEntity.withNewSession { sess ->
+      AccessPolicyEntity.withTransaction { transactionStatus ->
+
+        // Firstly delete any AccessPolicyEntities for this resource NOT in the claimBody
+        // We will then add/update policies from the claimBody
+        // We do the delete first so that if we are accidentally replacing a policy like-for-like without an id,
+        // we don't fail to add it thanks to duplicate check below, and then remove it, leaving resource unprotected
+        List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
+        for (AccessPolicyEntity policy : accessPoliciesForResource) {
+          if (!claimBody.claims.any { claim -> claim.id == policy.id || claim.id == null }) {
+            // If the policy is not in the claimBody, we delete it
+            policy.delete(failOnError: true)
+          }
+        }
+
+        // Fetch again after we complete delete step
+        accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
+
+        // For each claim in the body, we need to first check whether the policy currently exists. If it does, we can update it (description ONLY)
+        for(GrailsClaimBody.GrailsPolicyClaim claim  : claimBody.claims) {
+          if (claim.id) {
+            // If the claim has an ID, we assume it is an existing policy that needs to be updated
+            AccessPolicyEntity existingPolicy = AccessPolicyEntity.findById(claim.id)
+            // If we're handed a non existing policy ID, we should fail the request
+            if (existingPolicy == null) {
+              success = false
+              failureMessage = "Access policy with ID ${claim.id} does not exist."
+              log.error(failureMessage)
+              break
+            }
+
+            // If existing policy is for a different resource, we should also fail the request
+            if (existingPolicy.resourceId != resourceId) {
+              success = false
+              failureMessage = "Access policy ${existingPolicy.id} has resource ID: ${existingPolicy.resourceId} which does not match resource ID ${resourceId}."
+              log.error(failureMessage)
+              break
+            }
+
+            // If existing policy is for a different class, we should also fail the request
+            if (existingPolicy.resourceClass != resourceClass) {
+              success = false
+              failureMessage = "Access policy ${existingPolicy.id} has resource class: ${existingPolicy.resourceClass} which does not match resource class ${resourceClass}."
+              log.error(failureMessage)
+              break
+            }
+
+            // Update the description field ONLY... once a policy is created, we don't change any other information about it.
+            existingPolicy.description = claim.description
+            existingPolicy.save(failOnError: true)
+          } else if (
+            accessPoliciesForResource.any { ap -> ap.policyId == claim.policyId && ap.type == claim.type } // Only create if there is no existing policy with the same policyId
+          ) {
+            success = false
+            failureMessage = "Resource ${resourceId} already has an access policy with policyId ${claim.policyId}."
+            log.error(failureMessage)
+            break
+          } else {
+            // If no ID, we create a new policy
+            // FIXME We need to validate whether PolicyId is valid for CLAIM
+            new AccessPolicyEntity(
+              policyId: claim.policyId,
+              type: claim.type,
+              description: claim.description,
+              resourceId: resourceId,
+              resourceClass: resourceClass
+            ).save(failOnError: true)
+          }
+        }
+
+        // Rollback the transaction if any of the operations failed
+        if (!success) {
+          transactionStatus.setRollbackOnly()
+        }
+      }
+      sess.flush() // Ensure all changes are flushed to the database
+    }
+
+
+    // If the claims failed, respond with the failure message and code (rollback happened above, feels a little iffy)
+    if (!success) {
+      respond ([ message: failureMessage ], status: failureCode )
+      return
+    }
+
+    respond ([ message: "Access policies updated for this resource" ], status: 201 )
   }
 }
