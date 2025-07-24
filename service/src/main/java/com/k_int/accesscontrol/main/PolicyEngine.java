@@ -65,9 +65,15 @@ public class PolicyEngine {
   }
 
 
-  // Helper method to get all valid policy IDs for a given policy restriction.
-  // We handle CLAIM restrictions in this manner, canClaim should return the "PolicyId" list that a user can claim against a resource.
-  // For Acq units these PolicyIds are acquisition unit IDs, for KI_GRANT they may be ownership strings "GBV%", "GBV/Rostock", "%" etc
+  /**
+   * Retrieves a list of access policy IDs grouped by their type for the given policy restriction.
+   * This method is used to fetch valid policy IDs that can be used for operations like claims.
+   *
+   * @param headers the request context headers, used for FOLIO/internal service authentication
+   * @param pr      the policy restriction to filter by
+   * @return a list of {@link AccessPolicyTypeIds} containing policy IDs grouped by type
+   * @throws PolicyEngineException if an error occurs while fetching policy IDs
+   */
   public List<AccessPolicyTypeIds> getPolicyIds(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
     List<AccessPolicyTypeIds> policyIds = new ArrayList<>();
 
@@ -76,5 +82,27 @@ public class PolicyEngine {
     }
 
     return policyIds;
+  }
+
+  /**
+   * Validates the provided policy IDs against the access control system.
+   * This method checks if the policy IDs are valid for the given policy restriction.
+   *
+   * @param headers  the request context headers, used for FOLIO/internal service authentication
+   * @param pr       the policy restriction to filter by
+   * @param policyIds the list of policy IDs to validate
+   * @return true if all policy IDs are valid, false otherwise
+   * @throws PolicyEngineException if an error occurs during validation
+   */
+  public boolean arePolicyIdsValid(String[] headers, PolicyRestriction pr, List<AccessPolicyTypeIds> policyIds) throws PolicyEngineException {
+    boolean isValid = true;
+
+    // Check if isValid is true for each sub policyEngine, so that we can short-circuit if any engine returns false.
+    // No need to check for the first engine, as it will always start true
+    if (acquisitionUnitPolicyEngine != null) {
+      isValid = acquisitionUnitPolicyEngine.arePolicyIdsValid(headers, pr, policyIds.stream().filter(pid -> pid.getType() == AccessPolicyType.ACQ_UNIT).toList());
+    }
+
+    return isValid;
   }
 }

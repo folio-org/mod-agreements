@@ -1,5 +1,6 @@
 package com.k_int.accesscontrol.grails
 
+import com.k_int.accesscontrol.core.AccessPolicyTypeIds
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
@@ -436,7 +437,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     respond ([ message: "PolicyRestriction.DELETE check failed in access control" ], status: 403 )
   }
 
-  // FIXME CLAIMing a resource should be handled at the resource level, rather than directly on the AccessPolicyController.
   /**
    * Handles the claiming of a resource by checking if the user has permission to apply policies.
    * If the user has the {@link PolicyRestriction#APPLY_POLICIES} permission, it processes the claim.
@@ -461,13 +461,24 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
-    // FIXME prevent setting access policies on non-root resources
     // Strategy - Check whether APPLY_POLICIES is allowed on the resource, and if so, then check whether all policies in the request body are valid for CLAIM.
     if (!canUserApplyPolicies()) {
       respond ([ message: "PolicyRestriction.APPLY_POLICIES check failed in access control" ], status: 403 )
       return
     }
 
+    // We need to transform the claimBody into a list of AccessPolicyTypeIds objects to use policyEngine.arePolicyIdsValid
+    List<AccessPolicyTypeIds> policyIds = claimBody.convertToAccessPolicyTypeIds()
+
+    String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
+    if (!policyEngine.arePolicyIdsValid(grailsHeaders, PolicyRestriction.CLAIM, policyIds)) {
+      respond ([ message: "PolicyRestriction.CLAIM not valid for one or more policyIds in claims" ], status: 403 )
+      return
+    }
+
+    // At this point, we know that the user has permission to apply policies and that the policies in the claimBody are valid for CLAIM.
+
+    // Might not need to do this now, since we're cancelling early if there are owners
     String resourceId = resolveRootOwnerId(params.id)
     String resourceClass = resolveRootOwnerClass()
     boolean success = true
@@ -532,7 +543,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
             break
           } else {
             // If no ID, we create a new policy
-            // FIXME We need to validate whether PolicyId is valid for CLAIM
             new AccessPolicyEntity(
               policyId: claim.policyId,
               type: claim.type,

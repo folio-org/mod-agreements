@@ -12,9 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Policy engine implementor for acquisition units.
@@ -189,6 +188,28 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
       );
 
       return policyIds;
+    });
+  }
+
+  public boolean arePolicyIdsValid(String[] headers, PolicyRestriction pr, List<AccessPolicyTypeIds> policyIds) {
+    String[] finalHeaders = handleLoginAndGetHeaders(headers);
+    AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
+
+    return folioClientExceptionHandler("fetching Acquisition units", () -> {
+      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(finalHeaders, acqRestriction, Set.of(UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE, UserAcquisitionsUnitSubset.NON_RESTRICTIVE));
+      // For ACQ_UNITs the policyIds are valid if they're in the member restrictive or non-restrictive units lists
+      return policyIds
+        .stream()
+        .allMatch(pids -> {
+          // For all AccessPolicyTypeIds, we grab the policy IDs, then check that they ALL exist in the user's acquisition units
+          return pids.getPolicyIds()
+            .stream()
+            .allMatch(pid -> Stream.concat(
+              Optional.ofNullable(userAcquisitionUnits.getMemberRestrictiveUnits()).stream().flatMap(Collection::stream),
+              Optional.ofNullable(userAcquisitionUnits.getNonRestrictiveUnits()).stream().flatMap(Collection::stream) // Concatenate both streams to check against both member and non-restrictive units
+            )
+            .anyMatch(unit -> Objects.equals(unit.getId(), pid))); // If any unit matches the policy ID, then it's valid
+        });
     });
   }
 }

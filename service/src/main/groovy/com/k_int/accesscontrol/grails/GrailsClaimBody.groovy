@@ -1,16 +1,25 @@
 package com.k_int.accesscontrol.grails
 
+import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.ClaimBody
+import com.k_int.accesscontrol.core.http.bodies.PolicyClaim
 import grails.validation.Validateable
 
-/**
- * GrailsClaimBody is a Grails-specific implementation of ClaimBody.
- * It extends ClaimBody and implements Validateable to provide validation
- * capabilities for grails endpoints.
+/** * Grails implementation of ClaimBody.
+ * This class represents a collection of policy claims and provides validation for them.
+ * It implements the ClaimBody interface and is marked as Validateable for Grails validation.
  */
-class GrailsClaimBody extends ClaimBody implements Validateable {
-  // Override the claims property to use a Grails-specific implementation which is ALSO validated
-  class GrailsPolicyClaim extends ClaimBody.PolicyClaim implements Validateable {
+class GrailsClaimBody implements ClaimBody, Validateable {
+  /** * Grails implementation of PolicyClaim.
+   * This class represents a single policy claim with its associated properties.
+   * It implements the PolicyClaim interface and is marked as Validateable for Grails validation.
+   */
+  class GrailsPolicyClaim implements PolicyClaim, Validateable {
+    String id
+    String policyId
+    AccessPolicyType type
+    String description
+
     static constraints = {
       id nullable: true, blank: false
       policyId nullable: false, blank: false
@@ -18,6 +27,7 @@ class GrailsClaimBody extends ClaimBody implements Validateable {
       description nullable: true, blank: false
     }
   }
+
   List<GrailsPolicyClaim> claims
 
   static constraints = {
@@ -41,4 +51,7 @@ class GrailsClaimBody extends ClaimBody implements Validateable {
       return true
     }
   }
+
+
+
 }
