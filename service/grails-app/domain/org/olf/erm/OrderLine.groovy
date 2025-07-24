@@ -1,9 +1,17 @@
-package org.olf.erm;
+package org.olf.erm
 
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlled
 import com.k_int.web.toolkit.domain.traits.Clonable
 
 import grails.gorm.MultiTenant
+import groovy.util.logging.Slf4j
 
+@Slf4j
+@PolicyControlled(
+	ownerField = 'owner',
+	ownerColumn = 'pol_owner_fk',
+	ownerClass = Entitlement.class
+)
 public class OrderLine implements MultiTenant<OrderLine>, Clonable<OrderLine> {
 	
 	String id

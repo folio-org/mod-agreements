@@ -191,6 +191,12 @@ dependencies {
 	implementation "org.seleniumhq.selenium:selenium-chrome-driver:3.14.0"
 	implementation "org.seleniumhq.selenium:selenium-firefox-driver:3.14.0"
 
+  /* FIXME Temporary imports for accesscontrol work -- SHOULD BE EXTERNAL LIBRARY */
+  compileOnly("org.projectlombok:lombok:1.18.38")
+  annotationProcessor("org.projectlombok:lombok:1.18.38")
+  implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.6.0' // For Java 8 date/time support in Jackson
+
+
 	/* ---- Custom non profile deps ---- */
 	implementation 'org.apache.kafka:kafka-clients:3.7.2'
 	implementation 'com.github.everit-org.json-schema:org.everit.json.schema:1.14.4'
