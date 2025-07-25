@@ -38,4 +38,37 @@ public class UserAcquisitionUnits {
    * Metadata about the fetched acquisition units, indicating which subsets are present.
    */
   UserAcquisitionUnitsMetadata userAcquisitionUnitsMetadata;
+
+  /**
+   * Returns a list of IDs for acquisition units that restrict access and the user is a member.
+   *
+   * @return List of member restrictive unit IDs
+   */
+  public List<String> getMemberRestrictiveUnitIds() {
+    return memberRestrictiveUnits.stream()
+            .map(AcquisitionUnit::getId)
+            .toList();
+  }
+
+  /**
+   * Returns a list of IDs for acquisition units that restrict access and the user is not a member.
+   *
+   * @return List of non-member restrictive unit IDs
+   */
+  public List<String> getNonMemberRestrictiveUnitIds() {
+    return nonMemberRestrictiveUnits.stream()
+            .map(AcquisitionUnit::getId)
+            .toList();
+  }
+
+  /**
+   * Returns a list of IDs for acquisition units that do not restrict access.
+   *
+   * @return List of non-restrictive unit IDs
+   */
+  public List<String> getNonRestrictiveUnitIds() {
+    return nonRestrictiveUnits.stream()
+            .map(AcquisitionUnit::getId)
+            .toList();
+  }
 }

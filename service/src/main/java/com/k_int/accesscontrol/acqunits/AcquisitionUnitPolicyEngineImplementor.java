@@ -1,6 +1,5 @@
 package com.k_int.accesscontrol.acqunits;
 
-import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionsUnitSubset;
 import com.k_int.accesscontrol.core.*;
@@ -160,13 +159,7 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
         AccessPolicyTypeIds
           .builder()
           .type(AccessPolicyType.ACQ_UNIT)
-          .policyIds(
-            userAcquisitionUnits
-              .getMemberRestrictiveUnits()
-              .stream()
-              .map(AcquisitionUnit::getId)
-              .toList()
-          )
+          .policyIds(userAcquisitionUnits.getMemberRestrictiveUnitIds())
           .name(UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE.toString())
           .build()
       );
@@ -176,13 +169,7 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
         AccessPolicyTypeIds
           .builder()
           .type(AccessPolicyType.ACQ_UNIT)
-          .policyIds(
-            userAcquisitionUnits
-              .getNonRestrictiveUnits()
-              .stream()
-              .map(AcquisitionUnit::getId)
-              .toList()
-          )
+          .policyIds(userAcquisitionUnits.getNonRestrictiveUnitIds())
           .name(UserAcquisitionsUnitSubset.NON_RESTRICTIVE.toString())
           .build()
       );

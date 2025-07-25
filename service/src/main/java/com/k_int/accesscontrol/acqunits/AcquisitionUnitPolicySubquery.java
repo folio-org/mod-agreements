@@ -1,6 +1,5 @@
 package com.k_int.accesscontrol.acqunits;
 
-import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.core.*;
 import com.k_int.accesscontrol.core.sql.AccessControlSql;
@@ -102,9 +101,8 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
     List<AccessControlSqlType> allTypes = new ArrayList<>();
 
     // For any other restriction we can set up our SQL subquery
-    // TODO is it worth having a "getIdsList" helper method?
-    List<String> memberRestrictiveUnits = userAcquisitionUnits.getMemberRestrictiveUnits().stream().map(AcquisitionUnit::getId).toList();
-    List<String> nonMemberRestrictiveUnits = userAcquisitionUnits.getNonMemberRestrictiveUnits().stream().map(AcquisitionUnit::getId).toList();
+    List<String> memberRestrictiveUnits = userAcquisitionUnits.getMemberRestrictiveUnitIds();
+    List<String> nonMemberRestrictiveUnits = userAcquisitionUnits.getNonMemberRestrictiveUnitIds();
 
     if (memberRestrictiveUnits.isEmpty()) memberRestrictiveUnits = List.of("this-is-a-made-up-impossible-value");
     if (nonMemberRestrictiveUnits.isEmpty()) nonMemberRestrictiveUnits = List.of("this-is-a-made-up-impossible-value");
