@@ -1,5 +1,8 @@
-package com.k_int.accesscontrol.core;
+package com.k_int.accesscontrol.core.policyengine;
 
+import com.k_int.accesscontrol.core.AccessPolicyQueryType;
+import com.k_int.accesscontrol.core.AccessPolicyTypeIds;
+import com.k_int.accesscontrol.core.PolicyRestriction;
 import com.k_int.accesscontrol.core.sql.PolicySubquery;
 
 import java.util.List;

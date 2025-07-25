@@ -2,6 +2,7 @@ package com.k_int.accesscontrol.main;
 
 import com.k_int.accesscontrol.acqunits.*;
 import com.k_int.accesscontrol.core.*;
+import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.sql.PolicySubquery;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -29,16 +30,20 @@ public class PolicyEngine {
    * for acquisition units. This is initialized based on the configuration.
    */
   @Getter
-  private final AcquisitionUnitPolicyEngineImplementor acquisitionUnitPolicyEngine;
+  private final AcquisitionUnitPolicyEngine acquisitionUnitPolicyEngine;
 
   public PolicyEngine(PolicyEngineConfiguration config) {
     this.config = config;
 
-    if (config.acquisitionUnits) {
-      this.acquisitionUnitPolicyEngine = new AcquisitionUnitPolicyEngineImplementor(config);
+    // Initialize the acquisition unit policy engine if acquisition units are configured
+    AcquisitionUnitPolicyEngineConfiguration acquisitionUnitConfig = config.getAcquisitionUnitPolicyEngineConfiguration();
+
+    if (acquisitionUnitConfig.isEnabled()) {
+      this.acquisitionUnitPolicyEngine = new AcquisitionUnitPolicyEngine(config);
     } else {
       this.acquisitionUnitPolicyEngine = null;
     }
+    // In future we may add more policy engines here, such as KI Grants
   }
 
   /**

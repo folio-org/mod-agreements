@@ -1,5 +1,6 @@
 package com.k_int.accesscontrol.grails
 
+import com.k_int.accesscontrol.acqunits.AcquisitionUnitPolicyEngineConfiguration
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager
 import com.k_int.accesscontrol.main.PolicyEngine
 import com.k_int.accesscontrol.main.PolicyEngineConfiguration
@@ -94,9 +95,16 @@ class PolicyEngineController<T> extends OkapiTenantAwareController<T> {
     PolicyEngine policyEngine = new PolicyEngine(
       PolicyEngineConfiguration
         .builder()
-        .folioClientConfig(folioClientConfig)
-        .externalFolioLogin(folioIsExternal)
-        .acquisitionUnits(true) // This currently ASSUMES that we're ALWAYS using acquisitionUnits
+        // configure the acquisition unit policy engine
+        .acquisitionUnitPolicyEngineConfiguration(
+          AcquisitionUnitPolicyEngineConfiguration
+            .builder()
+            .enabled(true) // This currently ASSUMES that we're ALWAYS using acquisitionUnits
+            .folioClientConfig(folioClientConfig)
+            .externalFolioLogin(folioIsExternal)
+            .build()
+        )
+        // In future there may be other policy engines we want to configure here
         .build()
     )
 

@@ -3,6 +3,8 @@ package com.k_int.accesscontrol.acqunits;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionsUnitSubset;
 import com.k_int.accesscontrol.core.*;
+import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
+import com.k_int.accesscontrol.core.policyengine.PolicyEngineImplementor;
 import com.k_int.accesscontrol.core.sql.PolicySubquery;
 import com.k_int.accesscontrol.main.PolicyEngineConfiguration;
 import com.k_int.folio.FolioCall;
@@ -21,18 +23,20 @@ import java.util.stream.Stream;
  * using FOLIO integration for user acquisition unit lookups.
  */
 @Slf4j
-public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImplementor {
+public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
   private final AcquisitionsClient acqClient;
-  private final PolicyEngineConfiguration config;
+  private final AcquisitionUnitPolicyEngineConfiguration config;
 
   /**
    * Constructs a new AcquisitionUnitPolicyEngineImplementor.
    *
    * @param config the policy engine configuration, including FOLIO client config
    */
-  public AcquisitionUnitPolicyEngineImplementor(PolicyEngineConfiguration config) {
-    this.config = config;
-    this.acqClient = new AcquisitionsClient(config.getFolioClientConfig());
+  public AcquisitionUnitPolicyEngine(PolicyEngineConfiguration config) {
+    AcquisitionUnitPolicyEngineConfiguration acqConfig = config.getAcquisitionUnitPolicyEngineConfiguration();
+
+    this.config = acqConfig;
+    this.acqClient = new AcquisitionsClient(acqConfig.getFolioClientConfig());
   }
 
   /**

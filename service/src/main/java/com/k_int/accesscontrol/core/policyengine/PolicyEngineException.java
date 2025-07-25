@@ -1,4 +1,4 @@
-package com.k_int.accesscontrol.core;
+package com.k_int.accesscontrol.core.policyengine;
 
 /**
  * Custom runtime exception class for errors that occur within the Policy Engine.

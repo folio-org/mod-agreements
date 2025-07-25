@@ -6,7 +6,7 @@ import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata
-import com.k_int.accesscontrol.core.PolicyEngineException
+import com.k_int.accesscontrol.core.policyengine.PolicyEngineException
 import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.sql.AccessControlSqlType
 import com.k_int.accesscontrol.core.sql.PolicySubquery

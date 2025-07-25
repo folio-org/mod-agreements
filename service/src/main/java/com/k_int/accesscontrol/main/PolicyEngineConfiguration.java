@@ -1,20 +1,18 @@
 package com.k_int.accesscontrol.main;
 
-import com.k_int.folio.FolioClientConfig;
+import com.k_int.accesscontrol.acqunits.AcquisitionUnitPolicyEngineConfiguration;
 import lombok.Builder;
 import lombok.Data;
 
 /**
- * Configuration holder for the `PolicyEngine`.
- * Determines which policy types should be queried and supplies context
- * (such as FOLIO connectivity config).
+ * Configuration for the Policy Engine, which includes settings for acquisition unit policies.
+ * This class encapsulates the configuration details required to initialize and run the policy engine.
  */
 @Builder
 @Data
 public class PolicyEngineConfiguration {
-  boolean acquisitionUnits; // An ON/OFF switch for whether to make queries for acquisition units or ignore
-  FolioClientConfig folioClientConfig; // Include the folioConfig in the policy engine configuration
-  boolean externalFolioLogin; // When configured for an EXTERNAL folio client, ensure we perform a login first.
+  AcquisitionUnitPolicyEngineConfiguration acquisitionUnitPolicyEngineConfiguration;
 
-  // boolean kiGrants; // An ON/OFF switch for whether to make queries for kiGrants or ignore. This is an EXTENSION for later
+  // Configuration for KI Grants, if applicable. This is an EXTENSION for later, not currently implemented.
+  // KIGrantsPolicyEngineConfiguration kiGrantsPolicyEngineConfiguration;
 }
