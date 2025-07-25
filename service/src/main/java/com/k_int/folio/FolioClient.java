@@ -35,7 +35,7 @@ public class FolioClient {
   private final HttpClient httpClient;
   /**
    * The base URL of the FOLIO Okapi service.
-   * This should be the root URL of the Okapi instance (e.g., http://localhost:9130).
+   * This should be the root URL of the Okapi instance (e.g., <a href="http://localhost:9130">http://localhost:9130</a>).
    */
   private final String baseUrl;
   /**
@@ -50,6 +50,7 @@ public class FolioClient {
    * This can be used for operations that require a specific patron context.
    * @return The ID of the patron, or null if not applicable.
    */
+  @SuppressWarnings("javadoc")
   @Getter
   private final String patronId;
 
@@ -91,7 +92,7 @@ public class FolioClient {
    * Constructs a new FolioClient instance with specified configuration.
    * The {@code ObjectMapper} is initialized internally with {@code JavaTimeModule}.
    *
-   * @param baseUrl The base URL of the FOLIO Okapi service (e.g., http://localhost:9130).
+   * @param baseUrl The base URL of the FOLIO Okapi service (e.g., <a href="http://localhost:9130">http://localhost:9130</a>).
    * @param tenant The FOLIO tenant ID (e.g., "diku").
    * @param patronId The ID of the patron associated with this client's operations, if applicable.
    * @param userLogin The username for FOLIO authentication. Can be null.
@@ -712,7 +713,19 @@ public class FolioClient {
    * or if the "folioAccessToken" cookie is not found in the successful response.
    */
   public CompletableFuture<String[]> getFolioAccessTokenCookieAsync(String[] headers) throws FolioClientException {
-    return loginAsyncWithResponse(headers)
+//    return loginAsyncWithResponse(headers)
+//      .thenApply(resp -> {
+//        String folioAccessToken = "";
+//        for (String string : resp.headers().map().get("set-cookie")) {
+//          if (string.matches("folioAccessToken=.*")) {
+//            folioAccessToken = string;
+//          }
+//        }
+//
+//        return new String[] { "Cookie", folioAccessToken };
+//      });
+
+    return loginWithUsersAsyncWithResponse(headers)
       .thenApply(resp -> {
         String folioAccessToken = "";
         for (String string : resp.headers().map().get("set-cookie")) {
