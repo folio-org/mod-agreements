@@ -1,7 +1,6 @@
 package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.acqunits.AcquisitionUnitPolicyEngineConfiguration
-import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager
 import com.k_int.accesscontrol.main.PolicyEngine
 import com.k_int.accesscontrol.main.PolicyEngineConfiguration
 import com.k_int.folio.FolioClientConfig
