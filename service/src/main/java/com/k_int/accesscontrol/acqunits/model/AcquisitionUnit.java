@@ -15,6 +15,7 @@ import javax.annotation.Nullable;
  */
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
+@SuppressWarnings("javadoc")
 public class AcquisitionUnit {
   /**
    * Unique identifier for the acquisition unit.

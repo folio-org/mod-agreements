@@ -19,6 +19,7 @@ import java.util.List;
  */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
+@SuppressWarnings("javadoc")
 public class LoginUsersResponse {
   /**
    * A FOLIO login User object for the {@link LoginUsersResponse}.
@@ -29,7 +30,7 @@ public class LoginUsersResponse {
    */
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public class User {
+  public static class User {
     /**
      * A FOLIO login User Personal object for the {@link User} on the {@link LoginUsersResponse}.
      * <p>
@@ -38,7 +39,7 @@ public class LoginUsersResponse {
      */
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public class Personal {
+    public static class Personal {
       /**
        * The first name of the user.
        * @return The first name of the user.
@@ -126,7 +127,7 @@ public class LoginUsersResponse {
    */
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public class PatronGroup {
+  public static class PatronGroup {
     /**
      * The unique identifier for the patron group.
      * @return The unique identifier for the patron group.
@@ -162,7 +163,7 @@ public class LoginUsersResponse {
    */
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public class Permissions {
+  public static class Permissions {
     /**
      * The identifier for the permissions object
      * @return The permissions object identifier
@@ -197,7 +198,7 @@ public class LoginUsersResponse {
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
 
-  public class ServicePointsUser {
+  public static class ServicePointsUser {
     /**
      * The unique identifier for the ServicePointsUser object
      * @return The unique identifier for the ServicePointsUser object

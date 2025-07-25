@@ -16,6 +16,7 @@ import java.util.List;
  */
 @Data
 @Builder
+@SuppressWarnings("javadoc")
 public class AccessPolicyTypeIds {
   /**
    * The type of access policy (e.g., ACQ_UNIT).

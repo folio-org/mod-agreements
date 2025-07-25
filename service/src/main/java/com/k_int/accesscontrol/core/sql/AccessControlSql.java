@@ -13,6 +13,7 @@ import lombok.Getter;
  */
 @Builder
 @Getter
+@SuppressWarnings("javadoc")
 public class AccessControlSql {
   /**
    * The SQL query string to be executed.

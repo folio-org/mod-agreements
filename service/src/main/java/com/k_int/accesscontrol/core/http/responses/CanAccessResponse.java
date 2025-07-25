@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 /** Helper class to represent the response of access control checks. An implementation can choose to ignore this and return their own API should they wish */
 @Getter
 @Builder
+@SuppressWarnings("javadoc")
 public class CanAccessResponse {
   /**
    * Indicates whether the user can read the resource.

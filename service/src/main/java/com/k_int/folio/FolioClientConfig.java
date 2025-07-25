@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 @Getter
 @AllArgsConstructor
 @Builder
+@SuppressWarnings("javadoc")
 public class FolioClientConfig {
   /**
    * The base URI of the Folio instance.

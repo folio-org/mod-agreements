@@ -13,6 +13,7 @@ import java.time.Instant;
  */
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
+@SuppressWarnings("javadoc")
 public class TokenExpirationResponse {
   /**
    * The expiration date ({@link Instant}) for the refresh token from the FOLIO login operation
