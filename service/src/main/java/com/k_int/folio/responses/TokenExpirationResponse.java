@@ -1,7 +1,7 @@
 package com.k_int.folio.responses;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
+import lombok.Getter;
 
 import java.time.Instant;
 
@@ -11,9 +11,17 @@ import java.time.Instant;
  * including token expiration times.
  * </p>
  */
-@Data
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TokenExpirationResponse {
+  /**
+   * The expiration date ({@link Instant}) for the refresh token from the FOLIO login operation
+   * @return the expiration date for the refresh token
+   */
   Instant refreshTokenExpiration;
+  /**
+   * The expiration date ({@link Instant}) for the access token from the FOLIO login operation
+   * @return the expiration date for the access token
+   */
   Instant accessTokenExpiration;
 }

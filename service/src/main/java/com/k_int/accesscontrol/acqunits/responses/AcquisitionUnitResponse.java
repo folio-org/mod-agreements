@@ -16,7 +16,15 @@ import java.util.List;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AcquisitionUnitResponse {
+  /**
+   * List of acquisition units.
+   * Each unit represents a distinct acquisition unit in the access control system.
+   */
   List<AcquisitionUnit> acquisitionsUnits;
+  /**
+   * Total number of acquisition unit records.
+   * This is used for pagination and to inform the client about the total available units.
+   */
   int totalRecords;
 }
 

@@ -9,5 +9,11 @@ package com.k_int.accesscontrol.core.sql;
  * </p>
  */
 public interface PolicySubquery {
+  /**
+   * Generates an SQL subquery based on the provided parameters.
+   *
+   * @param parameters the parameters required to generate the SQL subquery
+   * @return an {@link AccessControlSql} object containing the SQL string, parameters, and their types
+   */
   AccessControlSql getSql(PolicySubqueryParameters parameters);
 }

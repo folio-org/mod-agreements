@@ -202,7 +202,6 @@ dependencies {
   annotationProcessor("org.projectlombok:lombok:1.18.38")
   implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.6.0' // For Java 8 date/time support in Jackson
 
-
 	/* ---- Custom non profile deps ---- */
 	implementation 'org.apache.kafka:kafka-clients:3.7.2'
 	implementation 'com.github.everit-org.json-schema:org.everit.json.schema:1.14.4'
@@ -381,7 +380,11 @@ task generateJavadocs(type: Javadoc) {
 
 tasks.withType(Javadoc).configureEach {
   classpath += sourceSets.main.compileClasspath
-  // If you have a separate annotation processor path for Lombok, include it here
+  classpath += configurations.annotationProcessor
+}
+
+tasks.withType(JavaExec).configureEach {
+  classpath += sourceSets.main.compileClasspath
   classpath += configurations.annotationProcessor
 }
 

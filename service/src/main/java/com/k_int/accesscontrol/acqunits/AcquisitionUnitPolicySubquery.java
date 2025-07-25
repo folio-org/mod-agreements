@@ -8,30 +8,36 @@ import com.k_int.accesscontrol.core.sql.AccessControlSqlType;
 import com.k_int.accesscontrol.core.sql.PolicySubquery;
 import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters;
 import lombok.Builder;
-import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Builder for generating SQL WHERE clause subqueries for acquisition unit access control.
- * This generates a reusable SQL pattern using string substitution, allowing
- * embedding of user-specific acquisition unit IDs and table/column names.
- * The generated SQL enforces the logic:
- * - If no policies exist for the resource → allow
- * - If only non-restrictive policies exist → allow
- * - If any restrictive policies exist for which the user *is* a member → allow
- * - If only restrictive policies exist for which the user is *not* a member → deny
- * All field names and table names are passed in as strings to ensure this can
- * be used from outside Hibernate contexts (e.g., raw SQL) or in future MN applications
+ * Represents a subquery for acquisition unit policies in the context of access control.
+ * <p>
+ * This class is used to generate SQL queries that determine access to resources based on
+ * user acquisition units and their membership status in restrictive or non-restrictive units.
+ * </p>
  */
-@Data
 @Builder
 public class AcquisitionUnitPolicySubquery implements PolicySubquery {
-  UserAcquisitionUnits userAcquisitionUnits;
-  AccessPolicyQueryType queryType;
-  PolicyRestriction restriction;
+  /**
+   * The user acquisition units that this subquery will use to determine access.
+   * This should be populated by the PolicyEngine before calling getSql().
+   *
+   */
+  private final UserAcquisitionUnits userAcquisitionUnits;
+  /**
+   * The type of query being generated, either LIST or SINGLE.
+   * This determines how the SQL will be structured.
+   */
+  private final AccessPolicyQueryType queryType;
+  /**
+   * The restriction type for which this subquery is being generated.
+   * This should not be CLAIM, as acquisition units do not support that restriction.
+   */
+  private final PolicyRestriction restriction;
 
     /* Original query was to find situations where
      *
@@ -99,14 +105,72 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
       )
     """;
 
+  /**
+   * This method constructs a SQL WHERE clause to filter resources according to acquisition unit policies.
+   * The logic is as follows:
+   * <ul>
+   *   <li>If no policies exist for the resource &rarr; allow</li>
+   *   <li>If only non-restrictive policies exist &rarr; allow</li>
+   *   <li>If any restrictive policies exist for which the user <b>is</b> a member &rarr; allow</li>
+   *   <li>If only restrictive policies exist for which the user is <b>not</b> a member &rarr; deny</li>
+   * </ul>
+   * <table border="1">
+   *   <caption>Policy Table</caption>
+   *   <tr>
+   *     <th>Policy</th><th>Restricts</th><th>Member</th>
+   *   </tr>
+   *   <tr>
+   *     <td>A</td><td>YES</td><td>YES</td>
+   *   </tr>
+   *   <tr>
+   *     <td>B</td><td>YES</td><td>NO</td>
+   *   </tr>
+   *   <tr>
+   *     <td>C</td><td>NO</td><td>(irrelevant)</td>
+   *   </tr>
+   * </table>
+   * <table border="1">
+   *   <caption>Resource Access Table</caption>
+   *   <tr>
+   *     <th>Resource</th><th>Policies</th><th>Can view</th>
+   *   </tr>
+   *   <tr>
+   *     <td>1</td><td></td><td>Yes</td>
+   *   </tr>
+   *   <tr>
+   *     <td>2</td><td>A</td><td>Yes</td>
+   *   </tr>
+   *   <tr>
+   *     <td>3</td><td>AB</td><td>Yes</td>
+   *   </tr>
+   *   <tr>
+   *     <td>4</td><td>C</td><td>Yes</td>
+   *   </tr>
+   *   <tr>
+   *     <td>5</td><td>AC</td><td>Yes</td>
+   *   </tr>
+   *   <tr>
+   *     <td>6</td><td>B</td><td>No</td>
+   *   </tr>
+   *   <tr>
+   *     <td>7</td><td>BC</td><td>No</td>
+   *   </tr>
+   *   <tr>
+   *     <td>8</td><td>AB</td><td>Yes</td>
+   *   </tr>
+   * </table>
+   * @param parameters The parameters required to build the SQL query, including resource ID, class, and table/column names.
+   * @return An AccessControlSql object containing the generated SQL string and parameters.
+   * @throws PolicyEngineException if the restriction is CLAIM or if required parameters are missing.
+   */
   public AccessControlSql getSql(PolicySubqueryParameters parameters) {
     // This shouldn't be possible thanks to PolicyEngine checks
-    if (getRestriction() == PolicyRestriction.CLAIM) {
+    if (restriction == PolicyRestriction.CLAIM) {
       throw new PolicyEngineException("AcquisitionUnitPolicySubquery::getSql is not valid for PolicyRestriction.CLAIM", PolicyEngineException.INVALID_RESTRICTION);
     }
 
     // Firstly we can handle the "CREATE" logic, since Acq Units never restricts CREATE
-    if (getRestriction() == PolicyRestriction.CREATE) {
+    if (restriction == PolicyRestriction.CREATE) {
       return AccessControlSql.builder()
         .sqlString("1")
         .build();
@@ -131,7 +195,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
 
     // If getQueryType() == LIST then we need #RESOURCEIDMATCH = {alias}.id (for hibernate), IF TYPE SINGLE THEN #RESOURCEIDMATCH = <UUID of resource>
     String resourceIdMatch = parameters.getResourceAlias() + "." + parameters.getResourceIdColumnName();
-    if (getQueryType() == AccessPolicyQueryType.SINGLE) {
+    if (queryType == AccessPolicyQueryType.SINGLE) {
       if (parameters.getResourceId() == null) {
         throw new PolicyEngineException("PolicySubqueryParameters for AccessPolicyQueryType.SINGLE must include resourceId", PolicyEngineException.INVALID_QUERY_PARAMETERS);
       }
@@ -147,7 +211,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
       //nonRestrictiveUnits
     ).forEach(units -> {
       // Resource id match
-      if (getQueryType() == AccessPolicyQueryType.SINGLE) {
+      if (queryType == AccessPolicyQueryType.SINGLE) {
         allParameters.add(parameters.getResourceId());
         allTypes.add(AccessControlSqlType.STRING); // Assuming resourceId is a UUID, we use STRING type.
       }

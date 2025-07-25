@@ -11,5 +11,15 @@ package com.k_int.folio;
  */
 @FunctionalInterface
 public interface FolioCall<T> {
+  /**
+   * Executes the FOLIO client call.
+   * <p>
+   * This method is expected to perform the operation defined by the implementing class
+   * and return a result of type {@code T}. It may throw an exception if the operation fails.
+   * </p>
+   *
+   * @return the result of the FOLIO client call
+   * @throws Exception if an error occurs during the execution of the call
+   */
   T execute() throws Exception;
 }

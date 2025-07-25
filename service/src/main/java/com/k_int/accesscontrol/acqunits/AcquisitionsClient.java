@@ -19,21 +19,53 @@ import java.util.concurrent.CompletableFuture;
  * relevant to resource protection (e.g., acquisition unit restrictions).
  */
 public class AcquisitionsClient extends FolioClient {
+  /**
+   * Base path for acquisition unit API endpoints.
+   * This is used to construct the full URL for API requests.
+   */
   public static final String ACQUISITION_UNIT_PATH = "/acquisitions-units/units";
+  /**
+   * Path for acquisition unit membership API endpoints.
+   * This is used to fetch memberships associated with acquisition units.
+   */
   public static final String ACQUISITION_UNIT_MEMBERSHIP_PATH = "/acquisitions-units/memberships";
 
+  /**
+   * Constructs an AcquisitionsClient with the specified base URL, tenant, patron ID, user login, and password.
+   *
+   * @param baseUrl Base URL for the FOLIO instance
+   * @param tenant Tenant identifier for the FOLIO instance
+   * @param patronId Patron ID for the user
+   * @param userLogin User login name
+   * @param userPassword User password
+   */
   public AcquisitionsClient(String baseUrl, String tenant, String patronId, String userLogin, String userPassword) {
     super(baseUrl, tenant, patronId, userLogin, userPassword);
   }
 
+  /**
+   * Constructs an AcquisitionsClient using a FolioClientConfig object.
+   * This allows for more flexible configuration options, such as custom headers or timeouts.
+   *
+   * @param config Configuration object containing base URL, tenant, patron ID, user login, and password
+   */
   public AcquisitionsClient(FolioClientConfig config) {
     super(config);
   }
 
+  /**
+   * Default limit for acquisition unit queries.
+   * This is set to the maximum integer value to allow fetching all records.
+   */
   private static final Map<String, String> BASE_LIMIT_PARAM = new HashMap<>() {{
     put("limit", "2147483647");
   }};
 
+  /**
+   * Default query parameters for acquisition unit queries.
+   * This includes a query to fetch all records sorted by name.
+   * It combines with the base limit parameter to ensure all units are fetched.
+   */
   private static final Map<String, String> BASE_UNIT_QUERY_PARAMS = combineQueryParams(new HashMap<>() {{
     put("query", "cql.allRecords=1 sortby name");
   }}, BASE_LIMIT_PARAM);

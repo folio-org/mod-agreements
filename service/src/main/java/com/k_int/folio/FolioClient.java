@@ -29,21 +29,61 @@ import java.util.stream.Stream;
  */
 @Slf4j
 public class FolioClient {
+  /**
+   * The {@link HttpClient} client used for making requests to the FOLIO APIs.
+   */
   private final HttpClient httpClient;
+  /**
+   * The base URL of the FOLIO Okapi service.
+   * This should be the root URL of the Okapi instance (e.g., http://localhost:9130).
+   */
   private final String baseUrl;
+  /**
+   * The FOLIO tenant ID for which this client is configured.
+   * This is used to set the "X-Okapi-Tenant" header in requests.
+   */
   private final String tenant;
 
 
+  /**
+   * The ID of the patron associated with this client's operations, if applicable.
+   * This can be used for operations that require a specific patron context.
+   * @return The ID of the patron, or null if not applicable.
+   */
   @Getter
   private final String patronId;
 
+  /**
+   * The username for FOLIO authentication, if applicable.
+   * This can be null if the client does not require authentication.
+   */
   private final String userLogin;
+  /**
+   * The password for FOLIO authentication, if applicable.
+   * This can be null if the client does not require authentication.
+   */
   private final String userPassword;
 
+  /**
+   * The path to the authentication endpoint for login operations.
+   * This is used to perform user login and retrieve authentication tokens.
+   */
   private static final String AUTHN_PATH = "/authn";
+  /**
+   * The path to the user management endpoint for login operations.
+   * This is used to perform user login and retrieve user-specific information.
+   */
   private static final String USERS_BL_PATH = "/bl-users";
 
+  /**
+   * The path used by the authn module for login operations, which returns a {@link TokenExpirationResponse}.
+   * This is typically used to authenticate users and manage session tokens.
+   */
   private static final String LOGIN_PATH = AUTHN_PATH + "/login-with-expiry"; // This is the path used by the authn module for login, returns a TokenExpirationResponse
+  /**
+   * The path used by the bl-users module for login operations, which returns a {@link LoginUsersResponse}.
+   * This is typically used to authenticate users and manage user-specific sessions.
+   */
   private static final String USERS_LOGIN_PATH = USERS_BL_PATH + "/login-with-expiry"; // This is the path used by the bl-users module for login, returns a LoginUsersResponse
 
 
@@ -647,6 +687,16 @@ public class FolioClient {
       .thenApply(HttpResponse::body);
   }
 
+  /**
+   * Synchronously performs a login request using the client's configured credentials
+   * and the {@code /authn/login-with-expiry} endpoint. This is a blocking convenience method
+   * that wraps {@link #loginAsync(String[])} and handles common asynchronous exceptions
+   * (timeout, interruption) as {@link FolioClientException}.
+   *
+   * @param headers Additional HTTP headers to include with the login request. Can be empty or {@code null}.
+   * @return The deserialized {@link TokenExpirationResponse} object upon successful login.
+   * @throws FolioClientException If the request fails or if the response is not as expected.
+   */
   public TokenExpirationResponse login(String[] headers) throws FolioClientException {
     return asyncFolioClientExceptionHelper(() -> loginAsync(headers));
   }

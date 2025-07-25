@@ -16,7 +16,15 @@ import java.util.List;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AcquisitionUnitMembershipResponse {
+  /**
+   * List of acquisition unit memberships.
+   * Each membership links a user to an acquisition unit.
+   */
   List<AcquisitionUnitMembership> acquisitionsUnitMemberships;
+  /**
+   * Total number of acquisition unit membership records.
+   * This is used for pagination and to inform the client about the total available memberships.
+   */
   int totalRecords;
 }
 

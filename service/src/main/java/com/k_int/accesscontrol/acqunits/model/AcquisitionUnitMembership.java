@@ -1,7 +1,7 @@
 package com.k_int.accesscontrol.acqunits.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
+import lombok.Getter;
 
 /**
  * Represents a membership of a user in an acquisition unit.
@@ -10,10 +10,23 @@ import lombok.Data;
  * including the IDs of both the acquisition unit and the user.
  * </p>
  */
-@Data
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AcquisitionUnitMembership {
+  /**
+   * Unique identifier for the acquisition unit.
+   * This ID is used to reference the unit in access control policies and claims.
+   */
   String acquisitionsUnitId;
+
+  /**
+   * Unique identifier for the membership record.
+   * This ID is used to reference the membership in access control policies and claims.
+   */
   String id;
+  /**
+   * Unique identifier for the user who is a member of the acquisition unit.
+   * This ID is used to reference the user in access control policies and claims.
+   */
   String userId;
 }
