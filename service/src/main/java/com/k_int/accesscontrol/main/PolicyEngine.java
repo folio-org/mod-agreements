@@ -32,6 +32,12 @@ public class PolicyEngine {
   @Getter
   private final AcquisitionUnitPolicyEngine acquisitionUnitPolicyEngine;
 
+  /**
+   * Constructs a new PolicyEngine with the provided configuration.
+   * Initializes the acquisition unit policy engine if acquisition units are enabled in the configuration.
+   *
+   * @param config the configuration for the policy engine, including acquisition unit settings
+   */
   public PolicyEngine(PolicyEngineConfiguration config) {
     this.config = config;
 
