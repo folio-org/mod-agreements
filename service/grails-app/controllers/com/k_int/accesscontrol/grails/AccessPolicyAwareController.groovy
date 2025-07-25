@@ -320,6 +320,35 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     respond CanAccessResponse.builder().canCreate(canUserCreate()).build()
   }
 
+  protected boolean arePolicyIdsValid(PolicyRestriction pr, List<AccessPolicyTypeIds> policyIds) {
+    String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
+    return policyEngine.arePolicyIdsValid(grailsHeaders, pr, policyIds)
+  }
+
+  protected boolean areCreateIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.CREATE, policyIds)
+  }
+
+  protected boolean areReadIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.READ, policyIds)
+  }
+
+  protected boolean areUpdateIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.UPDATE, policyIds)
+  }
+
+  protected boolean areDeleteIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.DELETE, policyIds)
+  }
+
+  protected boolean areClaimIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.CLAIM, policyIds)
+  }
+
+  protected boolean areApplyPoliciesIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.APPLY_POLICIES, policyIds)
+  }
+
   /**
    * Checks if the currently authenticated user can apply policies to the resource identified by {@code params.id}.
    * This method is used to determine if the user has permission to apply access policies to the resource.
@@ -470,8 +499,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     // We need to transform the claimBody into a list of AccessPolicyTypeIds objects to use policyEngine.arePolicyIdsValid
     List<AccessPolicyTypeIds> policyIds = claimBody.convertToAccessPolicyTypeIds()
 
-    String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
-    if (!policyEngine.arePolicyIdsValid(grailsHeaders, PolicyRestriction.CLAIM, policyIds)) {
+    if (!areClaimIdsValid(policyIds)) {
       respond ([ message: "PolicyRestriction.CLAIM not valid for one or more policyIds in claims" ], status: 403 )
       return
     }

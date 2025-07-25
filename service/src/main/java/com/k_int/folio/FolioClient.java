@@ -713,19 +713,7 @@ public class FolioClient {
    * or if the "folioAccessToken" cookie is not found in the successful response.
    */
   public CompletableFuture<String[]> getFolioAccessTokenCookieAsync(String[] headers) throws FolioClientException {
-//    return loginAsyncWithResponse(headers)
-//      .thenApply(resp -> {
-//        String folioAccessToken = "";
-//        for (String string : resp.headers().map().get("set-cookie")) {
-//          if (string.matches("folioAccessToken=.*")) {
-//            folioAccessToken = string;
-//          }
-//        }
-//
-//        return new String[] { "Cookie", folioAccessToken };
-//      });
-
-    return loginWithUsersAsyncWithResponse(headers)
+    return loginAsyncWithResponse(headers)
       .thenApply(resp -> {
         String folioAccessToken = "";
         for (String string : resp.headers().map().get("set-cookie")) {

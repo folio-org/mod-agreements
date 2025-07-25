@@ -16,8 +16,10 @@ public class PolicyControlledManager {
   /**
    * The resolved ownership chain, ordered from the leaf class up to the root owner.
    * Each element in the list represents the {@link PolicyControlledMetadata} for a level in the chain.
+   * @return A list of PolicyControlledMetadata representing the ordered ownership chain
    */
   @Getter
+  @SuppressWarnings("javadoc")
   private final List<PolicyControlledMetadata> ownershipChain;
 
   /**

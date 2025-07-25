@@ -310,6 +310,7 @@ public class AcquisitionsClient extends FolioClient {
    *
    * @param headers Request headers
    * @param restriction Restriction type (READ, etc.)
+   * @param fetchSubsets Subset of user acquisition units to fetch
    * @return UserAcquisitionUnits
    * @throws FolioClientException If any async call fails
    */

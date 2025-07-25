@@ -1,7 +1,7 @@
 package com.k_int.folio.responses;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
+import lombok.Getter;
 
 import java.time.Instant;
 import java.util.List;
@@ -14,10 +14,10 @@ import java.util.List;
  * </p>
  * <p>
  *   This class attempts to map the JSON response from FOLIO's login endpoint to
- *   the data we might be interested in using from a login response.
+ *   the Getter we might be interested in using from a login response.
  * </p>
  */
-@Data
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 @SuppressWarnings("javadoc")
 public class LoginUsersResponse {
@@ -28,7 +28,7 @@ public class LoginUsersResponse {
    * such as user ID, username, barcode, active status, etc
    * </p>
    */
-  @Data
+  @Getter
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class User {
     /**
@@ -37,7 +37,7 @@ public class LoginUsersResponse {
      * This class contains personal information about the user, such as first name, last name, and email.
      * </p>
      */
-    @Data
+    @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Personal {
       /**
@@ -109,7 +109,7 @@ public class LoginUsersResponse {
      */
     Instant updatedDate;
 
-    // We also have metadata, custom fields, preferred email communication and departments
+    // We also have metaGetter, custom fields, preferred email communication and departments
   }
   /**
    * The {@link User} object returned by the FOLIO login endpoint.
@@ -125,7 +125,7 @@ public class LoginUsersResponse {
    * This class contains information about the patron group, such as its ID, group, and description.
    * </p>
    */
-  @Data
+  @Getter
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class PatronGroup {
     /**
@@ -145,7 +145,7 @@ public class LoginUsersResponse {
      * @return The description of the patron group.
      */
     String desc;
-    // We also have metadata
+    // We also have metaGetter
   }
   /**
    * The {@link PatronGroup} object returned by the FOLIO login endpoint.
@@ -161,7 +161,7 @@ public class LoginUsersResponse {
    * This class contains information about the permissions granted to the user
    * </p>
    */
-  @Data
+  @Getter
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Permissions {
     /**
@@ -179,7 +179,7 @@ public class LoginUsersResponse {
      * @return The list of String permissions
      */
     List<String> permissions;
-    // We also have metadata
+    // We also have metaGetter
   }
   /**
    * The {@link Permissions} object returned by the FOLIO login endpoint.
@@ -195,7 +195,7 @@ public class LoginUsersResponse {
    * This class contains information about the service points for the user
    * </p>
    */
-  @Data
+  @Getter
   @JsonIgnoreProperties(ignoreUnknown = true)
 
   public static class ServicePointsUser {
@@ -220,7 +220,7 @@ public class LoginUsersResponse {
      * @return the String default service point identifier for the user
      */
     String defaultServicePointId;
-    // We also have metadata
+    // We also have metaGetter
   }
   /**
    * The {@link ServicePointsUser} object returned by the FOLIO login endpoint.
@@ -232,7 +232,7 @@ public class LoginUsersResponse {
 
   /**
    * A {@link TokenExpirationResponse} object containing information about the tokens granted to the user as part of the successful login
-   * @return The token expiration metadata object
+   * @return The token expiration metaGetter object
    */
   TokenExpirationResponse tokenExpiration;
 
