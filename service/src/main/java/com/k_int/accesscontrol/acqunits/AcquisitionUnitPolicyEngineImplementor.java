@@ -115,7 +115,16 @@ public class AcquisitionUnitPolicyEngineImplementor implements PolicyEngineImple
       // Do the acquisition unit logic
       AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
       // Fetch the acquisition units for the user (MemberRestrictiveUnits and NonMemberRestrictiveUnits);
-      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(finalHeaders, acqRestriction, Set.of(UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE, UserAcquisitionsUnitSubset.NON_MEMBER_RESTRICTIVE));
+      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(
+        finalHeaders,
+        acqRestriction,
+        Set.of(
+          UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE,
+          UserAcquisitionsUnitSubset.NON_MEMBER_RESTRICTIVE//,
+          // Non-restrictive units are not needed for acquisition unit policy subqueries for now, but might be if the READ/EDIT discrepancy is intended
+          //UserAcquisitionsUnitSubset.NON_RESTRICTIVE
+        )
+      );
 
       long afterPolicyLookup = System.nanoTime();
       log.trace("AcquisitionUnitPolicyEngineImplementor policy lookup time: {}", Duration.ofNanos(afterPolicyLookup - beforePolicyLookup));
