@@ -5,11 +5,13 @@ import org.olf.erm.SubscriptionAgreement
 
 class UrlMappings {
   static mappings = {
-    Closure buildAccessControlRoutes = AccessControlUrlMapping.buildRoutes([
-      [path: '/erm/sas', controller: 'subscriptionAgreement'],
-      [path: '/erm/entitlements', controller: 'entitlement'],
-      [path: '/erm/orderLines', controller: 'orderLine']
-    ])
+    Closure buildAccessControlRoutes = AccessControlUrlMapping.buildRoutes(
+      "/erm",
+      [
+        [path: '/sas', controller: 'subscriptionAgreement'],
+        [path: '/entitlements', controller: 'entitlement']
+      ]
+    )
     buildAccessControlRoutes.delegate = delegate // Ensure we call the helper closure from the UrlMapping context
     buildAccessControlRoutes.call()
 

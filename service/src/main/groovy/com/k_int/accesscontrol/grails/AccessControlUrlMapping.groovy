@@ -13,7 +13,7 @@ class AccessControlUrlMapping {
    * @param mappings A list of maps, each containing 'path' and 'controller' keys.
    * @return A Closure that defines the URL mappings.
    */
-  static Closure buildRoutes(List<Map<String, String>> mappings) {
+  static Closure buildRoutes(String basePath, List<Map<String, String>> mappings) {
     return {
       mappings.each { mapping ->
         String path = mapping.path
@@ -21,17 +21,17 @@ class AccessControlUrlMapping {
 
         "${path}/canCreate"(controller: controller, action: "canCreate", method: 'GET')
 
-        "${path}/$id/canRead"(controller: controller, action: "canRead", method: 'GET')
-        "${path}/$id/canUpdate"(controller: controller, action: "canUpdate", method: 'GET')
-        "${path}/$id/canDelete"(controller: controller, action: "canDelete", method: 'GET')
-        "${path}/$id/canApplyPolicies"(controller: controller, action: "canApplyPolicies", method: 'GET')
+        "${basePath}${path}/$id/canRead"(controller: controller, action: "canRead", method: 'GET')
+        "${basePath}${path}/$id/canUpdate"(controller: controller, action: "canUpdate", method: 'GET')
+        "${basePath}${path}/$id/canDelete"(controller: controller, action: "canDelete", method: 'GET')
+        "${basePath}${path}/$id/canApplyPolicies"(controller: controller, action: "canApplyPolicies", method: 'GET')
 
         // CLAIM endpoint is needed to be able to apply policies to a resource
-        "${path}/$id/claim"(controller: controller, action: "claim", method: 'POST')
-        "${path}/$id/policies"(controller: controller, action: "policies", method: 'GET')
+        "${basePath}/${path}/$id/claim"(controller: controller, action: "claim", method: 'POST')
+        "${basePath}/${path}/$id/policies"(controller: controller, action: "policies", method: 'GET')
       }
 
-      "/erm/accessControl"(resources: 'accessPolicy', excludes: ['patch', 'save', 'create', 'edit', 'delete']) {
+      "${basePath}/accessControl"(resources: 'accessPolicy', excludes: ['patch', 'save', 'create', 'edit', 'delete']) {
         collection {
           "/readPolicies"(controller: 'accessPolicy', action: 'getReadPolicyIds', method: 'GET')
           "/deletePolicies"(controller: 'accessPolicy', action: 'getDeletePolicyIds', method: 'GET')
