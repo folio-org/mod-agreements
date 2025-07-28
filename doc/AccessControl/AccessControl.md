@@ -278,8 +278,46 @@ method on/off, and also provide any useful information used for fetching/parsing
 hand.
 
 ## Core layer
+This is the main body of work, providing the interfaces for each `plugin` library to do their work, as well as for 
+`main` and `framework` layers to work together. There are a lot of interlocking parts here.
+
+### PolicyRestriction
+We should start at the main enum class which drives pretty much all of the behaviour. `PolicyRestriction` comprises 
+of 6 restriction types, each used to protect some aspect of a policy-controlled system. The expectation is that any 
+operation going through the `PolicyEngine` will be attempting to perform an operation corresponding to one of these 
+6 restrictions, and the `plugin` libraries will check their logic to determine whether or not that is acceptable 
+under their own terms.
+
+- READ
+- CREATE
+- UPDATE
+- DELETE
+- CLAIM
+- APPLY_POLICIES
+
+`CREATE`/`READ`/`UPDATE`/`DELETE` correspond to the expected CRUD restrictions for any system. `READ`, `UPDATE` and 
+`DELETE` restrict those operations on a single resource, and `CREATE` restricts the ability to create new resources 
+entirely.
+
+The two more interesting restrictions then are `CLAIM` and `APPLY_POLICIES`.
+
+`CLAIM` restricts the ability to assign a _given_ policy to a resource. This is driven by the acquisition unit 
+behaviour of `protectCreate` (See `Acquisition unit` explanation section). If a policy restricts its ability for 
+`CLAIM` for a given user, the expected behaviour is that this policy MUST NOT be assignable to any resource by that 
+user, regardless of the user's access to that resource.
+
+By contrast, `APPLY_POLICIES` is the ability for a user to apply policies to a _given resource_. This is the 
+restriction which protects the underlying operation to spin up `AccessPolicyEntity` objects for a resource. 
+Obviously there is interplay between `CLAIM` and `APPLY_POLICIES`. A resource MUST be unrestricted for the user for 
+`APPLY_POLICIES` in order for them to attempt to assign policies to that resource, and ALL policies attempted to be 
+assigned MUST be valid for that user under the `CLAIM` restriction.
 
 ## Plugin layer
-
+### Setup
+### Writing a new plugin layer
 ## Framework layer
+### Setup
+### Writing a new framework layer
 ## Module layer
+### Setup
+### Using grails framework layer
