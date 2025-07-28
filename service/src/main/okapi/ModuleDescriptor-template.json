@@ -1131,6 +1131,33 @@
           "permissionsRequired": [
             "erm.identifiers.namespaces.collection.get"
           ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/accessControl",
+          "permissionsRequired": [
+            "erm.accesspolicies.collection.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/accessControl/{id}",
+          "permissionsRequired": [
+            "erm.accesspolicies.item.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/accessControl/*Policies",
+          "permissionsRequired": [
+            "erm.accesspolicies.policies.get"
+          ]
         }
       ]
     },
@@ -2289,6 +2316,32 @@
       "subPermissions": [
         "erm.pushkb.view",
         "erm.pushkb.post"
+      ]
+    },
+    {
+      "permissionName": "erm.accesspolicies.collection.get",
+      "displayName": "Access policies collection get",
+      "description": "GET a collection of AccessPolicy records"
+    },
+    {
+      "permissionName": "erm.accesspolicies.item.get",
+      "displayName": "Access policies item get",
+      "description": "GET an AccessPolicy record"
+    },
+    {
+      "permissionName": "erm.accesspolicies.policies.get",
+      "displayName": "Access policies policies get",
+      "description": "GET AccessPolicy policy options by restriction"
+    },
+    {
+      "permissionName": "erm.accesspolicies.view",
+      "displayName": "Access policies view",
+      "description": "GET all information from AccessPolicy endpoints",
+      "visible": true,
+      "subPermissions": [
+        "erm.accesspolicies.collection.get",
+        "erm.accesspolicies.item.get",
+        "erm.accesspolicies.policies.get"
       ]
     }
   ],
