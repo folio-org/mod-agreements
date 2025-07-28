@@ -243,7 +243,9 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         return true
       }
 
-      log.trace("AccessControl generated PolicySql: ${policySqlFragments.join(', ')}")
+      log.trace("AccessControl generated PolicySql: ${policySqlFragments.collect{ it.sqlString }.join(', ')}")
+      log.trace("AccessControl generated PolicySql parameters: ${policySqlFragments.collect{ it.parameters.collect { it.toString() } }.join(', ')}")
+      log.trace("AccessControl generated PolicySql types: ${policySqlFragments.collect{ it.types.collect { it.toString() } }.join(', ')}")
 
       // We're going to do this with hibernate criteria builder to match doTheLookup logic
       String bigSql = policySqlFragments.collect {"(${it.getSqlString()})" }.join(" AND ") // JOIN all sql subqueries together here.
@@ -423,7 +425,9 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     // Protect the index method with access control -- replace the built in "index" method
     AccessPolicyEntity.withNewSession {
       List<AccessControlSql> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null)
-      log.trace("AccessControl generated PolicySql: ${policySql.join(', ')}")
+      log.trace("AccessControl generated PolicySql: ${policySql.collect{ it.sqlString }.join(', ')}")
+      log.trace("AccessControl generated PolicySql parameters: ${policySql.collect{ it.parameters.collect { it.toString() } }.join(', ')}")
+      log.trace("AccessControl generated PolicySql types: ${policySql.collect{ it.types.collect { it.toString() } }.join(', ')}")
 
       long beforeLookup = System.nanoTime()
       respond doTheLookup(resourceClass) {
