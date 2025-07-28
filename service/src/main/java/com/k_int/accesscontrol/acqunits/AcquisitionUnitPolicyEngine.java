@@ -124,9 +124,8 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
         acqRestriction,
         Set.of(
           UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE,
-          UserAcquisitionsUnitSubset.NON_MEMBER_RESTRICTIVE//,
-          // Non-restrictive units are not needed for acquisition unit policy subqueries for now, but might be if the READ/EDIT discrepancy is intended
-          //UserAcquisitionsUnitSubset.NON_RESTRICTIVE
+          UserAcquisitionsUnitSubset.NON_MEMBER_RESTRICTIVE,
+          UserAcquisitionsUnitSubset.NON_RESTRICTIVE
         )
       );
 

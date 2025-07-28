@@ -39,14 +39,8 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
    */
   private final PolicyRestriction restriction;
 
-    /* Original query was to find situations where
-     *
-     * No policy exists for the resource OR
-     * Resource id is in the list of ids from policies which are restrictive and user is member OR
-     * Resource id is in the list of ids from policies which are non-restrictive AND
-     *    resource id is not in the list of ids from policies which are restrictive and user is not a member of
-     *
-     *
+    /*
+     * Least restrictive wins
      * Policy | Restricts | Member
      * A      | YES       | YES
      * B      | YES       | NO
@@ -59,13 +53,14 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
      * 4        | C        | Yes
      * 5        | AC       | Yes
      * 6        | B        | No
-     * 7        | BC       | No
+     * 7        | BC       | Yes
      * 8        | AB       | Yes
      *
      *
-     * New strategy, find all resources where
+     * Strategy -- find all resources where
      * There are no restrictive policies for which user is not a member OR
-     * There is at least one restrictive policy for which user IS a member
+     * There is at least one restrictive policy for which user IS a member OR
+     * There is at least one non-restrictive policy
      */
     static final String SQL_TEMPLATE = """
       (
@@ -85,33 +80,30 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
             ap2.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = #RESOURCE_CLASS AND
             ap2.#ACCESS_POLICY_ID_COLUMN_NAME IN (#MEMBER_RESTRICTIVE_UNITS)
           LIMIT 1
+        ) OR EXISTS (
+          SELECT 1 FROM #ACCESS_POLICY_TABLE_NAME ap3
+          WHERE
+            ap3.#ACCESS_POLICY_TYPE_COLUMN_NAME = 'ACQ_UNIT' AND
+            ap3.#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME = #RESOURCE_ID_MATCH AND
+            ap3.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = #RESOURCE_CLASS AND
+            ap3.#ACCESS_POLICY_ID_COLUMN_NAME IN (#NON_RESTRICTIVE_UNITS)
+          LIMIT 1
         )
       )
     """;
 
-    // While testing, we found a strange discrepancy between the "READ" and "EDIT" behaviours.
-    // For READ, the prescence of a non-restrictive policy is enough to allow access, whereas for EDIT, it is not.
-    // This clause being appended to the SQL template allows us to handle this case, but for now we are not going
-    // to use it for consistency of behaviour.
-    static final String PERMISSIVE_WHEN_UNRESTRICTED_POLICY_EXISTS_CLAUSE = """
-      EXISTS (
-        SELECT 1 FROM #ACCESS_POLICY_TABLE_NAME ap3
-        WHERE
-          ap3.#ACCESS_POLICY_TYPE_COLUMN_NAME = 'ACQ_UNIT' AND
-          ap3.#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME = #RESOURCE_ID_MATCH AND
-          ap3.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = #RESOURCE_CLASS AND
-          ap3.#ACCESS_POLICY_ID_COLUMN_NAME IN (#NON_RESTRICTIVE_UNITS)
-        LIMIT 1
-      )
-    """;
 
   /**
-   * This method constructs a SQL WHERE clause to filter resources according to acquisition unit policies.
-   * The logic is as follows:
+   * Constructs a SQL WHERE clause to filter resources according to acquisition unit policies.
+   * <p>
+   * <b>Least restrictive wins:</b> If any non-restrictive policy applies to a resource, access is always allowed,
+   * even if restrictive policies also apply. Otherwise, access is allowed if the user is a member of any restrictive policy.
+   * If only restrictive policies exist and the user is not a member of any, access is denied.
+   * </p>
    * <ul>
    *   <li>If no policies exist for the resource &rarr; allow</li>
-   *   <li>If only non-restrictive policies exist &rarr; allow</li>
-   *   <li>If any restrictive policies exist for which the user <b>is</b> a member &rarr; allow</li>
+   *   <li>If any non-restrictive policy exists &rarr; allow (even if restrictive policies also exist)</li>
+   *   <li>If any restrictive policy exists for which the user <b>is</b> a member &rarr; allow</li>
    *   <li>If only restrictive policies exist for which the user is <b>not</b> a member &rarr; deny</li>
    * </ul>
    * <table border="1">
@@ -153,7 +145,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
    *     <td>6</td><td>B</td><td>No</td>
    *   </tr>
    *   <tr>
-   *     <td>7</td><td>BC</td><td>No</td>
+   *     <td>7</td><td>BC</td><td>Yes</td>
    *   </tr>
    *   <tr>
    *     <td>8</td><td>AB</td><td>Yes</td>
@@ -184,13 +176,11 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
     // For any other restriction we can set up our SQL subquery
     List<String> memberRestrictiveUnits = userAcquisitionUnits.getMemberRestrictiveUnitIds();
     List<String> nonMemberRestrictiveUnits = userAcquisitionUnits.getNonMemberRestrictiveUnitIds();
-    // Uncomment this if we end up using the extra permissive clause
-    // List<String> nonRestrictiveUnits = userAcquisitionUnits.getNonRestrictiveUnitIds();
+     List<String> nonRestrictiveUnits = userAcquisitionUnits.getNonRestrictiveUnitIds();
 
     if (memberRestrictiveUnits.isEmpty()) memberRestrictiveUnits = List.of("this-is-a-made-up-impossible-value");
     if (nonMemberRestrictiveUnits.isEmpty()) nonMemberRestrictiveUnits = List.of("this-is-a-made-up-impossible-value");
-    // Uncomment this if we end up using the extra permissive clause
-    //if (nonRestrictiveUnits.isEmpty()) nonRestrictiveUnits = List.of("this-is-a-made-up-impossible-value");
+    if (nonRestrictiveUnits.isEmpty()) nonRestrictiveUnits = List.of("this-is-a-made-up-impossible-value");
 
 
     // If getQueryType() == LIST then we need #RESOURCEIDMATCH = {alias}.id (for hibernate), IF TYPE SINGLE THEN #RESOURCEIDMATCH = <UUID of resource>
@@ -200,15 +190,13 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
         throw new PolicyEngineException("PolicySubqueryParameters for AccessPolicyQueryType.SINGLE must include resourceId", PolicyEngineException.INVALID_QUERY_PARAMETERS);
       }
       resourceIdMatch = "?"; // We will bind an extra parameter for these, using parameters.getResourceId().
-      //resourceIdMatch = "'" + parameters.getResourceId() + "'";
     }
 
     // Fill out the SQL parameters with the units, as well as their types (STRING for all)
     List.of(
       nonMemberRestrictiveUnits,
-      memberRestrictiveUnits
-      // Uncomment this if we end up using the extra permissive clause
-      //nonRestrictiveUnits
+      memberRestrictiveUnits,
+      nonRestrictiveUnits
     ).forEach(units -> {
       // Resource id match
       if (queryType == AccessPolicyQueryType.SINGLE) {
@@ -236,8 +224,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
         // Fill out "?" placeholders, one per id
         .replaceAll("#NON_MEMBER_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(nonMemberRestrictiveUnits.size(), "?")))
         .replaceAll("#MEMBER_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(memberRestrictiveUnits.size(), "?")))
-        // Uncomment this if we end up using the extra permissive clause
-        //.replaceAll("#NON_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(nonRestrictiveUnits.size(), "?")))
+        .replaceAll("#NON_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(nonRestrictiveUnits.size(), "?")))
       )
       .parameters(allParameters.toArray())
       .types(allTypes.toArray(new AccessControlSqlType[0]))
