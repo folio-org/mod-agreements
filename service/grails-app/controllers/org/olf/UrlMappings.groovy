@@ -246,8 +246,5 @@ class UrlMappings {
         "/namespaces"(controller: 'identifier', action: 'namespaces', method: 'GET')
       }
     }
-
-    "/erm/orderLines"(resources: 'orderLine') {
-    }
   }
 }
