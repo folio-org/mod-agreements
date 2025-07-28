@@ -325,35 +325,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     respond CanAccessResponse.builder().canCreate(canUserCreate()).build()
   }
 
-  protected boolean arePolicyIdsValid(PolicyRestriction pr, List<AccessPolicyTypeIds> policyIds) {
-    String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
-    return policyEngine.arePolicyIdsValid(grailsHeaders, pr, policyIds)
-  }
-
-  protected boolean areCreateIdsValid(List<AccessPolicyTypeIds> policyIds) {
-    return arePolicyIdsValid(PolicyRestriction.CREATE, policyIds)
-  }
-
-  protected boolean areReadIdsValid(List<AccessPolicyTypeIds> policyIds) {
-    return arePolicyIdsValid(PolicyRestriction.READ, policyIds)
-  }
-
-  protected boolean areUpdateIdsValid(List<AccessPolicyTypeIds> policyIds) {
-    return arePolicyIdsValid(PolicyRestriction.UPDATE, policyIds)
-  }
-
-  protected boolean areDeleteIdsValid(List<AccessPolicyTypeIds> policyIds) {
-    return arePolicyIdsValid(PolicyRestriction.DELETE, policyIds)
-  }
-
-  protected boolean areClaimIdsValid(List<AccessPolicyTypeIds> policyIds) {
-    return arePolicyIdsValid(PolicyRestriction.CLAIM, policyIds)
-  }
-
-  protected boolean areApplyPoliciesIdsValid(List<AccessPolicyTypeIds> policyIds) {
-    return arePolicyIdsValid(PolicyRestriction.APPLY_POLICIES, policyIds)
-  }
-
   /**
    * Checks if the currently authenticated user can apply policies to the resource identified by {@code params.id}.
    * This method is used to determine if the user has permission to apply access policies to the resource.
@@ -364,6 +335,81 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     log.trace("AccessPolicyAwareController::canApplyPolicies")
     respond CanAccessResponse.builder().canApplyPolicies(canUserApplyPolicies()).build()
   }
+
+  /**
+   * Checks if a given list of policy IDs are valid for a specific policy restriction.
+   * This method consults the {@link PolicyEngine} to validate the policy IDs against
+   * the current user's permissions and the specified restriction.
+   *
+   * @param pr The {@link PolicyRestriction} to check against.
+   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @return {@code true} if all provided policy IDs are valid for the given restriction, {@code false} otherwise.
+   */
+  protected boolean arePolicyIdsValid(PolicyRestriction pr, List<AccessPolicyTypeIds> policyIds) {
+    String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
+    return policyEngine.arePolicyIdsValid(grailsHeaders, pr, policyIds)
+  }
+
+/**
+ * Checks if a given list of policy IDs are valid for the {@code CREATE} policy restriction.
+ *
+ * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+ * @return {@code true} if all provided policy IDs are valid for CREATE, {@code false} otherwise.
+ */
+  protected boolean areCreateIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.CREATE, policyIds)
+  }
+
+  /**
+   * Checks if a given list of policy IDs are valid for the {@code READ} policy restriction.
+   *
+   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @return {@code true} if all provided policy IDs are valid for READ, {@code false} otherwise.
+   */
+  protected boolean areReadIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.READ, policyIds)
+  }
+
+  /**
+   * Checks if a given list of policy IDs are valid for the {@code UPDATE} policy restriction.
+   *
+   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @return {@code true} if all provided policy IDs are valid for UPDATE, {@code false} otherwise.
+   */
+  protected boolean areUpdateIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.UPDATE, policyIds)
+  }
+
+  /**
+   * Checks if a given list of policy IDs are valid for the {@code DELETE} policy restriction.
+   *
+   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @return {@code true} if all provided policy IDs are valid for DELETE, {@code false} otherwise.
+   */
+  protected boolean areDeleteIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.DELETE, policyIds)
+  }
+
+  /**
+   * Checks if a given list of policy IDs are valid for the {@code CLAIM} policy restriction.
+   *
+   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @return {@code true} if all provided policy IDs are valid for CLAIM, {@code false} otherwise.
+   */
+  protected boolean areClaimIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.CLAIM, policyIds)
+  }
+
+  /**
+   * Checks if a given list of policy IDs are valid for the {@code APPLY_POLICIES} policy restriction.
+   *
+   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @return {@code true} if all provided policy IDs are valid for APPLY_POLICIES, {@code false} otherwise.
+   */
+  protected boolean areApplyPoliciesIdsValid(List<AccessPolicyTypeIds> policyIds) {
+    return arePolicyIdsValid(PolicyRestriction.APPLY_POLICIES, policyIds)
+  }
+
 
 
   // Comment out to allow quick revert to default index behaviour for development
