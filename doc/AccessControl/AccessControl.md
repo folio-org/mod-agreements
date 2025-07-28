@@ -484,3 +484,35 @@ choices make sense in the context of this work.
 ## Module layer
 ### Setup
 ### Using grails framework layer
+
+## Development notes
+The last things to note in this document are to do with developing for this library or using this library
+### Java
+Aside from the Grails framework layer, this work was completed in (almost) pure java. This allows the work to be 
+reused in whatever context we wish going forward, and hopefully to be extensible and reusable outside of any 
+framework level decisions made in the near or far future.
+
+The main additions to java used for ease of development are:
+- [Project Lombok](https://projectlombok.org/) for 
+annotations allowing for faster POJO development, built in `*Builder` static nested classes, and more
+- [Jackson](https://github.com/FasterXML/jackson-docs) for object mapping, mostly within HTTP client responses.
+
+### Documentation
+As per this document, care has been taken to the best possible degree to document this work as thorougly as possible.
+One aspect of that is the use of `javadoc` comments throughout.
+
+Should a new `plugin` layer be written, or extensions made to the `core` or `main` libraries, the minimum 
+expectation is that javadoc comments will continue to be written, and that this document will be kept as up to date 
+as possible.
+
+#### Javadoc generation
+As the work currently resides within the 
+`mod-agreements` module, the work to spin up javadocs is dependent on a couple of gradle tasks in the `build.gradle` 
+file.
+
+The approach is twofold: delombok -> generate docs
+Delombok is a task aimed at stripping back the annotated fields to get raw java methods, which then make use of the 
+javadoc annotations.
+
+`./gradlew generateJavadocs` is the `mod-agreements` gradle task which takes care of this, and then in `build/docs` 
+there should be a generated `index.html` which can be opened in a browser to search through the generated documentation.
