@@ -29,6 +29,7 @@ class AccessControlUrlMapping {
         // FIXME we should probably also include a "${path}/$id/policies" to return the policies for a given resource, with the same shape as claimPolicies etc?
         // CLAIM endpoint is needed to be able to apply policies to a resource
         "${path}/$id/claim"(controller: controller, action: "claim", method: 'POST')
+        "${path}/$id/policies"(controller: controller, action: "policies", method: 'GET')
       }
 
       "/erm/accessControl"(resources: 'accessPolicy', excludes: ['patch', 'save', 'create', 'edit', 'delete']) {

@@ -649,4 +649,13 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
     respond ([ message: "Access policies updated for this resource" ], status: 201 )
   }
+
+  @Transactional
+  def policies() {
+    AccessPolicyEntity.withNewSession {
+      respond doTheLookup(AccessPolicyEntity) {
+        eq 'resourceId', resolveRootOwnerId(params.id)
+      }
+    }
+  }
 }
