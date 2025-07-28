@@ -141,8 +141,6 @@ As can be seen from the diagram, this leads to a fairly natural separation of co
       into a constructor instead of using an imported client config class if we wished.
 
 
-> ⚠️ WIP: document still under construction. ️⚠️
-
 ## Main layer
 The `main` java library only contains two classes, `PolicyEngine` and `PolicyEngineConfiguration`. The idea is that 
 any implementation layer for a framework need only configure the various plugins used by the PolicyEngine (ACQ_UNIT, 
@@ -572,6 +570,8 @@ This has the "least restrictive wins" effect described in the acquisition unit d
 
 Each id is inserted into the SQL as a "?" parameter to be bound, and added to the `AccessControlSql` parameters 
 array, with a requisite entry in the types array for type `STRING`.
+
+> ⚠️ WIP: document still under construction. ️⚠️
 
 ## Framework layer
 ### Setup
