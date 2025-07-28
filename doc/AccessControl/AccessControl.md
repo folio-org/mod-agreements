@@ -165,7 +165,8 @@ All of these methods are available not only on the PolicyEngine in `main`, but a
 `PolicyEngineImplementor` in the `plugin` libraries (See `core` and `plugin` sections to read more).
 
 #### getPolicySubqueries
-Returns a list of `PolicySubquery` (see `core` section) objects, containing SQL fragments for use in a restrictive 
+Returns a list of immutable `PolicySubquery` (see `core` section) objects, containing SQL fragments for use in a 
+restrictive 
 query in the framework layer. Accepts `PolicyRestriction` and `AccessPolicyQueryType` (`LIST` vs `SINGLE`)
 
 For example, when fetching a list of SubscriptionAgreements protected by acquisition units this method might return
@@ -477,6 +478,100 @@ reuse in future.
 ### Example
 This section aims to break down the example of the acquisition unit plugin layer, so that some of the engineering 
 choices make sense in the context of this work.
+
+#### FolioClient / FolioClientConfig
+Under the hood, the acquisitions unit `plugin` layer uses another java library `com.k_int.folio` and its FolioClient 
+http client to talk to the acquisitions module.
+
+`FolioClient` is a java HttpClient, with methods set up to perform http calls against a given tenant. For each http 
+method there are 4 java methods on the client:
+- <METHOD>AsyncWithResponse: An asynchronous method call, returning a HttpResponse object wrapped in a 
+  CompleteableFuture
+- <METHOD>WithResponse: The same as above, but blocking to wait for the CompleteableFuture to complete
+- <METHOD>Async: An asynchronous method call, returning the response body only
+- <METHOD>: The same as  above, but again blocking on the response
+
+In addition there are direct helpers for `login`:
+- loginWithUsersAsyncWithResponse
+- loginWithUsersWithResponse
+- loginWithUsersAsync
+- loginWithUsers
+- loginAsyncWithResponse
+- loginWithResponse
+- loginAsync
+- login
+
+These are the same shape as the above, but perform login either via "/bl-users/login-with-expiry" or  
+"/authn/login-with-expiry", with the former returning a `LoginUsersResponse`, and the latter returning a 
+  `TokenExpirationResponse`.
+
+There are also helpers which are employed to block on async calls and return the synchronous completetions in a way 
+which consistently returns or throws `FolioClientException` instances.
+
+#### AcquisitionsClient
+The `FolioClient` is extended within the `plugin` layer to form `AcquisitionsClient`. Some of this could in theory 
+also be useful as an external library but for now all the acquisitions logic lives in the `plugin` layer.
+
+This client adds new methods:
+- getAsyncAcquisitionUnitMemberships/getAcquisitionUnitMemberships: Fetch all acquisition unit memberships in the system
+- getAsyncUserAcquisitionUnitMemberships/getUserAcquisitionUnitMemberships: Fetch acquisition unit memberships for a 
+  patron
+- getAsyncAcquisitionUnits/getAcquisitionUnits: Fetch all acquisition units in the system
+- getAsyncRestrictionAcquisitionUnits/getRestrictionAcquisitionUnits: Fetch all acquisition units in the system which do or do not
+  restrict for a given restriction
+- getAsyncUserAcquisitionUnits/getUserAcquisitionUnits: Fetch some subset of `MEMBER_RESTRICTIVE`, 
+  `NON_MEMBER_RESTRICTIVE` and `NON_RESTRICTIVE` units for a patron for a given restriction. This returns a 
+  `UserAcquisitionUnits` object. This is a comprehensive view of which units might restrict or permit said patron to 
+  act on a resource.
+
+The client code also includes modelling for some of the responses from Acquisitions, namely 
+`AcquisitionUnitMembershipResponse` and `AcquisitionUnitResponse`, as well as the underlying model those return 
+`AcquisitionUnitMembership` and `AcquisitionUnit`.
+
+`UserAcquisitionUnits` is a class consisting of 3 `List<AcquisitionUnit>` fields: 
+- memberRestrictiveUnits: Acquisition units which DO restrict for the operation at hand and patron IS a member of
+- nonMemberRestrictiveUnits: Acquisition units which DO restrict for the operation at hand and patron IS NOT a member of
+- nonRestrictiveUnits: Acquisition units which DO NOT restrict for the operation at hand
+
+In addition it houses `userAcquisitionUnitsMetadata`, an object explaining which fetches were performed, and some 
+helper methods to return `List<String>` ids from the 3 acquisition unit list fields above.
+
+#### AcquisitionUnitRestriction
+As hinted at elsewhere in this document, the acquisition unit view of the world does not map 1:1 onto the 
+PolicyRestrictions in the `core` layer. This means that at the `plugin` layer, there is a mapping enum class, which 
+takes any `PolicyRestriction` and maps it onto the requisite AcquisitionUnitRestriction. Those options are:
+- READ: mapped from `PolicyRestriction#READ`
+- CREATE: mapped from `PolicyRestriction#CLAIM`
+- DELETE: mapped from `PolicyRestriction#DELETE`
+- UPDATE: mapped from `PolicyRestriction#UPDATE` AND `PolicyRestriction#APPLY_POLICIES`
+- NONE: mapped from `PolicyRestriction#CREATE`
+
+#### AcquisitionUnitPolicyEngine / AcquisitionUnitPolicyEngineConfiguration
+The implementation of `PolicyEngineImplementor` for acquisition units starts by demanding a configuration of a 
+`FolioClientConfig`. The `AcquisitionUnitPolicyEngineConfiguration` contains the `enabled` boolean, as well as a 
+`FolioClientConfig` and 
+a boolean for `externalFolioLogin`. If configured to talk to a system outside the bounds of the FOLIO that 
+mod-agreements is running in, then an extra authentication step is required to login to FOLIO. If the two modules 
+are running in the same FOLIO then that step can be skipped as the auth headers will exist on the request context.
+
+#### AcquisitionUnitPolicySubquery
+As noted in the `core` layer documentation (see above), it is possible for a `plugin` layer to configure multiple of 
+these. However in the case of acquisition units it is not overly complex, and so all the logic can fit into a single 
+implementation.
+
+The class stores a `userAcquisitionUnits` field, in order that the `getSql` method can map the parameters, as well 
+as the `AccessPolicyQueryType` (`List` vs `SINGLE`) and the `PolicyRestriction` at hand.
+
+The `getSql` method then returns some SQL that runs
+
+NOT EXISTS on `AccessPolicy` entity for a resource where the policy id is in the list of nonMemberRestrictiveUnits,
+OR EXISTS on `AccessPolicy` entity for a resource where the policy id is in the list of memberRestrictiveUnits,
+OR EXISTS on `AccessPolicy` entity for a resource where the policy id is in the list of nonRestrictiveUnits
+
+This has the "least restrictive wins" effect described in the acquisition unit description above.
+
+Each id is inserted into the SQL as a "?" parameter to be bound, and added to the `AccessControlSql` parameters 
+array, with a requisite entry in the types array for type `STRING`.
 
 ## Framework layer
 ### Setup
