@@ -238,6 +238,11 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       // We have a valid restriction, lets get the policySql
       List<AccessControlSql> policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, queryResourceId)
 
+      // If we have no SQL here, just shortcut to true
+      if (policySqlFragments.size() == 0) {
+        return true
+      }
+
       log.trace("AccessControl generated PolicySql: ${policySqlFragments.join(', ')}")
 
       // We're going to do this with hibernate criteria builder to match doTheLookup logic

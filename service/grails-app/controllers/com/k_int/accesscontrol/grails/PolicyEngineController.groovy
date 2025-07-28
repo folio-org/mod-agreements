@@ -89,6 +89,10 @@ class PolicyEngineController<T> extends OkapiTenantAwareController<T> {
     log.trace("FolioClientConfig configured userLogin: ${folioClientConfig.userLogin}")
     log.trace("FolioClientConfig configured userPassword: ${folioClientConfig.userPassword}")
 
+    // Turn off Acquisition unit access control with ACCESSCONTROL_ACQUNITS_ENABLED=false
+    Boolean acqUnitsEnabled = grailsApplication.config.getProperty('accesscontrol.acqunits.enabled', Boolean, true)
+    log.trace("Acquisition units enabled: ${acqUnitsEnabled}")
+
     // TODO This being spun up per request doesn't seem amazingly efficient -- but equally
     //  it's really just a POJO and each request could be from a different tenant so maybe it's fine
     PolicyEngine policyEngine = new PolicyEngine(
@@ -98,7 +102,7 @@ class PolicyEngineController<T> extends OkapiTenantAwareController<T> {
         .acquisitionUnitPolicyEngineConfiguration(
           AcquisitionUnitPolicyEngineConfiguration
             .builder()
-            .enabled(true) // This currently ASSUMES that we're ALWAYS using acquisitionUnits
+            .enabled(acqUnitsEnabled)
             .folioClientConfig(folioClientConfig)
             .externalFolioLogin(folioIsExternal)
             .build()

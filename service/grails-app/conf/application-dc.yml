@@ -40,6 +40,8 @@ accesscontrol:
     patronid: "9eb67301-6f6e-468f-9b1a-6134dc39a684"
     userlogin: "folio"
     userpassword: "folio"
+  acqunits:
+    enabled: true
 
 # Eureka Snapshot folio client config override
 #accesscontrol:
