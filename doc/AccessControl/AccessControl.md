@@ -281,6 +281,10 @@ hand.
 This is the main body of work, providing the interfaces for each `plugin` library to do their work, as well as for 
 `main` and `framework` layers to work together. There are a lot of interlocking parts here.
 
+This documentation, much like the above diagram, does not aim to describe every single piece of the puzzle, rather 
+to give enough information that a new developer could pick up and implement a new `plugin` library, `framework` 
+layer, or policy controlled resource in a module.
+
 ### PolicyRestriction
 We should start at the main enum class which drives pretty much all of the behaviour. `PolicyRestriction` comprises 
 of 6 restriction types, each used to protect some aspect of a policy-controlled system. The expectation is that any 
@@ -312,6 +316,92 @@ Obviously there is interplay between `CLAIM` and `APPLY_POLICIES`. A resource MU
 `APPLY_POLICIES` in order for them to attempt to assign policies to that resource, and ALL policies attempted to be 
 assigned MUST be valid for that user under the `CLAIM` restriction.
 
+### AccessPolicy
+As mentioned above, one of the driving features of the access control design was that it be able to sit atop the 
+existing domain models in the various modules wishing to implement it. To this end, instead of policies being 
+directly applied to resources via some new field per resource, instead the policy assignation is managed via a "join 
+table", corresponding to some database entity AccessPolicy. The `core` library simply sets up this entity as an 
+interface, leaving the implementation of the actual database linked entity to the `framework` 
+ layer.
+
+Each implementation is expected to be able to house fields for `AccessPolicyType` type, the identifier of a policy, 
+the identifier and class of the resource said policy is assigned to, and a free text description field.
+
+### AccessPolicyType
+An enum class, holding the various types of implemented access control. Currently only `ACQ_UNIT` has been 
+implemented, corresponding to the acquisition unit logic (See acquisition unit section for details), but this is 
+expandable to include future implementations such as `KI_GRANT` or `KEYCLOAK` etc.
+
+Each type is expected to come with its own `plugin` implementation library, `PolicyEngineImplementor` etc.
+
+### PolicyControlled
+An annotation, which tags a particular resource as controlled via this access control work. The implementation 
+provides fields to house
+- resourceIdColumn
+- resourceIdField
+- ownerColumn
+- ownerField
+- ownerClass
+
+The column/field is to provide all information potentially required for any framework implementation. An 
+implementation using hibernate in Grails will likely utilise the field names, whereas a raw SQL implementation may 
+require the column names in the underlying database.
+
+The owner columns allow these annotations to reference another `PolicyControlled` resource as "owner", providing a 
+way to build up an ownership chain that the `framework` layer can use to ensure that a child resource is still 
+protected by its owner's restrictions.
+
+This management is facilitated via `PolicyControlledManager` and `PolicyControlledMetadata`.
+
+### PolicyControlledManager / PolicyControlledMetadata
+This class has a single field `ownershipChain`, and the logic required to resolve that ownership chain via iteration 
+through the annotated fields. This allows multi-level ownership chains to be represented for a given `PolicyControlled`
+ resource. This chain can then be parsed, each level represented by a `PolicyControlledMetadata` holding the 
+information provided by the annotation, in addition to:
+- ownerLevel (The level in the ownership chain, starting at -1 for the leaf resource and climbing up)
+- aliasName (A generated alias name for each level, eg "owner_alias_0")
+- aliasOwnerColumn (A helper field containing the concatenation of aliasName and ownerColumn)
+- aliasOwnerField (A helper field containing the concatenation of aliasName and ownerField)
+
+### PolicyEngineImplementor
+An interface defining the methods each and every plugin layer's policyEngine must implement. This interface is also 
+implemented by the `main` layer's PolicyEngine, with the individual responses from each `plugin` layer combined and 
+returned. 
+
+### PolicyEngineException
+A custom exception which PolicyEngine and each PolicyEngineImplementor will throw if something goes wrong during a 
+PolicyEngine method call.
+
+### PolicySubquery
+An interface defining the expected return for `getPolicySubqueries` on a PolicyEngine. Implementors must implement a 
+`getSql` method, which takes in `PolicySubqueryParameters` and returns an `AccessControlSql` object.
+The expectation is that each `plugin` layer is responsible for taking the information from the `getPolicySubqueries` 
+call and returning many of these. If complicated and different logic is needed for each `PolicyRestriction`, there 
+could be many implementations of `PolicySubquery` for a `plugin` layer. It is also possible that only one is 
+required. The interface is deliberately left vague to allow for variation here.
+
+### PolicySubqueryParameters
+A class which parameterises the information passed into the `getSql` method of all `PolicySubquery` objects. This 
+will happen in the `framework` layer, after the `main` layer `PolicyEngine` has done the work of collecting all the 
+`PolicySubquery` implementations and returning them.
+
+The parameters currently comprise mostly of information assuming that the `PolicySubquery` is working with raw SQL. 
+The SQL used in `getPolicySubqueries` is assumed to be fetching the `AccessPolicy` entities, and using those to 
+discern whether or not a given resource is protected or not. To that end, most of the informatiion that needs to be 
+passed into the `core` here via the `framework` layer is to do with the setup of those `AccessPolicy` entities.
+- accessPolicyTableName: The name of the database table containing the `AccessPolicy` entities.
+- accessPolicyTypeColumn: The name of the type column for the `AccessPolicy` entity table
+- accessPolicyIdColumn: The name of the policyId column for the `AccessPolicy` entity table
+- accessPolicyResourceIdColumn: The name of the resourceId column for the `AccessPolicy` entity table
+- accessPolicyResourceClassColumnName: The name of the resourceClass column for the `AccessPolicy` entity table
+- resourceClass: The class name for the resource being filtered
+- resourceAlias: The SQL alias for the resource table itself. For Hibernate this is usually "{alias}", but other 
+  implementations will differ
+- resourceIdColumnName: The column name for the id field on the resource table
+- resourceId: An optional field, for `AccessPolicyQueryType#SINGLE` this will be used to narrow down to just the 
+  `AccessPolicy` entities for the resource in question. This can be null for `AccessPolicyQueryType#LIST` queries.
+
+This parameter object will be set up by the `framework` layer to make use of the return values from `PolicyEngine`.
 ## Plugin layer
 ### Setup
 ### Writing a new plugin layer

@@ -3,6 +3,7 @@ package com.k_int.accesscontrol.main;
 import com.k_int.accesscontrol.acqunits.*;
 import com.k_int.accesscontrol.core.*;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
+import com.k_int.accesscontrol.core.policyengine.PolicyEngineImplementor;
 import com.k_int.accesscontrol.core.sql.PolicySubquery;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,7 @@ import java.util.List;
  * Configuration is driven by `PolicyEngineConfiguration`.
  */
 @Slf4j
-public class PolicyEngine {
+public class PolicyEngine implements PolicyEngineImplementor {
   /**
    * Configuration for the policy engine, including whether to use acquisition units.
    * This is set during construction and used to determine which policy types to query.
