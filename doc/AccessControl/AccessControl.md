@@ -334,6 +334,12 @@ expandable to include future implementations such as `KI_GRANT` or `KEYCLOAK` et
 
 Each type is expected to come with its own `plugin` implementation library, `PolicyEngineImplementor` etc.
 
+### AccessPolicyTypeIds
+This class represents a grouped collection of policy id strings, grouped by `AccessPolicyType`. These have fields:
+- name: A descriptive name for the group, mostly useful for human readable reasons like an API response
+- policyIds: A list of strings containing the identifiers of various policies for a given `AccessPolicyType`
+- type: The `AccessPolicyType` to which this group of policy ids belongs.
+
 ### PolicyControlled
 An annotation, which tags a particular resource as controlled via this access control work. The implementation 
 provides fields to house
@@ -402,9 +408,76 @@ passed into the `core` here via the `framework` layer is to do with the setup of
   `AccessPolicy` entities for the resource in question. This can be null for `AccessPolicyQueryType#LIST` queries.
 
 This parameter object will be set up by the `framework` layer to make use of the return values from `PolicyEngine`.
+
+### AccessControlSql / AccessControlSqlType
+A class to hold the SQL returned by `PolicySubquery`. This comprises of:
+- sqlString: The actual SQL in string form, with "?" parameter bindings
+- parameters: An Object[] array of parameters to be bound to sqlString
+- types: An AccessControlSqlType[] array matching the parameters to their respective types
+
+The various options for `AccessControlSqlType` are inspired by the hibernate SQL types. These do not map 1:1 to 
+java's built in SQL types, and using Hibernate SQL types would tie this library inexorably to Hibernate. Therefore 
+this enum class exists to bridge the gap, and one of the things a `framework` layer must implement is a way to map 
+these types to the types of choice (For Grails this is indeed Hibernate types)
+- STRING
+- INTEGER
+- BOOLEAN
+- UUID
+- DATE
+- TIMESTAMP
+- BIG_DECIMAL
+- BYTE_ARRAY
+
+This list may be expanded in future if more types are needed. For the current implementation only `STRING` is utilised.
+
+### HTTP bodies / responses
+The `core` layer additionally provides some helpers for setting up APIs in the various `framework` layers, although 
+those layers are absolutely free to ignore these and provide their own bespoke API.
+
+#### Responses
+- `CanAccessResponse` - contains booleans for `canRead`, `canApplyPolicies` etc, corresponding to the various 
+`PolicyRestriction` enum options.
+- `PolicyIdsResponse` - contains List<`AccessPolicyTypeIds`> for each `PolicyRestriction`, `readPolicies`, 
+  `createPolicies` etc.
+#### Bodies
+- `ClaimBody` - An interface defining a single getter for "claims", a list of `PolicyClaim` objects (see body below).
+  This includes a default method implementation to convert a `PolicyClaim` list into a List<`AccessPolicyTypeIds`> 
+  for use with the `arePolicyIdsValid` method on a `PolicyEngine`. This is a suggested API POST body for the `CLAIM` 
+  operation on a resource
+- `PolicyClaim` - an individual policy to "claim" a resource. This is an interface containing getters and setters 
+  for fields: `id`, `policyId`, `type` and `description`. The idea is that `PolicyClaim` matches the minimal 
+  information required to create a new `AccessPolicy` entity object, while not discarding any useful information 
+  passed via the API additionally, such as `id` if such an `AccessPolicy` already existed for the resource.
+
+
 ## Plugin layer
-### Setup
-### Writing a new plugin layer
+### Basic responsibilities
+Each `plugin` layer MUST implement its own `PolicyEngineImplementor`, and `PolicyEngineImplementorConfiguration` in 
+order to set the sub-engine up. This will then need an expansion on the `main` layer's `PolicyEngine` to make use of 
+it. It must also provide implementations of `PolicySubquery` which can be utilised to return SQL in the `main` layer.
+
+Beyond this, each individual `plugin` layer is unbounded, and can achieve its goals however it sees fit.
+
+### Mapping restrictions
+An individual `plugin` layer may have its own idea of `Restrictions`. For example acquisition units have 4 possible 
+restrictions, and those need to be mapped onto the 6 `PolicyRestrictions` defined in the `core` layer.
+
+### External fetches
+Some `plugin` layers may require external fetches, or passing request headers along to a fetch within the 
+implementing module's system. This can also be achieved however the `plugin` layer wishes, however the `core` and 
+initial example for acquisition units have been set up to use the basic java `HttpClient` and its API. This provides 
+an easy way to perform asynchronous fetching logic using `CompleteableFuture` which can then OPTIONALLY be wrapped in a 
+reactive stream by the implementing module. It is HIGHLY recommended that other plugins follow the same approach for 
+consistency and ease of development, but it is not a necessity.
+
+In cases where the developed client could have utility away from the access control work, such as a generic 
+`FolioClient`, it is recommended that the client be placed in its own package to give the option for lifting out and 
+reuse in future.
+
+### Example
+This section aims to break down the example of the acquisition unit plugin layer, so that some of the engineering 
+choices make sense in the context of this work.
+
 ## Framework layer
 ### Setup
 ### Writing a new framework layer

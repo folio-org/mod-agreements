@@ -50,7 +50,7 @@ public enum AccessControlSqlType {
 
   /**
    * Represents a SQL parameter type for byte arrays.
-   * This is used for parameters that are expected to be of type {@link byte[]} in the SQL query.
+   * This is used for parameters that are expected to be an array of type {@link Byte} in the SQL query.
    */
   BYTE_ARRAY // For byte[]
 }
