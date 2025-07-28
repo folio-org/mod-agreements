@@ -164,6 +164,33 @@
           "methods": [
             "GET"
           ],
+          "pathPattern": "/erm/sas/{id}/can*",
+          "permissionsRequired": [
+            "erm.agreements.item.accesscontrol.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/sas/can*",
+          "permissionsRequired": [
+            "erm.agreements.collection.accesscontrol.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/sas/{id}/claim",
+          "permissionsRequired": [
+            "erm.agreements.item.accesscontrol.post"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
           "pathPattern": "/export",
           "permissionsRequired": [
             "erm.all.agreements.resources.export"
@@ -221,6 +248,33 @@
           "pathPattern": "/erm/entitlements/{id}",
           "permissionsRequired": [
             "erm.entitlements.item.delete"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/entitlements/{id}/can*",
+          "permissionsRequired": [
+            "erm.entitlements.item.accesscontrol.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/entitlements/can*",
+          "permissionsRequired": [
+            "erm.entitlements.collection.accesscontrol.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/entitlements/{id}/claim",
+          "permissionsRequired": [
+            "erm.entitlements.item.accesscontrol.post"
           ]
         },
         {
@@ -1255,6 +1309,21 @@
       ]
     },
     {
+      "permissionName": "erm.agreements.item.accesscontrol.get",
+      "displayName": "Agreements item access control get",
+      "description": "Obtain access control information for a SubscriptionAgreement record"
+    },
+    {
+      "permissionName": "erm.agreements.collection.accesscontrol.get",
+      "displayName": "Agreements collection access control get",
+      "description": "Obtain access control information for a collection of SubscriptionAgreement records"
+    },
+    {
+      "permissionName": "erm.agreements.item.accesscontrol.post",
+      "displayName": "Agreements item access control get",
+      "description": "Claim a SubscriptionAgreement record with AccessPolicies"
+    },
+    {
       "permissionName": "erm.agreements.view",
       "subPermissions": [
         "erm.agreements.collection.get",
@@ -1265,6 +1334,8 @@
         "erm.agreements_with_resource_subset.export",
         "erm.agreements.resources.export",
         "erm.agreements.resources.subset_by_format.export",
+        "erm.agreements.item.accesscontrol.get",
+        "erm.agreements.collection.accesscontrol.get",
         "erm.all.agreements.resources.export",
         "erm.all.agreements.resources.subset_by_format.export",
         "erm.agreements.linkedLicenses.collection.get",
@@ -1298,6 +1369,7 @@
         "erm.agreements.view",
         "erm.agreements.item.post",
         "erm.agreements.item.put",
+        "erm.agreements.item.accesscontrol.post",
         "erm.agreements.clone.execute",
         "erm.agreements.validate",
         "erm.agreements.property.validate"
@@ -1880,11 +1952,28 @@
       "description": "Get entitlement record"
     },
     {
+      "permissionName": "erm.entitlements.item.accesscontrol.get",
+      "displayName": "Entitlements item access control get",
+      "description": "Obtain access control information for a Entitlement record"
+    },
+    {
+      "permissionName": "erm.entitlements.collection.accesscontrol.get",
+      "displayName": "Entitlements collection access control get",
+      "description": "Obtain access control information for a collection of Entitlement records"
+    },
+    {
+      "permissionName": "erm.entitlements.item.accesscontrol.post",
+      "displayName": "Entitlements item access control get",
+      "description": "Claim a Entitlement record with AccessPolicies"
+    },
+    {
       "permissionName": "erm.entitlements.view",
       "subPermissions": [
         "erm.entitlements.collection.get",
         "erm.entitlements.logEntry.collection.get",
-        "erm.entitlements.item.get"
+        "erm.entitlements.item.get",
+        "erm.entitlements.item.accesscontrol.get",
+        "erm.entitlements.collection.accesscontrol.get"
       ]
     },
     {
@@ -1902,7 +1991,8 @@
       "subPermissions": [
         "erm.entitlements.view",
         "erm.entitlements.item.post",
-        "erm.entitlements.item.put"
+        "erm.entitlements.item.put",
+        "erm.entitlements.item.accesscontrol.post"
       ]
     },
     {
