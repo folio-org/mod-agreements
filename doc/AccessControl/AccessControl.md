@@ -75,10 +75,9 @@ If unit 2 was then added to the resource, and restricted as follows:
 - `protectCreate`⬜
 - `protectDelete`✅
 
-Then the behaviour becomes a little more confusing. Read is now UNRESTRICTED by unit 1 and RESTRICTED by unit 2. 
-This means in practise that only users in unit 2 are allowed to read the resource. (In actualilty at the moment this 
-is not true. It is the behaviour when UPDATE is restricted/unrestricted for a single resource, but NOT for READ. We 
-are in discussions with the Acquisition lead to understand if this discrepancy is intended.)
+Then the behaviour becomes a little more confusing. Read is now UNRESTRICTED by unit 1 and RESTRICTED by unit 2.
+The default behaviour in FOLIO is to use the least restrictive policy, so applying an "unrestricted" policy for READ 
+will in fact grant access to the resource for all users.
 
 Update is RESTRICTED for unit 1 _and_ for unit 2. The chosen behaviour here for FOLIO is permissive, so if the user 
 is a member of unit 1 _or_ unit 2 then write access will be granted, similarly for delete.
@@ -116,6 +115,7 @@ The structure of this work as delivered is as follows:
 - Main (com.k-int.accesscontrol.main)
 - Acquisition unit plugin (com.k-int.accesscontrol.acqunits)
 - Grails framework layer (com.k-int.accesscontrol.grails)
+- Module layer (setup of the PolicyControlled resources)
 
 As per the overview, we have the "main" java library, which is interracted with by the "framework layer" which in 
 turn can be imported into each implementing module.
@@ -143,8 +143,143 @@ As can be seen from the diagram, this leads to a fairly natural separation of co
 
 > ⚠️ WIP: document still under construction. ️⚠️
 
-## Core layer
-## Plugin layer
 ## Main layer
+The `main` java library only contains two classes, `PolicyEngine` and `PolicyEngineConfiguration`. The idea is that 
+any implementation layer for a framework need only configure the various plugins used by the PolicyEngine (ACQ_UNIT, 
+KI_GRANT, etc) and then make calls to the engine itself, which will then distribute to the plugins and combine ready 
+for the implementation layer to use.
+
+### PolicyEngine
+PolicyEngine is a class which combines the PolicyEngine methods from the various plugin engine implementations (See 
+below). The methods available are:
+- getPolicySubqueries
+- getPolicyIds
+- arePolicyIdsValid
+- 
+Most methods are applicable across several `PolicyRestrictions` (see `core` section), and require the passing down 
+  of `headers` object, which is used to pass the request context down to fetches happening within the plugin 
+  libraries. In practice this is to ensure that FOLIO fetches do not in general need a second login, when the 
+  initial request is already happening inside an authenticated context.
+
+All of these methods are available not only on the PolicyEngine in `main`, but also on each 
+`PolicyEngineImplementor` in the `plugin` libraries (See `core` and `plugin` sections to read more).
+
+#### getPolicySubqueries
+Returns a list of `PolicySubquery` (see `core` section) objects, containing SQL fragments for use in a restrictive 
+query in the framework layer. Accepts `PolicyRestriction` and `AccessPolicyQueryType` (`LIST` vs `SINGLE`)
+
+For example, when fetching a list of SubscriptionAgreements protected by acquisition units this method might return
+```
+NOT EXISTS (
+      SELECT 1 FROM access_policy ap1
+      WHERE
+        ap1.acc_pol_type = 'ACQ_UNIT' AND
+        ap1.acc_pol_resource_id = {alias}.sa_id AND
+        ap1.acc_pol_resource_class = ? AND
+        ap1.acc_pol_policy_id IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      LIMIT 1
+    ) OR EXISTS (
+      SELECT 1 FROM access_policy ap2
+      WHERE
+        ap2.acc_pol_type = 'ACQ_UNIT' AND
+        ap2.acc_pol_resource_id = {alias}.sa_id AND
+        ap2.acc_pol_resource_class = ? AND
+        ap2.acc_pol_policy_id IN (?,?,?)
+      LIMIT 1
+    ) OR EXISTS (
+      SELECT 1 FROM access_policy ap3
+      WHERE
+        ap3.acc_pol_type = 'ACQ_UNIT' AND
+        ap3.acc_pol_resource_id = {alias}.sa_id AND
+        ap3.acc_pol_resource_class = ? AND
+        ap3.acc_pol_policy_id IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      LIMIT 1
+    )
+  )
+```
+For a breakdown of the exact way this works see the `core` and `plugin` sections below.
+
+When these subqueries have been fetched, it is up to the `framework` layer to utilise them (along with passed 
+parameters and types) into their queries, allowing for the filtering by access control libraries.
+Type `LIST` is expected to return SQL subqueries used in `index` type fetches, filtering a list to only those 
+resources for which access is granted by the plugins. Type `SINGLE` is expected to be used by the `framework` layer 
+to return a single result, likely in the form of a boolean (1 if exists, 0 else, etc) to ascertain whether or not a 
+given resource is restricted.
+
+#### getPolicyIds
+Returns a list of `AccessPolicyTypeIds`, a collection of collections of ids, grouped by `AccessPolicyType` 
+(`ACQ_UNIT` etc), corresponding to all the policy ids which are valid for a given `PolicyRestriction`.
+This is expected to be used by the `framework` layer to provide APIs by which a user can ascertain which policies in 
+the various access control systems can be used in order to allow them to perform some operation on a resource.
+
+For example, one such output might be:
+```
+{
+  "readPolicyIds": [
+    {
+      "name": "MEMBER_RESTRICTIVE",
+      "policyIds": [
+        "11d68595-e2a1-4342-af76-346942196cd0",
+        "b35f1e8d-0a65-495b-ad50-1712978d4d10",
+        "d5a3b023-e83a-46d5-857a-91c65822f0c3"
+      ],
+      "type": "ACQ_UNIT"
+    },
+    {
+      "name": "NON_RESTRICTIVE",
+      "policyIds": [
+        "feb88e13-70ea-4b7c-a520-760aedd9de61",
+        "76c3ebdf-b7a3-493e-b7c0-3c5ed3208266",
+        "ddaec974-82a1-4516-a12a-97d6411d1ad5",
+        "03ea0c24-448a-4882-8b7f-032c5f303f55",
+        "348aaa0b-7e95-4b9b-8153-38863f522191",
+        "b5e377b9-dbbd-4e71-ac18-f5f0dca905dc",
+        "b50828f9-84f6-457f-b078-d223bbe0e5e3",
+        "038373fe-6405-40e0-b017-8e52a63adb1f",
+        "ac9f5d95-fa07-44f2-89e6-18e440a4a6a2",
+        "29711f57-448e-4e6c-9b60-215cfd7b0451",
+        "5dd4c689-d707-484d-8d03-d8dc6213adff",
+        "0ebb1f7d-983f-3026-8a4c-5318e0ebc041",
+        "c36dd39b-4373-433a-8dc9-8d50a837172d",
+        "9c53c2e9-0e05-48c9-b4df-22d8d03086a8",
+        "b8b410d3-cc17-48f7-8938-fbe8e6a5863d",
+        "efd03229-3559-4164-b223-b709bee83dd2",
+        "1e16cd89-d670-4079-ad4a-4e69b879413a",
+        "c6bf977e-b14e-46d6-a3bb-c633bcb39be5",
+        "e0ae9543-7f8a-4b66-b0e8-ebfa529f4f9e",
+        "392f3386-d1a5-4935-a8ee-d15ab3c6f4fe",
+        "2db4cacd-a2d5-4106-873f-ff60ece6fedb"
+      ],
+      "type": "ACQ_UNIT"
+    }
+  ]
+}
+```
+This output corresponds to finding the policy ids which would provide `READ` access to the user should they be 
+assigned to a resource. The name field is used to provide a little extra context, where the `type` and `policyIds` 
+are the important fields. Applying any one of these policy ids to a resource _should_ result in that resource being 
+accessible to the user for `READ` operation.
+
+The main use case for this is to find the policy ids valid for `CLAIM` (see `core` section for more explanation 
+about what each `PolicyRestriction` does)
+
+#### arePolicyIdsValid
+The inverse of `getPolicyIds` above. The use case for this method in the `framework` library is to allow an API 
+which can check whether some collection of PolicyIds are valid for the user at hand. This is useful to perform 
+_before_ database commits have happened. The main use case in particular is to ensure that all of the policy ids are 
+valid for the `CLAIM` restriction for the user BEFORE they are assigned to the resource. This is particularly 
+important for the claim operation (See `core` section for how `CLAIM` and `APPLY_POLICIES` interact)
+
+### PolicyEngineConfiguration
+The `PolicyEngine` needs to be configured, and pass down any specific configuration to each 
+`PolicyEngineImplementor` (See `core` library section). To that end it is comprised of many 
+`PolicyEngineImplementorConfigurations`, each of which must define `enabled` to turn the particular access control 
+method on/off, and also provide any useful information used for fetching/parsing the access control information at 
+hand.
+
+## Core layer
+
+## Plugin layer
+
 ## Framework layer
 ## Module layer
