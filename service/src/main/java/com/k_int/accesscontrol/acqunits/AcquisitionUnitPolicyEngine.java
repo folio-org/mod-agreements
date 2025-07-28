@@ -21,6 +21,7 @@ import java.util.stream.Stream;
  * <p>
  * Handles policy subquery generation based on acquisition unit restrictions,
  * using FOLIO integration for user acquisition unit lookups.
+ * </p>
  */
 @Slf4j
 public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
