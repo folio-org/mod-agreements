@@ -109,6 +109,8 @@ public class FolioClient {
     this.tenant = tenant;
     this.httpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
+        .executor(FolioClientExecutor.getHttpClientExecutor())
+        .version(HttpClient.Version.HTTP_1_1)
         .build();
 
     this.patronId = patronId;
