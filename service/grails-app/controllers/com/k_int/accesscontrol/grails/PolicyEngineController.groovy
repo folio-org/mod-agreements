@@ -66,7 +66,7 @@ class PolicyEngineController<T> extends OkapiTenantAwareController<T> {
     // I'm not convinced this is the best way to do it but hey ho
     UserDetails patron = getPatron()
     String defaultPatronId = 'defaultPatronId'
-    if (patron.hasProperty("id")) {
+    if (patron.id != null) {
       defaultPatronId = patron.id
     }
     log.trace("defaultPatronId: ${defaultPatronId}")
