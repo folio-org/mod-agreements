@@ -109,7 +109,8 @@ public class FolioClient {
     this.tenant = tenant;
     this.httpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
-        .executor(FolioClientExecutor.getHttpClientExecutor())
+        // TODO I am not at all convinced I know what I'm doing here... leave it off for now
+        //.executor(FolioClientExecutor.getHttpClientExecutor())
         .version(HttpClient.Version.HTTP_1_1)
         .build();
 
