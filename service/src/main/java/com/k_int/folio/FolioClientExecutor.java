@@ -5,6 +5,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+
+// FIXME This was conceived as an attempt to fix stream cancellations, but changing to HTTP1.1 did that
+// Knowing then that this is slightly out of my depth right now, I am putting this class' use on hold
 public class FolioClientExecutor {
 
   private static final int HTTP_CLIENT_POOL_SIZE = 20; // Example size

@@ -111,7 +111,7 @@ public class FolioClient {
         .connectTimeout(Duration.ofSeconds(10))
         // TODO I am not at all convinced I know what I'm doing here... leave it off for now
         //.executor(FolioClientExecutor.getHttpClientExecutor())
-        .version(HttpClient.Version.HTTP_1_1)
+        .version(HttpClient.Version.HTTP_1_1) // This seems to resolve issues with stream cancellations
         .build();
 
     this.patronId = patronId;
