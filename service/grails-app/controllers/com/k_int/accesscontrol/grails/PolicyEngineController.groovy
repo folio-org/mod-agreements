@@ -77,12 +77,13 @@ class PolicyEngineController<T> extends OkapiTenantAwareController<T> {
     }
     log.trace("defaultPatronId: ${defaultPatronId}")
 
-    // Track if acquisition units should be enabled
-    Boolean defaultAcquisitionUnitsEnabled = true
-
     // Build the folio information via ENV_VARS, grailsApplication defaults OR fallback to "this folio".
     // Should allow devs to control where code is pointing dynamically without needing to comment/uncomment different folioConfigs here
     String baseOkapiUrl = grailsApplication.config.getProperty('accesscontrol.folio.baseokapiurl', String)
+
+    // Track if acquisition units should be enabled
+    Boolean acqUnitsEnabled = grailsApplication.config.getProperty('accesscontrol.acqunits.enabled', Boolean, true)
+
     boolean folioIsExternal = true
     if (baseOkapiUrl == null) {
       folioIsExternal = false
@@ -95,11 +96,17 @@ class PolicyEngineController<T> extends OkapiTenantAwareController<T> {
         baseOkapiUrl = request.getHeader(OkapiHeaders.URL)
       }
 
-      // Internal FOLIO must have acquisition units interface present
-      defaultAcquisitionUnitsEnabled = okapiClient.withTenant().providesInterface("acquisitions-units", "^1.0")
-    }
+      log.trace("Configured for internal folio: ${baseOkapiUrl}")
 
-    log.trace("Default acquisition units enabled: ${defaultAcquisitionUnitsEnabled}")
+      // Internal FOLIO must have acquisition units interface present
+      // Only bother with this if the config hasn't turned it off explicitly
+      if (acqUnitsEnabled != false) {
+        acqUnitsEnabled = okapiClient.withTenant().providesInterface("acquisitions-units", "^1.0")
+        log.trace("Acquisition unit interface present for internal folio: ${acqUnitsEnabled}")
+      } else {
+        log.trace("Acquisition units have been manually configured as off, no interface check required")
+      }
+    }
 
     FolioClientConfig folioClientConfig = FolioClientConfig.builder()
       .baseOkapiUri(baseOkapiUrl)
@@ -116,8 +123,6 @@ class PolicyEngineController<T> extends OkapiTenantAwareController<T> {
     log.trace("FolioClientConfig configured userLogin: ${folioClientConfig.userLogin}")
     log.trace("FolioClientConfig configured userPassword: ${folioClientConfig.userPassword}")
 
-    // Turn off Acquisition unit access control with ACCESSCONTROL_ACQUNITS_ENABLED=false
-    Boolean acqUnitsEnabled = grailsApplication.config.getProperty('accesscontrol.acqunits.enabled', Boolean, defaultAcquisitionUnitsEnabled)
     log.trace("Acquisition units enabled: ${acqUnitsEnabled}")
 
     // TODO This being spun up per request doesn't seem amazingly efficient -- but equally
