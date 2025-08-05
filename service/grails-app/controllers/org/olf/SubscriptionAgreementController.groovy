@@ -51,6 +51,7 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
 
   @Transactional(readOnly=true)
   def show() {
+    log.debug("THIS IS A TEST")
     super.show()
   }
 
