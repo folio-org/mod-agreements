@@ -1,5 +1,6 @@
 package com.k_int.accesscontrol.core;
 
+import com.k_int.accesscontrol.core.http.responses.Policy;
 import lombok.Builder;
 import lombok.Data;
 
@@ -26,12 +27,12 @@ public class AccessPolicyTypeIds {
    */
   AccessPolicyType type;
   /**
-   * A list of policy IDs associated with the specified access policy type.
-   * These IDs represent the specific policies that are valid for the given type.
-   * @param policyIds A list of policy IDs associated with the specified access policy type.
-   * @return A list of policy IDs associated with the specified access policy type.
+   * A list of policies associated with the specified access policy type.
+   * These represent the specific policies that are valid for the given type.
+   * @param policies A list of policies associated with the specified access policy type.
+   * @return A list of policies associated with the specified access policy type.
    */
-  List<String> policyIds;
+  List<? extends Policy> policies;
 
   /**
    * An optional name for the access policy type.

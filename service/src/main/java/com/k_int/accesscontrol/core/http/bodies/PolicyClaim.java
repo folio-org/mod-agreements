@@ -1,6 +1,7 @@
 package com.k_int.accesscontrol.core.http.bodies;
 
 import com.k_int.accesscontrol.core.AccessPolicyType;
+import com.k_int.accesscontrol.core.http.responses.Policy;
 
 /**
  * Represents a policy claim in the context of access control.
@@ -13,7 +14,7 @@ import com.k_int.accesscontrol.core.AccessPolicyType;
  */
 public interface PolicyClaim {
 
-  /**
+ /**
    * Retrieves the unique identifier of this policy claim.
    *
    * @return The unique ID of the policy claim.
@@ -28,19 +29,19 @@ public interface PolicyClaim {
   void setId(String id);
 
   /**
-   * Retrieves the identifier of the policy to which this claim pertains.
+   * Retrieves the policy to which this claim pertains.
    * This links the claim to a specific access policy definition.
    *
-   * @return The ID of the associated policy.
+   * @return The associated policy.
    */
-  String getPolicyId();
+  Policy getPolicy();
 
   /**
-   * Sets the identifier of the policy to which this claim pertains.
+   * Sets thepolicy to which this claim pertains.
    *
-   * @param policyId The ID of the policy to associate with this claim.
+   * @param policy The policy to associate with this claim.
    */
-  void setPolicyId(String policyId);
+  void setPolicy(Policy policy);
 
   /**
    * Retrieves the type of access policy that this claim represents.

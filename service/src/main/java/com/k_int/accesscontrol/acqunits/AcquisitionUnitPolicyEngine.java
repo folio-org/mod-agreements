@@ -3,6 +3,7 @@ package com.k_int.accesscontrol.acqunits;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionsUnitSubset;
 import com.k_int.accesscontrol.core.*;
+import com.k_int.accesscontrol.core.http.responses.Policy;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineImplementor;
 import com.k_int.accesscontrol.core.sql.PolicySubquery;
@@ -165,25 +166,43 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
     AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
     return folioClientExceptionHandler("fetching Acquisition units", () -> {
       List<AccessPolicyTypeIds> policyIds = new ArrayList<>();
-      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(finalHeaders, acqRestriction, Set.of(UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE, UserAcquisitionsUnitSubset.NON_RESTRICTIVE));
+      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(
+        finalHeaders,
+        acqRestriction,
+        Set.of(
+          UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE,
+          UserAcquisitionsUnitSubset.NON_MEMBER_NON_RESTRICTIVE,
+          UserAcquisitionsUnitSubset.MEMBER_NON_RESTRICTIVE
+        )
+      );
 
       // Add all the member restrictive unit policy IDs to the list
       policyIds.add(
         AccessPolicyTypeIds
           .builder()
           .type(AccessPolicyType.ACQ_UNIT)
-          .policyIds(userAcquisitionUnits.getMemberRestrictiveUnitIds())
+          .policies(userAcquisitionUnits.getMemberRestrictiveUnitPolicies())
           .name(UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE.toString())
           .build()
       );
 
-      // Add all the non-restrictive unit policy IDs to the list
+      // Add all the member non-restrictive unit policy IDs to the list
       policyIds.add(
         AccessPolicyTypeIds
           .builder()
           .type(AccessPolicyType.ACQ_UNIT)
-          .policyIds(userAcquisitionUnits.getNonRestrictiveUnitIds())
-          .name(UserAcquisitionsUnitSubset.NON_RESTRICTIVE.toString())
+          .policies(userAcquisitionUnits.getNonMemberNonRestrictiveUnitPolicies())
+          .name(UserAcquisitionsUnitSubset.NON_MEMBER_NON_RESTRICTIVE.toString())
+          .build()
+      );
+
+      // Add all the member non-restrictive unit policy IDs to the list
+      policyIds.add(
+        AccessPolicyTypeIds
+          .builder()
+          .type(AccessPolicyType.ACQ_UNIT)
+          .policies(userAcquisitionUnits.getMemberNonRestrictiveUnitPolicies())
+          .name(UserAcquisitionsUnitSubset.MEMBER_NON_RESTRICTIVE.toString())
           .build()
       );
 
@@ -196,13 +215,20 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
     AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
 
     return folioClientExceptionHandler("fetching Acquisition units", () -> {
-      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(finalHeaders, acqRestriction, Set.of(UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE, UserAcquisitionsUnitSubset.NON_RESTRICTIVE));
+      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(
+        finalHeaders,
+        acqRestriction,
+        Set.of(
+          UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE,
+          UserAcquisitionsUnitSubset.NON_RESTRICTIVE // We don't need to differentiate here since we're not expanding them in the response
+        )
+      );
       // For ACQ_UNITs the policyIds are valid if they're in the member restrictive or non-restrictive units lists
       return policyIds
         .stream()
         .allMatch(pids -> {
           // For all AccessPolicyTypeIds, we grab the policy IDs, then check that they ALL exist in the user's acquisition units
-          return pids.getPolicyIds()
+          return pids.getPolicies().stream().map(Policy::getId).toList()
             .stream()
             .allMatch(pid -> Stream.concat(
               Optional.ofNullable(userAcquisitionUnits.getMemberRestrictiveUnits()).stream().flatMap(Collection::stream),

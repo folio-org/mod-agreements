@@ -235,7 +235,7 @@ public class AcquisitionsClient extends FolioClient {
      * we will fetch them. Otherwise, we will complete the future with null.
      */
     CompletableFuture<AcquisitionUnitResponse> nonRestrictiveUnitsResponse =
-      (userAcquisitionUnitsMetadata.isNonRestrictive())
+      (userAcquisitionUnitsMetadata.isNonRestrictive() || userAcquisitionUnitsMetadata.isMemberNonRestrictive() || userAcquisitionUnitsMetadata.isNonMemberNonRestrictive())
         ? getAsyncRestrictionAcquisitionUnits(headers, Collections.emptyMap(), restriction, false)
         : CompletableFuture.completedFuture(null);
 
@@ -287,12 +287,52 @@ public class AcquisitionsClient extends FolioClient {
       ) : CompletableFuture.completedFuture(null);
 
     /*
+     * If the userAcquisitionUnitsMetadata indicates that we want to fetch nonMemberNonRestrictive units,
+     * we will filter the restrictive units response to get only those non restrictive units where the user is not a member.
+     * Otherwise, we will complete the future with null.
+     */
+    CompletableFuture<List<AcquisitionUnit>> nonMemberNonRestrictiveUnits = userAcquisitionUnitsMetadata.isNonMemberNonRestrictive() ?
+      nonRestrictiveUnitsResponse.thenCombine(acquisitionUnitMembershipsResponse, (nrur, aumr) ->
+        nrur.getAcquisitionsUnits()
+          .stream()
+          .filter(au -> aumr.getAcquisitionsUnitMemberships()
+            .stream()
+            .noneMatch(aum ->
+              Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
+                Objects.equals(aum.getUserId(), this.getPatronId())
+            )
+          )
+          .toList()
+      ) : CompletableFuture.completedFuture(null);
+
+    /*
+     * If the userAcquisitionUnitsMetadata indicates that we want to fetch memberNonRestrictive units,
+     * we will filter the restrictive units response to get only those units where the user is a member.
+     * Otherwise, we will complete the future with null.
+     */
+    CompletableFuture<List<AcquisitionUnit>> memberNonRestrictiveUnits = userAcquisitionUnitsMetadata.isMemberNonRestrictive() ?
+      nonRestrictiveUnitsResponse.thenCombine(acquisitionUnitMembershipsResponse, (rur, aumr) ->
+        rur.getAcquisitionsUnits()
+          .stream()
+          .filter(au -> aumr.getAcquisitionsUnitMemberships()
+            .stream()
+            .anyMatch(aum ->
+              Objects.equals(aum.getAcquisitionsUnitId(), au.getId()) &&
+                Objects.equals(aum.getUserId(), this.getPatronId())
+            )
+          )
+          .toList()
+      ) : CompletableFuture.completedFuture(null);
+
+    /*
      * Combine all the futures and return a UserAcquisitionUnits object containing the results.
      */
     return CompletableFuture.allOf(
         memberRestrictiveUnits,
         nonMemberRestrictiveUnits,
-        nonRestrictiveUnitsResponse
+        nonRestrictiveUnitsResponse,
+        memberNonRestrictiveUnits,
+        nonMemberNonRestrictiveUnits
       )
       .thenApply(ignoredVoid -> UserAcquisitionUnits
         .builder()
@@ -300,6 +340,8 @@ public class AcquisitionsClient extends FolioClient {
         .nonMemberRestrictiveUnits(nonMemberRestrictiveUnits.join())
         // If we didn't fetch non-restrictive units, this will be null, so we should handle that gracefully.
         .nonRestrictiveUnits(nonRestrictiveUnitsResponse.join() != null ? nonRestrictiveUnitsResponse.join().getAcquisitionsUnits() : null)
+        .memberNonRestrictiveUnits(memberNonRestrictiveUnits.join())
+        .nonMemberNonRestrictiveUnits(nonMemberNonRestrictiveUnits.join())
         .userAcquisitionUnitsMetadata(userAcquisitionUnitsMetadata)
         .build());
   }

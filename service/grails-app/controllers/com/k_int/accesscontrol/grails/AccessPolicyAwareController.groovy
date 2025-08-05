@@ -582,7 +582,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
 
         // For each claim in the body, we need to first check whether the policy currently exists. If it does, we can update it (description ONLY)
-        for(GrailsClaimBody.GrailsPolicyClaim claim  : claimBody.claims) {
+        for(GrailsPolicyClaim claim  : claimBody.claims) {
           if (claim.id) {
             // If the claim has an ID, we assume it is an existing policy that needs to be updated
             AccessPolicyEntity existingPolicy = AccessPolicyEntity.findById(claim.id)

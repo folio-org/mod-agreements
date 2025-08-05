@@ -1,6 +1,8 @@
 package com.k_int.accesscontrol.core.http.bodies;
 
 import com.k_int.accesscontrol.core.AccessPolicyTypeIds;
+import com.k_int.accesscontrol.core.http.responses.BasicPolicy;
+import com.k_int.accesscontrol.core.http.responses.Policy;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,7 +19,6 @@ import java.util.List;
  */
 public interface ClaimBody {
   List<PolicyClaim> getClaims();
-
 
   /**
    * Returns a list of access policy IDs grouped by their type.
@@ -40,14 +41,14 @@ public interface ClaimBody {
         if (relevantTypeIds != null) {
 
           // Update existing type with new policy ID
-          ArrayList<String> updatedPolicyIds = new ArrayList<>(relevantTypeIds.getPolicyIds());
-          updatedPolicyIds.add(curr.getPolicyId());
-          relevantTypeIds.setPolicyIds(updatedPolicyIds);
+          ArrayList<Policy> updatedPolicyIds = new ArrayList<>(relevantTypeIds.getPolicies());
+          updatedPolicyIds.add(BasicPolicy.builder().id(curr.getPolicy().getId()).build());
+          relevantTypeIds.setPolicies(updatedPolicyIds);
         } else {
           acc.add(
             AccessPolicyTypeIds.builder()
               .type(curr.getType())
-              .policyIds(Collections.singletonList(curr.getPolicyId()))
+              .policies(Collections.singletonList(BasicPolicy.builder().id(curr.getPolicy().getId()).build()))
               .name("POLICY_IDS_FOR_" + curr.getType().toString())
               .build()
           );
