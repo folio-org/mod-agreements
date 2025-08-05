@@ -1,5 +1,6 @@
 package com.k_int.accesscontrol.acqunits.responses;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
 import com.k_int.accesscontrol.core.http.responses.Policy;
 import lombok.Getter;
@@ -10,6 +11,7 @@ import lombok.experimental.SuperBuilder;
  * question is or is not a member for that unit
  */
 @SuperBuilder
+@JsonTypeName("ACQ_UNITS")
 @SuppressWarnings("javadoc")
 public class AcquisitionUnitPolicy extends AcquisitionUnit implements Policy {
 
@@ -20,7 +22,6 @@ public class AcquisitionUnitPolicy extends AcquisitionUnit implements Policy {
    */
   @Getter
   Boolean isMember;
-
 
   public static AcquisitionUnitPolicy fromAcquisitionUnit(AcquisitionUnit unitBase, Boolean isMember) {
     return AcquisitionUnitPolicy

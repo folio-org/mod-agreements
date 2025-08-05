@@ -158,14 +158,14 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
    *
    * @param headers the request context headers, used for FOLIO/internal service authentication
    * @param pr      the policy restriction to filter by
-   * @return a list of {@link AccessPolicyTypeIds} containing policy IDs grouped by type
+   * @return a list of {@link AccessPolicies} containing policy IDs grouped by type
    */
-  public List<AccessPolicyTypeIds> getPolicyIds(String[] headers, PolicyRestriction pr) {
+  public List<AccessPolicies> getPolicyIds(String[] headers, PolicyRestriction pr) {
     String[] finalHeaders = handleLoginAndGetHeaders(headers);
 
     AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
     return folioClientExceptionHandler("fetching Acquisition units", () -> {
-      List<AccessPolicyTypeIds> policyIds = new ArrayList<>();
+      List<AccessPolicies> policyIds = new ArrayList<>();
       UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(
         finalHeaders,
         acqRestriction,
@@ -178,7 +178,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
 
       // Add all the member restrictive unit policy IDs to the list
       policyIds.add(
-        AccessPolicyTypeIds
+        AccessPolicies
           .builder()
           .type(AccessPolicyType.ACQ_UNIT)
           .policies(userAcquisitionUnits.getMemberRestrictiveUnitPolicies())
@@ -188,7 +188,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
 
       // Add all the member non-restrictive unit policy IDs to the list
       policyIds.add(
-        AccessPolicyTypeIds
+        AccessPolicies
           .builder()
           .type(AccessPolicyType.ACQ_UNIT)
           .policies(userAcquisitionUnits.getNonMemberNonRestrictiveUnitPolicies())
@@ -198,7 +198,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
 
       // Add all the member non-restrictive unit policy IDs to the list
       policyIds.add(
-        AccessPolicyTypeIds
+        AccessPolicies
           .builder()
           .type(AccessPolicyType.ACQ_UNIT)
           .policies(userAcquisitionUnits.getMemberNonRestrictiveUnitPolicies())
@@ -210,7 +210,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
     });
   }
 
-  public boolean arePolicyIdsValid(String[] headers, PolicyRestriction pr, List<AccessPolicyTypeIds> policyIds) {
+  public boolean arePolicyIdsValid(String[] headers, PolicyRestriction pr, List<AccessPolicies> policyIds) {
     String[] finalHeaders = handleLoginAndGetHeaders(headers);
     AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
 
@@ -227,7 +227,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
       return policyIds
         .stream()
         .allMatch(pids -> {
-          // For all AccessPolicyTypeIds, we grab the policy IDs, then check that they ALL exist in the user's acquisition units
+          // For all AccessPolicies, we grab the policy IDs, then check that they ALL exist in the user's acquisition units
           return pids.getPolicies().stream().map(Policy::getId).toList()
             .stream()
             .allMatch(pid -> Stream.concat(

@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.grails
 
-import com.k_int.accesscontrol.core.AccessPolicyTypeIds
+import com.k_int.accesscontrol.core.AccessPolicies
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
@@ -14,7 +14,6 @@ import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters
 import com.k_int.accesscontrol.grails.criteria.AccessControlHibernateTypeMapper
 import com.k_int.accesscontrol.main.PolicyEngine
 import com.k_int.accesscontrol.grails.criteria.MultipleAliasSQLCriterion
-import com.k_int.okapi.OkapiClient
 import grails.gorm.transactions.Transactional
 import org.hibernate.Criteria
 import org.hibernate.Session
@@ -340,10 +339,10 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    * the current user's permissions and the specified restriction.
    *
    * @param pr The {@link PolicyRestriction} to check against.
-   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @param policyIds A list of {@link AccessPolicies} representing the policy IDs to validate.
    * @return {@code true} if all provided policy IDs are valid for the given restriction, {@code false} otherwise.
    */
-  protected boolean arePolicyIdsValid(PolicyRestriction pr, List<AccessPolicyTypeIds> policyIds) {
+  protected boolean arePolicyIdsValid(PolicyRestriction pr, List<AccessPolicies> policyIds) {
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
     return policyEngine.arePolicyIdsValid(grailsHeaders, pr, policyIds)
   }
@@ -351,60 +350,60 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 /**
  * Checks if a given list of policy IDs are valid for the {@code CREATE} policy restriction.
  *
- * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+ * @param policyIds A list of {@link AccessPolicies} representing the policy IDs to validate.
  * @return {@code true} if all provided policy IDs are valid for CREATE, {@code false} otherwise.
  */
-  protected boolean areCreateIdsValid(List<AccessPolicyTypeIds> policyIds) {
+  protected boolean areCreateIdsValid(List<AccessPolicies> policyIds) {
     return arePolicyIdsValid(PolicyRestriction.CREATE, policyIds)
   }
 
   /**
    * Checks if a given list of policy IDs are valid for the {@code READ} policy restriction.
    *
-   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @param policyIds A list of {@link AccessPolicies} representing the policy IDs to validate.
    * @return {@code true} if all provided policy IDs are valid for READ, {@code false} otherwise.
    */
-  protected boolean areReadIdsValid(List<AccessPolicyTypeIds> policyIds) {
+  protected boolean areReadIdsValid(List<AccessPolicies> policyIds) {
     return arePolicyIdsValid(PolicyRestriction.READ, policyIds)
   }
 
   /**
    * Checks if a given list of policy IDs are valid for the {@code UPDATE} policy restriction.
    *
-   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @param policyIds A list of {@link AccessPolicies} representing the policy IDs to validate.
    * @return {@code true} if all provided policy IDs are valid for UPDATE, {@code false} otherwise.
    */
-  protected boolean areUpdateIdsValid(List<AccessPolicyTypeIds> policyIds) {
+  protected boolean areUpdateIdsValid(List<AccessPolicies> policyIds) {
     return arePolicyIdsValid(PolicyRestriction.UPDATE, policyIds)
   }
 
   /**
    * Checks if a given list of policy IDs are valid for the {@code DELETE} policy restriction.
    *
-   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @param policyIds A list of {@link AccessPolicies} representing the policy IDs to validate.
    * @return {@code true} if all provided policy IDs are valid for DELETE, {@code false} otherwise.
    */
-  protected boolean areDeleteIdsValid(List<AccessPolicyTypeIds> policyIds) {
+  protected boolean areDeleteIdsValid(List<AccessPolicies> policyIds) {
     return arePolicyIdsValid(PolicyRestriction.DELETE, policyIds)
   }
 
   /**
    * Checks if a given list of policy IDs are valid for the {@code CLAIM} policy restriction.
    *
-   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @param policyIds A list of {@link AccessPolicies} representing the policy IDs to validate.
    * @return {@code true} if all provided policy IDs are valid for CLAIM, {@code false} otherwise.
    */
-  protected boolean areClaimIdsValid(List<AccessPolicyTypeIds> policyIds) {
+  protected boolean areClaimIdsValid(List<AccessPolicies> policyIds) {
     return arePolicyIdsValid(PolicyRestriction.CLAIM, policyIds)
   }
 
   /**
    * Checks if a given list of policy IDs are valid for the {@code APPLY_POLICIES} policy restriction.
    *
-   * @param policyIds A list of {@link AccessPolicyTypeIds} representing the policy IDs to validate.
+   * @param policyIds A list of {@link AccessPolicies} representing the policy IDs to validate.
    * @return {@code true} if all provided policy IDs are valid for APPLY_POLICIES, {@code false} otherwise.
    */
-  protected boolean areApplyPoliciesIdsValid(List<AccessPolicyTypeIds> policyIds) {
+  protected boolean areApplyPoliciesIdsValid(List<AccessPolicies> policyIds) {
     return arePolicyIdsValid(PolicyRestriction.APPLY_POLICIES, policyIds)
   }
 
@@ -547,8 +546,8 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
-    // We need to transform the claimBody into a list of AccessPolicyTypeIds objects to use policyEngine.arePolicyIdsValid
-    List<AccessPolicyTypeIds> policyIds = claimBody.convertToAccessPolicyTypeIds()
+    // We need to transform the claimBody into a list of AccessPolicies objects to use policyEngine.arePolicyIdsValid
+    List<AccessPolicies> policyIds = claimBody.convertToAccessPolicies()
 
     if (!areClaimIdsValid(policyIds)) {
       respond ([ message: "PolicyRestriction.CLAIM not valid for one or more policyIds in claims" ], status: 403 )

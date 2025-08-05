@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.core.http.bodies;
 
-import com.k_int.accesscontrol.core.AccessPolicyTypeIds;
+import com.k_int.accesscontrol.core.AccessPolicies;
 import com.k_int.accesscontrol.core.http.responses.BasicPolicy;
 import com.k_int.accesscontrol.core.http.responses.Policy;
 
@@ -27,13 +27,13 @@ public interface ClaimBody {
    * based on their associated access policy type.
    * </p>
    *
-   * @return a list of {@link AccessPolicyTypeIds} containing policy IDs grouped by type
+   * @return a list of {@link AccessPolicies} containing policy IDs grouped by type
    */
-  default List<AccessPolicyTypeIds> convertToAccessPolicyTypeIds() {
+  default List<AccessPolicies> convertToAccessPolicies() {
     return getClaims().stream().reduce(
       new ArrayList<>(),
       (acc, curr) -> {
-        AccessPolicyTypeIds relevantTypeIds = acc.stream()
+        AccessPolicies relevantTypeIds = acc.stream()
           .filter(apti -> apti.getType() == curr.getType())
           .findFirst()
           .orElse(null);
@@ -46,7 +46,7 @@ public interface ClaimBody {
           relevantTypeIds.setPolicies(updatedPolicyIds);
         } else {
           acc.add(
-            AccessPolicyTypeIds.builder()
+            AccessPolicies.builder()
               .type(curr.getType())
               .policies(Collections.singletonList(BasicPolicy.builder().id(curr.getPolicy().getId()).build()))
               .name("POLICY_IDS_FOR_" + curr.getType().toString())

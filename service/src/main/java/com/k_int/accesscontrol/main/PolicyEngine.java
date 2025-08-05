@@ -84,11 +84,11 @@ public class PolicyEngine implements PolicyEngineImplementor {
    *
    * @param headers the request context headers, used for FOLIO/internal service authentication
    * @param pr      the policy restriction to filter by
-   * @return a list of {@link AccessPolicyTypeIds} containing policy IDs grouped by type
+   * @return a list of {@link AccessPolicies} containing policy IDs grouped by type
    * @throws PolicyEngineException if an error occurs while fetching policy IDs
    */
-  public List<AccessPolicyTypeIds> getPolicyIds(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
-    List<AccessPolicyTypeIds> policyIds = new ArrayList<>();
+  public List<AccessPolicies> getPolicyIds(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
+    List<AccessPolicies> policyIds = new ArrayList<>();
 
     if (acquisitionUnitPolicyEngine != null) {
       policyIds.addAll(acquisitionUnitPolicyEngine.getPolicyIds(headers, pr));
@@ -107,7 +107,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * @return true if all policy IDs are valid, false otherwise
    * @throws PolicyEngineException if an error occurs during validation
    */
-  public boolean arePolicyIdsValid(String[] headers, PolicyRestriction pr, List<AccessPolicyTypeIds> policyIds) throws PolicyEngineException {
+  public boolean arePolicyIdsValid(String[] headers, PolicyRestriction pr, List<AccessPolicies> policyIds) throws PolicyEngineException {
     boolean isValid = true;
 
     // Check if isValid is true for each sub policyEngine, so that we can short-circuit if any engine returns false.

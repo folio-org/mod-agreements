@@ -1,9 +1,11 @@
 package com.k_int.accesscontrol.grails
 
+import com.k_int.accesscontrol.core.AccessPolicies
 import com.k_int.accesscontrol.core.AccessPolicyType
-import com.k_int.accesscontrol.core.AccessPolicyTypeIds
 import com.k_int.accesscontrol.core.PolicyRestriction
+
 import com.k_int.accesscontrol.core.http.responses.PolicyIdsResponse
+import com.k_int.utils.Json
 import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import groovy.util.logging.Slf4j
@@ -27,11 +29,11 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
    *
    * @return A PolicyEngine instance configured for the current request.
    */
-  private List<AccessPolicyTypeIds> getPolicyIds(PolicyRestriction restriction) {
+  private List<AccessPolicies> getPolicyIds(PolicyRestriction restriction) {
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 
-    return policyEngine.getPolicyIds(grailsHeaders, restriction)
+    return policyEngine.getPolicyIds(grailsHeaders, restriction);
   }
 
   /**
@@ -43,7 +45,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getReadPolicyIds() {
     log.trace("AccessPolicyController::getReadPolicyIds")
-    respond PolicyIdsResponse.builder().readPolicyIds(getPolicyIds(PolicyRestriction.READ)).build()
+    render text: Json.toJson(PolicyIdsResponse.builder().claimPolicyIds(getPolicyIds(PolicyRestriction.READ)).build()), contentType: 'application/json'
   }
 
   /**
@@ -55,7 +57,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getUpdatePolicyIds() {
     log.trace("AccessPolicyController::getUpdatePolicyIds")
-    respond PolicyIdsResponse.builder().updatePolicyIds(getPolicyIds(PolicyRestriction.UPDATE)).build()
+    render text: Json.toJson(PolicyIdsResponse.builder().claimPolicyIds(getPolicyIds(PolicyRestriction.UPDATE)).build()), contentType: 'application/json'
   }
 
   /**
@@ -67,7 +69,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getCreatePolicyIds() {
     log.trace("AccessPolicyController::getCreatePolicyIds")
-    respond PolicyIdsResponse.builder().createPolicyIds(getPolicyIds(PolicyRestriction.CREATE)).build()
+    render text: Json.toJson(PolicyIdsResponse.builder().claimPolicyIds(getPolicyIds(PolicyRestriction.CREATE)).build()), contentType: 'application/json'
   }
 
   /**
@@ -79,7 +81,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getDeletePolicyIds() {
     log.trace("AccessPolicyController::getDeletePolicyIds")
-    respond PolicyIdsResponse.builder().deletePolicyIds(getPolicyIds(PolicyRestriction.DELETE)).build()
+    render text: Json.toJson(PolicyIdsResponse.builder().claimPolicyIds(getPolicyIds(PolicyRestriction.DELETE)).build()), contentType: 'application/json'
   }
 
   /**
@@ -91,7 +93,8 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getClaimPolicyIds() {
     log.trace("AccessPolicyController::getClaimPolicyIds")
-    respond PolicyIdsResponse.builder().claimPolicyIds(getPolicyIds(PolicyRestriction.CLAIM)).build()
+    // FIXME reflect this to the other methods
+    render text: Json.toJson(PolicyIdsResponse.builder().claimPolicyIds(getPolicyIds(PolicyRestriction.CLAIM)).build()), contentType: 'application/json'
   }
 
   /**
@@ -103,7 +106,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getApplyPolicyIds() {
     log.trace("AccessPolicyController::getApplyPolicyIds")
-    respond PolicyIdsResponse.builder().applyPolicyIds(getPolicyIds(PolicyRestriction.APPLY_POLICIES)).build()
+    render text: Json.toJson(PolicyIdsResponse.builder().claimPolicyIds(getPolicyIds(PolicyRestriction.APPLY_POLICIES)).build()), contentType: 'application/json'
   }
 
   /**

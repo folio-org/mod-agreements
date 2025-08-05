@@ -8,6 +8,6 @@ import lombok.Getter;
  */
 @Getter
 @Builder
-public class BasicPolicy implements Policy{
+public class BasicPolicy implements Policy {
   String id;
 }
