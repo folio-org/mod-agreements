@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Core entry point for evaluating policy restrictions within the access control system.
@@ -116,5 +117,15 @@ public class PolicyEngine implements PolicyEngineImplementor {
     }
 
     return isValid;
+  }
+
+  /**
+   * A helper method which returns the engines enabled in the config, as sorted by AccessPolicyType
+   * @return A map of each AccessPolicyType and whether it is enabled or not
+   */
+  public Map<AccessPolicyType, Boolean> getEnabledEngines() {
+    return Map.of(
+      AccessPolicyType.ACQ_UNIT, getConfig().getAcquisitionUnitPolicyEngineConfiguration().isEnabled()
+    );
   }
 }

@@ -1,5 +1,6 @@
 package com.k_int.accesscontrol.grails
 
+import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.AccessPolicyTypeIds
 import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.http.responses.PolicyIdsResponse
@@ -130,5 +131,20 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def delete() {
     respond ([ message: "AccessPolicies cannot be deleted directly, instead a resource must be claimed via accessControl endpoints" ], status: 403 )
+  }
+
+  /**
+   * Fetch the enabled engines for the PolicyEngine sorted by AccessPolicyType (Converted to String)
+   */
+  def getEnabledEngines() {
+    // Map <AccessPolicyType, Boolean> won't render as is, convert to Map<String, Boolean>
+    Map<AccessPolicyType, Boolean> enabledEngines = policyEngine.getEnabledEngines()
+
+    Map<String, Boolean> enabledEnginesResponse = new HashMap<>()
+    enabledEngines.keySet().each {
+      enabledEnginesResponse.put(it.toString(), enabledEngines.get(it))
+    }
+
+    respond enabledEnginesResponse
   }
 }
