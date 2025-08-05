@@ -17,6 +17,10 @@ import groovy.util.logging.Slf4j
 
 import static org.springframework.http.HttpStatus.*
 
+import org.springframework.security.core.context.SecurityContextHolder
+import grails.plugin.springsecurity.annotation.Secured
+
+
 /**
  * Control access to subscription agreements.
  * A subscription agreement (SA) is the connection between a set of resources (Which could be packages or individual titles) and a license. 
@@ -35,6 +39,13 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
 
   @Transactional(readOnly=true)
   def index(Integer max) {
+    // EXAMPLE Logging to dump all http headers here
+    /*Collections.list(request.getHeaderNames()).forEach(headerName -> {
+      Collections.list(request.getHeaders(headerName)).forEach(headerValue -> {
+        log.warn("HTTP HEADER: ${headerName}:${headerValue}")
+      })
+    })*/
+
     super.index(max)
   }
 
