@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Core entry point for evaluating policy restrictions within the access control system.
@@ -127,5 +129,33 @@ public class PolicyEngine implements PolicyEngineImplementor {
     return Map.of(
       AccessPolicyType.ACQ_UNIT, getConfig().getAcquisitionUnitPolicyEngineConfiguration().isEnabled()
     );
+  }
+
+  /**
+   * A helper method which returns the engines enabled in the config as a Set
+   * @return A set of each enabled AccessPolicyType
+   */
+  public Set<AccessPolicyType> getEnabledEngineSet() {
+    Map<AccessPolicyType, Boolean> enabledEngines = getEnabledEngines();
+    return enabledEngines.keySet().stream().filter(key -> enabledEngines.get(key) == true).collect(Collectors.toSet());
+  }
+
+  /**
+   * A function which takes in a list of {@link AccessPolicy} objects, likely with a
+   * {@link com.k_int.accesscontrol.core.http.responses.Policy} implementation of
+   * {@link com.k_int.accesscontrol.core.http.responses.BasicPolicy}
+   * It should then return
+   * @param policies a list of AccessPolicy objects to enrich, it will use the "type" and the "policy.id" fields to enrich
+   * with Policy implementations from the individual engine plugins
+   * @return A list of AccessPolicy objects with all information provided by the policyEngineImplementors
+   */
+  public List<AccessPolicies> enrichPolicies(String[] headers, List<AccessPolicies> policies) {
+    List<AccessPolicies> enrichedPolicies = new ArrayList<>();
+
+    if (acquisitionUnitPolicyEngine != null) {
+      enrichedPolicies.addAll(acquisitionUnitPolicyEngine.enrichPolicies(headers, policies));
+    }
+
+    return enrichedPolicies;
   }
 }

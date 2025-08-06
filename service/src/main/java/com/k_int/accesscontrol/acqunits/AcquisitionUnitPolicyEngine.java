@@ -214,6 +214,10 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
     String[] finalHeaders = handleLoginAndGetHeaders(headers);
     AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
 
+    if (policyIds.stream().anyMatch(pid -> pid.getType() != AccessPolicyType.ACQ_UNIT)) {
+      throw new PolicyEngineException("arePolicyIdsValid in AcquisitionUnitPolicyEngine is only valid for policyIds of type AccessPolicyType.ACQ_UNIT", PolicyEngineException.INVALID_POLICY_TYPE);
+    }
+
     return folioClientExceptionHandler("fetching Acquisition units", () -> {
       UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(
         finalHeaders,
@@ -237,5 +241,16 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
             .anyMatch(unit -> Objects.equals(unit.getId(), pid))); // If any unit matches the policy ID, then it's valid
         });
     });
+  }
+
+  public List<AccessPolicies> enrichPolicies(String[] headers, List<AccessPolicies> policies) {
+    if (policies.stream().anyMatch(pol -> pol.getType() != AccessPolicyType.ACQ_UNIT)) {
+      throw new PolicyEngineException("arePolicyIdsValid in AcquisitionUnitPolicyEngine is only valid for AccessPolicies of type AccessPolicyType.ACQ_UNIT", PolicyEngineException.INVALID_POLICY_TYPE);
+    }
+
+
+
+    // FIXME we need to actually implement the lookup and enrich step here now
+    return policies;
   }
 }

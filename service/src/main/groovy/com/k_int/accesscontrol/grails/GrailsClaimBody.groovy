@@ -9,7 +9,7 @@ import grails.validation.Validateable
  */
 class GrailsClaimBody implements ClaimBody, Validateable {
 
-  List<GrailsPolicyClaim> claims
+  List<GrailsPolicyLink> claims
 
   static constraints = {
     claims validator: { val, _obj, errors ->

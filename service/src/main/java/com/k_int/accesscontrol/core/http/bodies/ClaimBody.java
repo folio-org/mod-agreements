@@ -18,7 +18,7 @@ import java.util.List;
  * Should some implementation wish to provide an alternative API then it is free to do so.
  */
 public interface ClaimBody {
-  List<PolicyClaim> getClaims();
+  List<PolicyLink> getClaims();
 
   /**
    * Returns a list of access policy IDs grouped by their type.
@@ -56,9 +56,9 @@ public interface ClaimBody {
 
         return acc;
       },
-      (claim1, claim2) -> {
-        claim1.addAll(claim2);
-        return claim1;
+      (policies1, policies2) -> {
+        policies1.addAll(policies2);
+        return policies1;
       }
     );
   }

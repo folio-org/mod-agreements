@@ -1,10 +1,13 @@
 package com.k_int.accesscontrol.core;
 
+import com.k_int.accesscontrol.core.http.responses.BasicPolicy;
 import com.k_int.accesscontrol.core.http.responses.Policy;
 import lombok.Builder;
 import lombok.Data;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -43,4 +46,37 @@ public class AccessPolicies {
    */
   @Nullable
   String name;
+
+  public static List<AccessPolicies> fromAccessPolicyList(List<AccessPolicy> policyList) {
+    return policyList.stream().reduce(
+      new ArrayList<>(),
+      ( acc, curr) -> {
+        AccessPolicies relevantPoliciesEntry = acc.stream()
+          .filter(policiesEntry -> policiesEntry.getType() == curr.getType())
+          .findFirst()
+          .orElse(null);
+
+        if (relevantPoliciesEntry != null) {
+          // Update existing type with new policy
+          ArrayList<Policy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
+          updatedPolicyIds.add(BasicPolicy.builder().id(curr.getPolicyId()).build());
+          relevantPoliciesEntry.setPolicies(updatedPolicyIds);
+        } else {
+          acc.add(
+            AccessPolicies.builder()
+              .type(curr.getType())
+              .policies(Collections.singletonList(BasicPolicy.builder().id(curr.getPolicyId()).build()))
+              .name("POLICY_IDS_FOR_" + curr.getType().toString())
+              .build()
+          );
+        }
+
+        return acc;
+      },
+      (policies1, policies2) -> {
+        policies1.addAll(policies2);
+        return policies1;
+      }
+    );
+  }
 }

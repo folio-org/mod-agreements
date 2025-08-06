@@ -1,7 +1,7 @@
 package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.core.AccessPolicyType
-import com.k_int.accesscontrol.core.http.bodies.PolicyClaim
+import com.k_int.accesscontrol.core.http.bodies.PolicyLink
 import com.k_int.accesscontrol.core.http.responses.Policy
 import grails.databinding.BindUsing
 import grails.validation.Validateable
@@ -10,7 +10,7 @@ import grails.validation.Validateable
  * This class represents a single policy claim with its associated properties.
  * It implements the PolicyClaim interface and is marked as Validateable for Grails validation.
  */
-class GrailsPolicyClaim implements PolicyClaim, Validateable {
+class GrailsPolicyLink implements PolicyLink, Validateable {
   String id
 
   // Built in binding gets a little confused at this nested level, help it along

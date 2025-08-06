@@ -1,6 +1,7 @@
 package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.core.AccessPolicies
+import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
@@ -581,7 +582,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
 
         // For each claim in the body, we need to first check whether the policy currently exists. If it does, we can update it (description ONLY)
-        for(GrailsPolicyClaim claim  : claimBody.claims) {
+        for(GrailsPolicyLink claim  : claimBody.claims) {
           if (claim.id) {
             // If the claim has an ID, we assume it is an existing policy that needs to be updated
             AccessPolicyEntity existingPolicy = AccessPolicyEntity.findById(claim.id)
@@ -649,10 +650,33 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     respond ([ message: "Access policies updated for this resource" ], status: 201 )
   }
 
+  // FIXME enrich policies? Same for access policy controller?
   @Transactional
   def policies() {
-    // FIXME enrich policies? Same for access policy controller?
     AccessPolicyEntity.withNewSession {
+      Set<AccessPolicyType> enabledEngines = policyEngine.getEnabledEngineSet()
+
+      // Fetch the ENABLED access policy entities for the resource at hand
+      List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.executeQuery(
+        """
+          SELECT ape FROM AccessPolicyEntity ape
+          WHERE
+            resourceId = :resId AND
+            type IN :enabledEngines
+        """.toString(),
+        [
+          resId: resolveRootOwnerId(params.id),
+          enabledEngines: enabledEngines
+        ]
+      )
+
+      // We want to turn this into the shape ClaimBody (Not GrailsClaimBody, as we want the enriched Policy information)
+      // PolicyEngine needs ids and types, so possibly best to send as AccessPolicies object
+      List<AccessPolicies> accessPoliciesList = AccessPolicies.fromAccessPolicyList(accessPoliciesForResource);
+
+      // We need an "enrich" method from policyEngine
+
+
       respond doTheLookup(AccessPolicyEntity) {
         eq 'resourceId', resolveRootOwnerId(params.id)
       }
