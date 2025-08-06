@@ -27,8 +27,8 @@ class AccessControlUrlMapping {
         "${basePath}${path}/$id/canApplyPolicies"(controller: controller, action: "canApplyPolicies", method: 'GET')
 
         // CLAIM endpoint is needed to be able to apply policies to a resource
-        "${basePath}/${path}/$id/claim"(controller: controller, action: "claim", method: 'POST')
-        "${basePath}/${path}/$id/policies"(controller: controller, action: "policies", method: 'GET')
+        "${basePath}${path}/$id/claim"(controller: controller, action: "claim", method: 'POST')
+        "${basePath}${path}/$id/policies"(controller: controller, action: "policies", method: 'GET')
       }
 
       "${basePath}/accessControl"(resources: 'accessPolicy', excludes: ['patch', 'save', 'create', 'edit', 'delete']) {
@@ -39,6 +39,8 @@ class AccessControlUrlMapping {
           "/createPolicies"(controller: 'accessPolicy', action: 'getCreatePolicyIds', method: 'GET')
           "/claimPolicies"(controller: 'accessPolicy', action: 'getClaimPolicyIds', method: 'GET')
           "/applyPolicies"(controller: 'accessPolicy', action: 'getApplyPolicyIds', method: 'GET')
+
+          "/enabledEngines"(controller: 'accessPolicy', action: 'getEnabledEngines', method: 'GET')
         }
       }
     }
