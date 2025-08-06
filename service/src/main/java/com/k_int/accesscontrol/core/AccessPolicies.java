@@ -9,6 +9,7 @@ import lombok.Data;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -49,7 +50,7 @@ public class AccessPolicies {
   @Nullable
   String name;
 
-  public static List<AccessPolicies> fromAccessPolicyList(List<AccessPolicy> policyList) {
+  public static List<AccessPolicies> fromAccessPolicyList(Collection<AccessPolicy> policyList) {
     return policyList.stream().reduce(
       new ArrayList<>(),
       ( acc, curr) -> {
@@ -82,7 +83,7 @@ public class AccessPolicies {
     );
   }
 
-  public static List<PolicyLink> convertListToPolicyLinkList(List<AccessPolicies> accessPolicies) {
+  public static List<PolicyLink> convertListToPolicyLinkList(Collection<AccessPolicies> accessPolicies) {
     return accessPolicies.stream().reduce(
       new ArrayList<>(),
       (acc, curr) -> {

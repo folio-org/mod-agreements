@@ -2,16 +2,14 @@ package com.k_int.accesscontrol.main;
 
 import com.k_int.accesscontrol.acqunits.*;
 import com.k_int.accesscontrol.core.*;
+import com.k_int.accesscontrol.core.http.bodies.PolicyLink;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineImplementor;
 import com.k_int.accesscontrol.core.sql.PolicySubquery;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -157,5 +155,53 @@ public class PolicyEngine implements PolicyEngineImplementor {
     }
 
     return enrichedPolicies;
+  }
+
+  /**
+   * Converts a list of {@link AccessPolicy} entities into a list of {@link PolicyLink} DTOs,
+   * preserving enriched policy metadata and per-resource assignment details.
+   * <p>
+   * This is used primarily when serializing claims or presenting assigned policies
+   * for a specific domain object.
+   * </p>
+   *
+   * @param headers        the request headers
+   * @param policyEntities the access policy entities assigned to a resource
+   * @return a list of enriched {@link PolicyLink} instances
+   */
+  public List<PolicyLink> getPolicyLinksFromAccessPolicyList(String[] headers, Collection<AccessPolicy> policyEntities) {
+    // We want to turn this into the shape List<PolicyLink> (We want the enriched Policy information)
+    // enrichPolicies needs ids and types, so send as AccessPolicies object
+    List<AccessPolicies> accessPoliciesList = AccessPolicies.fromAccessPolicyList(policyEntities);
+
+    // use "enrich" method from policyEngine to get List<AccessPolicies>
+    List<AccessPolicies> enrichedAccessPolicies = enrichPolicies(headers, accessPoliciesList);
+
+    // Then convert into List<PolicyLink> so it's in roughly the same shape we'd send down in a ClaimBody
+    List<PolicyLink> policyLinkList = AccessPolicies.convertListToPolicyLinkList(enrichedAccessPolicies);
+
+    // Finally, we have to add back the descriptions and ids that were set on the AccessPolicyEntities for resource
+    // This isn't strictly necessary, but if not done then description will be reset and the policies will churn on each set
+    return policyLinkList.stream()
+      .map(pll -> {
+
+        Optional<AccessPolicy> relevantAPEOpt = policyEntities.stream()
+          .filter(ape -> Objects.equals(ape.getPolicyId(), pll.getPolicy().getId()))
+          .findFirst();
+
+        if (relevantAPEOpt.isEmpty()) {
+          return pll; // Return the PolicyLink as is if we don't have a relevant AccessPolicy from the DB
+        }
+        AccessPolicy relevantAPE = relevantAPEOpt.get();
+
+
+        pll.setId(relevantAPE.getId());
+        if (relevantAPE.getDescription() != null && relevantAPE.getDescription() != pll.getDescription()) {
+          pll.setDescription(relevantAPE.getDescription());
+        }
+
+        return pll;
+      })
+      .toList();
   }
 }

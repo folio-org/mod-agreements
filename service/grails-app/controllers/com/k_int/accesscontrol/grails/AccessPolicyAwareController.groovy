@@ -675,36 +675,10 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         ]
       )
 
-      // We want to turn this into the shape List<PolicyLink> (Not GrailsPolicyLink, as we want the enriched Policy information)
-      // PolicyEngine needs ids and types, so send as AccessPolicies object
-      List<AccessPolicies> accessPoliciesList = AccessPolicies.fromAccessPolicyList(accessPoliciesForResource)
-
-      // use "enrich" method from policyEngine to get List<AccessPolicies>
-      List<AccessPolicies> enrichedAccessPolicies = policyEngine.enrichPolicies(grailsHeaders, accessPoliciesList)
-
-      // Finally convert into List<PolicyLink> so it's in roughly the same shape we'd send down in a ClaimBody
-      List<PolicyLink> policyLinkList = AccessPolicies.convertListToPolicyLinkList(enrichedAccessPolicies)
-
-
-      // Finally, we have to add back the descriptions and ids that were set on the AccessPolicyEntities for resource
-      // This isn't strictly necessary, but if not done then description will be reset and the policies will churn on each set
-      policyLinkList.each { pll -> {
-        AccessPolicyEntity relevantAPE = accessPoliciesForResource.find { ape -> ape.getPolicyId() == pll.policy.getId()}
-        if (
-          relevantAPE != null
-        ) {
-          pll.setId(relevantAPE.getId())
-          if (
-            relevantAPE.getDescription() != null &&
-            relevantAPE.getDescription() != pll.getDescription()
-          ) {
-            pll.setDescription(relevantAPE.getDescription())
-          }
-        }
-      }}
+      List<PolicyLink> policyLinks = policyEngine.getPolicyLinksFromAccessPolicyList(grailsHeaders, accessPoliciesForResource)
 
       // Grails gets confused with the Policy extensions, so instead lets render it out with Jackson
-      render text: Json.toJson(policyLinkList), contentType: 'application/json'
+      render text: Json.toJson(policyLinks), contentType: 'application/json'
     }
   }
 }
