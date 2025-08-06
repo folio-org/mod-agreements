@@ -51,6 +51,7 @@ public interface PolicyEngineImplementor {
    * (Likely incoming is a {@link com.k_int.accesscontrol.core.http.responses.BasicPolicy} implementation)
    *
    * @param policies a list of AccessPolicy objects to enrich, it will use the "type" and the "policy.id" fields to enrich
+   * @param headers the request context headers, used for FOLIO/internal service authentication
    * @return A list of AccessPolicy objects with all policy information provided
    */
   List<AccessPolicies> enrichPolicies(String[] headers, List<AccessPolicies> policies);

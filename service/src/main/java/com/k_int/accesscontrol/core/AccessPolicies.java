@@ -50,6 +50,14 @@ public class AccessPolicies {
   @Nullable
   String name;
 
+
+  /**
+   * Converts a flat list of {@link AccessPolicy} entities into a grouped list of {@link AccessPolicies},
+   * each containing a set of {@link BasicPolicy} records grouped by their {@link AccessPolicyType}.
+   *
+   * @param policyList the raw list of {@link AccessPolicy} entities, typically retrieved from a database
+   * @return a grouped list of {@link AccessPolicies}, where each entry holds policies of a single type
+   */
   public static List<AccessPolicies> fromAccessPolicyList(Collection<AccessPolicy> policyList) {
     return policyList.stream().reduce(
       new ArrayList<>(),
@@ -83,6 +91,16 @@ public class AccessPolicies {
     );
   }
 
+  /**
+   * Converts a list of {@link AccessPolicies} into a flat list of {@link PolicyLink} instances.
+   * <p>
+   * Each {@link PolicyLink} includes the original {@link Policy} as well as a description and type.
+   * The description is derived from the {@code name} of the access policy group and the policy ID.
+   * </p>
+   *
+   * @param accessPolicies the grouped access policies to convert
+   * @return a flat list of {@link PolicyLink} instances suitable for output in a response body
+   */
   public static List<PolicyLink> convertListToPolicyLinkList(Collection<AccessPolicies> accessPolicies) {
     return accessPolicies.stream().reduce(
       new ArrayList<>(),

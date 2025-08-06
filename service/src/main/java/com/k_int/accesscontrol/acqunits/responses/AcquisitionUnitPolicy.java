@@ -23,6 +23,17 @@ public class AcquisitionUnitPolicy extends AcquisitionUnit implements Policy {
   @Getter
   Boolean isMember;
 
+  /**
+   * Creates an {@link AcquisitionUnitPolicy} instance from a base {@link AcquisitionUnit}
+   * and a membership flag.
+   *
+   * <p>This method copies all relevant fields from the given {@code unitBase} and sets
+   * the membership status indicating whether the user is a member of this acquisition unit.</p>
+   *
+   * @param unitBase the base acquisition unit to copy fields from
+   * @param isMember a boolean indicating if the user is a member of this acquisition unit
+   * @return a new {@link AcquisitionUnitPolicy} instance containing the data and membership info
+   */
   public static AcquisitionUnitPolicy fromAcquisitionUnit(AcquisitionUnit unitBase, Boolean isMember) {
     return AcquisitionUnitPolicy
       .builder()

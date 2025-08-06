@@ -16,6 +16,7 @@ public class PolicyIdsResponse {
    * List of access policy IDs for reading operations.
    * This field is optional and may be null if no read policies are applicable.
    *
+   * @param readPolicyIds a list of {@link AccessPolicies} for read operations
    * @return a list of {@link AccessPolicies} for read operations
    */
   @Nullable
@@ -24,6 +25,7 @@ public class PolicyIdsResponse {
    * List of access policy IDs for updating operations.
    * This field is optional and may be null if no update policies are applicable.
    *
+   * @param updatePolicyIds a list of {@link AccessPolicies} for update operations
    * @return a list of {@link AccessPolicies} for update operations
    */
   @Nullable
@@ -32,6 +34,7 @@ public class PolicyIdsResponse {
    * List of access policy IDs for creating operations.
    * This field is optional and may be null if no create policies are applicable.
    *
+   * @param createPolicyIds a list of {@link AccessPolicies} for create operations
    * @return a list of {@link AccessPolicies} for create operations
    */
   @Nullable
@@ -40,6 +43,7 @@ public class PolicyIdsResponse {
    * List of access policy IDs for deleting operations.
    * This field is optional and may be null if no delete policies are applicable.
    *
+   * @param deletePolicyIds a list of {@link AccessPolicies} for delete operations
    * @return a list of {@link AccessPolicies} for delete operations
    */
   @Nullable
@@ -48,6 +52,7 @@ public class PolicyIdsResponse {
    * List of access policy IDs for claim operations.
    * This field is optional and may be null if no claim policies are applicable.
    *
+   * @param claimPolicyIds a list of {@link AccessPolicies} for claim operations
    * @return a list of {@link AccessPolicies} for claim operations
    */
   @Nullable
@@ -56,7 +61,8 @@ public class PolicyIdsResponse {
    * List of access policy IDs for applying policies.
    * This field is optional and may be null if no apply policies are applicable.
    *
-   * @return a list of {@link AccessPolicies} for apply operations
+   * @param applyPolicyIds a list of {@link AccessPolicies} for apply policy operations
+   * @return a list of {@link AccessPolicies} for apply policy operations
    */
   @Nullable
   List<AccessPolicies> applyPolicyIds;

@@ -26,6 +26,7 @@ public class BasicPolicy implements Policy {
    * For grant-based policies (e.g. KIGrant), it may be a wildcard string like {@code "GBV%"}.
    * </p>
    *
+   * @param id The policy id string
    * @return The policy ID string.
    */
   String id;

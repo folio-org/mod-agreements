@@ -18,6 +18,15 @@ import java.util.List;
  * Should some implementation wish to provide an alternative API then it is free to do so.
  */
 public interface ClaimBody {
+  /**
+   * Returns the list of {@link PolicyLink} objects representing the individual policy claims.
+   * <p>
+   * Each {@link PolicyLink} associates a specific access policy with its type,
+   * allowing further processing (e.g., grouping by type or policy evaluation).
+   * </p>
+   *
+   * @return a list of {@link PolicyLink} instances associated with this claim body
+   */
   List<PolicyLink> getClaims();
 
   /**

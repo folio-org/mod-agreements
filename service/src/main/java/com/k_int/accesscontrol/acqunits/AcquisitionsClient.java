@@ -137,6 +137,14 @@ public class AcquisitionsClient extends FolioClient {
     return asyncFolioClientExceptionHelper(() -> getAsyncUserAcquisitionUnitMemberships(headers, queryParams));
   }
 
+  /**
+   * Asynchronously fetches acquisition units from FOLIO using provided query parameters.
+   * This does not apply any default sorting or filtering unless passed explicitly in the queryParams.
+   *
+   * @param headers Request headers
+   * @param queryParams Query parameters to include in the request
+   * @return CompletableFuture containing the acquisition unit response
+   */
   public CompletableFuture<AcquisitionUnitResponse> getAsyncAcquisitionUnits(String[] headers, Map<String,String> queryParams) {
     return getAsync(
       ACQUISITION_UNIT_PATH,
@@ -149,6 +157,14 @@ public class AcquisitionsClient extends FolioClient {
     );
   }
 
+  /**
+   * Synchronously fetches acquisition units from FOLIO using provided query parameters.
+   *
+   * @param headers Request headers
+   * @param queryParams Query parameters to include in the request
+   * @return AcquisitionUnitResponse containing matching acquisition units
+   * @throws FolioClientException if the asynchronous request fails or is interrupted
+   */
   public AcquisitionUnitResponse getAcquisitionUnits(String[] headers, Map<String,String> queryParams) {
     return asyncFolioClientExceptionHelper(() -> getAsyncAcquisitionUnits(headers, queryParams));
   }
@@ -417,6 +433,16 @@ public class AcquisitionsClient extends FolioClient {
   }
 
 
+  /**
+   * Asynchronously fetches {@link AcquisitionUnitPolicy} instances for the specified acquisition unit IDs.
+   * <p>
+   * This method retrieves acquisition units and the current user's acquisition unit memberships in parallel,
+   * then maps each acquisition unit to an {@link AcquisitionUnitPolicy}, including whether the user is a member.
+   *
+   * @param headers Request headers, including tenant and auth token
+   * @param unitIds Collection of acquisition unit UUIDs to fetch and evaluate policies for
+   * @return A {@link CompletableFuture} resolving to a list of {@link AcquisitionUnitPolicy} objects
+   */
   public CompletableFuture<List<AcquisitionUnitPolicy>> getAsyncAcquisitionUnitPolicies(String[] headers, Collection<String> unitIds) {
     CompletableFuture<AcquisitionUnitResponse> acqUnitResponse = getAsyncIdAcquisitionUnits(headers, Collections.emptyMap(), unitIds);
     CompletableFuture<AcquisitionUnitMembershipResponse> acqUnitMembershipResponse = getAsyncUserAcquisitionUnitMemberships(headers, Collections.emptyMap());
@@ -440,6 +466,16 @@ public class AcquisitionsClient extends FolioClient {
     );
   }
 
+  /**
+   * Synchronously fetches {@link AcquisitionUnitPolicy} instances for the specified acquisition unit IDs.
+   * <p>
+   * Wraps the asynchronous variant and converts checked exceptions to a {@link FolioClientException} if necessary.
+   *
+   * @param headers Request headers, including tenant and auth token
+   * @param unitIds Collection of acquisition unit UUIDs to fetch and evaluate policies for
+   * @return List of {@link AcquisitionUnitPolicy} objects for the given acquisition units
+   * @throws FolioClientException if the asynchronous operation fails or is interrupted
+   */
   public List<AcquisitionUnitPolicy> getAcquisitionUnitPolicies(String[] headers, Collection<String> unitIds) {
     return asyncFolioClientExceptionHelper(() -> getAsyncAcquisitionUnitPolicies(headers, unitIds));
   }
