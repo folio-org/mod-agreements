@@ -577,9 +577,9 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         // we don't fail to add it thanks to duplicate check below, and then remove it, leaving resource unprotected
         List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
         for (AccessPolicyEntity policy : accessPoliciesForResource) {
-          if (!claimBody.claims.any { claim -> claim.id == policy.id || claim.id == null }) {
+          if (!claimBody.claims.any { claim -> claim.id == policy.id }) {
             // If the policy is not in the claimBody, we delete it
-            policy.delete(failOnError: true)
+            policy.delete(flush: true, failOnError: true)
           }
         }
 
@@ -619,10 +619,10 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
             existingPolicy.description = claim.description
             existingPolicy.save(failOnError: true)
           } else if (
-            accessPoliciesForResource.any { ap -> ap.policyId == claim.policyId && ap.type == claim.type } // Only create if there is no existing policy with the same policyId
+            accessPoliciesForResource.any {ap -> ap.policyId == claim.getPolicy().getId() &&ap.type == claim.type } // Only create if there is no existing policy with the same policyId
           ) {
             success = false
-            failureMessage = "Resource ${resourceId} already has an access policy with policyId ${claim.policyId}."
+            failureMessage = "Resource ${resourceId} already has an access policy with policyId ${claim.getPolicy().getId()}."
             log.error(failureMessage)
             break
           } else {
