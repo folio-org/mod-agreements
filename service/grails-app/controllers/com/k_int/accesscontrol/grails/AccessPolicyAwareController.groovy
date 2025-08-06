@@ -622,7 +622,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           } else {
             // If no ID, we create a new policy
             new AccessPolicyEntity(
-              policyId: claim.policyId,
+              policyId: claim.getPolicy().getId(),
               type: claim.type,
               description: claim.description,
               resourceId: resourceId,
@@ -651,6 +651,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
   @Transactional
   def policies() {
+    // FIXME enrich policies? Same for access policy controller?
     AccessPolicyEntity.withNewSession {
       respond doTheLookup(AccessPolicyEntity) {
         eq 'resourceId', resolveRootOwnerId(params.id)

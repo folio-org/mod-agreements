@@ -3,6 +3,7 @@ package com.k_int.accesscontrol.grails
 import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.PolicyClaim
 import com.k_int.accesscontrol.core.http.responses.Policy
+import grails.databinding.BindUsing
 import grails.validation.Validateable
 
 /** * Grails implementation of PolicyClaim.
@@ -11,6 +12,16 @@ import grails.validation.Validateable
  */
 class GrailsPolicyClaim implements PolicyClaim, Validateable {
   String id
+
+  // Built in binding gets a little confused at this nested level, help it along
+  @BindUsing({ obj, source ->
+    def policyMap = source['policy']
+    if (policyMap instanceof Map && policyMap['id'] != null) {
+      return new GrailsPolicy((String) policyMap['id'])
+    }
+
+    return null
+  })
   GrailsPolicy policy
   AccessPolicyType type
   String description

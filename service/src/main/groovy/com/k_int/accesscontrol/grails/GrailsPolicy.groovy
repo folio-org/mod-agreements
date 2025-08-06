@@ -10,6 +10,10 @@ import grails.validation.Validateable
 class GrailsPolicy implements Policy, Validateable {
   String id
 
+  public GrailsPolicy(String id) {
+    this.id = id;
+  }
+
   static constraints = {
     id nullable: false, blank: false
   }
