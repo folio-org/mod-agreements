@@ -2,6 +2,7 @@ package com.k_int.accesscontrol.acqunits;
 
 import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembershipResponse;
+import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitPolicy;
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitResponse;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnitsMetadata;
@@ -12,6 +13,7 @@ import com.k_int.folio.FolioClientException;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * Client for interacting with FOLIO's acquisition unit and membership APIs.
@@ -135,6 +137,22 @@ public class AcquisitionsClient extends FolioClient {
     return asyncFolioClientExceptionHelper(() -> getAsyncUserAcquisitionUnitMemberships(headers, queryParams));
   }
 
+  public CompletableFuture<AcquisitionUnitResponse> getAsyncAcquisitionUnits(String[] headers, Map<String,String> queryParams) {
+    return getAsync(
+      ACQUISITION_UNIT_PATH,
+      headers,
+      combineQueryParams(
+        BASE_LIMIT_PARAM,
+        queryParams
+      ),
+      AcquisitionUnitResponse.class
+    );
+  }
+
+  public AcquisitionUnitResponse getAcquisitionUnits(String[] headers, Map<String,String> queryParams) {
+    return asyncFolioClientExceptionHelper(() -> getAsyncAcquisitionUnits(headers, queryParams));
+  }
+
   /**
    * Asynchronously fetches acquisition units filtered by a restriction flag.
    *
@@ -155,41 +173,15 @@ public class AcquisitionsClient extends FolioClient {
       }};
     }
 
-    return getAsync(
-      ACQUISITION_UNIT_PATH,
+    return getAsyncAcquisitionUnits(
       headers,
       combineQueryParams(
-        BASE_LIMIT_PARAM,
-        combineQueryParams(
-          restrictionQueryParams,
-          queryParams
-        )
-      ),
-      AcquisitionUnitResponse.class);
+        restrictionQueryParams,
+        queryParams
+      )
+    );
   }
 
-  /**
-   * Asynchronously fetches all acquisition units with default query params.
-   *
-   * @param headers Request headers
-   * @param queryParams Additional query parameters
-   * @return Future with acquisition unit response
-   */
-  public CompletableFuture<AcquisitionUnitResponse> getAsyncAcquisitionUnits(String[] headers, Map<String,String> queryParams) {
-    return getAsyncRestrictionAcquisitionUnits(headers, combineQueryParams(BASE_UNIT_QUERY_PARAMS, queryParams), AcquisitionUnitRestriction.NONE, false);
-  }
-
-  /**
-   * Synchronously fetches all acquisition units with default query params.
-   *
-   * @param headers Headers for the request
-   * @param queryParams Extra query parameters
-   * @return AcquisitionUnitResponse
-   * @throws FolioClientException For failed or invalid responses
-   */
-  public AcquisitionUnitResponse getAcquisitionUnits(String[] headers, Map<String,String> queryParams) throws FolioClientException {
-    return asyncFolioClientExceptionHelper(() -> getAsyncAcquisitionUnits(headers, queryParams));
-  }
 
   /**
    * Synchronously fetches acquisition units filtered by restriction flag.
@@ -203,6 +195,70 @@ public class AcquisitionsClient extends FolioClient {
    */
   public AcquisitionUnitResponse getRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, AcquisitionUnitRestriction restriction, boolean restrictBool) throws FolioClientException {
     return asyncFolioClientExceptionHelper(() -> getAsyncRestrictionAcquisitionUnits(headers, queryParams, restriction, restrictBool));
+  }
+
+  /**
+   * Asynchronously fetches acquisition units by ID list.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @param unitIds List of acquisition unit UUIDs to fetch
+   * @return Future with acquisition unit response
+   */
+  public CompletableFuture<AcquisitionUnitResponse> getAsyncIdAcquisitionUnits(String[] headers, Map<String,String> queryParams, Collection<String> unitIds) {
+    Map<String, String> idQueryParams = new HashMap<>();
+    if (unitIds != null && !unitIds.isEmpty()) {
+      String idQuery = unitIds.stream()
+        .map(id -> "id == \"" + id + "\"")
+        .collect(Collectors.joining(" OR ")
+      );
+
+      idQueryParams.put("query", "(" + idQuery + ")");
+    }
+
+    return getAsyncAcquisitionUnits(
+      headers,
+      combineQueryParams(
+        idQueryParams,
+        queryParams
+      )
+    );
+  }
+
+  /**
+   * Synchronously fetches acquisition units by ID list.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @param unitIds List of acquisition unit UUIDs to fetch
+   * @return AcquisitionUnitResponse containing matching units
+   * @throws FolioClientException If the async path fails or is interrupted
+   */
+  public AcquisitionUnitResponse getIdAcquisitionUnits(String[] headers, Map<String,String> queryParams, Collection<String> unitIds) {
+    return asyncFolioClientExceptionHelper(() -> getAsyncIdAcquisitionUnits(headers, queryParams, unitIds));
+  }
+
+  /**
+   * Asynchronously fetches all acquisition units with default query params.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @return Future with acquisition unit response
+   */
+  public CompletableFuture<AcquisitionUnitResponse> getAsyncAllAcquisitionUnits(String[] headers, Map<String,String> queryParams) {
+    return getAsyncAcquisitionUnits(headers, combineQueryParams(BASE_UNIT_QUERY_PARAMS, queryParams));
+  }
+
+  /**
+   * Synchronously fetches all acquisition units with default query params.
+   *
+   * @param headers Headers for the request
+   * @param queryParams Extra query parameters
+   * @return AcquisitionUnitResponse
+   * @throws FolioClientException For failed or invalid responses
+   */
+  public AcquisitionUnitResponse getAllAcquisitionUnits(String[] headers, Map<String,String> queryParams) throws FolioClientException {
+    return asyncFolioClientExceptionHelper(() -> getAsyncAllAcquisitionUnits(headers, queryParams));
   }
 
   /**
@@ -358,5 +414,33 @@ public class AcquisitionsClient extends FolioClient {
    */
   public UserAcquisitionUnits getUserAcquisitionUnits(String[] headers, AcquisitionUnitRestriction restriction, Set<UserAcquisitionsUnitSubset> fetchSubsets) throws FolioClientException {
     return asyncFolioClientExceptionHelper(() -> getAsyncUserAcquisitionUnits(headers, restriction, fetchSubsets));
+  }
+
+
+  public CompletableFuture<List<AcquisitionUnitPolicy>> getAsyncAcquisitionUnitPolicies(String[] headers, Collection<String> unitIds) {
+    CompletableFuture<AcquisitionUnitResponse> acqUnitResponse = getAsyncIdAcquisitionUnits(headers, Collections.emptyMap(), unitIds);
+    CompletableFuture<AcquisitionUnitMembershipResponse> acqUnitMembershipResponse = getAsyncUserAcquisitionUnitMemberships(headers, Collections.emptyMap());
+
+    // Return a full policy per acq unit
+    return CompletableFuture.allOf(
+      acqUnitResponse,
+      acqUnitMembershipResponse
+    ).thenApply(ignoredVoid ->
+      acqUnitResponse
+        .join()
+        .getAcquisitionsUnits()
+        .stream()
+        .map(acqUnit -> {
+          // Work out if member
+          Boolean isMember = acqUnitMembershipResponse.join().getAcquisitionsUnitMemberships().stream().anyMatch(aum -> Objects.equals(aum.getAcquisitionsUnitId(), acqUnit.getId()));
+
+          return AcquisitionUnitPolicy.fromAcquisitionUnit(acqUnit, isMember);
+        })
+        .toList()
+    );
+  }
+
+  public List<AcquisitionUnitPolicy> getAcquisitionUnitPolicies(String[] headers, Collection<String> unitIds) {
+    return asyncFolioClientExceptionHelper(() -> getAsyncAcquisitionUnitPolicies(headers, unitIds));
   }
 }

@@ -1,6 +1,8 @@
 package com.k_int.accesscontrol.core;
 
+import com.k_int.accesscontrol.core.http.bodies.PolicyLink;
 import com.k_int.accesscontrol.core.http.responses.BasicPolicy;
+import com.k_int.accesscontrol.core.http.responses.BasicPolicyLink;
 import com.k_int.accesscontrol.core.http.responses.Policy;
 import lombok.Builder;
 import lombok.Data;
@@ -76,6 +78,28 @@ public class AccessPolicies {
       (policies1, policies2) -> {
         policies1.addAll(policies2);
         return policies1;
+      }
+    );
+  }
+
+  public static List<PolicyLink> convertListToPolicyLinkList(List<AccessPolicies> accessPolicies) {
+    return accessPolicies.stream().reduce(
+      new ArrayList<>(),
+      (acc, curr) -> {
+        // Construct a PolicyLink for EACH accessPolicies.policy entry
+        List<BasicPolicyLink> innerPolicyLinks = curr.getPolicies().stream().map(pol -> BasicPolicyLink.builder()
+          .policy(pol)
+          .description(curr.getName() + "::" + pol.getId())
+          .type(curr.getType())
+          .build()
+        ).toList();
+
+        acc.addAll(innerPolicyLinks);
+        return acc;
+      },
+      (arr1, arr2) -> {
+        arr1.addAll(arr2);
+        return arr1;
       }
     );
   }

@@ -33,7 +33,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 
-    return policyEngine.getPolicyIds(grailsHeaders, restriction);
+    return policyEngine.getPolicyIds(grailsHeaders, restriction)
   }
 
   /**
@@ -93,7 +93,6 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getClaimPolicyIds() {
     log.trace("AccessPolicyController::getClaimPolicyIds")
-    // FIXME reflect this to the other methods
     render text: Json.toJson(PolicyIdsResponse.builder().claimPolicyIds(getPolicyIds(PolicyRestriction.CLAIM)).build()), contentType: 'application/json'
   }
 

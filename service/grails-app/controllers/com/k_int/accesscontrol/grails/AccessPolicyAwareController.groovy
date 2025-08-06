@@ -2,7 +2,11 @@ package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.core.AccessPolicies
 import com.k_int.accesscontrol.core.AccessPolicyType
+import com.k_int.accesscontrol.core.http.bodies.ClaimBody
+import com.k_int.accesscontrol.core.http.bodies.PolicyLink
+import com.k_int.accesscontrol.core.http.responses.BasicClaimBody
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
+import com.k_int.accesscontrol.core.http.responses.PolicyIdsResponse
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager
@@ -15,6 +19,7 @@ import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters
 import com.k_int.accesscontrol.grails.criteria.AccessControlHibernateTypeMapper
 import com.k_int.accesscontrol.main.PolicyEngine
 import com.k_int.accesscontrol.grails.criteria.MultipleAliasSQLCriterion
+import com.k_int.utils.Json
 import grails.gorm.transactions.Transactional
 import org.hibernate.Criteria
 import org.hibernate.Session
@@ -650,9 +655,9 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     respond ([ message: "Access policies updated for this resource" ], status: 201 )
   }
 
-  // FIXME enrich policies? Same for access policy controller?
   @Transactional
   def policies() {
+    String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
     AccessPolicyEntity.withNewSession {
       Set<AccessPolicyType> enabledEngines = policyEngine.getEnabledEngineSet()
 
@@ -670,16 +675,36 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         ]
       )
 
-      // We want to turn this into the shape ClaimBody (Not GrailsClaimBody, as we want the enriched Policy information)
-      // PolicyEngine needs ids and types, so possibly best to send as AccessPolicies object
-      List<AccessPolicies> accessPoliciesList = AccessPolicies.fromAccessPolicyList(accessPoliciesForResource);
+      // We want to turn this into the shape List<PolicyLink> (Not GrailsPolicyLink, as we want the enriched Policy information)
+      // PolicyEngine needs ids and types, so send as AccessPolicies object
+      List<AccessPolicies> accessPoliciesList = AccessPolicies.fromAccessPolicyList(accessPoliciesForResource)
 
-      // We need an "enrich" method from policyEngine
+      // use "enrich" method from policyEngine to get List<AccessPolicies>
+      List<AccessPolicies> enrichedAccessPolicies = policyEngine.enrichPolicies(grailsHeaders, accessPoliciesList)
+
+      // Finally convert into List<PolicyLink> so it's in roughly the same shape we'd send down in a ClaimBody
+      List<PolicyLink> policyLinkList = AccessPolicies.convertListToPolicyLinkList(enrichedAccessPolicies)
 
 
-      respond doTheLookup(AccessPolicyEntity) {
-        eq 'resourceId', resolveRootOwnerId(params.id)
-      }
+      // Finally, we have to add back the descriptions and ids that were set on the AccessPolicyEntities for resource
+      // This isn't strictly necessary, but if not done then description will be reset and the policies will churn on each set
+      policyLinkList.each { pll -> {
+        AccessPolicyEntity relevantAPE = accessPoliciesForResource.find { ape -> ape.getPolicyId() == pll.policy.getId()}
+        if (
+          relevantAPE != null
+        ) {
+          pll.setId(relevantAPE.getId())
+          if (
+            relevantAPE.getDescription() != null &&
+            relevantAPE.getDescription() != pll.getDescription()
+          ) {
+            pll.setDescription(relevantAPE.getDescription())
+          }
+        }
+      }}
+
+      // Grails gets confused with the Policy extensions, so instead lets render it out with Jackson
+      render text: Json.toJson(policyLinkList), contentType: 'application/json'
     }
   }
 }

@@ -1,5 +1,6 @@
 package com.k_int.accesscontrol.acqunits;
 
+import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitPolicy;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionsUnitSubset;
 import com.k_int.accesscontrol.core.*;
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -248,9 +250,48 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
       throw new PolicyEngineException("arePolicyIdsValid in AcquisitionUnitPolicyEngine is only valid for AccessPolicies of type AccessPolicyType.ACQ_UNIT", PolicyEngineException.INVALID_POLICY_TYPE);
     }
 
+    String[] finalHeaders = handleLoginAndGetHeaders(headers);
+    // For each AccessPolicy passed in, return an AccessPolicy with the enriched policies information
+    // However it'll be more efficient to fetch all of the necessary policy information in one go and then map from it.
 
+    Set<String> policyIds = policies.stream().reduce(
+      new HashSet<>(),
+      (acc, curr) -> {
+        acc.addAll(curr.getPolicies().stream().map(Policy::getId).collect(Collectors.toSet()));
+        return acc;
+      },
+      (idSet1, idSet2) -> {
+        idSet1.addAll(idSet2);
+        return idSet1;
+      }
+    );
 
-    // FIXME we need to actually implement the lookup and enrich step here now
-    return policies;
+    List<AcquisitionUnitPolicy> acqUnitPolicies = acqClient.getAcquisitionUnitPolicies(finalHeaders, policyIds);
+    // We now have the acqUnitPolicies, so we map back to List<AccessPolicies>
+    return policies.stream()
+      .map(pol -> {
+        // Build new List<Policy> using what we had in pol.getPolicies and acqUnitPolicies
+        List<Policy> innerPolicies = pol.getPolicies().stream()
+          .map(innerPol -> {
+            List<AcquisitionUnitPolicy> acqPolCandidates = acqUnitPolicies.stream()
+              .filter(acqPol -> Objects.equals(acqPol.getId(), innerPol.getId()))
+              .toList();
+
+            // If we can't find one, return innerPol as we found it
+            if (acqPolCandidates.isEmpty()) {
+              return innerPol;
+            }
+            // Should only be one candidate... grab first I guess
+            return acqPolCandidates.get(0);
+          })
+          .toList();
+
+        return AccessPolicies.builder()
+          .type(pol.getType())
+          .name(pol.getName())
+          .policies(innerPolicies)
+          .build();
+      })
+      .toList();
   }
 }
