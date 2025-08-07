@@ -45,7 +45,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   @Transactional
   def getReadPolicies() {
     log.trace("AccessPolicyController::getReadPolicies")
-    render text: Json.toJson(PoliciesResponse.builder().claimPolicies(getPolicies(PolicyRestriction.READ)).build()), contentType: 'application/json'
+    render text: Json.toJson(PoliciesResponse.builder().readPolicies(getPolicies(PolicyRestriction.READ)).build()), contentType: 'application/json'
   }
 
   /**
