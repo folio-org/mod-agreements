@@ -19,10 +19,12 @@ import java.util.stream.Collectors;
  * Configuration is driven by `PolicyEngineConfiguration`.
  */
 @Slf4j
+@SuppressWarnings("javadoc")
 public class PolicyEngine implements PolicyEngineImplementor {
   /**
    * Configuration for the policy engine, including whether to use acquisition units.
    * This is set during construction and used to determine which policy types to query.
+   * @return The configuration for the policy engine, including acquisition unit settings
    */
   @Getter
   private final PolicyEngineConfiguration config;
@@ -30,6 +32,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
   /**
    * The acquisition unit policy engine implementor, which handles policy subquery generation
    * for acquisition units. This is initialized based on the configuration.
+   * @return The acquisition unit policy engine implementor, or null if acquisition units are not enabled
    */
   @Getter
   private final AcquisitionUnitPolicyEngine acquisitionUnitPolicyEngine;
