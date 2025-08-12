@@ -7,8 +7,12 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
-import java.util.Set;
 
+/*
+  This test connects to the database for mod-agreements and checks if all the tables in the
+  mod-agreements schema have a primary key. If any table that we haven't explicitly decided
+  to ignore is missing a primary key, the test will fail.
+ */
 @Integration
 @Slf4j
 class PrimaryKeySpec extends BaseSpec {
@@ -38,6 +42,8 @@ class PrimaryKeySpec extends BaseSpec {
     'pg_catalog'
   ].asImmutable();
 
+  String schema = "primarykeyspec_mod_agreements"; // Not sure how we autogenerate this schema name for tests, so assigning manually.
+
   def "all application tables should have a primary key defined"() {
     given: "A list to hold tables that fail the check"
     def tablesWithoutPks = []
@@ -47,9 +53,13 @@ class PrimaryKeySpec extends BaseSpec {
     withTenant {
       dataSource.connection.withCloseable { Connection connection ->
         DatabaseMetaData metaData = connection.getMetaData()
-        String schema = "primarykeyspec_mod_agreements" // Not sure how we autogenerate this schema name for tests. Will have to manually
-        log.info("Schema: {}", schema.toString());
+        log.debug("Schema: {}", schema.toString());
         ResultSet tables = metaData.getTables(null, schema, "%", ["TABLE"] as String[])
+
+        if (!tables.next()) {
+          // If we get the schema name wrong, we'll find no tables. The test will then pass, which isn't really what we want, so we should throw.
+          throw new RuntimeException("No tables found for test. Check that the schema name is correct.");
+        }
 
         while (tables.next()) {
           String tableName = tables.getString("TABLE_NAME");
