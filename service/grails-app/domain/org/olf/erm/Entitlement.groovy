@@ -78,9 +78,29 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
   boolean suppressFromDiscovery = false 
   
   String description
-  
+
+  // Holds the gkb package title name for external gkb resources.
+  String resourceName
+
+  // FIXME: How can I test this change still works for the original eholdings logic?
   @OkapiLookup(
-    value = '${obj.authority?.toLowerCase() == "ekb-package" ? "/eholdings/packages" : "/eholdings/resources" }/${obj.reference}${obj.authority?.toLowerCase() == "ekb-package" ? "" : "?include=package" }',
+    // The `delegate` here refers to the object instance (e.g., the Entitlement)
+    // If ekb-title: Return an empty string to signal that no lookup should occur.
+    // Otherwise, build the URL as before.
+    value = '''${
+      if (delegate.authority?.toLowerCase() == 'ekb-title') {
+        return '' 
+      } else {
+        def authority = delegate.authority?.toLowerCase()
+        def reference = delegate.reference
+        def isPackage = (authority == 'ekb-package')
+
+        def path = isPackage ? '/eholdings/packages' : '/eholdings/resources'
+        def query = isPackage ? '' : '?include=package'
+        
+        return "${path}/${reference}${query}"
+      }
+    }''',
     converter = {
       // delegate, owner and thisObject should be the instance of Entitlement
       final Entitlement outerEntitlement = delegate
