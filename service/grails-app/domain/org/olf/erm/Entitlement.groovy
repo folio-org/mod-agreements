@@ -80,36 +80,26 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
   String description
 
   // Holds the gkb package title name for external gkb resources.
-  String resourceName
+//  String resourceName
 
   // FIXME: How can I test this change still works for the original eholdings logic?
   @OkapiLookup(
     // The `delegate` here refers to the object instance (e.g., the Entitlement)
     // If ekb-title: Return an empty string to signal that no lookup should occur.
     // Otherwise, build the URL as before.
-    value = '''${
-      if (delegate.authority?.toLowerCase() == 'ekb-title') {
-        return '' 
-      } else {
-        def authority = delegate.authority?.toLowerCase()
-        def reference = delegate.reference
-        def isPackage = (authority == 'ekb-package')
-
-        def path = isPackage ? '/eholdings/packages' : '/eholdings/resources'
-        def query = isPackage ? '' : '?include=package'
-        
-        return "${path}/${reference}${query}"
-      }
-    }''',
+//    value = '${obj.authority?.toLowerCase() == "ekb-package" ? "/eholdings/packages" : obj.authority?.toLowerCase() == "ekb-title" ? "" : "/eholdings/resources" }/${obj.reference}${obj.authority?.toLowerCase() == "ekb-package" || obj.authority?.toLowerCase() == "ekb-title" ? "" : "?include=package" }',
+    value = '${obj.authority?.toLowerCase() == "ekb-title" ? null : (obj.authority?.toLowerCase() == "ekb-package" ? "/eholdings/packages" : "/eholdings/resources") + "/" + obj.reference + (obj.authority?.toLowerCase() == "ekb-package" ? "" : "?include=package") }',
     converter = {
       // delegate, owner and thisObject should be the instance of Entitlement
       final Entitlement outerEntitlement = delegate
-      
+
+      log.info("DOING THE LOOKUP CONVERTER")
+
       log.debug "Converter called with delegate: ${outerEntitlement} and it: ${it}"
-      
+
       final String theType = it.data?.attributes?.publicationType ?:
         it.data?.type?.replaceAll(/^\s*([\S])(.*?)s?\s*$/, {match, String firstChar, String nonePlural -> "${firstChar.toUpperCase()}${nonePlural}"})
-      
+
       def map = [
         label: it.data?.attributes?.name,
         type: (theType),
@@ -155,7 +145,7 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
         def identifiers = it.data?.attributes?.identifiers
         if (identifiers) {
           def combinedIdentifiers = [];
-          
+
           identifiers.each {
             def typeString = it.type.toLowerCase();
             def subtypeString = it.subtype.toLowerCase();
@@ -190,7 +180,7 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
             map.editors = editors
           }
         }
-        
+
         Map packageData = [:]
 
         packageData.authority = "EKB-PACKAGE"
@@ -198,7 +188,7 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
         if (packageId) {
           packageData.reference = packageId
         }
-        
+
         def includedPackage = it?.included.find { it.id == packageId && it.type == "packages"  }
         if (includedPackage) {
           def name = includedPackage.attributes?.name
@@ -260,13 +250,13 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
           map.accessStatusType = accessStatusType
         }
       }
-      
+
       // Merge external coverages.
       final boolean isPackage = theType?.toLowerCase() == 'package'
-      
+
       log.debug "${isPackage ? 'Is' : 'Is not'} Package"
       outerEntitlement.metaClass.external_customCoverage = false
-      
+
       def custCoverage = it.data?.attributes?.getAt("customCoverage${isPackage ? '' : 's'}")
       log.debug "Custom Coverage: ${custCoverage}"
 
@@ -290,7 +280,7 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
 
         // Apply all coverages to metaClass at the end
         outerEntitlement.metaClass.coverage = coverageToApply
-        
+
       } else if (!isPackage) {
         log.debug "Adding managed title coverages."
         it.data?.attributes?.managedCoverages?.each { Map <String, String> coverageEntry ->
@@ -302,7 +292,7 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
         // Apply all coverages to metaClass at the end
         outerEntitlement.metaClass.coverage = coverageToApply
       }
-      
+
       map
     }
   )
@@ -337,6 +327,8 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
      * Either way we want to remove any coverage before attempting to validate.
      */
     if (this.type != 'internal' && this.type != null) {
+      log.info("DOING THE LOOKUP CONVERTER2")
+
       // Clear the coverage.
       this.coverage?.clear()
     }
@@ -369,7 +361,8 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
           description column: 'ent_description'
           dateCreated column: 'ent_date_created'
           lastUpdated column: 'ent_last_updated'
-             poLines cascade: 'all-delete-orphan'
+//          resourceName column: 'ent_resource_name'
+    poLines cascade: 'all-delete-orphan'
             coverage cascade: 'all-delete-orphan'
                 tags cascade: 'save-update'
                 docs cascade: 'all-delete-orphan', joinTable: [name: 'entitlement_document_attachment', key: 'entitlement_docs_id', column: 'document_attachment_id']
