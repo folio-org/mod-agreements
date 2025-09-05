@@ -575,8 +575,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         //   Then we can check whether all the policies to add or remove are valid for CLAIM, and allow the claim
         //   operation to proceed if nothing has _changed_ that the user doesn't have permission for.
 
-        List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)4
-
+        List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
 
         // Store additions and removals here
         List<GrailsPolicyLink> accessPoliciesToAdd = [] // This will store AccessPolicyEntities FROM CLAIM BODY
@@ -620,7 +619,12 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
               log.error(failureMessage)
               break
             }
-            accessPoliciesToUpdate.add(claim)
+
+            if (existingPolicy.description != claim.description) {
+              // Only add to update list if something has actually changed
+              accessPoliciesToUpdate.add(claim)
+            }
+
           } else if (
             accessPoliciesForResource.any {ap -> ap.policyId == claim.getPolicy().getId() &&ap.type == claim.type } // Only create if there is no existing policy with the same policyId
           ) {
@@ -633,6 +637,10 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
             accessPoliciesToAdd.add(claim)
           }
         }
+
+        log.info("Access policies to add: ${accessPoliciesToAdd}")
+        log.info("Access policies to update: ${accessPoliciesToUpdate}")
+        log.info("Access policies to remove: ${accessPoliciesToRemove}")
 
         if (!success) {
           return // No DB changes have happened yet, so we can just return. If we need to rollback, we can do that below.
@@ -648,11 +656,14 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
                                         .builder()
                                         .claims(Stream.concat(accessPoliciesToAdd.stream(), accessPoliciesToUpdate.stream()).toList())
                                         .build()
-        List<AccessPolicies> changedPolicies = Stream.concat(changedClaimBody.convertToAccessPolicies().stream(), accessPoliciesToRemove.stream()).toList()
+        List<AccessPolicies> changedPolicies = Stream.concat(changedClaimBody.convertToAccessPolicies().stream(), AccessPolicies.fromAccessPolicyList(accessPoliciesToRemove).stream()).toList()
 
         if (!areClaimPoliciesValid(changedPolicies)) {
-          respond ([ message: "PolicyRestriction.CLAIM not valid for one or more changed policies in claims" ], status: 403 )
-          return
+          success = false
+          failureMessage = "PolicyRestriction.CLAIM not valid for one or more changed policies in claims"
+          failureCode = 403
+          log.error(failureMessage)
+          return // Kick out to the post-transaction success check
         }
 
         // Firstly delete any AccessPolicyEntities for this resource NOT in the claimBody
@@ -668,7 +679,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           //AccessPolicyEntity existingPolicy = AccessPolicyEntity.findById(claim.id) // FIXME we shouldn't need another fetch from the DB here
           AccessPolicyEntity existingPolicy = accessPoliciesForResource.stream().filter {AccessPolicyEntity ape -> ape.id == claim.id }.findFirst().orElse(null)
           existingPolicy.description = claim.description
-          existingPolicy.save(failOnError: true)
+          existingPolicy.save(flush: true, failOnError: true)
         }
 
         // Finally we can add any new policies from the claimBody
@@ -679,12 +690,11 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
             description: claim.description,
             resourceId: resourceId,
             resourceClass: resourceClass
-          ).save(failOnError: true)
+          ).save(flush: true, failOnError: true)
         }
       }
       sess.flush() // Ensure all changes are flushed to the database
     }
-    log.info("We shouldn't have gotten here if success is false or claim was not valid")
 
     // If the claims failed, respond with the failure message and code (rollback happened above, feels a little iffy)
     if (!success) {
