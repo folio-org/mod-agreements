@@ -3,6 +3,7 @@ package com.k_int.accesscontrol.grails
 import com.k_int.accesscontrol.core.AccessPolicies
 import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink
+import com.k_int.accesscontrol.core.http.responses.BasicClaimBody
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
@@ -28,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired
 
 import javax.annotation.PostConstruct
 import java.time.Duration
+import java.util.stream.Stream
 
 /**
  * Extends com.k_int.okapi.OkapiTenantAwareController to incorporate access policy enforcement for resources.
@@ -549,13 +551,14 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
+    // FIXME this should happen when we've worked out whether or not there are any new, removed or changed policies
     // We need to transform the claimBody into a list of AccessPolicies objects to use policyEngine.arePoliciesValid
-    List<AccessPolicies> policies = claimBody.convertToAccessPolicies()
+/*    List<AccessPolicies> policies = claimBody.convertToAccessPolicies()
 
     if (!areClaimPoliciesValid(policies)) {
       respond ([ message: "PolicyRestriction.CLAIM not valid for one or more policies in claims" ], status: 403 )
       return
-    }
+    }*/
 
     // At this point, we know that the user has permission to apply policies and that the policies in the claimBody are valid for CLAIM.
 
@@ -568,26 +571,32 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     AccessPolicyEntity.withNewSession { sess ->
       AccessPolicyEntity.withTransaction { transactionStatus ->
 
-        // Firstly delete any AccessPolicyEntities for this resource NOT in the claimBody
-        // We will then add/update policies from the claimBody
-        // We do the delete first so that if we are accidentally replacing a policy like-for-like without an id,
-        // we don't fail to add it thanks to duplicate check below, and then remove it, leaving resource unprotected
-        List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
+        // FIXME we need a way to calculate the policies to add and the policies to remove.
+        //   Then we can check whether all the policies to add or remove are valid for CLAIM, and allow the claim
+        //   operation to proceed if nothing has _changed_ that the user doesn't have permission for.
+
+        List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)4
+
+
+        // Store additions and removals here
+        List<GrailsPolicyLink> accessPoliciesToAdd = [] // This will store AccessPolicyEntities FROM CLAIM BODY
+        List<AccessPolicyEntity> accessPoliciesToRemove = [] // This will store AccessPolicyEntities FROM DB that are NOT in the CLAIM BODY
+        // We allow the update of description on existing policies -- This should ALSO fail if the user doesn't have CLAIM permission?
+        List<GrailsPolicyLink> accessPoliciesToUpdate = [] // This will store AccessPolicyEntities FROM CLAIM BODY -- we can update by id
+
         for (AccessPolicyEntity policy : accessPoliciesForResource) {
           if (!claimBody.claims.any { claim -> claim.id == policy.id }) {
             // If the policy is not in the claimBody, we delete it
-            policy.delete(flush: true, failOnError: true)
+            accessPoliciesToRemove.add(policy)
           }
         }
 
-        // Fetch again after we complete delete step
-        accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
-
-        // For each claim in the body, we need to first check whether the policy currently exists. If it does, we can update it (description ONLY)
         for(GrailsPolicyLink claim  : claimBody.claims) {
           if (claim.id) {
             // If the claim has an ID, we assume it is an existing policy that needs to be updated
-            AccessPolicyEntity existingPolicy = AccessPolicyEntity.findById(claim.id)
+            //AccessPolicyEntity existingPolicy = AccessPolicyEntity.findById(claim.id) // FIXME we shouldn't need another fetch from the DB here
+            AccessPolicyEntity existingPolicy = accessPoliciesForResource.stream().filter {AccessPolicyEntity ape -> ape.id == claim.id }.findFirst().orElse(null)
+
             // If we're handed a non existing policy ID, we should fail the request
             if (existingPolicy == null) {
               success = false
@@ -611,10 +620,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
               log.error(failureMessage)
               break
             }
-
-            // Update the description field ONLY... once a policy is created, we don't change any other information about it.
-            existingPolicy.description = claim.description
-            existingPolicy.save(failOnError: true)
+            accessPoliciesToUpdate.add(claim)
           } else if (
             accessPoliciesForResource.any {ap -> ap.policyId == claim.getPolicy().getId() &&ap.type == claim.type } // Only create if there is no existing policy with the same policyId
           ) {
@@ -624,24 +630,61 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
             break
           } else {
             // If no ID, we create a new policy
-            new AccessPolicyEntity(
-              policyId: claim.getPolicy().getId(),
-              type: claim.type,
-              description: claim.description,
-              resourceId: resourceId,
-              resourceClass: resourceClass
-            ).save(failOnError: true)
+            accessPoliciesToAdd.add(claim)
           }
         }
 
-        // Rollback the transaction if any of the operations failed
         if (!success) {
-          transactionStatus.setRollbackOnly()
+          return // No DB changes have happened yet, so we can just return. If we need to rollback, we can do that below.
+        }
+
+
+        // We must now check whether all policies to add/remove/update are valid for CLAIM
+        // FIXME does it make sense to have an AccessControl engine method which takes a ClaimBody and a List<AccessPolicy>
+        //  and returns a list of policies to add, to remove, to update and throws PolicyEngineException if any issues occur?
+
+        // Check add and update, which are List<GrailsPolicyLink> -- we can convert these to List<AccessPolicies> via a faked BasicClaimBody
+        BasicClaimBody changedClaimBody = BasicClaimBody
+                                        .builder()
+                                        .claims(Stream.concat(accessPoliciesToAdd.stream(), accessPoliciesToUpdate.stream()).toList())
+                                        .build()
+        List<AccessPolicies> changedPolicies = Stream.concat(changedClaimBody.convertToAccessPolicies().stream(), accessPoliciesToRemove.stream()).toList()
+
+        if (!areClaimPoliciesValid(changedPolicies)) {
+          respond ([ message: "PolicyRestriction.CLAIM not valid for one or more changed policies in claims" ], status: 403 )
+          return
+        }
+
+        // Firstly delete any AccessPolicyEntities for this resource NOT in the claimBody
+        // We will then add/update policies from the claimBody
+        // We do the delete first so that if we are accidentally replacing a policy like-for-like without an id,
+        // we don't fail to add it thanks to duplicate check below, and then remove it, leaving resource unprotected
+        for (AccessPolicyEntity policy : accessPoliciesToRemove) {
+          policy.delete(flush: true, failOnError: true)
+        }
+
+        // Now we can update policies from the claimBody
+        for (GrailsPolicyLink claim  : accessPoliciesToUpdate) {
+          //AccessPolicyEntity existingPolicy = AccessPolicyEntity.findById(claim.id) // FIXME we shouldn't need another fetch from the DB here
+          AccessPolicyEntity existingPolicy = accessPoliciesForResource.stream().filter {AccessPolicyEntity ape -> ape.id == claim.id }.findFirst().orElse(null)
+          existingPolicy.description = claim.description
+          existingPolicy.save(failOnError: true)
+        }
+
+        // Finally we can add any new policies from the claimBody
+        for (GrailsPolicyLink claim  : accessPoliciesToAdd) {
+          new AccessPolicyEntity(
+            policyId: claim.getPolicy().getId(),
+            type: claim.type,
+            description: claim.description,
+            resourceId: resourceId,
+            resourceClass: resourceClass
+          ).save(failOnError: true)
         }
       }
       sess.flush() // Ensure all changes are flushed to the database
     }
-
+    log.info("We shouldn't have gotten here if success is false or claim was not valid")
 
     // If the claims failed, respond with the failure message and code (rollback happened above, feels a little iffy)
     if (!success) {
