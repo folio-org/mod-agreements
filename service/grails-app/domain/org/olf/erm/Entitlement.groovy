@@ -87,215 +87,215 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
     // The `delegate` here refers to the object instance (e.g., the Entitlement)
     // If ekb-title: Return an empty string to signal that no lookup should occur.
     // Otherwise, build the URL as before.
-//    value = '${obj.authority?.toLowerCase() == "ekb-package" ? "/eholdings/packages" : obj.authority?.toLowerCase() == "ekb-title" ? "" : "/eholdings/resources" }/${obj.reference}${obj.authority?.toLowerCase() == "ekb-package" || obj.authority?.toLowerCase() == "ekb-title" ? "" : "?include=package" }',
-    value = '${obj.authority?.toLowerCase() == "ekb-title" ? null : (obj.authority?.toLowerCase() == "ekb-package" ? "/eholdings/packages" : "/eholdings/resources") + "/" + obj.reference + (obj.authority?.toLowerCase() == "ekb-package" ? "" : "?include=package") }',
-    converter = {
-      // delegate, owner and thisObject should be the instance of Entitlement
-      final Entitlement outerEntitlement = delegate
-
-      log.info("DOING THE LOOKUP CONVERTER")
-
-      log.debug "Converter called with delegate: ${outerEntitlement} and it: ${it}"
-
-      final String theType = it.data?.attributes?.publicationType ?:
-        it.data?.type?.replaceAll(/^\s*([\S])(.*?)s?\s*$/, {match, String firstChar, String nonePlural -> "${firstChar.toUpperCase()}${nonePlural}"})
-
-      def map = [
-        label: it.data?.attributes?.name,
-        type: (theType),
-        provider: it.data?.attributes?.providerName
-      ]
-
-      if (it.data?.type == "packages") {
-        // We're dealing with a package
-
-        def titleCount = it.data?.attributes?.titleCount
-        // Groovy truth evaluates 0 to false
-        if (titleCount != null) {
-          map.titleCount = titleCount
-        }
-
-        def selectedCount = it.data?.attributes?.selectedCount
-        // Groovy truth evaluates 0 to false
-        if (selectedCount != null) {
-          map.selectedCount = selectedCount
-        }
-
-        def contentType = it.data?.attributes?.contentType
-        if (contentType) {
-          map.contentType = contentType
-        }
-      } else {
-        // We're dealing with a title
-        def publicationType = it.data?.attributes?.publicationType
-        if (publicationType) {
-          map.publicationType = publicationType
-        }
-
-        def edition = it.data?.attributes?.edition
-        if (edition) {
-          map.edition = edition
-        }
-
-        def url = it.data?.attributes?.url
-        if (url) {
-          map.url = url
-        }
-
-        def identifiers = it.data?.attributes?.identifiers
-        if (identifiers) {
-          def combinedIdentifiers = [];
-
-          identifiers.each {
-            def typeString = it.type.toLowerCase();
-            def subtypeString = it.subtype.toLowerCase();
-            if (typeString.matches("isbn|issn")) {
-              if (subtypeString == 'online') {
-                typeString = 'e' + typeString
-              } else if (subtypeString == 'print') {
-                typeString = 'p' + typeString
-              }
-            }
-            def identifier = [identifier: [value: it.id, ns: [value: typeString]]]
-            combinedIdentifiers << identifier
-          }
-          map.identifiers = combinedIdentifiers
-        }
-
-        def contributors = it.data?.attributes?.contributors
-        if (contributors) {
-          def authors = []
-          def editors = []
-          contributors.each {
-            if (it.type == "author") {
-              authors << it.contributor
-            } else if (it.type == "editor") {
-              editors << it.contributor
-            }
-          }
-          if (authors.size() > 0) {
-            map.authors = authors
-          }
-           if (editors.size() > 0) {
-            map.editors = editors
-          }
-        }
-
-        Map packageData = [:]
-
-        packageData.authority = "EKB-PACKAGE"
-        def packageId = it.data?.attributes?.packageId
-        if (packageId) {
-          packageData.reference = packageId
-        }
-
-        def includedPackage = it?.included.find { it.id == packageId && it.type == "packages"  }
-        if (includedPackage) {
-          def name = includedPackage.attributes?.name
-          if (name) {
-            packageData.name = name
-          }
-
-          def titleCount = includedPackage.attributes?.titleCount
-          // Groovy truth evaluates 0 to false
-          if (titleCount != null) {
-            packageData.titleCount = titleCount
-          }
-
-          def selectedCount = includedPackage.attributes?.selectedCount
-          // Groovy truth evaluates 0 to false
-          if (selectedCount != null) {
-            packageData.selectedCount = selectedCount
-          }
-
-          def contentType = includedPackage.attributes?.contentType
-          if (contentType) {
-            packageData.contentType = contentType
-          }
-
-          def providerName = includedPackage.attributes?.providerName
-          if (providerName) {
-            packageData.providerName = providerName
-          }
-
-          def isSelected = includedPackage.attributes?.isSelected
-          if (isSelected) {
-            packageData.isSelected = isSelected
-          }
-        }
-        if (packageData) {
-          map.packageData = packageData
-        }
-      }
-
-      // These need to be added to the map whether the type is resource OR package
-      def providerName = it.data?.attributes?.providerName
-      if (providerName) {
-        map.providerName = providerName
-      }
-
-      def isSelected = it.data?.attributes?.isSelected
-      if (isSelected) {
-        map.isSelected = isSelected
-      }
-
-      def relationshipsAccessTypeDataId = it.data?.relationships?.accessType?.data?.id;
-      def accessStatusType;
-      if (relationshipsAccessTypeDataId) {
-
-        def includesMatchingId = it?.included.find { it.id == relationshipsAccessTypeDataId && it.type == "accessTypes"  }
-        accessStatusType = includesMatchingId?.attributes?.name
-
-        if (accessStatusType) {
-          map.accessStatusType = accessStatusType
-        }
-      }
-
-      // Merge external coverages.
-      final boolean isPackage = theType?.toLowerCase() == 'package'
-
-      log.debug "${isPackage ? 'Is' : 'Is not'} Package"
-      outerEntitlement.metaClass.external_customCoverage = false
-
-      def custCoverage = it.data?.attributes?.getAt("customCoverage${isPackage ? '' : 's'}")
-      log.debug "Custom Coverage: ${custCoverage}"
-
-      // Set coverage as empty array initially
-      def coverageToApply = []
-      if (custCoverage) {
-        log.debug "Found custom coverage."
-        // Simply ensure a collection.
-        if (!(custCoverage instanceof Collection)) {
-          log.debug "Found single custom coverage entry turn into a collection."
-          custCoverage = [custCoverage]
-          log.debug "...${custCoverage}"
-        }
-
-        custCoverage.each { Map <String, String> coverageEntry ->
-          if (coverageEntry.beginCoverage) {
-            coverageToApply << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
-            outerEntitlement.external_customCoverage = true
-          }
-        }
-
-        // Apply all coverages to metaClass at the end
-        outerEntitlement.metaClass.coverage = coverageToApply
-
-      } else if (!isPackage) {
-        log.debug "Adding managed title coverages."
-        it.data?.attributes?.managedCoverages?.each { Map <String, String> coverageEntry ->
-          if (coverageEntry.beginCoverage) {
-            coverageToApply << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
-          }
-        }
-
-        // Apply all coverages to metaClass at the end
-        outerEntitlement.metaClass.coverage = coverageToApply
-      }
-
-      map
-    }
-  )
+//    value = '${obj.authority?.toLowerCase() == "gokb-resource" ? "" : ${obj.authority?.toLowerCase() == "ekb-package" ? "/eholdings/packages" : "/eholdings/resources" }/${obj.reference}${obj.authority?.toLowerCase() == "ekb-package" ? "" : "?include=package" }}',
+    value = '/',
+    converter = {})
+//      // delegate, owner and thisObject should be the instance of Entitlement
+//      final Entitlement outerEntitlement = delegate
+//
+//      log.info("DOING THE LOOKUP CONVERTER")
+//
+//      log.debug "Converter called with delegate: ${outerEntitlement} and it: ${it}"
+//
+//      final String theType = it.data?.attributes?.publicationType ?:
+//        it.data?.type?.replaceAll(/^\s*([\S])(.*?)s?\s*$/, {match, String firstChar, String nonePlural -> "${firstChar.toUpperCase()}${nonePlural}"})
+//
+//      def map = [
+//        label: it.data?.attributes?.name,
+//        type: (theType),
+//        provider: it.data?.attributes?.providerName
+//      ]
+//
+//      if (it.data?.type == "packages") {
+//        // We're dealing with a package
+//
+//        def titleCount = it.data?.attributes?.titleCount
+//        // Groovy truth evaluates 0 to false
+//        if (titleCount != null) {
+//          map.titleCount = titleCount
+//        }
+//
+//        def selectedCount = it.data?.attributes?.selectedCount
+//        // Groovy truth evaluates 0 to false
+//        if (selectedCount != null) {
+//          map.selectedCount = selectedCount
+//        }
+//
+//        def contentType = it.data?.attributes?.contentType
+//        if (contentType) {
+//          map.contentType = contentType
+//        }
+//      } else {
+//        // We're dealing with a title
+//        def publicationType = it.data?.attributes?.publicationType
+//        if (publicationType) {
+//          map.publicationType = publicationType
+//        }
+//
+//        def edition = it.data?.attributes?.edition
+//        if (edition) {
+//          map.edition = edition
+//        }
+//
+//        def url = it.data?.attributes?.url
+//        if (url) {
+//          map.url = url
+//        }
+//
+//        def identifiers = it.data?.attributes?.identifiers
+//        if (identifiers) {
+//          def combinedIdentifiers = [];
+//
+//          identifiers.each {
+//            def typeString = it.type.toLowerCase();
+//            def subtypeString = it.subtype.toLowerCase();
+//            if (typeString.matches("isbn|issn")) {
+//              if (subtypeString == 'online') {
+//                typeString = 'e' + typeString
+//              } else if (subtypeString == 'print') {
+//                typeString = 'p' + typeString
+//              }
+//            }
+//            def identifier = [identifier: [value: it.id, ns: [value: typeString]]]
+//            combinedIdentifiers << identifier
+//          }
+//          map.identifiers = combinedIdentifiers
+//        }
+//
+//        def contributors = it.data?.attributes?.contributors
+//        if (contributors) {
+//          def authors = []
+//          def editors = []
+//          contributors.each {
+//            if (it.type == "author") {
+//              authors << it.contributor
+//            } else if (it.type == "editor") {
+//              editors << it.contributor
+//            }
+//          }
+//          if (authors.size() > 0) {
+//            map.authors = authors
+//          }
+//           if (editors.size() > 0) {
+//            map.editors = editors
+//          }
+//        }
+//
+//        Map packageData = [:]
+//
+//        packageData.authority = "EKB-PACKAGE"
+//        def packageId = it.data?.attributes?.packageId
+//        if (packageId) {
+//          packageData.reference = packageId
+//        }
+//
+//        def includedPackage = it?.included.find { it.id == packageId && it.type == "packages"  }
+//        if (includedPackage) {
+//          def name = includedPackage.attributes?.name
+//          if (name) {
+//            packageData.name = name
+//          }
+//
+//          def titleCount = includedPackage.attributes?.titleCount
+//          // Groovy truth evaluates 0 to false
+//          if (titleCount != null) {
+//            packageData.titleCount = titleCount
+//          }
+//
+//          def selectedCount = includedPackage.attributes?.selectedCount
+//          // Groovy truth evaluates 0 to false
+//          if (selectedCount != null) {
+//            packageData.selectedCount = selectedCount
+//          }
+//
+//          def contentType = includedPackage.attributes?.contentType
+//          if (contentType) {
+//            packageData.contentType = contentType
+//          }
+//
+//          def providerName = includedPackage.attributes?.providerName
+//          if (providerName) {
+//            packageData.providerName = providerName
+//          }
+//
+//          def isSelected = includedPackage.attributes?.isSelected
+//          if (isSelected) {
+//            packageData.isSelected = isSelected
+//          }
+//        }
+//        if (packageData) {
+//          map.packageData = packageData
+//        }
+//      }
+//
+//      // These need to be added to the map whether the type is resource OR package
+//      def providerName = it.data?.attributes?.providerName
+//      if (providerName) {
+//        map.providerName = providerName
+//      }
+//
+//      def isSelected = it.data?.attributes?.isSelected
+//      if (isSelected) {
+//        map.isSelected = isSelected
+//      }
+//
+//      def relationshipsAccessTypeDataId = it.data?.relationships?.accessType?.data?.id;
+//      def accessStatusType;
+//      if (relationshipsAccessTypeDataId) {
+//
+//        def includesMatchingId = it?.included.find { it.id == relationshipsAccessTypeDataId && it.type == "accessTypes"  }
+//        accessStatusType = includesMatchingId?.attributes?.name
+//
+//        if (accessStatusType) {
+//          map.accessStatusType = accessStatusType
+//        }
+//      }
+//
+//      // Merge external coverages.
+//      final boolean isPackage = theType?.toLowerCase() == 'package'
+//
+//      log.debug "${isPackage ? 'Is' : 'Is not'} Package"
+//      outerEntitlement.metaClass.external_customCoverage = false
+//
+//      def custCoverage = it.data?.attributes?.getAt("customCoverage${isPackage ? '' : 's'}")
+//      log.debug "Custom Coverage: ${custCoverage}"
+//
+//      // Set coverage as empty array initially
+//      def coverageToApply = []
+//      if (custCoverage) {
+//        log.debug "Found custom coverage."
+//        // Simply ensure a collection.
+//        if (!(custCoverage instanceof Collection)) {
+//          log.debug "Found single custom coverage entry turn into a collection."
+//          custCoverage = [custCoverage]
+//          log.debug "...${custCoverage}"
+//        }
+//
+//        custCoverage.each { Map <String, String> coverageEntry ->
+//          if (coverageEntry.beginCoverage) {
+//            coverageToApply << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
+//            outerEntitlement.external_customCoverage = true
+//          }
+//        }
+//
+//        // Apply all coverages to metaClass at the end
+//        outerEntitlement.metaClass.coverage = coverageToApply
+//
+//      } else if (!isPackage) {
+//        log.debug "Adding managed title coverages."
+//        it.data?.attributes?.managedCoverages?.each { Map <String, String> coverageEntry ->
+//          if (coverageEntry.beginCoverage) {
+//            coverageToApply << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
+//          }
+//        }
+//
+//        // Apply all coverages to metaClass at the end
+//        outerEntitlement.metaClass.coverage = coverageToApply
+//      }
+//
+//      map
+//    }
+//  )
   String reference
   Set<Tag> tags = []
 
@@ -328,6 +328,7 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
      */
     if (this.type != 'internal' && this.type != null) {
       log.info("DOING THE LOOKUP CONVERTER2")
+      log.info("authority found: {}", this.authority)
 
       // Clear the coverage.
       this.coverage?.clear()
