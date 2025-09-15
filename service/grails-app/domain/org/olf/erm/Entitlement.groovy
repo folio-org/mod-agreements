@@ -24,7 +24,7 @@ import groovy.util.logging.Slf4j
 
 
 /**
- * Entitlement (A description of a right to access a specific digital resource, which can be an 
+ * Entitlement (A description of a right to access a specific digital resource, which can be an
  * title on a platform (But not listed in a package), a title named in a package, a full package of resources
  *
  * OFTEN attached to an agreement, but it's possible we know we have the right to access a resource
@@ -39,7 +39,7 @@ import groovy.util.logging.Slf4j
 )
 public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitlement> {
   public static final Class<? extends ErmResource>[] ALLOWED_RESOURCES = [Pkg, PackageContentItem, PlatformTitleInstance] as Class[]
-  
+
   static copyByCloning = ['docs'];
 
   /**
@@ -49,8 +49,8 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
   public Entitlement clone () {
     Clonable.super.clone()
   }
-  
-  
+
+
   String id
   Date dateCreated
   Date lastUpdated
@@ -58,10 +58,10 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
   ErmResource resource
 
   // The date ranges on which this line item is active. These date ranges allow the system to determine
-  // what content is "Live" in an agreement. Content can be "Live" without being switched on, and 
+  // what content is "Live" in an agreement. Content can be "Live" without being switched on, and
   // vice versa. The dates indicate that we believe the agreement is in force for the items specified.
   // For Trials, these dates will indicate the dates of the trial, for live agreements the agreement item dates
-  LocalDate activeFrom 
+  LocalDate activeFrom
   LocalDate activeTo
 
   Date contentUpdated
@@ -75,227 +75,221 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
   // entitlement does not link to a resource in the tenant database, but instead will use API calls to define its contents
   String authority
 
-  boolean suppressFromDiscovery = false 
-  
+  boolean suppressFromDiscovery = false
+
   String description
 
   // Holds the gkb package title name for external gkb resources.
-//  String resourceName
+  String resourceName
 
-  // FIXME: How can I test this change still works for the original eholdings logic?
+  // For External gokb resources, reference should be in the form: packageUuid:titleUuid
   @OkapiLookup(
-    // The `delegate` here refers to the object instance (e.g., the Entitlement)
-    // If ekb-title: Return an empty string to signal that no lookup should occur.
-    // Otherwise, build the URL as before.
-//    value = '${obj.authority?.toLowerCase() == "gokb-resource" ? "" : ${obj.authority?.toLowerCase() == "ekb-package" ? "/eholdings/packages" : "/eholdings/resources" }/${obj.reference}${obj.authority?.toLowerCase() == "ekb-package" ? "" : "?include=package" }}',
-    value = '/',
-    converter = {})
-//      // delegate, owner and thisObject should be the instance of Entitlement
-//      final Entitlement outerEntitlement = delegate
-//
-//      log.info("DOING THE LOOKUP CONVERTER")
-//
-//      log.debug "Converter called with delegate: ${outerEntitlement} and it: ${it}"
-//
-//      final String theType = it.data?.attributes?.publicationType ?:
-//        it.data?.type?.replaceAll(/^\s*([\S])(.*?)s?\s*$/, {match, String firstChar, String nonePlural -> "${firstChar.toUpperCase()}${nonePlural}"})
-//
-//      def map = [
-//        label: it.data?.attributes?.name,
-//        type: (theType),
-//        provider: it.data?.attributes?.providerName
-//      ]
-//
-//      if (it.data?.type == "packages") {
-//        // We're dealing with a package
-//
-//        def titleCount = it.data?.attributes?.titleCount
-//        // Groovy truth evaluates 0 to false
-//        if (titleCount != null) {
-//          map.titleCount = titleCount
-//        }
-//
-//        def selectedCount = it.data?.attributes?.selectedCount
-//        // Groovy truth evaluates 0 to false
-//        if (selectedCount != null) {
-//          map.selectedCount = selectedCount
-//        }
-//
-//        def contentType = it.data?.attributes?.contentType
-//        if (contentType) {
-//          map.contentType = contentType
-//        }
-//      } else {
-//        // We're dealing with a title
-//        def publicationType = it.data?.attributes?.publicationType
-//        if (publicationType) {
-//          map.publicationType = publicationType
-//        }
-//
-//        def edition = it.data?.attributes?.edition
-//        if (edition) {
-//          map.edition = edition
-//        }
-//
-//        def url = it.data?.attributes?.url
-//        if (url) {
-//          map.url = url
-//        }
-//
-//        def identifiers = it.data?.attributes?.identifiers
-//        if (identifiers) {
-//          def combinedIdentifiers = [];
-//
-//          identifiers.each {
-//            def typeString = it.type.toLowerCase();
-//            def subtypeString = it.subtype.toLowerCase();
-//            if (typeString.matches("isbn|issn")) {
-//              if (subtypeString == 'online') {
-//                typeString = 'e' + typeString
-//              } else if (subtypeString == 'print') {
-//                typeString = 'p' + typeString
-//              }
-//            }
-//            def identifier = [identifier: [value: it.id, ns: [value: typeString]]]
-//            combinedIdentifiers << identifier
-//          }
-//          map.identifiers = combinedIdentifiers
-//        }
-//
-//        def contributors = it.data?.attributes?.contributors
-//        if (contributors) {
-//          def authors = []
-//          def editors = []
-//          contributors.each {
-//            if (it.type == "author") {
-//              authors << it.contributor
-//            } else if (it.type == "editor") {
-//              editors << it.contributor
-//            }
-//          }
-//          if (authors.size() > 0) {
-//            map.authors = authors
-//          }
-//           if (editors.size() > 0) {
-//            map.editors = editors
-//          }
-//        }
-//
-//        Map packageData = [:]
-//
-//        packageData.authority = "EKB-PACKAGE"
-//        def packageId = it.data?.attributes?.packageId
-//        if (packageId) {
-//          packageData.reference = packageId
-//        }
-//
-//        def includedPackage = it?.included.find { it.id == packageId && it.type == "packages"  }
-//        if (includedPackage) {
-//          def name = includedPackage.attributes?.name
-//          if (name) {
-//            packageData.name = name
-//          }
-//
-//          def titleCount = includedPackage.attributes?.titleCount
-//          // Groovy truth evaluates 0 to false
-//          if (titleCount != null) {
-//            packageData.titleCount = titleCount
-//          }
-//
-//          def selectedCount = includedPackage.attributes?.selectedCount
-//          // Groovy truth evaluates 0 to false
-//          if (selectedCount != null) {
-//            packageData.selectedCount = selectedCount
-//          }
-//
-//          def contentType = includedPackage.attributes?.contentType
-//          if (contentType) {
-//            packageData.contentType = contentType
-//          }
-//
-//          def providerName = includedPackage.attributes?.providerName
-//          if (providerName) {
-//            packageData.providerName = providerName
-//          }
-//
-//          def isSelected = includedPackage.attributes?.isSelected
-//          if (isSelected) {
-//            packageData.isSelected = isSelected
-//          }
-//        }
-//        if (packageData) {
-//          map.packageData = packageData
-//        }
-//      }
-//
-//      // These need to be added to the map whether the type is resource OR package
-//      def providerName = it.data?.attributes?.providerName
-//      if (providerName) {
-//        map.providerName = providerName
-//      }
-//
-//      def isSelected = it.data?.attributes?.isSelected
-//      if (isSelected) {
-//        map.isSelected = isSelected
-//      }
-//
-//      def relationshipsAccessTypeDataId = it.data?.relationships?.accessType?.data?.id;
-//      def accessStatusType;
-//      if (relationshipsAccessTypeDataId) {
-//
-//        def includesMatchingId = it?.included.find { it.id == relationshipsAccessTypeDataId && it.type == "accessTypes"  }
-//        accessStatusType = includesMatchingId?.attributes?.name
-//
-//        if (accessStatusType) {
-//          map.accessStatusType = accessStatusType
-//        }
-//      }
-//
-//      // Merge external coverages.
-//      final boolean isPackage = theType?.toLowerCase() == 'package'
-//
-//      log.debug "${isPackage ? 'Is' : 'Is not'} Package"
-//      outerEntitlement.metaClass.external_customCoverage = false
-//
-//      def custCoverage = it.data?.attributes?.getAt("customCoverage${isPackage ? '' : 's'}")
-//      log.debug "Custom Coverage: ${custCoverage}"
-//
-//      // Set coverage as empty array initially
-//      def coverageToApply = []
-//      if (custCoverage) {
-//        log.debug "Found custom coverage."
-//        // Simply ensure a collection.
-//        if (!(custCoverage instanceof Collection)) {
-//          log.debug "Found single custom coverage entry turn into a collection."
-//          custCoverage = [custCoverage]
-//          log.debug "...${custCoverage}"
-//        }
-//
-//        custCoverage.each { Map <String, String> coverageEntry ->
-//          if (coverageEntry.beginCoverage) {
-//            coverageToApply << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
-//            outerEntitlement.external_customCoverage = true
-//          }
-//        }
-//
-//        // Apply all coverages to metaClass at the end
-//        outerEntitlement.metaClass.coverage = coverageToApply
-//
-//      } else if (!isPackage) {
-//        log.debug "Adding managed title coverages."
-//        it.data?.attributes?.managedCoverages?.each { Map <String, String> coverageEntry ->
-//          if (coverageEntry.beginCoverage) {
-//            coverageToApply << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
-//          }
-//        }
-//
-//        // Apply all coverages to metaClass at the end
-//        outerEntitlement.metaClass.coverage = coverageToApply
-//      }
-//
-//      map
-//    }
-//  )
+    value = '${obj.authority?.toLowerCase() == "ekb-package" ? "/eholdings/packages" : "/eholdings/resources" }/${obj.reference}${obj.authority?.toLowerCase() == "ekb-package" ? "" : "?include=package" }',
+    converter = {
+      // delegate, owner and thisObject should be the instance of Entitlement
+      final Entitlement outerEntitlement = delegate
+
+      log.debug "Converter called with delegate: ${outerEntitlement} and it: ${it}"
+
+      final String theType = it.data?.attributes?.publicationType ?:
+        it.data?.type?.replaceAll(/^\s*([\S])(.*?)s?\s*$/, {match, String firstChar, String nonePlural -> "${firstChar.toUpperCase()}${nonePlural}"})
+
+      def map = [
+        label: it.data?.attributes?.name,
+        type: (theType),
+        provider: it.data?.attributes?.providerName
+      ]
+
+      if (it.data?.type == "packages") {
+        // We're dealing with a package
+
+        def titleCount = it.data?.attributes?.titleCount
+        // Groovy truth evaluates 0 to false
+        if (titleCount != null) {
+          map.titleCount = titleCount
+        }
+
+        def selectedCount = it.data?.attributes?.selectedCount
+        // Groovy truth evaluates 0 to false
+        if (selectedCount != null) {
+          map.selectedCount = selectedCount
+        }
+
+        def contentType = it.data?.attributes?.contentType
+        if (contentType) {
+          map.contentType = contentType
+        }
+      } else {
+        // We're dealing with a title
+        def publicationType = it.data?.attributes?.publicationType
+        if (publicationType) {
+          map.publicationType = publicationType
+        }
+
+        def edition = it.data?.attributes?.edition
+        if (edition) {
+          map.edition = edition
+        }
+
+        def url = it.data?.attributes?.url
+        if (url) {
+          map.url = url
+        }
+
+        def identifiers = it.data?.attributes?.identifiers
+        if (identifiers) {
+          def combinedIdentifiers = [];
+
+          identifiers.each {
+            def typeString = it.type.toLowerCase();
+            def subtypeString = it.subtype.toLowerCase();
+            if (typeString.matches("isbn|issn")) {
+              if (subtypeString == 'online') {
+                typeString = 'e' + typeString
+              } else if (subtypeString == 'print') {
+                typeString = 'p' + typeString
+              }
+            }
+            def identifier = [identifier: [value: it.id, ns: [value: typeString]]]
+            combinedIdentifiers << identifier
+          }
+          map.identifiers = combinedIdentifiers
+        }
+
+        def contributors = it.data?.attributes?.contributors
+        if (contributors) {
+          def authors = []
+          def editors = []
+          contributors.each {
+            if (it.type == "author") {
+              authors << it.contributor
+            } else if (it.type == "editor") {
+              editors << it.contributor
+            }
+          }
+          if (authors.size() > 0) {
+            map.authors = authors
+          }
+          if (editors.size() > 0) {
+            map.editors = editors
+          }
+        }
+
+        Map packageData = [:]
+
+        packageData.authority = "EKB-PACKAGE"
+        def packageId = it.data?.attributes?.packageId
+        if (packageId) {
+          packageData.reference = packageId
+        }
+
+        def includedPackage = it?.included.find { it.id == packageId && it.type == "packages"  }
+        if (includedPackage) {
+          def name = includedPackage.attributes?.name
+          if (name) {
+            packageData.name = name
+          }
+
+          def titleCount = includedPackage.attributes?.titleCount
+          // Groovy truth evaluates 0 to false
+          if (titleCount != null) {
+            packageData.titleCount = titleCount
+          }
+
+          def selectedCount = includedPackage.attributes?.selectedCount
+          // Groovy truth evaluates 0 to false
+          if (selectedCount != null) {
+            packageData.selectedCount = selectedCount
+          }
+
+          def contentType = includedPackage.attributes?.contentType
+          if (contentType) {
+            packageData.contentType = contentType
+          }
+
+          def providerName = includedPackage.attributes?.providerName
+          if (providerName) {
+            packageData.providerName = providerName
+          }
+
+          def isSelected = includedPackage.attributes?.isSelected
+          if (isSelected) {
+            packageData.isSelected = isSelected
+          }
+        }
+        if (packageData) {
+          map.packageData = packageData
+        }
+      }
+
+      // These need to be added to the map whether the type is resource OR package
+      def providerName = it.data?.attributes?.providerName
+      if (providerName) {
+        map.providerName = providerName
+      }
+
+      def isSelected = it.data?.attributes?.isSelected
+      if (isSelected) {
+        map.isSelected = isSelected
+      }
+
+      def relationshipsAccessTypeDataId = it.data?.relationships?.accessType?.data?.id;
+      def accessStatusType;
+      if (relationshipsAccessTypeDataId) {
+
+        def includesMatchingId = it?.included.find { it.id == relationshipsAccessTypeDataId && it.type == "accessTypes"  }
+        accessStatusType = includesMatchingId?.attributes?.name
+
+        if (accessStatusType) {
+          map.accessStatusType = accessStatusType
+        }
+      }
+
+      // Merge external coverages.
+      final boolean isPackage = theType?.toLowerCase() == 'package'
+
+      log.debug "${isPackage ? 'Is' : 'Is not'} Package"
+      outerEntitlement.metaClass.external_customCoverage = false
+
+      def custCoverage = it.data?.attributes?.getAt("customCoverage${isPackage ? '' : 's'}")
+      log.debug "Custom Coverage: ${custCoverage}"
+
+      // Set coverage as empty array initially
+      def coverageToApply = []
+      if (custCoverage) {
+        log.debug "Found custom coverage."
+        // Simply ensure a collection.
+        if (!(custCoverage instanceof Collection)) {
+          log.debug "Found single custom coverage entry turn into a collection."
+          custCoverage = [custCoverage]
+          log.debug "...${custCoverage}"
+        }
+
+        custCoverage.each { Map <String, String> coverageEntry ->
+          if (coverageEntry.beginCoverage) {
+            coverageToApply << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
+            outerEntitlement.external_customCoverage = true
+          }
+        }
+
+        // Apply all coverages to metaClass at the end
+        outerEntitlement.metaClass.coverage = coverageToApply
+
+      } else if (!isPackage) {
+        log.debug "Adding managed title coverages."
+        it.data?.attributes?.managedCoverages?.each { Map <String, String> coverageEntry ->
+          if (coverageEntry.beginCoverage) {
+            coverageToApply << new HoldingsCoverage (startDate: LocalDate.parse(coverageEntry.beginCoverage), endDate: coverageEntry.endCoverage ? LocalDate.parse(coverageEntry.endCoverage): null)
+          }
+        }
+
+        // Apply all coverages to metaClass at the end
+        outerEntitlement.metaClass.coverage = coverageToApply
+      }
+
+      map
+    }
+  )
   String reference
   Set<Tag> tags = []
 
@@ -311,30 +305,26 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
   ]
 
   Set<HoldingsCoverage> coverage = []
-  
+
   static mappedBy = [
     coverage: 'entitlement',
     poLines: 'owner'
   ]
-  
+
   // We should use a beforeValidate handler to set related values.
   def beforeValidate() {
     this.type = this.type?.toLowerCase()
     this.authority = this.authority?.toUpperCase()
-    
-    /* 
+
+    /*
      * Type 'internal' can be explicitly sent, or implicitly defined as no type being sent.
      * Either way we want to remove any coverage before attempting to validate.
      */
     if (this.type != 'internal' && this.type != null) {
-      log.info("DOING THE LOOKUP CONVERTER2")
-      log.info("authority found: {}", this.authority)
-
       // Clear the coverage.
       this.coverage?.clear()
     }
   }
-  
 
   // Allow users to individually switch on or off this content item. If null, should default to the agreement
   // enabled setting. The activeFrom and activeTo dates determine if a content item is "live" or not. This flag
@@ -362,7 +352,7 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
           description column: 'ent_description'
           dateCreated column: 'ent_date_created'
           lastUpdated column: 'ent_last_updated'
-//          resourceName column: 'ent_resource_name'
+          resourceName column: 'ent_resource_name'
     poLines cascade: 'all-delete-orphan'
             coverage cascade: 'all-delete-orphan'
                 tags cascade: 'save-update'
@@ -400,7 +390,7 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
                 break;
             }
           })
-          
+
           coverage (validator: HoldingsCoverage.STATEMENT_COLLECTION_VALIDATOR, sort:'startDate')
 
                      type(nullable:true, blank:false)
@@ -415,7 +405,8 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
            contentUpdated(nullable:true, blank:false)
                activeFrom(nullable:true, blank:false)
                  activeTo(nullable:true, blank:false)
-          
+          resourceName(nullable: true)
+
          authority(nullable:true, blank:false, validator: { val, inst ->
             switch (inst.type?.toLowerCase()) {
               case 'external':
@@ -432,7 +423,7 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
                 break;
             }
           })
-         
+
          reference (nullable:true, blank:false, validator: { val, inst ->
             switch (inst.type?.toLowerCase()) {
               case 'external':
@@ -450,12 +441,12 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
             }
           })
   }
-  
+
   @Transient
   public String getExplanation() {
-    
+
     String result = null
-    
+
     if (resource) {
       // Get the class using the hibernate helper so we can
       // be sure we have the target class and not a proxy wrapper.
@@ -481,7 +472,7 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
   }
 
   /**
-   * If activeFrom <= date <= activeTo 
+   * If activeFrom <= date <= activeTo
    */
   public boolean haveAccessAsAt(LocalDate point_in_time) {
     boolean result = false;
@@ -500,5 +491,5 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
     }
     return result;
   }
- 
+
 }

@@ -4,6 +4,7 @@ import grails.testing.mixin.integration.Integration
 import org.olf.BaseSpec
 import org.olf.erm.SubscriptionAgreement
 import spock.lang.Ignore
+import spock.lang.Shared
 import spock.lang.Stepwise
 
 import java.time.LocalDate
@@ -12,6 +13,9 @@ import java.time.format.DateTimeFormatter
 @Stepwise
 @Integration
 class EntitlementSpec extends BaseSpec  {
+
+  String gokbAuthorityName = "GOKB-RESOURCE"
+  String gokbReference = "packageUuid:titleUuid"
 
   @Ignore
   Map createAgreement(String name="test_agreement") {
@@ -54,7 +58,8 @@ class EntitlementSpec extends BaseSpec  {
         [
           'type' : 'external' ,
           'reference' : reference ,
-          'authority' : authority
+          'authority' : authority,
+          'resourceName': authority == gokbAuthorityName ? "test resource" : null
         ]
       ],
       periods: [
@@ -66,22 +71,16 @@ class EntitlementSpec extends BaseSpec  {
       agreementStatus: "active"
     ]
 
-    return doPost("/erm/sas?fetchExternalResources=false", payload) as Map
+    return doPost("/erm/sas", payload) as Map
   }
 
   void setupDataForTest() {
     importPackageFromFileViaService('hierarchicalDeletion/simple_deletion_1.json')
   }
 
-  void "No resources present in request body" () {
-    setup:
-//    setupDataForTest()
-    log.info("In setup")
-
+  void "Should not have a referenceObject if authority is gokb-resource" () {
     when:
-    Map postResponse = postExternalEntitlement("test_agreement", 'EKB-PACKAGE', "package_ref")
-    postExternalEntitlement("test_agreement2", 'EKB-TITLE', 'acde070d-8c4c-4f0d-9d8a-162843c10333:acde070d-8c4c-4f0d-9d8a-162843c10333')
-    postExternalEntitlementNoAg("cd452f37-fef2-4e59-b052-628050085f73", 'EKB-PACKAGE', "package_ref")
+    Map postResponse = postExternalEntitlement("test_agreement", gokbAuthorityName, gokbReference)
 
     then:
     List entitlementsList = doGet("/erm/entitlements")
@@ -90,18 +89,29 @@ class EntitlementSpec extends BaseSpec  {
     entitlementsList.each{entitlement -> log.info(entitlement.reference)}
     entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
 
-      try{
-        def refObject = theEntitlement.reference_object
-        log.info("ref object found: {}", refObject)
-    } catch (Exception e) {
-        log.error("Caught exception while accessing reference_object!", e)
-      }
-
-
     log.info(theEntitlement.reference);
     assert theEntitlement.reference == "package_ref"
-    assert theEntitlement.authority == "EKB-PACKAGE"
+    assert theEntitlement.authority == gokbAuthorityName
+    assert theEntitlement.reference_object == null
+    assert theEntitlement.resourceName == "test resource"
+  }
 
+  void "Should have a referenceObject if authority is NOT gokb-resource" () {
+    when:
+    postExternalEntitlement("test_agreement2", 'EKB-TITLE', gokbReference)
+
+    then:
+    List entitlementsList = doGet("/erm/entitlements")
+
+    def theEntitlement = entitlementsList[1]
+    entitlementsList.each{entitlement -> log.info(entitlement.reference)}
+    entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
+
+    log.info(theEntitlement.reference);
+    assert theEntitlement.reference == gokbReference
+    assert theEntitlement.authority == "EKB-TITLE"
+    assert theEntitlement.reference_object != null
+    assert theEntitlement.resourceName == null
   }
 
 }
