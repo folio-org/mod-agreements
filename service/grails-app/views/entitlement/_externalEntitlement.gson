@@ -24,18 +24,12 @@ def remoteObjValue
 
 if((params.fetchExternalResources != 'false' && entitlement.respondsTo(objectProperty))){
       try {
-    System.out.println("PRINTING AUTHORITY")
-      System.out.println(entitlement.getAuthority())
-    System.out.println(entitlement.getAuthority().toLowerCase())
-    System.out.println(entitlement.getAuthority()?.toLowerCase() == "gokb-resource")
       if (entitlement.getAuthority()?.toLowerCase() != "gokb-resource") {
-       System.out.println("Making fetch")
-            System.out.println(entitlement.getAuthority())
         remoteObjValue = entitlement.invokeMethod(objectProperty, null)
         if (remoteObjValue instanceof Future) {
           remoteObjValue = (remoteObjValue as Future)?.get()
         }
-        }
+      }
   } catch (ExecutionException e) {
     
     if (e.cause instanceof HttpException) {
