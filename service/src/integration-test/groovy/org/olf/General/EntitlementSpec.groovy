@@ -1,7 +1,9 @@
 package org.olf.General
 
 import grails.testing.mixin.integration.Integration
+import jakarta.inject.Inject
 import org.olf.BaseSpec
+import org.olf.EntitlementService
 import org.olf.erm.SubscriptionAgreement
 import spock.lang.Ignore
 import spock.lang.Shared
@@ -14,6 +16,8 @@ import java.time.format.DateTimeFormatter
 @Integration
 class EntitlementSpec extends BaseSpec  {
 
+  @Inject
+  EntitlementService entitlementService;
   String gokbAuthorityName = "GOKB-RESOURCE"
   String gokbReference = "packageUuid:titleUuid"
 
@@ -90,7 +94,7 @@ class EntitlementSpec extends BaseSpec  {
     entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
 
     log.info(theEntitlement.reference);
-    assert theEntitlement.reference == "package_ref"
+    assert theEntitlement.reference == gokbReference
     assert theEntitlement.authority == gokbAuthorityName
     assert theEntitlement.reference_object == null
     assert theEntitlement.resourceName == "test resource"
@@ -112,6 +116,18 @@ class EntitlementSpec extends BaseSpec  {
     assert theEntitlement.authority == "EKB-TITLE"
     assert theEntitlement.reference_object != null
     assert theEntitlement.resourceName == null
+  }
+
+  void "EntitlementService can find entitlements with gokb authorities" () {
+    when:
+    def entitlementsFound;
+    withTenant {
+      entitlementsFound = entitlementService.findEntitlementsByAuthority(gokbAuthorityName)
+    }
+
+    then:
+    assert entitlementsFound != null;
+    assert entitlementsFound.size() == 1;
   }
 
 }

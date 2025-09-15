@@ -1,0 +1,8 @@
+import org.olf.general.jobs.GokbResourceEntitlementJob
+
+import groovy.transform.Field
+
+@Field
+GokbResourceEntitlementJob gokbResourceEntitlementJob
+
+json tmpl."/persistentJob/persistentJob" (persistentJob: gokbResourceEntitlementJob)
