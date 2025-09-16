@@ -74,6 +74,7 @@ public class EntitlementService {
           WHERE ent.authority = :authorityName""".toString(), [authorityName: authority]) as List<Entitlement>
   }
 
+  @Transactional
   void processExternalEntitlements() {
     findEntitlementsByAuthority("GOKB-RESOURCE").forEach{Entitlement entitlement ->
       {
@@ -106,17 +107,24 @@ public class EntitlementService {
 
         if (packageInLocalKb && packageInLocalKb.getSyncContentsFromSource()) {
           // If we find the PCI via the TI that exists in the Entitlement reference (packageUuid:titleUuid)
+          // The TI isn't necessarily directly related to a PCI, so find the work then use this ID to find the PCI.
           PackageContentItem pciInLocalKb = PackageContentItem.executeQuery("""
-          SELECT id FROM PackageContentItem AS pci
-          WHERE pci.pti.titleInstance.id = :resId""".toString(), [resId: titleInstanceInLocalKb.id]) as PackageContentItem
+          SELECT pci FROM PackageContentItem AS pci
+          WHERE pci.pti.titleInstance.work.id = :workId""".toString(), [workId: titleInstanceInLocalKb.work.id])[0] as PackageContentItem
+          // TODO: Could this search return more than one PCI?
 
+          log.info("ti ID used in search: {}", titleInstanceInLocalKb.id)
           if (pciInLocalKb) {
-            entitlement.reference = null;
+            log.info("PCI found: {}", pciInLocalKb)
+            entitlement.setReference(null);
             entitlement.authority = null;
-            entitlement.type = "Internal";
+            entitlement.type = "internal";
             entitlement.resource = pciInLocalKb;
             entitlement.resourceName = null;
+            log.info(entitlement.reference)
             entitlement.save(failOnError:true);
+          } else {
+            log.info("No PCI found")
           }
           // TODO: What will happen if we've found the package in the localKB, but not the Title/PCI?
         }
