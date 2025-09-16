@@ -5,6 +5,8 @@ import jakarta.inject.Inject
 import org.olf.BaseSpec
 import org.olf.EntitlementService
 import org.olf.erm.SubscriptionAgreement
+import org.olf.kb.PackageContentItem
+import org.olf.kb.Pkg
 import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Stepwise
@@ -130,4 +132,24 @@ class EntitlementSpec extends BaseSpec  {
     assert entitlementsFound.size() == 1;
   }
 
+  void "An entitlement that has a gokb authority for a package that is not yet set to sync, sets it to sync." () {
+    setup:
+    importPackageFromFileViaService('entitlementSpec/pkgSyncFalse.json')  // K-Int Test Package 001
+    List packageList = doGet("/erm/packages")
+    packageList.each{resource -> log.info(resource.toString())}
+    Pkg originalPkg = (Pkg) packageList.get(0)
+
+    when:
+    log.info("Processing external entitlements")
+    withTenant {
+      entitlementService.processExternalEntitlements()
+    }
+
+    then:
+    List updatedPackageList = doGet("/erm/packages")
+    Pkg updatedPkg = (Pkg) updatedPackageList.get(0)
+    updatedPackageList.each{resource -> log.info(resource.toString())}
+    assert originalPkg.syncContentsFromSource == false
+    assert updatedPkg.syncContentsFromSource == true
+  }
 }

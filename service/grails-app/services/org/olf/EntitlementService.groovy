@@ -23,7 +23,10 @@ import grails.gorm.transactions.Transactional
 @Slf4j
 @CompileStatic
 public class EntitlementService {
+
   ErmResourceService ermResourceService
+  PackageSyncService packageSyncService
+
   private final static String PCI_HQL = """
     SELECT id FROM PackageContentItem AS pci
     WHERE pci.pti.id = :resId
@@ -72,30 +75,56 @@ public class EntitlementService {
   }
 
   void processExternalEntitlements() {
-    findEntitlementsByAuthority("GOKB-RESOURCE").forEach{Entitlement entitlement -> {
-      String packageId = entitlement.getReference().split(":")[0]
-      String titleId = entitlement.getReference().split(":")[1]
+    findEntitlementsByAuthority("GOKB-RESOURCE").forEach{Entitlement entitlement ->
+      {
+        log.info("Entitlement found: {} {}", entitlement.authority, entitlement.reference)
+        String packageGokbId = entitlement.getReference().split(":")[0]
+        String titleGokbId = entitlement.getReference().split(":")[1]
 
-//      ErmTitleList packageInLocalKb = ErmTitleList.findById(packageId) as ErmTitleList
-      Pkg packageInLocalKb = Pkg.executeQuery("""
-          SELECT id FROM Pkg AS pkg
-          WHERE pkg.id = :resId""".toString(), [resId: packageId]) as Pkg
+        log.info("{}", packageGokbId)
+        log.info("{}", titleGokbId)
 
-      if (packageInLocalKb && packageInLocalKb.getSyncContentsFromSource()) {
-        // If we find the PCI via the TI that exists in the Entitlement reference (packageUuid:titleUuid)
-        PackageContentItem pciInLocalKb = PackageContentItem.executeQuery("""
-          SELECT id FROM PackageContentItem AS pci
-          WHERE pci.pti.titleInstance.id = :resId""".toString(), [resId: titleId]) as PackageContentItem
+        Pkg packageInLocalKb = (Pkg) Pkg.executeQuery("""
+          SELECT p FROM Pkg p
+          WHERE p.id IN (
+          SELECT io.resource.id FROM IdentifierOccurrence io
+          WHERE io.identifier.value = :resId
+          AND io.identifier.ns.value = 'gokb_uuid')""".toString(), [resId: packageGokbId])[0]
 
-        if (pciInLocalKb) {
-          entitlement.reference = null;
-          entitlement.authority = null;
-          entitlement.type = "Internal";
-          entitlement.resource = pciInLocalKb;
-          entitlement.resourceName = null;
+        TitleInstance titleInstanceInLocalKb = (TitleInstance) TitleInstance.executeQuery("""
+         SELECT ti FROM TitleInstance ti
+          WHERE ti.id IN ( SELECT io.resource.id FROM IdentifierOccurrence io
+          WHERE io.identifier.value = :resId
+          AND io.identifier.ns.value = 'gokb_uuid')""".toString(), [resId: titleGokbId])[0]
+
+        log.info("{}", packageInLocalKb)
+        log.info("{}", titleInstanceInLocalKb)
+
+        if (!packageInLocalKb) {
+          log.debug("Package {} containing title {} for Entitlement {} not found.", packageGokbId, titleGokbId, entitlement.id)
         }
-      }
-    }}
+
+        if (packageInLocalKb && packageInLocalKb.getSyncContentsFromSource()) {
+          // If we find the PCI via the TI that exists in the Entitlement reference (packageUuid:titleUuid)
+          PackageContentItem pciInLocalKb = PackageContentItem.executeQuery("""
+          SELECT id FROM PackageContentItem AS pci
+          WHERE pci.pti.titleInstance.id = :resId""".toString(), [resId: titleInstanceInLocalKb.id]) as PackageContentItem
+
+          if (pciInLocalKb) {
+            entitlement.reference = null;
+            entitlement.authority = null;
+            entitlement.type = "Internal";
+            entitlement.resource = pciInLocalKb;
+            entitlement.resourceName = null;
+            entitlement.save(failOnError:true);
+          }
+          // TODO: What will happen if we've found the package in the localKB, but not the Title/PCI?
+        }
+
+        if (packageInLocalKb && !packageInLocalKb.getSyncContentsFromSource()) {
+          packageSyncService.controlSyncStatus([packageInLocalKb.id], true)
+        }
+      }}
   }
 }
 
