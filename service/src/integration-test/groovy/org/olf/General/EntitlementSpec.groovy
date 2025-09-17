@@ -156,7 +156,7 @@ class EntitlementSpec extends BaseSpec  {
     assert updatedPkg.syncContentsFromSource == true
   }
 
-  void "An entitlement that has a gokb authority for a package that has sync set to true should be updated." () {
+  void "An entitlement that has a gokb authority for a package that has sync set to true should be updated to internal." () {
     setup:
     importPackageFromFileViaService('entitlementSpec/pkgSyncTrue.json')  // K-Int Test Package 001
     List packageList = doGet("/erm/packages")

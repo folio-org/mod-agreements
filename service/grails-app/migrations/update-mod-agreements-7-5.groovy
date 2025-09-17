@@ -10,7 +10,6 @@ databaseChangeLog = {
       column(name: "id", type: "VARCHAR(255)") {
         constraints(nullable: "false")
       }
-      column(name: "package_id", type: "VARCHAR(36)")
     }
   }
 }
