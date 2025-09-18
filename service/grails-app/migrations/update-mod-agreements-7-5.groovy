@@ -11,5 +11,11 @@ databaseChangeLog = {
         constraints(nullable: "false")
       }
     }
+
+    addPrimaryKey(
+      columnNames: "id",
+      constraintName: "gokb_resource_entitlement_jobPK",
+      tableName: "gokb_resource_entitlement_job"
+    )
   }
 }

@@ -405,7 +405,7 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
            contentUpdated(nullable:true, blank:false)
                activeFrom(nullable:true, blank:false)
                  activeTo(nullable:true, blank:false)
-          resourceName(nullable: true)
+               resourceName(nullable: true, blank:false)
 
          authority(nullable:true, blank:false, validator: { val, inst ->
             switch (inst.type?.toLowerCase()) {
