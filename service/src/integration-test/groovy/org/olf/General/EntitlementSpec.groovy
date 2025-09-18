@@ -89,107 +89,103 @@ class EntitlementSpec extends BaseSpec  {
 
   void "Should not have a referenceObject if authority is gokb-resource" () {
     when:
-    Map postResponse = postExternalEntitlement("test_agreement", gokbAuthorityName, gokbReference, 'testEntitlement')
+      Map postResponse = postExternalEntitlement("test_agreement", gokbAuthorityName, gokbReference, 'testEntitlement')
 
     then:
-    List entitlementsList = doGet("/erm/entitlements")
+      List entitlementsList = doGet("/erm/entitlements")
 
-    def theEntitlement = entitlementsList[0] // Get the first (and only) item
-    entitlementsList.each{entitlement -> log.info(entitlement.reference)}
-    entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
+      def theEntitlement = entitlementsList[0] // Get the first (and only) item
+      entitlementsList.each{entitlement -> log.info(entitlement.reference)}
+      entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
 
-    log.info(theEntitlement.reference);
-    assert theEntitlement.reference == gokbReference
-    assert theEntitlement.authority == gokbAuthorityName
-    assert theEntitlement.reference_object == null
-    assert theEntitlement.resourceName == "test resource"
+      assert theEntitlement.reference == gokbReference
+      assert theEntitlement.authority == gokbAuthorityName
+      assert theEntitlement.reference_object == null
+      assert theEntitlement.resourceName == "test resource"
   }
 
   void "Should have a referenceObject if authority is NOT gokb-resource" () {
     when:
-    postExternalEntitlement("test_agreement2", 'EKB-TITLE', gokbReference, 'titleRef')
+      postExternalEntitlement("test_agreement2", 'EKB-TITLE', gokbReference, 'titleRef')
 
     then:
-    List entitlementsList = doGet("/erm/entitlements")
+      List entitlementsList = doGet("/erm/entitlements")
 
-    def theEntitlement = entitlementsList[1]
-    entitlementsList.each{entitlement -> log.info(entitlement.reference)}
-    entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
+      def theEntitlement = entitlementsList[1]
+      entitlementsList.each{entitlement -> log.info(entitlement.reference)}
+      entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
 
-    log.info(theEntitlement.reference);
-    assert theEntitlement.reference == gokbReference
-    assert theEntitlement.authority == "EKB-TITLE"
-    assert theEntitlement.reference_object != null
-    assert theEntitlement.resourceName == null
+      assert theEntitlement.reference == gokbReference
+      assert theEntitlement.authority == "EKB-TITLE"
+      assert theEntitlement.reference_object != null
+      assert theEntitlement.resourceName == null
   }
 
   void "EntitlementService can find entitlements with gokb authorities" () {
     when:
     def entitlementsFound;
-    withTenant {
-      entitlementsFound = entitlementService.findEntitlementsByAuthority(gokbAuthorityName)
-    }
+      withTenant {
+        entitlementsFound = entitlementService.findEntitlementsByAuthority(gokbAuthorityName)
+      }
 
     then:
-    assert entitlementsFound != null;
-    assert entitlementsFound.size() == 1;
+      assert entitlementsFound != null;
+      assert entitlementsFound.size() == 1;
   }
 
   void "An entitlement that has a gokb authority for a package that is not yet set to sync, sets it to sync." () {
     setup:
-    importPackageFromFileViaService('entitlementSpec/pkgSyncFalse.json')  // K-Int Test Package 001
-    List packageList = doGet("/erm/packages")
-    packageList.each{resource -> log.info(resource.toString())}
-    Pkg originalPkg = (Pkg) packageList.stream().filter(item -> item.name == "Sync False Test Package").collect(Collectors.toList())[0]
+      importPackageFromFileViaService('entitlementSpec/pkgSyncFalse.json')  // K-Int Test Package 001
+      List packageList = doGet("/erm/packages")
+      packageList.each{resource -> log.info(resource.toString())}
+      Pkg originalPkg = (Pkg) packageList.stream().filter(item -> item.name == "Sync False Test Package").collect(Collectors.toList())[0]
 
     when:
-    log.info("Processing external entitlements")
-    withTenant {
-      entitlementService.processExternalEntitlements()
-    }
+      withTenant {
+        entitlementService.processExternalEntitlements()
+      }
 
     then:
-    List updatedPackageList = doGet("/erm/packages")
-    Pkg updatedPkg = (Pkg) updatedPackageList.stream().filter(item -> item.name == "Sync False Test Package").collect(Collectors.toList())[0]
-    updatedPackageList.each{resource -> log.info(resource.toString())}
-    assert originalPkg.syncContentsFromSource == false
-    assert updatedPkg.syncContentsFromSource == true
+      List updatedPackageList = doGet("/erm/packages")
+      Pkg updatedPkg = (Pkg) updatedPackageList.stream().filter(item -> item.name == "Sync False Test Package").collect(Collectors.toList())[0]
+
+      assert originalPkg.syncContentsFromSource == false
+      assert updatedPkg.syncContentsFromSource == true
   }
 
   void "An entitlement that has a gokb authority for a package that has sync set to true should be updated to internal." () {
     setup:
-    importPackageFromFileViaService('entitlementSpec/pkgSyncTrue.json')  // K-Int Test Package 001
-    List packageList = doGet("/erm/packages")
-    packageList.each{resource -> log.info(resource.toString())}
-    Pkg originalPkg = (Pkg) packageList.stream().filter(item -> item.name == "Sync True Test Package").collect(Collectors.toList())[0]
-    List entitlementsList = doGet("/erm/entitlements")
-    Entitlement entitlement = (Entitlement) entitlementsList.stream().filter(item -> item.description == "testEntitlement").collect(Collectors.toList())[0]
+      importPackageFromFileViaService('entitlementSpec/pkgSyncTrue.json')  // K-Int Test Package 001
+      List packageList = doGet("/erm/packages")
+
+      Pkg originalPkg = (Pkg) packageList.stream().filter(item -> item.name == "Sync True Test Package").collect(Collectors.toList())[0]
+      List entitlementsList = doGet("/erm/entitlements")
+      Entitlement entitlement = (Entitlement) entitlementsList.stream().filter(item -> item.description == "testEntitlement").collect(Collectors.toList())[0]
 
     when:
-    log.info("Processing external entitlements")
-    withTenant {
-      entitlementService.processExternalEntitlements()
-    }
+      withTenant {
+        entitlementService.processExternalEntitlements()
+      }
 
     then:
-    List updatedPackageList = doGet("/erm/packages")
-    Pkg updatedPkg = (Pkg) updatedPackageList.stream().filter(item -> item.name == "Sync True Test Package").collect(Collectors.toList())[0]
-    updatedPackageList.each{resource -> log.info(resource.toString())}
+      List updatedPackageList = doGet("/erm/packages")
+      Pkg updatedPkg = (Pkg) updatedPackageList.stream().filter(item -> item.name == "Sync True Test Package").collect(Collectors.toList())[0]
+      updatedPackageList.each{resource -> log.info(resource.toString())}
 
-    // The update should set most properties on the entitlement to null, so we find it using the description for this test.
-    List updatedEntitlementList = doGet("/erm/entitlements")
-    Entitlement updatedEntitlement = (Entitlement) updatedEntitlementList.stream().filter(item -> item.description == "testEntitlement").collect(Collectors.toList())[0]
+      // The update should set most properties on the entitlement to null, so we find it using the description for this test.
+      List updatedEntitlementList = doGet("/erm/entitlements")
+      Entitlement updatedEntitlement = (Entitlement) updatedEntitlementList.stream().filter(item -> item.description == "testEntitlement").collect(Collectors.toList())[0]
 
-    List pcisList = doGet("/erm/pci")
-    PackageContentItem pci = (PackageContentItem) pcisList.stream().filter(item -> item.pkg.name == "Sync True Test Package").collect(Collectors.toList())[0]
+      List pcisList = doGet("/erm/pci")
+      PackageContentItem pci = (PackageContentItem) pcisList.stream().filter(item -> item.pkg.name == "Sync True Test Package").collect(Collectors.toList())[0]
 
-    assert entitlement.reference == "packageUuid:titleUuid"
-    assert updatedEntitlement.reference == null
-    assert updatedEntitlement.authority == null
-    assert updatedEntitlement.type == "internal"
-    assert updatedEntitlement.resourceName == null
-    assert updatedEntitlement.resource
-    assert updatedEntitlement.resource.id == pci.id
+      assert entitlement.reference == "packageUuid:titleUuid"
+      assert updatedEntitlement.reference == null
+      assert updatedEntitlement.authority == null
+      assert updatedEntitlement.type == "internal"
+      assert updatedEntitlement.resourceName == null
+      assert updatedEntitlement.resource
+      assert updatedEntitlement.resource.id == pci.id
   }
 
 
