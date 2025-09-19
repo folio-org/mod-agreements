@@ -23,7 +23,8 @@ class EntitlementSpec extends BaseSpec  {
   @Inject
   EntitlementService entitlementService;
   String gokbAuthorityName = "GOKB-RESOURCE"
-  String gokbReference = "packageUuid:titleUuid"
+  // packageUuid:titleUuid
+  String gokbReference = "26929514-237c-11ed-861d-0242ac120002:26929514-237c-11ed-861d-0242ac120001"
 
   @Ignore
   Map createAgreement(String name="test_agreement") {
@@ -66,7 +67,7 @@ class EntitlementSpec extends BaseSpec  {
         [
           'type' : 'external' ,
           'reference' : reference ,
-          'authority' : authority,
+          'authority' : 'ekb-title',
           'resourceName': authority == gokbAuthorityName ? "test resource" : null,
           'description': description
         ]
@@ -179,7 +180,7 @@ class EntitlementSpec extends BaseSpec  {
       List pcisList = doGet("/erm/pci")
       PackageContentItem pci = (PackageContentItem) pcisList.stream().filter(item -> item.pkg.name == "Sync True Test Package").collect(Collectors.toList())[0]
 
-      assert entitlement.reference == "packageUuid:titleUuid"
+      assert entitlement.reference == "26929514-237c-11ed-861d-0242ac120002:26929514-237c-11ed-861d-0242ac120001"
       assert updatedEntitlement.reference == null
       assert updatedEntitlement.authority == null
       assert updatedEntitlement.type == "internal"

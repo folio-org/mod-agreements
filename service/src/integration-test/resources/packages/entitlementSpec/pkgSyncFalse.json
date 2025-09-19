@@ -30,7 +30,7 @@
     },
       {
         "namespace": "gokb_uuid",
-        "value": "titleUuid"
+        "value": "26929514-237c-11ed-861d-0242ac120001"
       }],
     "coverage": [
       {
@@ -62,7 +62,7 @@
   "identifiers": [
     {
       "namespace": "gokb_uuid",
-      "value": "packageUuid"
+      "value": "26929514-237c-11ed-861d-0242ac120002"
     },
     {
       "namespace": "gokb_id",

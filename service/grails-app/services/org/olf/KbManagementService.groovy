@@ -2,7 +2,7 @@ package org.olf
 
 import com.k_int.okapi.OkapiTenantAdminService
 import org.olf.dataimport.internal.KBManagementBean
-import org.olf.general.jobs.GokbResourceEntitlementJob
+import org.olf.general.jobs.ExternalEntitlementSyncJob
 import org.olf.general.jobs.PackageIngestJob
 import org.olf.general.jobs.TitleIngestJob
 import org.olf.kb.metadata.ResourceIngressType
@@ -22,6 +22,7 @@ class KbManagementService {
   // This service used to hold MatchKey related methods, but is now empty.
   KBManagementBean kbManagementBean
   OkapiTenantAdminService okapiTenantAdminService
+  EntitlementService entitlementService
 
   @Scheduled(fixedDelay = 3600000L, initialDelay = 60000L)
   @CompileStatic(SKIP)
@@ -34,32 +35,34 @@ class KbManagementService {
         Tenants.withId(tenant_schema_id) {
           if (ingressType == ResourceIngressType.HARVEST) {
 
+            if (entitlementService.findEntitlementsByAuthority("GOKB-RESOURCE") == null || entitlementService.findEntitlementsByAuthority("GOKB-RESOURCE")?.size() == 0) {
+              // If we can't find any entitlements for external resources, we can skip job creation.
+              return;
+            }
+
             // Look for packageIngest job in progress
             PackageIngestJob packageJob = PackageIngestJob.findByStatusInList([
-              PackageIngestJob.lookupStatus('In progress')
+              PackageIngestJob.lookupStatus('in_progress')
             ])
 
             // Look for title job in progress
-            TitleIngestJob titleJob = TitleIngestJob.executeQuery("""
-          SELECT tj FROM TitleIngestJob AS tj
-            WHERE (
-              (tj.status.value = 'in_progress')
-            )
-        """.toString())[0]
+            TitleIngestJob titleJob = TitleIngestJob.findByStatusInList([
+              TitleIngestJob.lookupStatus('in_progress')
+            ])
 
             if (!packageJob && !titleJob) {
               // If neither harvest ingest job is in progress, run the entitlement job
-              log.info("Starting external gokb entitlement sync job.")
-              GokbResourceEntitlementJob job = new GokbResourceEntitlementJob(['name': 'GokbResourceEntitlementJob'])
+              log.info("Starting external entitlement sync job.")
+              ExternalEntitlementSyncJob job = new ExternalEntitlementSyncJob(['name': 'ExternalEntitlementSyncJob'])
               job.setStatusFromString('Queued')
               job.save(failOnError: true, flush: true)
             } else {
-              log.info("Title {} or package {} ingest jobs found, skipping gokb entitlement sync job.", titleJob?.id?.toString(), packageJob?.id?.toString())
+              log.info("Title {} or package {} ingest jobs found, skipping job creation.", titleJob?.id?.toString(), packageJob?.id?.toString())
             }
           } else {
             // If Ingress Type != HARVEST i.e. we're using PushKB
-            log.info("Starting external gokb entitlement sync job.")
-            GokbResourceEntitlementJob job = new GokbResourceEntitlementJob(['name': 'GokbResourceEntitlementJob'])
+            log.info("Starting external entitlement sync job.")
+            ExternalEntitlementSyncJob job = new ExternalEntitlementSyncJob(['name': 'ExternalEntitlementSyncJob'])
             job.setStatusFromString('Queued')
             job.save(failOnError: true, flush: true)
           }

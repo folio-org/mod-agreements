@@ -21,16 +21,16 @@
     "instanceMedium": "electronic",
     "instanceMedia": "journal",
     "instanceIdentifiers": [{
-      "namespace": "eissn",
-      "value": "2212-6988"
+      "namespace": "gokb_uuid",
+      "value": "26929514-237c-11ed-861d-0242ac120001"
     }],
     "siblingInstanceIdentifiers": [{
       "namespace": "issn",
       "value": "2212-697X"
     },
       {
-        "namespace": "gokb_uuid",
-        "value": "titleUuid"
+        "namespace": "eissn",
+        "value": "2212-6988"
       }],
     "coverage": [
       {
@@ -62,7 +62,7 @@
   "identifiers": [
     {
       "namespace": "gokb_uuid",
-      "value": "packageUuid"
+      "value": "26929514-237c-11ed-861d-0242ac120002"
     },
     {
       "namespace": "gokb_id",

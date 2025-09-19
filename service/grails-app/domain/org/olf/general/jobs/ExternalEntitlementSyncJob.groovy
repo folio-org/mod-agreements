@@ -2,7 +2,7 @@ package org.olf.general.jobs
 
 import grails.gorm.MultiTenant
 
-class GokbResourceEntitlementJob extends PersistentJob implements MultiTenant<GokbResourceEntitlementJob>{
+class ExternalEntitlementSyncJob extends PersistentJob implements MultiTenant<ExternalEntitlementSyncJob>{
 
   final Closure getWork() {
     final Closure theWork = { final String jobId, final String tenantId ->
@@ -14,7 +14,7 @@ class GokbResourceEntitlementJob extends PersistentJob implements MultiTenant<Go
 
 
   static mapping = {
-    table 'gokb_resource_entitlement_job'
+    table 'external_entitlement_sync_job'
     version false
   }
 }
