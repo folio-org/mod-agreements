@@ -248,5 +248,7 @@ class UrlMappings {
         "/namespaces"(controller: 'identifier', action: 'namespaces', method: 'GET')
       }
     }
+
+    "/erm/search"(controller: 'elasticSearch', action: 'test', method: 'GET')
   }
 }

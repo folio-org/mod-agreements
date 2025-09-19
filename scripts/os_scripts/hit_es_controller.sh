@@ -1,0 +1,1 @@
+ curl http://localhost:8080/erm/search -H 'X-Okapi-Tenant: test1' -H 'Content-Type: application/json'
