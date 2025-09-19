@@ -78,3 +78,4 @@ services:
     environment:
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=OpenSearch_P4ssw0rd
       - discovery.type=single-node
+      - "DISABLE_SECURITY_PLUGIN=true" # We want to be able to hit http://localhost:9200 for testing, not https:// and needing a cert

@@ -184,6 +184,8 @@ management:
         enabled: true
      defaults:
         enabled: false
+     elasticsearch:
+        enabled: true
 
 okapi:
   linkListener:
@@ -211,6 +213,9 @@ endpoints:
   include-stack-trace: false
 
 concurrentJobsGlobal: "${CONCURRENT_JOBS_GLOBAL:3}"
+
+elasticsearch:
+  httpHosts: http://localhost:9200
 
 # Environment specific overrides.
 environments:
