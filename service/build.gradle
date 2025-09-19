@@ -213,6 +213,11 @@ dependencies {
   // ElasticSearch -- use micronaut integration to ready for any future MN rewrite
   // https://mvnrepository.com/artifact/io.micronaut.elasticsearch/micronaut-elasticsearch
   implementation 'io.micronaut.elasticsearch:micronaut-elasticsearch:4.4.0'
+  implementation("jakarta.json:jakarta.json-api:2.1.3") // Needed by micronaut-elasticsearch
+
+  implementation 'org.opensearch.client:opensearch-java:2.26.0' // FIXME Probably use this instead -- will need some common interface though
+  implementation 'org.opensearch.client:opensearch-rest-client:2.19.3'
+
 }
 /* 
 application {
