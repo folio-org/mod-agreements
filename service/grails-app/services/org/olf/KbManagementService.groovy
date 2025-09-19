@@ -1,9 +1,11 @@
 package org.olf
 
 import com.k_int.okapi.OkapiTenantAdminService
+import com.k_int.web.toolkit.refdata.RefdataValue
 import org.olf.dataimport.internal.KBManagementBean
 import org.olf.general.jobs.ExternalEntitlementSyncJob
 import org.olf.general.jobs.PackageIngestJob
+import org.olf.general.jobs.PersistentJob
 import org.olf.general.jobs.TitleIngestJob
 import org.olf.kb.metadata.ResourceIngressType
 import static groovy.transform.TypeCheckingMode.SKIP
@@ -40,14 +42,15 @@ class KbManagementService {
               return;
             }
 
-            // Look for packageIngest job in progress
+            // Fetch in-progress persistent jobs
+            RefdataValue inProgressJobs = PersistentJob.lookupStatus('in_progress')
+
             PackageIngestJob packageJob = PackageIngestJob.findByStatusInList([
-              PackageIngestJob.lookupStatus('in_progress')
+              inProgressJobs
             ])
 
-            // Look for title job in progress
             TitleIngestJob titleJob = TitleIngestJob.findByStatusInList([
-              TitleIngestJob.lookupStatus('in_progress')
+              inProgressJobs
             ])
 
             if (!packageJob && !titleJob) {

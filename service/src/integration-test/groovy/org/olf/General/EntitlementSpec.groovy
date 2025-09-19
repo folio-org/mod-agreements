@@ -67,7 +67,7 @@ class EntitlementSpec extends BaseSpec  {
         [
           'type' : 'external' ,
           'reference' : reference ,
-          'authority' : 'ekb-title',
+          'authority' : authority,
           'resourceName': authority == gokbAuthorityName ? "test resource" : null,
           'description': description
         ]
