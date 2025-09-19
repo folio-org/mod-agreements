@@ -67,3 +67,14 @@ services:
     ports:
       - 9001:9001
       - 9000:9000
+
+  opensearch:
+    container_name: opensearch
+    image: opensearchproject/opensearch
+    hostname: opensearch1
+    ports:
+      - 9200:9200
+      - 9600:9600
+    environment:
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=OpenSearch_P4ssw0rd
+      - discovery.type=single-node

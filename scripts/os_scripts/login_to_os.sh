@@ -1,0 +1,1 @@
+ curl https://localhost:9200 -ku admin:"OpenSearch_P4ssw0rd"
