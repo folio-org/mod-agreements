@@ -4,17 +4,30 @@ import grails.testing.mixin.integration.Integration
 import jakarta.inject.Inject
 import org.olf.BaseSpec
 import org.olf.EntitlementService
+import org.olf.KbManagementService
 import org.olf.erm.Entitlement
 import org.olf.erm.SubscriptionAgreement
+import org.olf.general.jobs.ExternalEntitlementSyncJob
+import org.olf.general.jobs.PackageIngestJob
 import org.olf.kb.PackageContentItem
 import org.olf.kb.Pkg
 import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Stepwise
 
+import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
+import org.awaitility.Awaitility;
+import static org.awaitility.Awaitility.await;
+import org.olf.general.jobs.ExternalEntitlementSyncJob
+import org.olf.general.jobs.PackageIngestJob
+import org.olf.general.jobs.PersistentJob
+import org.olf.general.jobs.TitleIngestJob
+import static org.junit.jupiter.api.Assertions.*;
+
 
 @Stepwise
 @Integration
@@ -22,6 +35,17 @@ class EntitlementSpec extends BaseSpec  {
 
   @Inject
   EntitlementService entitlementService;
+
+  @Inject
+  KbManagementService kbManagementService;
+
+  def mockDomains = [
+    ExternalEntitlementSyncJob,
+    PackageIngestJob,
+    TitleIngestJob,
+    PersistentJob
+  ]
+
   String gokbAuthorityName = "GOKB-RESOURCE"
   // packageUuid:titleUuid
   String gokbReference = "26929514-237c-11ed-861d-0242ac120002:26929514-237c-11ed-861d-0242ac120001"
@@ -188,6 +212,30 @@ class EntitlementSpec extends BaseSpec  {
       assert updatedEntitlement.resource
       assert updatedEntitlement.resource.id == pci.id
   }
+
+  void "When title or package ingest jobs exist, no job is created" () {
+    setup:
+    // Not going via the API to create this job, for simplicity's sake.
+    withTenant {
+      PackageIngestJob packageJob = new PackageIngestJob(name: "Scheduled Package Ingest Job ${Instant.now()}")
+      packageJob.setStatusFromString('in-progress')
+      packageJob.save(failOnError: true, flush: true)
+    }
+
+    when:
+    withTenant {
+      kbManagementService.triggerEntitlementJob()
+    }
+
+    then:
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(0, withTenant { ExternalEntitlementSyncJob.count()})
+      }
+
+  }
+
+  //TODO: Other job creation tests: - when no title/package ingest and gokb authoirty entitlement and ingress type harvest -> job created,
+  // TODO: - When ingress type = pushkb -> job created
 
 
 }
