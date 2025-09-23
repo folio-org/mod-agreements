@@ -35,13 +35,12 @@ class KbManagementService {
       log.debug "Create gokb resource job for tenant schema ${tenant_schema_id}"
       try {
         Tenants.withId(tenant_schema_id) {
+          if (entitlementService.findEntitlementsByAuthority("GOKB-RESOURCE") == null || entitlementService.findEntitlementsByAuthority("GOKB-RESOURCE")?.size() == 0) {
+            // If we can't find any entitlements for external resources, we can skip job creation.
+            return;
+          }
+
           if (ingressType == ResourceIngressType.HARVEST) {
-
-            if (entitlementService.findEntitlementsByAuthority("GOKB-RESOURCE") == null || entitlementService.findEntitlementsByAuthority("GOKB-RESOURCE")?.size() == 0) {
-              // If we can't find any entitlements for external resources, we can skip job creation.
-              return;
-            }
-
             // Fetch in-progress persistent jobs
             RefdataValue inProgressJobs = PersistentJob.lookupStatus('in_progress')
 
