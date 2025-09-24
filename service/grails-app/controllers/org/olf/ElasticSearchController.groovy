@@ -7,6 +7,8 @@ import groovy.util.logging.Slf4j
 import co.elastic.clients.elasticsearch.ElasticsearchClient
 import co.elastic.clients.elasticsearch.core.InfoResponse
 
+import org.opensearch.client.opensearch.OpenSearchClient
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
