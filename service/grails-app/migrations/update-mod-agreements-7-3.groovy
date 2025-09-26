@@ -128,4 +128,12 @@ databaseChangeLog = {
     }
   }
 
+  changeSet(author: "mchaib (manual)", id: "20250915-1458-002") {
+    addPrimaryKey(
+      columnNames: "id",
+      constraintName: "external_entitlement_sync_jobPK",
+      tableName: "external_entitlement_sync_job"
+    )
+  }
+
 }
