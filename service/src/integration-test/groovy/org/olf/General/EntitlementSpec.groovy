@@ -14,8 +14,10 @@ import java.time.format.DateTimeFormatter
 @Integration
 class EntitlementSpec extends BaseSpec  {
 
-  String gokbAuthorityName = "GOKB-RESOURCE"
-  String gokbReference = "packageUuid:titleUuid"
+  static final String EKB_TITLE_AUTHORITY = "EKB-TITLE"
+  static final String GOKB_RESOURCE_AUTHORITY = "GOKB-RESOURCE"
+
+  static final String DUMMY_GOKB_REFERENCE = "packageUuid:titleUuid"
 
   @Ignore
   Map createAgreement(String name="test_agreement") {
@@ -59,7 +61,7 @@ class EntitlementSpec extends BaseSpec  {
           'type' : 'external' ,
           'reference' : reference ,
           'authority' : authority,
-          'resourceName': authority == gokbAuthorityName ? "test resource" : null
+          'resourceName': authority == GOKB_RESOURCE_AUTHORITY ? "test resource" : null
         ]
       ],
       periods: [
@@ -80,7 +82,7 @@ class EntitlementSpec extends BaseSpec  {
 
   void "Should not have a referenceObject if authority is gokb-resource" () {
     when:
-    Map postResponse = postExternalEntitlement("test_agreement", gokbAuthorityName, gokbReference)
+    Map postResponse = postExternalEntitlement("test_agreement", GOKB_RESOURCE_AUTHORITY, DUMMY_GOKB_REFERENCE)
 
     then:
     List entitlementsList = doGet("/erm/entitlements")
@@ -90,15 +92,15 @@ class EntitlementSpec extends BaseSpec  {
     entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
 
     log.info(theEntitlement.reference);
-    assert theEntitlement.reference == "package_ref"
-    assert theEntitlement.authority == gokbAuthorityName
+    assert theEntitlement.reference == DUMMY_GOKB_REFERENCE
+    assert theEntitlement.authority == GOKB_RESOURCE_AUTHORITY
     assert theEntitlement.reference_object == null
     assert theEntitlement.resourceName == "test resource"
   }
 
   void "Should have a referenceObject if authority is NOT gokb-resource" () {
     when:
-    postExternalEntitlement("test_agreement2", 'EKB-TITLE', gokbReference)
+    postExternalEntitlement("test_agreement2", EKB_TITLE_AUTHORITY, DUMMY_GOKB_REFERENCE)
 
     then:
     List entitlementsList = doGet("/erm/entitlements")
@@ -108,8 +110,8 @@ class EntitlementSpec extends BaseSpec  {
     entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
 
     log.info(theEntitlement.reference);
-    assert theEntitlement.reference == gokbReference
-    assert theEntitlement.authority == "EKB-TITLE"
+    assert theEntitlement.reference == DUMMY_GOKB_REFERENCE
+    assert theEntitlement.authority == EKB_TITLE_AUTHORITY
     assert theEntitlement.reference_object != null
     assert theEntitlement.resourceName == null
   }
