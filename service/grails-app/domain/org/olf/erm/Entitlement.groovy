@@ -75,6 +75,8 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
   // entitlement does not link to a resource in the tenant database, but instead will use API calls to define its contents
   String authority
 
+  static final String GOKB_RESOURCE_AUTHORITY = "GOKB-RESOURCE"
+
   boolean suppressFromDiscovery = false
 
   String description
@@ -85,7 +87,7 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
   // For External gokb resources, reference should be in the form: packageUuid:titleUuid.
   // The _externalEntitlement.gson view should prevent a call being made by OkapiLookup, but if it is we set the url to '', which will cause okapiLookup to throw a 'java.lang.IllegalArgumentException: URI is not absolute',  but not make a call.
   @OkapiLookup(
-    value = '${obj.authority?.toLowerCase() == "gokb-resource" ? "" : obj.authority?.toLowerCase() == "ekb-package" ? "/eholdings/packages" : "/eholdings/resources" }/${obj.reference}${obj.authority?.toLowerCase() == "ekb-package" ? "" : "?include=package" }',
+    value = '${obj.authority?.toLowerCase() == Entitlement.GOKB_RESOURCE_AUTHORITY.toLowerCase() ? "" : obj.authority?.toLowerCase() == "ekb-package" ? "/eholdings/packages" : "/eholdings/resources" }/${obj.reference}${obj.authority?.toLowerCase() == "ekb-package" ? "" : "?include=package" }',
     converter = {
       // delegate, owner and thisObject should be the instance of Entitlement
       final Entitlement outerEntitlement = delegate

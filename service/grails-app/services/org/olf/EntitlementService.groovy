@@ -68,7 +68,7 @@ public class EntitlementService {
 
   }
 
-  List<Entitlement> findEntitlementsByAuthority(authority="GOKB-RESOURCE") {
+  List<Entitlement> findEntitlementsByAuthority(authority=Entitlement.GOKB_RESOURCE_AUTHORITY) {
     return Entitlement.executeQuery("""
           SELECT ent FROM Entitlement AS ent
           WHERE ent.authority = :authorityName""".toString(), [authorityName: authority]) as List<Entitlement>
@@ -95,7 +95,7 @@ public class EntitlementService {
 
   @Transactional
   void processExternalEntitlements() {
-    findEntitlementsByAuthority("GOKB-RESOURCE").forEach { Entitlement entitlement ->
+    findEntitlementsByAuthority(Entitlement.GOKB_RESOURCE_AUTHORITY).forEach { Entitlement entitlement ->
       {
         if (entitlement.getReference() && checkExternalReferenceFormat(entitlement.getReference())) {
           String packageGokbId = entitlement.getReference().split(":")[0]

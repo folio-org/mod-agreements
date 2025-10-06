@@ -3,6 +3,7 @@ package org.olf
 import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.web.toolkit.refdata.RefdataValue
 import org.olf.dataimport.internal.KBManagementBean
+import org.olf.erm.Entitlement
 import org.olf.general.jobs.ExternalEntitlementSyncJob
 import org.olf.general.jobs.PackageIngestJob
 import org.olf.general.jobs.PersistentJob
@@ -35,7 +36,8 @@ class KbManagementService {
       log.debug "Create gokb resource job for tenant schema ${tenant_schema_id}"
       try {
         Tenants.withId(tenant_schema_id) {
-          if (entitlementService.findEntitlementsByAuthority("GOKB-RESOURCE") == null || entitlementService.findEntitlementsByAuthority("GOKB-RESOURCE")?.size() == 0) {
+          List<Entitlement> entitlements = entitlementService.findEntitlementsByAuthority(Entitlement.GOKB_RESOURCE_AUTHORITY)
+          if (entitlements == null || entitlements?.size() == 0) {
             // If we can't find any entitlements for external resources, we can skip job creation.
             return;
           }
