@@ -9,6 +9,9 @@ import org.olf.general.jobs.PackageIngestJob
 import org.olf.general.jobs.PersistentJob
 import org.olf.general.jobs.TitleIngestJob
 import org.olf.kb.metadata.ResourceIngressType
+
+import java.time.Instant
+
 import static groovy.transform.TypeCheckingMode.SKIP
 import org.springframework.scheduling.annotation.Scheduled
 import grails.gorm.multitenancy.Tenants
@@ -27,6 +30,7 @@ class KbManagementService {
   OkapiTenantAdminService okapiTenantAdminService
   EntitlementService entitlementService
 
+  // Runs every hour, starting one minute after app startup
   @Scheduled(fixedDelay = 3600000L, initialDelay = 60000L)
   @CompileStatic(SKIP)
   triggerEntitlementJob() {
@@ -42,37 +46,24 @@ class KbManagementService {
             return;
           }
 
-          if (ingressType == ResourceIngressType.HARVEST) {
-            // Fetch in-progress persistent jobs
-            RefdataValue inProgressJobs = PersistentJob.lookupStatus('in_progress')
+          RefdataValue inProgress = PersistentJob.lookupStatus('in_progress')
+          RefdataValue queued = PersistentJob.lookupStatus('queued')
+          ExternalEntitlementSyncJob runningOrQueuedEntitlementSyncJob = ExternalEntitlementSyncJob.findByStatusInList([
+            inProgress,
+            queued
+          ])
 
-            PackageIngestJob packageJob = PackageIngestJob.findByStatusInList([
-              inProgressJobs
-            ])
-
-            TitleIngestJob titleJob = TitleIngestJob.findByStatusInList([
-              inProgressJobs
-            ])
-
-            if (!packageJob && !titleJob) {
-              // If neither harvest ingest job is in progress, run the entitlement job
-              log.info("Starting external entitlement sync job.")
-              ExternalEntitlementSyncJob job = new ExternalEntitlementSyncJob(['name': 'ExternalEntitlementSyncJob'])
-              job.setStatusFromString('Queued')
-              job.save(failOnError: true, flush: true)
-            } else {
-              log.info("Title {} or package {} ingest jobs found, skipping job creation.", titleJob?.id?.toString(), packageJob?.id?.toString())
-            }
-          } else {
-            // If Ingress Type != HARVEST i.e. we're using PushKB
-            log.info("Starting external entitlement sync job.")
-            ExternalEntitlementSyncJob job = new ExternalEntitlementSyncJob(['name': 'ExternalEntitlementSyncJob'])
+          if (!runningOrQueuedEntitlementSyncJob) {
+            // It doesn't matter if ingest jobs are queued, since only one job can run for a tenant at once rn
+            log.info("Queuing ExternalEntitlementSyncJob for tenant ${tenant_schema_id} with ${entitlements.size()} entitlements to process");
+            ExternalEntitlementSyncJob job = new ExternalEntitlementSyncJob(['name': "ExternalEntitlementSyncJob: ${Instant.now()}"])
             job.setStatusFromString('Queued')
             job.save(failOnError: true, flush: true)
+          } else {
+            log.info("Not creating ExternalEntitlementSyncJob for tenant ${tenant_schema_id} as one is already running or queued");
           }
         }
-      }
-      catch (Exception e) {
+      } catch (Exception e) {
         log.error("Unexpected error in triggerEntitlementJob for tenant ${tenant_schema_id}", e);
       }
     }

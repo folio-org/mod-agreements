@@ -257,125 +257,61 @@ class EntitlementSpec extends BaseSpec  {
     }
   }
 
-  void "When package ingest jobs exist, no job is created" () {
+  void "When existing queued ExternalEntitlementSyncJob exists, no job is created" () {
     setup:
-    // Not going via the API to create this job, for simplicity's sake.
-    withTenant {
-      postExternalEntitlement("test_agreement", Entitlement.GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
-      PackageIngestJob packageJob = new PackageIngestJob(name: "Scheduled Package Ingest Job ${Instant.now()}")
-      packageJob.setStatusFromString('in_progress')
-      packageJob.save(failOnError: true, flush: true)
-      kbManagementBean.ingressType = ResourceIngressType.HARVEST
-    }
+      // Not going via the API to create this job, for simplicity's sake.
+      withTenant {
+        postExternalEntitlement("test_agreement", Entitlement.GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
+        ExternalEntitlementSyncJob testJob = new ExternalEntitlementSyncJob(name: "Test ExternalEntitlementSyncJob ${Instant.now()}")
+        testJob.setStatusFromString('queued')
+        testJob.save(failOnError: true, flush: true)
+        kbManagementBean.ingressType = ResourceIngressType.HARVEST
+      }
 
     when:
-    withTenant {
-      kbManagementService.triggerEntitlementJob()
-    }
+      withTenant {
+        kbManagementService.triggerEntitlementJob()
+      }
 
     then:
       await().atMost(5, TimeUnit.SECONDS).untilAsserted {
-        assertEquals(0, withTenant { ExternalEntitlementSyncJob.count()})
+        assertEquals(1, withTenant { ExternalEntitlementSyncJob.count()})
       }
 
     cleanup:
-    withTenant {
-      ExternalEntitlementSyncJob.findAll().each { it.delete(flush: true) }
-      PackageIngestJob.findAll().each { it.delete(flush: true) }
-      TitleIngestJob.findAll().each { it.delete(flush: true) }
-      SubscriptionAgreement.findAll().each { it.delete(flush: true) }
-      Entitlement.findAll().each { it.delete(flush: true) } // Delete entitlements as well
-    }
+      withTenant {
+        ExternalEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) } // Delete entitlements as well
+      }
   }
 
-  void "When title ingest jobs exist, no job is created" () {
+  void "When existing in progress ExternalEntitlementSyncJob exists, no job is created" () {
     setup:
-    // Not going via the API to create this job, for simplicity's sake.
-    withTenant {
-      postExternalEntitlement("test_agreement", Entitlement.GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
-      TitleIngestJob titleJob = new TitleIngestJob(name: "Scheduled Title Ingest Job ${Instant.now()}")
-      titleJob.setStatusFromString('in_progress')
-      titleJob.save(failOnError: true, flush: true)
-    }
+      // Not going via the API to create this job, for simplicity's sake.
+      withTenant {
+        postExternalEntitlement("test_agreement", Entitlement.GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
+        ExternalEntitlementSyncJob testJob = new ExternalEntitlementSyncJob(name: "Test ExternalEntitlementSyncJob ${Instant.now()}")
+        testJob.setStatusFromString('In progress')
+        testJob.save(failOnError: true, flush: true)
+        kbManagementBean.ingressType = ResourceIngressType.HARVEST
+      }
 
     when:
-    withTenant {
-      kbManagementService.triggerEntitlementJob()
-    }
+      withTenant {
+        kbManagementService.triggerEntitlementJob()
+      }
 
     then:
-    await().atMost(5, TimeUnit.SECONDS).untilAsserted {
-      assertEquals(0, withTenant { ExternalEntitlementSyncJob.count()})
-    }
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(1, withTenant { ExternalEntitlementSyncJob.count()})
+      }
 
     cleanup:
-    withTenant {
-      ExternalEntitlementSyncJob.findAll().each { it.delete(flush: true) }
-      PackageIngestJob.findAll().each { it.delete(flush: true) }
-      TitleIngestJob.findAll().each { it.delete(flush: true) }
-      SubscriptionAgreement.findAll().each { it.delete(flush: true) }
-      Entitlement.findAll().each { it.delete(flush: true) } // Delete entitlements as well
-    }
-
+      withTenant {
+        ExternalEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) } // Delete entitlements as well
+      }
   }
-
-  void "When no title or package ingest jobs exist & gokb authority entitlement exists & ingest type is harvest" () {
-    setup:
-    // Not going via the API to create this job, for simplicity's sake.
-    withTenant {
-      postExternalEntitlement("test_agreement3", Entitlement.GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
-    }
-    kbManagementBean.ingressType = ResourceIngressType.HARVEST
-
-    when:
-    withTenant {
-      kbManagementService.triggerEntitlementJob()
-    }
-
-    then:
-    await().atMost(5, TimeUnit.SECONDS).untilAsserted {
-      assertEquals(1, withTenant { ExternalEntitlementSyncJob.count()})
-    }
-
-    cleanup:
-    withTenant {
-      ExternalEntitlementSyncJob.findAll().each { it.delete(flush: true) }
-      PackageIngestJob.findAll().each { it.delete(flush: true) }
-      TitleIngestJob.findAll().each { it.delete(flush: true) }
-      SubscriptionAgreement.findAll().each { it.delete(flush: true) }
-      Entitlement.findAll().each { it.delete(flush: true) } // Delete entitlements as well
-    }
-  }
-
-  void "Harvest job creation logic is ignored for pushKB" () {
-    setup:
-    withTenant {
-      postExternalEntitlement("test_agreement", Entitlement.GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
-      // PushKB would never create title/package ingest jobs, but this setup shows that the EntitlementSync job logic is ignored for pushkb.
-      TitleIngestJob titleJob = new TitleIngestJob(name: "Scheduled Title Ingest Job ${Instant.now()}")
-      titleJob.setStatusFromString('in_progress')
-      titleJob.save(failOnError: true, flush: true)
-    }
-    kbManagementBean.ingressType = ResourceIngressType.PUSHKB
-
-    when:
-    withTenant {
-      kbManagementService.triggerEntitlementJob()
-    }
-
-    then:
-    await().atMost(5, TimeUnit.SECONDS).untilAsserted {
-      assertEquals(1, withTenant { ExternalEntitlementSyncJob.count()})
-    }
-
-    cleanup:
-    withTenant {
-      ExternalEntitlementSyncJob.findAll().each { it.delete(flush: true) }
-      PackageIngestJob.findAll().each { it.delete(flush: true) }
-      TitleIngestJob.findAll().each { it.delete(flush: true) }
-      SubscriptionAgreement.findAll().each { it.delete(flush: true) }
-      Entitlement.findAll().each { it.delete(flush: true) } // Delete entitlements as well
-    }
-  }
-
 }
