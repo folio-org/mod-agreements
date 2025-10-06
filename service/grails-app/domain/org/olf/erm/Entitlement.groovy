@@ -353,11 +353,11 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
           description column: 'ent_description'
           dateCreated column: 'ent_date_created'
           lastUpdated column: 'ent_last_updated'
-          resourceName column: 'ent_resource_name'
-    poLines cascade: 'all-delete-orphan'
-            coverage cascade: 'all-delete-orphan'
-                tags cascade: 'save-update'
-                docs cascade: 'all-delete-orphan', joinTable: [name: 'entitlement_document_attachment', key: 'entitlement_docs_id', column: 'document_attachment_id']
+         resourceName column: 'ent_resource_name'
+              poLines cascade: 'all-delete-orphan'
+             coverage cascade: 'all-delete-orphan'
+                 tags cascade: 'save-update'
+                 docs cascade: 'all-delete-orphan', joinTable: [name: 'entitlement_document_attachment', key: 'entitlement_docs_id', column: 'document_attachment_id']
   }
 
   static constraints = {
@@ -406,7 +406,7 @@ suppressFromDiscovery column: 'ent_suppress_discovery'
            contentUpdated(nullable:true, blank:false)
                activeFrom(nullable:true, blank:false)
                  activeTo(nullable:true, blank:false)
-               resourceName(nullable: true, blank:false)
+             resourceName(nullable: true, blank:false)
 
          authority(nullable:true, blank:false, validator: { val, inst ->
             switch (inst.type?.toLowerCase()) {

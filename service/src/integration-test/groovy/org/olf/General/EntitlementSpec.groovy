@@ -47,10 +47,12 @@ class EntitlementSpec extends BaseSpec  {
     PersistentJob
   ]
 
-  String gokbAuthorityName = "GOKB-RESOURCE"
+  static final String EKB_TITLE_AUTHORITY = "EKB-TITLE"
+  static String GOKB_RESOURCE_AUTHORITY = "GOKB-RESOURCE"
   // packageUuid:titleUuid
-  String gokbReference = "26929514-237c-11ed-861d-0242ac120002:26929514-237c-11ed-861d-0242ac120001"
+  static final String EXAMPLE_GOKB_REFERENCE = "26929514-237c-11ed-861d-0242ac120002:26929514-237c-11ed-861d-0242ac120001"
 
+  static final String DUMMY_GOKB_REFERENCE = "packageUuid:titleUuid"
 
   @Ignore
   Map createAgreement(String name="test_agreement") {
@@ -94,7 +96,7 @@ class EntitlementSpec extends BaseSpec  {
           'type' : 'external' ,
           'reference' : reference ,
           'authority' : authority,
-          'resourceName': authority == gokbAuthorityName ? "test resource" : null,
+          'resourceName': authority == GOKB_RESOURCE_AUTHORITY ? "test resource" : null,
           'description': description
         ]
       ],
@@ -116,7 +118,7 @@ class EntitlementSpec extends BaseSpec  {
 
   void "Should not have a referenceObject if authority is gokb-resource" () {
     when:
-      Map postResponse = postExternalEntitlement("test_agreement", gokbAuthorityName, gokbReference, 'testEntitlement')
+      Map postResponse = postExternalEntitlement("test_agreement", GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
 
     then:
       List entitlementsList = doGet("/erm/entitlements")
@@ -125,8 +127,8 @@ class EntitlementSpec extends BaseSpec  {
       entitlementsList.each{entitlement -> log.info(entitlement.reference)}
       entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
 
-      assert theEntitlement.reference == gokbReference
-      assert theEntitlement.authority == gokbAuthorityName
+      assert theEntitlement.reference == EXAMPLE_GOKB_REFERENCE
+      assert theEntitlement.authority == GOKB_RESOURCE_AUTHORITY
       assert theEntitlement.reference_object == null
       assert theEntitlement.resourceName == "test resource"
 
@@ -139,17 +141,17 @@ class EntitlementSpec extends BaseSpec  {
 
   void "Should have a referenceObject if authority is NOT gokb-resource" () {
     when:
-      postExternalEntitlement("test_agreement", 'EKB-TITLE', gokbReference, 'titleRef')
+      postExternalEntitlement("test_agreement_2", EKB_TITLE_AUTHORITY, DUMMY_GOKB_REFERENCE, 'titleRef')
 
     then:
       List entitlementsList = doGet("/erm/entitlements")
 
-      def theEntitlement = entitlementsList[0]
+      def theEntitlement = entitlementsList[1]
       entitlementsList.each{entitlement -> log.info(entitlement.reference)}
       entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
 
-      assert theEntitlement.reference == gokbReference
-      assert theEntitlement.authority == "EKB-TITLE"
+      assert theEntitlement.reference == DUMMY_GOKB_REFERENCE
+      assert theEntitlement.authority == EKB_TITLE_AUTHORITY
       assert theEntitlement.reference_object != null
       assert theEntitlement.resourceName == null
 
