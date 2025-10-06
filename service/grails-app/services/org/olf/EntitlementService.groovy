@@ -102,56 +102,69 @@ public class EntitlementService {
           String titleGokbId = entitlement.getReference().split(":")[1]
           log.debug("Processing external entitlement for entitlement: {}", entitlement.getId().toString())
 
-          Pkg packageInLocalKb = (Pkg) Pkg.executeQuery("""
-          SELECT p FROM Pkg p
-          WHERE p.id IN (
-          SELECT io.resource.id FROM IdentifierOccurrence io
-          WHERE io.identifier.value = :resId
-          AND io.status.value = 'approved'
-          AND io.identifier.ns.value = 'gokb_uuid')""".toString(), [resId: packageGokbId])[0]
+          Pkg packageInLocalKb = (Pkg) Pkg.executeQuery(
+            """
+              SELECT p FROM Pkg p
+              WHERE p.id IN (
+                SELECT io.resource.id FROM IdentifierOccurrence io
+                WHERE io.identifier.value = :resId
+                AND io.status.value = 'approved'
+                AND io.identifier.ns.value = 'gokb_uuid'
+              )
+            """.toString(), [resId: packageGokbId])[0] // Should only ever be one...
 
-          TitleInstance titleInstanceInLocalKb = (TitleInstance) TitleInstance.executeQuery("""
-         SELECT ti FROM TitleInstance ti
-          WHERE ti.id IN ( SELECT io.resource.id FROM IdentifierOccurrence io
-          WHERE io.identifier.value = :resId
-          AND io.status.value = 'approved'
-          AND io.identifier.ns.value = 'gokb_uuid')""".toString(), [resId: titleGokbId])[0]
+          TitleInstance titleInstanceInLocalKb = (TitleInstance) TitleInstance.executeQuery(
+            """
+              SELECT ti FROM TitleInstance ti
+              WHERE ti.id IN (
+                SELECT io.resource.id FROM IdentifierOccurrence io
+                WHERE io.identifier.value = :resId
+                AND io.status.value = 'approved'
+                AND io.identifier.ns.value = 'gokb_uuid'
+              )
+            """.toString(), [resId: titleGokbId])[0] // Should only ever be one...
 
-          if (!packageInLocalKb) {
-            // If the package doesn't exist in the localKB, then a packageIngest needs to run.
-            log.debug("Package {} containing title {} for Entitlement {} not found.", packageGokbId, titleGokbId, entitlement.id)
-          }
+          if (packageInLocalKb) {
+            if (packageInLocalKb.getSyncContentsFromSource()) {
+              // We have an already synchonrising package in the local KB. Check whether PCI exists in local KB already
+              if (titleInstanceInLocalKb) {
+                // Now we definitely have TitleInstance, but we need to find the PCI that matches the TI and Package ID
+                PackageContentItem pciInLocalKb = PackageContentItem.executeQuery(
+                  """
+                    SELECT pci FROM PackageContentItem AS pci
+                    WHERE pci.pti.titleInstance.id = :tiId
+                    AND pci.pkg.id = :pkgId
+                  """.toString(),
+                  [
+                    tiId: titleInstanceInLocalKb.id,
+                    pkgId: packageInLocalKb.id
+                  ]
+                )[0] as PackageContentItem // For now we only expect one result, and if there are more we just take the first.
 
-          if (packageInLocalKb && packageInLocalKb.getSyncContentsFromSource()) {
-            // If we find the PCI via the TI that exists in the Entitlement reference (packageUuid:titleUuid)
-            // Find the PCI that matches the TI and Package ID
-            PackageContentItem pciInLocalKb = PackageContentItem.executeQuery("""
-          SELECT pci FROM PackageContentItem AS pci
-          WHERE pci.pti.titleInstance.id = :tiId
-          AND pci.pkg.id = :pkgId""".toString(), [tiId: titleInstanceInLocalKb.id, pkgId: packageInLocalKb.id])[0] as PackageContentItem
-            // TODO: Could this search return more than one PCI? Would it ever return no PCIs?
-
-            if (pciInLocalKb) {
-              log.debug("PCI referenced in external entitlement found in local KB. Converting entitlement to internal.")
-              entitlement.setReference(null);
-              entitlement.authority = null;
-              entitlement.type = "internal";
-              entitlement.resource = pciInLocalKb;
-              entitlement.resourceName = null;
-              entitlement.save(failOnError: true);
+                if (pciInLocalKb) {
+                  log.info("Found internal PCI ({}) for TitleInstance ({}) in Package ({}), updating Entitlement ({}) to be internal.", pciInLocalKb.name, titleInstanceInLocalKb.name, packageInLocalKb.name, entitlement.id)
+                  entitlement.setReference(null);
+                  entitlement.authority = null;
+                  entitlement.type = "internal";
+                  entitlement.resource = pciInLocalKb;
+                  entitlement.resourceName = null;
+                  entitlement.save(failOnError: true);
+                } else {
+                  log.error("No PCI found in local KB for TitleInstance ({}) in Package ({}), leaving Entitlement ({}) as external.", titleInstanceInLocalKb.name, packageInLocalKb.name, entitlement.id)
+                }
+              } else {
+                log.info("Title with GOKB UUID: {} not found in local KB, leaving Entitlement ({}) as external.", titleGokbId, entitlement.id)
+              }
             } else {
-              log.debug("No PCI found in local KB for TI referenced in external entitlement.")
+              log.info("Set package ({}) in local KB matching GOKB Package with UUID: {} to synchronize.", packageInLocalKb.name, packageGokbId)
+              // If we find the package in the local KB, but it's not set to sync, set it to sync and wait for next harvest to pull in titles.
+              packageSyncService.controlSyncStatus([packageInLocalKb.id], true)
             }
-            // TODO: What will happen if we've found the package in the localKB, it's set to sync, but the Title/PCI can't be found?
-            // This could mean that the title harvest hasn't run yet? In which case we just need to wait...
-          }
-
-          if (packageInLocalKb && !packageInLocalKb.getSyncContentsFromSource()) {
-            // If we find the package in the local KB, but it's not set to sync, set it to sync and wait for next harvest to pull in titles.
-            packageSyncService.controlSyncStatus([packageInLocalKb.id], true)
+          } else {
+            log.info("GOKB Package with UUID {} not found in local KB, leaving Entitlement ({}) as external", packageGokbId, entitlement.id)
           }
         } else {
-          log.warn("Could not process entitlement {}.", entitlement.id.toString())
+          log.warn("Could not process Entitlement ({}).", entitlement.id.toString())
         }
       }
     }
