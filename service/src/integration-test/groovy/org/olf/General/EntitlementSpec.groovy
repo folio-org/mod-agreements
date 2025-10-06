@@ -21,13 +21,13 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
-import org.awaitility.Awaitility;
-import static org.awaitility.Awaitility.await;
+import org.awaitility.Awaitility
+import static org.awaitility.Awaitility.await
 import org.olf.general.jobs.ExternalEntitlementSyncJob
 import org.olf.general.jobs.PackageIngestJob
 import org.olf.general.jobs.PersistentJob
 import org.olf.general.jobs.TitleIngestJob
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*
 
 
 @Stepwise
@@ -35,10 +35,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class EntitlementSpec extends BaseSpec  {
 
   @Inject
-  EntitlementService entitlementService;
+  EntitlementService entitlementService
 
   @Inject
-  KbManagementService kbManagementService;
+  KbManagementService kbManagementService
 
   def mockDomains = [
     ExternalEntitlementSyncJob,
@@ -146,7 +146,7 @@ class EntitlementSpec extends BaseSpec  {
     then:
       List entitlementsList = doGet("/erm/entitlements")
 
-      def theEntitlement = entitlementsList[1]
+      def theEntitlement = entitlementsList[0]
       entitlementsList.each{entitlement -> log.info(entitlement.reference)}
       entitlementsList.each{entitlement -> log.info((entitlement as Map).toMapString())}
 
@@ -165,18 +165,18 @@ class EntitlementSpec extends BaseSpec  {
   void "EntitlementService can find entitlements with gokb authorities" () {
     setup:
     withTenant {
-      postExternalEntitlement("test_agreement", gokbAuthorityName, gokbReference, 'testEntitlement')
+      postExternalEntitlement("test_agreement", GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
     }
 
     when:
-    def entitlementsFound;
+    def entitlementsFound
       withTenant {
-        entitlementsFound = entitlementService.findEntitlementsByAuthority(gokbAuthorityName)
+        entitlementsFound = entitlementService.findEntitlementsByAuthority(GOKB_RESOURCE_AUTHORITY)
       }
 
     then:
-      assert entitlementsFound != null;
-      assert entitlementsFound.size() == 1;
+      assert entitlementsFound != null
+      assert entitlementsFound.size() == 1
 
     cleanup:
     withTenant {
@@ -190,7 +190,7 @@ class EntitlementSpec extends BaseSpec  {
     setup:
       importPackageFromFileViaService('entitlementSpec/pkgSyncFalse.json')  // K-Int Test Package 001
       withTenant {
-        postExternalEntitlement("test_agreement", gokbAuthorityName, gokbReference, 'testEntitlement')
+        postExternalEntitlement("test_agreement", GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
       }
       List packageList = doGet("/erm/packages")
       packageList.each{resource -> log.info(resource.toString())}
@@ -219,7 +219,7 @@ class EntitlementSpec extends BaseSpec  {
     setup:
       importPackageFromFileViaService('entitlementSpec/pkgSyncTrue.json')  // K-Int Test Package 001
       withTenant {
-        postExternalEntitlement("test_agreement", gokbAuthorityName, gokbReference, 'testEntitlement')
+        postExternalEntitlement("test_agreement", GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
       }
       List packageList = doGet("/erm/packages")
       Pkg originalPkg = (Pkg) packageList.stream().filter(item -> item.name == "Sync True Test Package").collect(Collectors.toList())[0]
@@ -262,7 +262,7 @@ class EntitlementSpec extends BaseSpec  {
     setup:
     // Not going via the API to create this job, for simplicity's sake.
     withTenant {
-      postExternalEntitlement("test_agreement", gokbAuthorityName, gokbReference, 'testEntitlement')
+      postExternalEntitlement("test_agreement", GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
       PackageIngestJob packageJob = new PackageIngestJob(name: "Scheduled Package Ingest Job ${Instant.now()}")
       packageJob.setStatusFromString('in_progress')
       packageJob.save(failOnError: true, flush: true)
@@ -293,7 +293,7 @@ class EntitlementSpec extends BaseSpec  {
     setup:
     // Not going via the API to create this job, for simplicity's sake.
     withTenant {
-      postExternalEntitlement("test_agreement", gokbAuthorityName, gokbReference, 'testEntitlement')
+      postExternalEntitlement("test_agreement", GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
       TitleIngestJob titleJob = new TitleIngestJob(name: "Scheduled Title Ingest Job ${Instant.now()}")
       titleJob.setStatusFromString('in_progress')
       titleJob.save(failOnError: true, flush: true)
@@ -324,7 +324,7 @@ class EntitlementSpec extends BaseSpec  {
     setup:
     // Not going via the API to create this job, for simplicity's sake.
     withTenant {
-      postExternalEntitlement("test_agreement3", gokbAuthorityName, gokbReference, 'testEntitlement')
+      postExternalEntitlement("test_agreement3", GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
     }
     kbManagementBean.ingressType = ResourceIngressType.HARVEST
 
@@ -351,7 +351,7 @@ class EntitlementSpec extends BaseSpec  {
   void "Harvest job creation logic is ignored for pushKB" () {
     setup:
     withTenant {
-      postExternalEntitlement("test_agreement", gokbAuthorityName, gokbReference, 'testEntitlement')
+      postExternalEntitlement("test_agreement", GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, 'testEntitlement')
       // PushKB would never create title/package ingest jobs, but this setup shows that the EntitlementSync job logic is ignored for pushkb.
       TitleIngestJob titleJob = new TitleIngestJob(name: "Scheduled Title Ingest Job ${Instant.now()}")
       titleJob.setStatusFromString('in_progress')
