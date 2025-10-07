@@ -142,10 +142,9 @@ public class PolicyEngine implements PolicyEngineImplementor {
   }
 
   /**
-   * A function which takes in a list of {@link AccessPolicy} objects, likely with a
+   * A function which takes in a list of {@link AccessPolicies} objects, likely with a
    * {@link com.k_int.accesscontrol.core.http.responses.Policy} implementation of
    * {@link com.k_int.accesscontrol.core.http.responses.BasicPolicy}
-   * It should then return
    * @param policies a list of AccessPolicy objects to enrich, it will use the "type" and the "policy.id" fields to enrich
    * with Policy implementations from the individual engine plugins
    * @return A list of AccessPolicy objects with all information provided by the policyEngineImplementors
