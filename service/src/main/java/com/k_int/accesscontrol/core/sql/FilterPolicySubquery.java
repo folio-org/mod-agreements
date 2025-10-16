@@ -1,9 +1,9 @@
 package com.k_int.accesscontrol.core.sql;
 
-import com.k_int.accesscontrol.core.AccessPolicies;
+import com.k_int.accesscontrol.core.GroupedExternalPolicyList;
 import com.k_int.accesscontrol.core.AccessPolicyQueryType;
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
-import com.k_int.accesscontrol.core.http.responses.Policy;
+import com.k_int.accesscontrol.core.IExternalPolicy;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import java.util.stream.IntStream;
  * Implementation of {@link PolicySubquery} that generates SQL subqueries based on a list of {@link PoliciesFilter}.
  * <p>
  * This class constructs SQL subqueries to filter records based on access policy restrictions.
- * Each {@link PoliciesFilter} contains a list of {@link AccessPolicies} that are ORed together,
+ * Each {@link PoliciesFilter} contains a list of {@link GroupedExternalPolicyList} that are ORed together,
  * while the top-level list of {@link PoliciesFilter} is ANDed together in the final SQL.
  * This implementation allows for different query types (LIST or SINGLE), representing an index operation or the fetch
  * of a single record directly filtered by existence of a given policy on that resource.
@@ -54,7 +54,7 @@ public class FilterPolicySubquery implements PolicySubquery {
   """;
 
   /** A list of PoliciesFilter objects representing the filters to be applied.
-   * Each PoliciesFilter contains a list of AccessPolicies that will be ORed together,
+   * Each PoliciesFilter contains a list of GroupedExternalPolicyList objects that will be ORed together,
    * while the top-level list of PoliciesFilter objects will be ANDed together in the final SQL.
    * @param policiesFilters A list of PoliciesFilter objects representing the filters to be applied.
    * @return A list of PoliciesFilter objects representing the filters to be applied.
@@ -93,9 +93,9 @@ public class FilterPolicySubquery implements PolicySubquery {
             return "(\n" +
               String.join(
                 "\n OR \n",
-                IntStream.range(0, pf.getFilters().size()) // Use IntStream to get AccessPolicies index
+                IntStream.range(0, pf.getFilters().size()) // Use IntStream to get GroupedExternalPolicyList index
                   .mapToObj(apIndex -> {
-                    AccessPolicies ap = pf.getFilters().get(apIndex);
+                    GroupedExternalPolicyList ap = pf.getFilters().get(apIndex);
 
                     if (queryType == AccessPolicyQueryType.SINGLE) {
                       allParameters.add(parameters.getResourceId()); // Add resource id (But only when in a SINGLE query, list is handled by alias above)
@@ -105,7 +105,7 @@ public class FilterPolicySubquery implements PolicySubquery {
                     allParameters.add(parameters.getResourceClass()); // Add resource class
                     allTypes.add(AccessControlSqlType.STRING); // Resource class is a string
 
-                    allParameters.addAll(ap.getPolicies().stream().map(Policy::getId).toList()); // Add policy ids
+                    allParameters.addAll(ap.getPolicies().stream().map(IExternalPolicy::getId).toList()); // Add policy ids
                     allTypes.addAll(Collections.nCopies(ap.getPolicies().size(), AccessControlSqlType.STRING)); // all policy ids are strings
 
                     return FILTER_TEMPLATE

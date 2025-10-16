@@ -86,7 +86,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
 
   /**
    * Extended version of getPolicySubqueries which also takes in a list of PoliciesFilter objects.
-   * These filters will be ANDed together in the final SQL, with the internal list of AccessPolicies
+   * These filters will be ANDed together in the final SQL, with the internal list of GroupedExternalPolicyList
    * within each PoliciesFilter being ORed together.
    *
    * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
@@ -119,11 +119,11 @@ public class PolicyEngine implements PolicyEngineImplementor {
    *
    * @param headers the request context headers, used for FOLIO/internal service authentication
    * @param pr      the policy restriction to filter by
-   * @return a list of {@link AccessPolicies} containing policies grouped by type
+   * @return a list of {@link GroupedExternalPolicyList} containing policies grouped by type
    * @throws PolicyEngineException if an error occurs while fetching policy IDs
    */
-  public List<AccessPolicies> getRestrictionPolicies(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
-    List<AccessPolicies> policyIds = new ArrayList<>();
+  public List<GroupedExternalPolicyList> getRestrictionPolicies(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
+    List<GroupedExternalPolicyList> policyIds = new ArrayList<>();
 
     if (acquisitionUnitPolicyEngine != null) {
       policyIds.addAll(acquisitionUnitPolicyEngine.getRestrictionPolicies(headers, pr));
@@ -142,7 +142,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * @return true if all policy IDs are valid, false otherwise
    * @throws PolicyEngineException if an error occurs during validation
    */
-  public boolean arePoliciesValid(String[] headers, PolicyRestriction pr, List<AccessPolicies> policies) throws PolicyEngineException {
+  public boolean arePoliciesValid(String[] headers, PolicyRestriction pr, List<GroupedExternalPolicyList> policies) throws PolicyEngineException {
     boolean isValid = true;
 
     // Check if isValid is true for each sub policyEngine, so that we can short-circuit if any engine returns false.
@@ -174,15 +174,15 @@ public class PolicyEngine implements PolicyEngineImplementor {
   }
 
   /**
-   * A function which takes in a list of {@link AccessPolicies} objects, likely with a
-   * {@link com.k_int.accesscontrol.core.http.responses.Policy} implementation of
+   * A function which takes in a list of {@link GroupedExternalPolicyList} objects, likely with a
+   * {@link IExternalPolicy} implementation of
    * {@link com.k_int.accesscontrol.core.http.responses.BasicPolicy}
    * @param policies a list of AccessPolicy objects to enrich, it will use the "type" and the "policy.id" fields to enrich
    * with Policy implementations from the individual engine plugins
    * @return A list of AccessPolicy objects with all information provided by the policyEngineImplementors
    */
-  public List<AccessPolicies> enrichPolicies(String[] headers, List<AccessPolicies> policies) {
-    List<AccessPolicies> enrichedPolicies = new ArrayList<>();
+  public List<GroupedExternalPolicyList> enrichPolicies(String[] headers, List<GroupedExternalPolicyList> policies) {
+    List<GroupedExternalPolicyList> enrichedPolicies = new ArrayList<>();
 
     if (acquisitionUnitPolicyEngine != null) {
       enrichedPolicies.addAll(acquisitionUnitPolicyEngine.enrichPolicies(headers, policies));
@@ -192,7 +192,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
   }
 
   /**
-   * Converts a list of {@link AccessPolicy} entities into a list of {@link PolicyLink} DTOs,
+   * Converts a list of {@link IDomainAccessPolicy} entities into a list of {@link PolicyLink} DTOs,
    * preserving enriched policy metadata and per-resource assignment details.
    * <p>
    * This is used primarily when serializing claims or presenting assigned policies
@@ -203,32 +203,32 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * @param policyEntities the access policy entities assigned to a resource
    * @return a list of enriched {@link PolicyLink} instances
    */
-  public List<PolicyLink> getPolicyLinksFromAccessPolicyList(String[] headers, Collection<AccessPolicy> policyEntities) {
+  public List<PolicyLink> getPolicyLinksFromAccessPolicyList(String[] headers, Collection<IDomainAccessPolicy> policyEntities) {
     // We want to turn this into the shape List<PolicyLink> (We want the enriched Policy information)
-    // enrichPolicies needs ids and types, so send as AccessPolicies object
+    // enrichPolicies needs ids and types, so send as GroupedExternalPolicyList object
 
     // This will lose us all id and description information on the AccessPolicy objects for the resource -- we will add those back later
-    List<AccessPolicies> accessPoliciesList = AccessPolicies.fromAccessPolicyList(policyEntities);
+    List<GroupedExternalPolicyList> groupedExternalPolicyList = GroupedExternalPolicyList.fromAccessPolicyList(policyEntities);
 
-    // use "enrich" method from policyEngine to get List<AccessPolicies>
-    List<AccessPolicies> enrichedAccessPolicies = enrichPolicies(headers, accessPoliciesList);
+    // use "enrich" method from policyEngine to get List<GroupedExternalPolicyList>
+    List<GroupedExternalPolicyList> enrichedGroupedExternalPolicyLists = enrichPolicies(headers, groupedExternalPolicyList);
 
     // Then convert into List<PolicyLink> so it's in roughly the same shape we'd send down in a ClaimBody
-    List<PolicyLink> policyLinkList = AccessPolicies.convertListToPolicyLinkList(enrichedAccessPolicies);
+    List<PolicyLink> policyLinkList = GroupedExternalPolicyList.convertListToPolicyLinkList(enrichedGroupedExternalPolicyLists);
 
     // Finally, we have to add back the descriptions and ids that were set on the AccessPolicyEntities for resource
     // This isn't strictly necessary, but if not done then description will be reset and the policies will churn on each set
     return policyLinkList.stream()
       .map(pll -> {
 
-        Optional<AccessPolicy> relevantAccessPolicyOpt = policyEntities.stream()
+        Optional<IDomainAccessPolicy> relevantAccessPolicyOpt = policyEntities.stream()
           .filter(ape -> Objects.equals(ape.getPolicyId(), pll.getPolicy().getId()))
           .findFirst();
 
         if (relevantAccessPolicyOpt.isEmpty()) {
           return pll; // Return the PolicyLink as is if we don't have a relevant AccessPolicy from the DB
         }
-        AccessPolicy relevantAccessPolicy = relevantAccessPolicyOpt.get();
+        IDomainAccessPolicy relevantAccessPolicy = relevantAccessPolicyOpt.get();
 
         pll.setId(relevantAccessPolicy.getId());
         if (relevantAccessPolicy.getDescription() != null && !Objects.equals(relevantAccessPolicy.getDescription(), pll.getDescription())) {
@@ -245,7 +245,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * determining which policies need to be added, removed, or updated.
    * <p>
    * This method compares the claims in the {@link ClaimBody} with the provided list of existing
-   * {@link AccessPolicy} objects, identifying discrepancies and preparing lists of policies
+   * {@link IDomainAccessPolicy} objects, identifying discrepancies and preparing lists of policies
    * to be added, removed, or updated accordingly.
    * </p>
    *
@@ -258,7 +258,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
    */
   public EvaluatedClaimPolicies evaluateClaimPolicies(
     ClaimBody claimBody,
-    List<AccessPolicy> existingPolicies,
+    List<IDomainAccessPolicy> existingPolicies,
     String resourceId,
     String resourceClass
   ) throws PolicyEngineException {
@@ -266,10 +266,10 @@ public class PolicyEngine implements PolicyEngineImplementor {
     // One each for "add", "remove" and "update".
     // This method will throw if
 
-    List<AccessPolicy> accessPoliciesToAdd = new ArrayList<>();
-    List<AccessPolicy> accessPoliciesToRemove = new ArrayList<>();
-    List<AccessPolicy> accessPoliciesToUpdate = new ArrayList<>();
-    for (AccessPolicy policy : existingPolicies) {
+    List<IDomainAccessPolicy> accessPoliciesToAdd = new ArrayList<>();
+    List<IDomainAccessPolicy> accessPoliciesToRemove = new ArrayList<>();
+    List<IDomainAccessPolicy> accessPoliciesToUpdate = new ArrayList<>();
+    for (IDomainAccessPolicy policy : existingPolicies) {
       if (claimBody.getClaims().stream().noneMatch(claim -> Objects.equals(claim.getId(), policy.getId()))) {
         accessPoliciesToRemove.add(policy);
       }
@@ -278,7 +278,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
     for(PolicyLink claim  : claimBody.getClaims()) {
       if (claim.getId() != null) {
         // If the claim has an ID, we assume it is an existing policy that needs to be updated
-        AccessPolicy existingPolicy = existingPolicies.stream().filter (ape -> Objects.equals(ape.getId(), claim.getId())).findFirst().orElse(null);
+        IDomainAccessPolicy existingPolicy = existingPolicies.stream().filter (ape -> Objects.equals(ape.getId(), claim.getId())).findFirst().orElse(null);
 
         // If we're handed a non existing policy ID, we should fail the request
         if (existingPolicy == null) {

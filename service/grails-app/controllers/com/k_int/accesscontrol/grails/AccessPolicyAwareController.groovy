@@ -1,7 +1,7 @@
 package com.k_int.accesscontrol.grails
 
-import com.k_int.accesscontrol.core.AccessPolicies
-import com.k_int.accesscontrol.core.AccessPolicy
+import com.k_int.accesscontrol.core.GroupedExternalPolicyList
+import com.k_int.accesscontrol.core.IDomainAccessPolicy
 import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter
@@ -24,8 +24,6 @@ import grails.gorm.transactions.Transactional
 import org.hibernate.Criteria
 import org.hibernate.Session
 import org.hibernate.SessionFactory
-import org.hibernate.criterion.Conjunction
-import org.hibernate.criterion.Disjunction
 import org.hibernate.engine.spi.SessionFactoryImplementor
 import org.hibernate.query.NativeQuery
 import org.hibernate.type.Type
@@ -33,7 +31,6 @@ import org.springframework.beans.factory.annotation.Autowired
 
 import javax.annotation.PostConstruct
 import java.time.Duration
-import java.util.stream.Stream
 
 /**
  * Extends com.k_int.okapi.OkapiTenantAwareController to incorporate access policy enforcement for resources.
@@ -373,10 +370,10 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    * the current user's permissions and the specified restriction.
    *
    * @param pr The {@link PolicyRestriction} to check against.
-   * @param policies A list of {@link AccessPolicies} representing the policies to validate.
+   * @param policies A list of {@link GroupedExternalPolicyList} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for the given restriction, {@code false} otherwise.
    */
-  protected boolean arePoliciesValid(PolicyRestriction pr, List<AccessPolicies> policies) {
+  protected boolean arePoliciesValid(PolicyRestriction pr, List<GroupedExternalPolicyList> policies) {
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
     return policyEngine.arePoliciesValid(grailsHeaders, pr, policies)
   }
@@ -384,60 +381,60 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 /**
  * Checks if a given list of policies are valid for the {@code CREATE} policy restriction.
  *
- * @param policyIds A list of {@link AccessPolicies} representing the policies to validate.
+ * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
  * @return {@code true} if all provided policies are valid for CREATE, {@code false} otherwise.
  */
-  protected boolean areCreatePoliciesValid(List<AccessPolicies> policies) {
+  protected boolean areCreatePoliciesValid(List<GroupedExternalPolicyList> policies) {
     return arePoliciesValid(PolicyRestriction.CREATE, policies)
   }
 
   /**
    * Checks if a given list of policies are valid for the {@code READ} policy restriction.
    *
-   * @param policyIds A list of {@link AccessPolicies} representing the policies to validate.
+   * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for READ, {@code false} otherwise.
    */
-  protected boolean areReadPoliciesValid(List<AccessPolicies> policies) {
+  protected boolean areReadPoliciesValid(List<GroupedExternalPolicyList> policies) {
     return arePoliciesValid(PolicyRestriction.READ, policies)
   }
 
   /**
    * Checks if a given list of policies are valid for the {@code UPDATE} policy restriction.
    *
-   * @param policyIds A list of {@link AccessPolicies} representing the policies to validate.
+   * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for UPDATE, {@code false} otherwise.
    */
-  protected boolean areUpdatePoliciesValid(List<AccessPolicies> policies) {
+  protected boolean areUpdatePoliciesValid(List<GroupedExternalPolicyList> policies) {
     return arePoliciesValid(PolicyRestriction.UPDATE, policies)
   }
 
   /**
    * Checks if a given list of policies are valid for the {@code DELETE} policy restriction.
    *
-   * @param policyIds A list of {@link AccessPolicies} representing the policies to validate.
+   * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for DELETE, {@code false} otherwise.
    */
-  protected boolean areDeletePoliciesValid(List<AccessPolicies> policies) {
+  protected boolean areDeletePoliciesValid(List<GroupedExternalPolicyList> policies) {
     return arePoliciesValid(PolicyRestriction.DELETE, policies)
   }
 
   /**
    * Checks if a given list of policies are valid for the {@code CLAIM} policy restriction.
    *
-   * @param policyIds A list of {@link AccessPolicies} representing the policies to validate.
+   * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for CLAIM, {@code false} otherwise.
    */
-  protected boolean areClaimPoliciesValid(List<AccessPolicies> policies) {
+  protected boolean areClaimPoliciesValid(List<GroupedExternalPolicyList> policies) {
     return arePoliciesValid(PolicyRestriction.CLAIM, policies)
   }
 
   /**
    * Checks if a given list of policies are valid for the {@code APPLY_POLICIES} policy restriction.
    *
-   * @param policyIds A list of {@link AccessPolicies} representing the policies to validate.
+   * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for APPLY_POLICIES, {@code false} otherwise.
    */
-  protected boolean areApplyPoliciesPoliciesValid(List<AccessPolicies> policies) {
+  protected boolean areApplyPoliciesPoliciesValid(List<GroupedExternalPolicyList> policies) {
     return arePoliciesValid(PolicyRestriction.APPLY_POLICIES, policies)
   }
 
@@ -646,8 +643,8 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         }
 
         // We must now check whether all policies to add/remove/update are valid for CLAIM
-        // EvaluatedClaimPolicies includes a helper method to transform to List<AccessPolicies> for use in arePoliciesValid
-        List<AccessPolicies> changedPolicies = evaluatedClaimPolicies.changedPolicies()
+        // EvaluatedClaimPolicies includes a helper method to transform to List<GroupedPolicyList> for use in arePoliciesValid
+        List<GroupedExternalPolicyList> changedPolicies = evaluatedClaimPolicies.changedPolicies()
 
         if (!areClaimPoliciesValid(changedPolicies)) {
           success = false
@@ -664,7 +661,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           // We will then add/update policies from the claimBody
           // We do the delete first so that if we are accidentally replacing a policy like-for-like without an id,
           // we don't fail to add it thanks to duplicate check below, and then remove it, leaving resource unprotected
-          for (AccessPolicy policy : evaluatedClaimPolicies.policiesToRemove) {
+          for (IDomainAccessPolicy policy : evaluatedClaimPolicies.policiesToRemove) {
             AccessPolicyEntity policyEntity = accessPoliciesForResource.find {AccessPolicyEntity ape -> ape.id == policy.id }
 
             // This shouldn't happen since the removed ids will be from the existing policies, but just in case
@@ -677,7 +674,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           }
 
           // Now we can update policies from the claimBody
-          for (AccessPolicy policy  : evaluatedClaimPolicies.policiesToUpdate) {
+          for (IDomainAccessPolicy policy  : evaluatedClaimPolicies.policiesToUpdate) {
             AccessPolicyEntity policyEntity = accessPoliciesForResource.find {AccessPolicyEntity ape -> ape.id == policy.id }
 
             // This shouldn't happen since the updated ids will be from the existing policies, but just in case
@@ -691,7 +688,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           }
 
           // Finally we can add any new policies from the claimBody
-          for (AccessPolicy policy  : evaluatedClaimPolicies.policiesToAdd) {
+          for (IDomainAccessPolicy policy  : evaluatedClaimPolicies.policiesToAdd) {
             new AccessPolicyEntity(
               policyId: policy.policyId,
               type: policy.type,

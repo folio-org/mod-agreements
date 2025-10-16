@@ -1,8 +1,8 @@
 package com.k_int.accesscontrol.core.http.bodies;
 
-import com.k_int.accesscontrol.core.AccessPolicies;
+import com.k_int.accesscontrol.core.GroupedExternalPolicyList;
 import com.k_int.accesscontrol.core.http.responses.BasicPolicy;
-import com.k_int.accesscontrol.core.http.responses.Policy;
+import com.k_int.accesscontrol.core.IExternalPolicy;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,13 +36,13 @@ public interface ClaimBody {
    * based on their associated access policy type.
    * </p>
    *
-   * @return a list of {@link AccessPolicies} containing policy IDs grouped by type
+   * @return a list of {@link GroupedExternalPolicyList} containing policy IDs grouped by type
    */
-  default List<AccessPolicies> convertToAccessPolicies() {
+  default List<GroupedExternalPolicyList> convertToGroupedExternalPolicyList() {
     return getClaims().stream().reduce(
       new ArrayList<>(),
       (acc, curr) -> {
-        AccessPolicies relevantTypeIds = acc.stream()
+        GroupedExternalPolicyList relevantTypeIds = acc.stream()
           .filter(apti -> apti.getType() == curr.getType())
           .findFirst()
           .orElse(null);
@@ -50,12 +50,12 @@ public interface ClaimBody {
         if (relevantTypeIds != null) {
 
           // Update existing type with new policy ID
-          ArrayList<Policy> updatedPolicyIds = new ArrayList<>(relevantTypeIds.getPolicies());
+          ArrayList<IExternalPolicy> updatedPolicyIds = new ArrayList<>(relevantTypeIds.getPolicies());
           updatedPolicyIds.add(BasicPolicy.builder().id(curr.getPolicy().getId()).build());
           relevantTypeIds.setPolicies(updatedPolicyIds);
         } else {
           acc.add(
-            AccessPolicies.builder()
+            GroupedExternalPolicyList.builder()
               .type(curr.getType())
               .policies(Collections.singletonList(BasicPolicy.builder().id(curr.getPolicy().getId()).build()))
               .name("POLICY_IDS_FOR_" + curr.getType().toString())

@@ -1,10 +1,8 @@
 package com.k_int.accesscontrol.core;
 
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink;
-import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
 import com.k_int.accesscontrol.core.http.responses.BasicPolicy;
 import com.k_int.accesscontrol.core.http.responses.BasicPolicyLink;
-import com.k_int.accesscontrol.core.http.responses.Policy;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import lombok.Builder;
 import lombok.Data;
@@ -25,7 +23,7 @@ import java.util.*;
 @Builder
 @Slf4j
 @SuppressWarnings("javadoc")
-public class AccessPolicies {
+public class GroupedExternalPolicyList {
   /**
    * The type of access policy (e.g., ACQ_UNIT).
    * This indicates the category or classification of the policies.
@@ -39,7 +37,7 @@ public class AccessPolicies {
    * @param policies A list of policies associated with the specified access policy type.
    * @return A list of policies associated with the specified access policy type.
    */
-  List<? extends Policy> policies;
+  List<? extends IExternalPolicy> policies;
 
   /**
    * An optional name for the access policy type.
@@ -51,31 +49,30 @@ public class AccessPolicies {
   @Nullable
   String name;
 
-
   /**
-   * Converts a flat list of {@link AccessPolicy} entities into a grouped list of {@link AccessPolicies},
+   * Converts a flat list of {@link IDomainAccessPolicy} entities into a grouped list of {@link GroupedExternalPolicyList},
    * each containing a set of {@link BasicPolicy} records grouped by their {@link AccessPolicyType}.
    *
-   * @param policyList the raw list of {@link AccessPolicy} entities, typically retrieved from a database
-   * @return a grouped list of {@link AccessPolicies}, where each entry holds policies of a single type
+   * @param policyList the raw list of {@link IDomainAccessPolicy} entities, typically retrieved from a database
+   * @return a grouped list of {@link GroupedExternalPolicyList}, where each entry holds policies of a single type
    */
-  public static List<AccessPolicies> fromAccessPolicyList(Collection<AccessPolicy> policyList) {
+  public static List<GroupedExternalPolicyList> fromAccessPolicyList(Collection<IDomainAccessPolicy> policyList) {
     return policyList.stream().reduce(
       new ArrayList<>(),
       ( acc, curr) -> {
-        AccessPolicies relevantPoliciesEntry = acc.stream()
+        GroupedExternalPolicyList relevantPoliciesEntry = acc.stream()
           .filter(policiesEntry -> policiesEntry.getType() == curr.getType())
           .findFirst()
           .orElse(null);
 
         if (relevantPoliciesEntry != null) {
           // Update existing type with new policy
-          ArrayList<Policy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
+          ArrayList<IExternalPolicy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
           updatedPolicyIds.add(BasicPolicy.builder().id(curr.getPolicyId()).build());
           relevantPoliciesEntry.setPolicies(updatedPolicyIds);
         } else {
           acc.add(
-            AccessPolicies.builder()
+            GroupedExternalPolicyList.builder()
               .type(curr.getType())
               .policies(Collections.singletonList(BasicPolicy.builder().id(curr.getPolicyId()).build()))
               .name("POLICY_IDS_FOR_" + curr.getType().toString())
@@ -93,23 +90,23 @@ public class AccessPolicies {
   }
 
   /**
-   * Converts a list of {@link AccessPolicies} into a flat list of {@link PolicyLink} instances.
+   * Converts a list of {@link GroupedExternalPolicyList} into a flat list of {@link PolicyLink} instances.
    * <p>
-   * Each {@link PolicyLink} includes the original {@link Policy} as well as a description and type.
+   * Each {@link PolicyLink} includes the original {@link IExternalPolicy} as well as a description and type.
    * The description is derived from the {@code name} of the access policy group and the policy ID.
    * </p>
    *
-   * @param accessPolicies the grouped access policies to convert
+   * @param groupedExternalPolicyLists the grouped access policies to convert
    * @return a flat list of {@link PolicyLink} instances suitable for output in a response body
    */
-  public static List<PolicyLink> convertListToPolicyLinkList(Collection<AccessPolicies> accessPolicies) {
-    return accessPolicies.stream().reduce(
+  public static List<PolicyLink> convertListToPolicyLinkList(Collection<GroupedExternalPolicyList> groupedExternalPolicyLists) {
+    return groupedExternalPolicyLists.stream().reduce(
       new ArrayList<>(),
       (acc, curr) -> {
-        // Construct a PolicyLink for EACH accessPolicies.policy entry
+        // Construct a PolicyLink for EACH groupedExternalPolicyLists.policy entry
 
         // We don't currently keep any of the description or id information about AccessPolicy objects in the DB against
-        // the AccessPolicies List<? extends Policy> policies, so we cannot guess at a description or id
+        // the GroupedExternalPolicyList List<? extends IExternalPolicy> policies, so we cannot guess at a description or id
         // We might wish to do so in future, but for now we ignore and we trust upstream callers to populate these fields if needed
         List<BasicPolicyLink> innerPolicyLinks = curr.getPolicies().stream().map(pol -> BasicPolicyLink.builder()
           .policy(pol)
@@ -128,47 +125,47 @@ public class AccessPolicies {
   }
 
   /**
-   * Collects a {@link AccessPolicies} from a comma-separated string of policy ids. The policies field will be of type
+   * Collects a {@link GroupedExternalPolicyList} from a comma-separated string of policy ids. The policies field will be of type
    * {@link BasicPolicy}. Each id must be in the format `AccessPolicyType:AccessPolicyEntity.id`.
    *
    * @param policyString the comma-separated string of policy filters with types
-   * @return an {@link AccessPolicies} object representing the collected filters
+   * @return an {@link GroupedExternalPolicyList} object representing the collected filters
    * @throws PolicyEngineException if the input string is not formatted correctly or contains invalid types
    */
-  public static List<AccessPolicies> fromString(String policyString) {
+  public static List<GroupedExternalPolicyList> fromString(String policyString) {
     return Arrays.stream(policyString.split(","))
       .reduce(
-        new ArrayList<AccessPolicies>(),
+        new ArrayList<>(),
         ( acc, curr) -> {
           // Check that the format is valid
           String[] parts = curr.trim().split(":");
           if (parts.length != 2) {
-            throw new PolicyEngineException("AccessPolicies::fromString error. Invalid entry: " + curr + " -- must be of the form AccessPolicyType:AccessPolicyEntity.id");
+            throw new PolicyEngineException("GroupedExternalPolicyList::fromString error. Invalid entry: " + curr + " -- must be of the form AccessPolicyType:AccessPolicyEntity.id");
           }
 
           AccessPolicyType apt;
           try {
             apt = AccessPolicyType.valueOf(parts[0]);
           } catch (Exception e) {
-            throw new PolicyEngineException("AccessPolicies::fromString error. Invalid AccessPolicyType: " + parts[0]);
+            throw new PolicyEngineException("GroupedExternalPolicyList::fromString error. Invalid AccessPolicyType: " + parts[0]);
           }
 
-          AccessPolicies relevantPoliciesEntry = acc.stream()
+          GroupedExternalPolicyList relevantPoliciesEntry = acc.stream()
             .filter(policiesEntry -> policiesEntry.getType() == apt)
             .findFirst()
             .orElse(null);
 
           if (relevantPoliciesEntry != null) {
             // Update existing type with new policy
-            ArrayList<Policy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
+            ArrayList<IExternalPolicy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
             updatedPolicyIds.add(BasicPolicy.builder().id(parts[1]).build());
             relevantPoliciesEntry.setPolicies(updatedPolicyIds);
           } else {
             acc.add(
-              AccessPolicies.builder()
+              GroupedExternalPolicyList.builder()
                 .type(apt)
                 .policies(Collections.singletonList(BasicPolicy.builder().id(parts[1]).build()))
-                .name("POLICY_IDS_FOR_" + apt.toString())
+                .name("POLICY_IDS_FOR_" + apt)
                 .build()
             );
           }

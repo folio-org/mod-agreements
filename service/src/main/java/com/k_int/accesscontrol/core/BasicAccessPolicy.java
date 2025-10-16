@@ -15,7 +15,7 @@ import java.time.Instant;
 @Data
 @Builder
 @SuppressWarnings("javadoc")
-public class BasicAccessPolicy implements AccessPolicy {
+public class BasicAccessPolicy implements IDomainAccessPolicy {
   /** The unique identifier for the access policy in the database.
    * This is typically a UUID or similar unique string.
    * @param id The unique identifier of the access policy.
