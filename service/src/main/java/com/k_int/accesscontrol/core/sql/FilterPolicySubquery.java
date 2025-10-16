@@ -69,7 +69,7 @@ public class FilterPolicySubquery implements PolicySubquery {
                       .replaceAll("#ACCESS_POLICY_TABLE_NAME", parameters.getAccessPolicyTableName())
                       .replaceAll("#ACCESS_POLICY_TABLE_ALIAS", "apFilters" + pfIndex + "_" + apIndex) // Unique alias per EXISTS subquery
                       .replaceAll("#ACCESS_POLICY_TYPE_COLUMN_NAME", parameters.getAccessPolicyTypeColumnName())
-                      .replaceAll("#THE_TYPE", ap.getType().toString())
+                      .replaceAll("#THE_TYPE", "'" + ap.getType().toString() + "'")
                       .replaceAll("#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME", parameters.getAccessPolicyResourceClassColumnName())
                       .replaceAll("#RESOURCE_CLASS", "?") // MAPPING RESOURCE CLASS TO A PARAMETER
                       .replaceAll("#ACCESS_POLICY_ID_COLUMN_NAME", parameters.getAccessPolicyIdColumnName())
