@@ -4,6 +4,7 @@ import com.k_int.accesscontrol.core.AccessPolicies
 import com.k_int.accesscontrol.core.AccessPolicy
 import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink
+import com.k_int.accesscontrol.core.http.filters.PoliciesFilter
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies
 import com.k_int.accesscontrol.core.sql.AccessControlSql
@@ -23,6 +24,8 @@ import grails.gorm.transactions.Transactional
 import org.hibernate.Criteria
 import org.hibernate.Session
 import org.hibernate.SessionFactory
+import org.hibernate.criterion.Conjunction
+import org.hibernate.criterion.Disjunction
 import org.hibernate.engine.spi.SessionFactoryImplementor
 import org.hibernate.query.NativeQuery
 import org.hibernate.type.Type
@@ -143,6 +146,35 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   }
 
   /**
+   * Constructs a {@link PolicySubqueryParameters} object for use in policy subqueries.
+   * This method sets up the necessary parameters based on the resource ID and the
+   * ownership chain configuration.
+   *
+   * @param resourceId The ID of the resource to which the policies apply. Can be {@code null} for LIST queries.
+   * @return A {@link PolicySubqueryParameters} object populated with the relevant parameters.
+   */
+  protected PolicySubqueryParameters getPolicySubqueryParameters(String resourceId) {
+    String resourceAlias = '{alias}'
+    PolicyControlledMetadata rootPolicyControlledMetadata = policyControlledManager.getRootPolicyControlledMetadata()
+    if (policyControlledManager.hasOwners()) {
+      resourceAlias = rootPolicyControlledMetadata.getAliasName()
+    } // If there are no "owners" then rootPolicyControlledMetadata should equal leafPolicyControlledMetadata ie, resourceClass
+
+    return PolicySubqueryParameters
+      .builder()
+      .accessPolicyTableName(AccessPolicyEntity.TABLE_NAME)
+      .accessPolicyTypeColumnName(AccessPolicyEntity.TYPE_COLUMN)
+      .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
+      .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
+      .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
+      .resourceAlias(resourceAlias) // This alias can be deeply nested from owner or '{alias}' for hibernate top level queries
+      .resourceIdColumnName(rootPolicyControlledMetadata.resourceIdColumn)
+      .resourceId(resourceId) // This might be null (For LIST type queries)
+      .resourceClass(rootPolicyControlledMetadata.resourceClassName)
+      .build()
+  }
+
+  /**
    * Generates a list of SQL fragments (policy subqueries) based on a given policy restriction,
    * query type, and the resource ID to which the policy applies.
    * This method communicates with the {@link PolicyEngine} to retrieve the policy definitions
@@ -158,29 +190,9 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
-
     List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, restriction, queryType)
 
-    String resourceAlias = '{alias}'
-    PolicyControlledMetadata rootPolicyControlledMetadata = policyControlledManager.getRootPolicyControlledMetadata()
-    if (policyControlledManager.hasOwners()) {
-      resourceAlias = rootPolicyControlledMetadata.getAliasName()
-    } // If there are no "owners" then rootPolicyControlledMetadata should equal leafPolicyControlledMetadata ie, resourceClass
-
-    // We build a parameter block to use on the policy subqueries. Some of these we can probably set up ahead of time...
-    PolicySubqueryParameters params = PolicySubqueryParameters
-      .builder()
-      .accessPolicyTableName(AccessPolicyEntity.TABLE_NAME)
-      .accessPolicyTypeColumnName(AccessPolicyEntity.TYPE_COLUMN)
-      .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
-      .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
-      .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
-      .resourceAlias(resourceAlias) // This alias can be deeply nested from owner or '{alias}' for hibernate top level queries
-      .resourceIdColumnName(rootPolicyControlledMetadata.resourceIdColumn)
-      .resourceId(resourceId) // This might be null (For LIST type queries)
-      .resourceClass(rootPolicyControlledMetadata.resourceClassName)
-      .build()
-
+    PolicySubqueryParameters params = getPolicySubqueryParameters(resourceId)
     log.trace("PolicySubqueryParameters configured: ${params}")
 
     return policySubqueries.collect { psq -> psq.getSql(params)}
@@ -430,6 +442,8 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       log.trace("AccessControl generated PolicySql parameters: ${policySql.collect{ it.parameters.collect { it.toString() } }.join(', ')}")
       log.trace("AccessControl generated PolicySql types: ${policySql.collect{ it.types.collect { it.toString() } }.join(', ')}")
 
+      PolicySubqueryParameters subqueryParams = getPolicySubqueryParameters()
+
       long beforeLookup = System.nanoTime()
       respond doTheLookup(resourceClass) {
 
@@ -439,6 +453,8 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           return new MultipleAliasSQLCriterion.SubCriteriaAliasContainer(pcm.getAliasName(), aliasCriteria)
         }
 
+        // This is effectively an AND across all policySql entries
+        // We would need Restrictions.disjunction for OR
         policySql.each {psql ->
           String sqlString = psql.getSqlString()
           Object[] parameters = psql.getParameters()
@@ -446,6 +462,72 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
           criteria.add(new MultipleAliasSQLCriterion(sqlString, parameters, types, subCriteria))
         }
+
+
+        // We have special logic for filtering by access control policies here.
+        // If the user sends down queryParams policiesFilter=A,B,C then we will perform an ORed filter on those policies
+        // If the user sends down queryParams policiesFilter=A, policiesFilter=B, policiesFilter=C then we will perform an ANDed filter on those policies.
+
+        // This means we can perform a query like: ( A OR B ) AND C, but can't go arbitrarily deep at the moment.
+
+        // Policy filters (eg "A") MUST be formatted like: "AccessPolicyType:AccessPolicyEntity.id" eg "ACQ_UNIT:e7aa4d3a-d686-42b4-8371-a7055ce95239"
+
+        // FIXME this filter work can PROBABLY go into the PolicyEngine, it's not engine-by-engine specific but can be returned as an additional SQL fragment to be glued on at the end?
+        // Build the PoliciesFilter list here from the params pushed down.
+        Collection<String> policiesFilterParams = params.list('policiesFilter') // This will be a List of Strings, or an empty list if not present
+        List<PoliciesFilter> policiesFilters = PoliciesFilter.fromStringCollection(policiesFilterParams)
+
+        // Remove policiesFilter params from the params map so that the default criteria builder doesn't try to handle them
+        params.remove('policiesFilter')
+
+        println("WHAT policiesFilter PARAMS DO WE HAVE? ${policiesFilterParams}")
+        println("WHAT policiesFilters DO WE HAVE? ${policiesFilters}")
+
+        // Ok we now have PoliciesFilter objects, construct some additional SQL
+        // FIXME type these
+        def filterSQLParams = []
+        def filterSQLTypes = []
+
+        String filterSql = "(\n" +
+          String.join(
+            '\n AND \n', // Take each top level PoliciesFilter and AND them together
+            policiesFilters.withIndex().collect { (pf, pfIndex) ->
+              "(\n" + String.join(
+                '\n OR \n', // Then each PoliciesFilter within that pf contains AccessPolicies, and these are ORed together
+                pf.filters.withIndex().collect { (ap, apIndex) -> {
+                  filterSQLParams.add(subqueryParams.getResourceClass()) // Add resource class
+                  filterSQLTypes.add(typeMapper.getHibernateType(AccessControlSqlType.STRING)) // Resource class is a string
+
+                  filterSQLParams.addAll(ap.policies.collect { it.getId() }) // Add policies
+                  filterSQLParams.addAll(Collections.nCopies(ap.policies.size(), typeMapper.getHibernateType(AccessControlSqlType.STRING))) // all policy ids are strings
+
+                  return """
+                    (
+                      EXISTS (
+                        SELECT 1 FROM #ACCESS_POLICY_TABLE_NAME #ACCESS_POLICY_TABLE_ALIAS
+                        WHERE
+                        #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_TYPE_COLUMN_NAME = #THE_TYPE AND
+                        #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = #RESOURCE_CLASS AND
+                        #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_ID_COLUMN_NAME IN (#FILTER_UNITS)
+                        LIMIT 1
+                      )
+                    )
+                  """
+                    .replaceAll('#ACCESS_POLICY_TABLE_NAME', subqueryParams.getAccessPolicyTableName())
+                    .replaceAll('#ACCESS_POLICY_TABLE_ALIAS', "apFilters${pfIndex}_${apIndex}") // Unique alias per EXISTS subquery
+                    .replaceAll('#ACCESS_POLICY_TYPE_COLUMN_NAME', subqueryParams.getAccessPolicyTypeColumnName())
+                    .replaceAll('#THE_TYPE', ap.type.toString())
+                    .replaceAll('#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME', subqueryParams.getAccessPolicyResourceClassColumnName())
+                    .replaceAll('#RESOURCE_CLASS', "?") // MAPPING RESOURCE CLASS TO A PARAMETER
+                    .replaceAll('#ACCESS_POLICY_ID_COLUMN_NAME', subqueryParams.getAccessPolicyIdColumnName())
+                    .replaceAll('#FILTER_UNITS', String.join(",", Collections.nCopies(ap.policies.size(), "?"))) // MAPPING FILTER UNITS TO PARAMETERS
+                }}
+              ) + "\n)"
+            }
+          ) + "\n)"
+        println("WHAT IS FILTERSQL? ${filterSql}")
+        // TODO add to criteria
+
         // Ensure we return criteria at the bottom?
         return criteria
       }
