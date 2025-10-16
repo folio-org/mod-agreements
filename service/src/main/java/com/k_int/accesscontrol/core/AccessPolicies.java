@@ -1,17 +1,17 @@
 package com.k_int.accesscontrol.core;
 
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink;
+import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
 import com.k_int.accesscontrol.core.http.responses.BasicPolicy;
 import com.k_int.accesscontrol.core.http.responses.BasicPolicyLink;
 import com.k_int.accesscontrol.core.http.responses.Policy;
+import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Represents a collection of access policies grouped by their type.
@@ -23,6 +23,7 @@ import java.util.List;
  */
 @Data
 @Builder
+@Slf4j
 @SuppressWarnings("javadoc")
 public class AccessPolicies {
   /**
@@ -124,5 +125,60 @@ public class AccessPolicies {
         return arr1;
       }
     );
+  }
+
+  /**
+   * Collects a {@link AccessPolicies} from a comma-separated string of policy ids. The policies field will be of type
+   * {@link BasicPolicy}. Each id must be in the format `AccessPolicyType:AccessPolicyEntity.id`.
+   *
+   * @param policyString the comma-separated string of policy filters with types
+   * @return an {@link AccessPolicies} object representing the collected filters
+   * @throws PolicyEngineException if the input string is not formatted correctly or contains invalid types
+   */
+  public static List<AccessPolicies> fromString(String policyString) {
+    return Arrays.stream(policyString.split(","))
+      .reduce(
+        new ArrayList<AccessPolicies>(),
+        ( acc, curr) -> {
+          // Check that the format is valid
+          String[] parts = curr.trim().split(":");
+          if (parts.length != 2) {
+            throw new PolicyEngineException("AccessPolicies::fromString error. Invalid entry: " + curr + " -- must be of the form AccessPolicyType:AccessPolicyEntity.id");
+          }
+
+          AccessPolicyType apt;
+          try {
+            apt = AccessPolicyType.valueOf(parts[0]);
+          } catch (Exception e) {
+            throw new PolicyEngineException("AccessPolicies::fromString error. Invalid AccessPolicyType: " + parts[0]);
+          }
+
+          AccessPolicies relevantPoliciesEntry = acc.stream()
+            .filter(policiesEntry -> policiesEntry.getType() == apt)
+            .findFirst()
+            .orElse(null);
+
+          if (relevantPoliciesEntry != null) {
+            // Update existing type with new policy
+            ArrayList<Policy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
+            updatedPolicyIds.add(BasicPolicy.builder().id(parts[1]).build());
+            relevantPoliciesEntry.setPolicies(updatedPolicyIds);
+          } else {
+            acc.add(
+              AccessPolicies.builder()
+                .type(apt)
+                .policies(Collections.singletonList(BasicPolicy.builder().id(parts[1]).build()))
+                .name("POLICY_IDS_FOR_" + apt.toString())
+                .build()
+            );
+          }
+
+          return acc;
+        },
+        (policies1, policies2) -> {
+          policies1.addAll(policies2);
+          return policies1;
+        }
+      );
   }
 }
