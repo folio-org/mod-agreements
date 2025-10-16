@@ -6,6 +6,7 @@ import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 
 import java.util.*;
 
+import kotlin.Suppress;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -15,12 +16,13 @@ import lombok.extern.slf4j.Slf4j;
  * <p>
  * This class is used to encapsulate a collection of {@link AccessPolicies},
  * which group access policies by their type. This group will be ORed together in a filter SQL operation performed
- * by the {@link com.k_int.accesscontrol.main.PolicyEngine}. A List<PoliciesFilter> can be used to represent multiple
+ * by the {@link com.k_int.accesscontrol.main.PolicyEngine}. A list of PoliciesFilter objects can be used to represent multiple
  * such groups, which will be ANDed together in the same filter operation.
  * </p>
  */
 @Slf4j
 @Builder
+@SuppressWarnings("javadoc")
 public class PoliciesFilter {
   /**
    * A list of {@link AccessPolicies} to be used as filters.
@@ -52,7 +54,7 @@ public class PoliciesFilter {
   }
 
   /** Create a list of PoliciesFilter from a collection of string representations of policies.
-   * These top level filters will be ANDed together in a filter operation, with the internal List<AccessPolicies> being
+   * These top level filters will be ANDed together in a filter operation, with the internal list of {@link AccessPolicies} being
    * ORed together. Each string should be formatted as
    * `{@link AccessPolicyType}:{@link com.k_int.accesscontrol.core.AccessPolicy}.id`.
    * @param policyStrings The collection of string representations of policies.

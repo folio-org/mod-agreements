@@ -13,6 +13,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
+/**
+ * Implementation of {@link PolicySubquery} that generates SQL subqueries based on a list of {@link PoliciesFilter}.
+ * <p>
+ * This class constructs SQL subqueries to filter records based on access policy restrictions.
+ * Each {@link PoliciesFilter} contains a list of {@link AccessPolicies} that are ORed together,
+ * while the top-level list of {@link PoliciesFilter} is ANDed together in the final SQL.
+ * This implementation allows for different query types (LIST or SINGLE), representing an index operation or the fetch
+ * of a single record directly filtered by existence of a given policy on that resource.
+ * </p>
+ */
 @Builder
 @Slf4j
 @SuppressWarnings("javadoc")
@@ -25,6 +35,10 @@ public class FilterPolicySubquery implements PolicySubquery {
    */
   private final AccessPolicyQueryType queryType;
 
+  /** Template for the SQL filter subquery.
+   * This template is used to construct the SQL string for filtering based on access policies.
+   * Placeholders in the template are replaced with actual table names, column names, and parameters.
+   */
   public static final String FILTER_TEMPLATE = """
     (
       EXISTS (
@@ -41,7 +55,7 @@ public class FilterPolicySubquery implements PolicySubquery {
 
   /** A list of PoliciesFilter objects representing the filters to be applied.
    * Each PoliciesFilter contains a list of AccessPolicies that will be ORed together,
-   * while the top-level List<PoliciesFilter> will be ANDed together in the final SQL.
+   * while the top-level list of PoliciesFilter objects will be ANDed together in the final SQL.
    * @param policiesFilters A list of PoliciesFilter objects representing the filters to be applied.
    * @return A list of PoliciesFilter objects representing the filters to be applied.
    */

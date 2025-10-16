@@ -84,6 +84,18 @@ public class PolicyEngine implements PolicyEngineImplementor {
     return policySubqueries;
   }
 
+  /**
+   * Extended version of getPolicySubqueries which also takes in a list of PoliciesFilter objects.
+   * These filters will be ANDed together in the final SQL, with the internal list of AccessPolicies
+   * within each PoliciesFilter being ORed together.
+   *
+   * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
+   * @param pr The policy restriction which we want to filter by
+   * @param queryType Whether to return boolean queries for single use or filter queries for all records
+   * @param filters A list of PoliciesFilter objects representing additional filters to apply
+   * @return A list of PolicySubqueries, either for boolean restriction or for filtering, including the provided filters
+   * @throws PolicyEngineException -- the understanding is that within a request context this should be caught and return a 500
+   */
   public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType, List<PoliciesFilter> filters) throws PolicyEngineException {
 
     List<PolicySubquery> policySubqueries = getPolicySubqueries(headers, pr, queryType);

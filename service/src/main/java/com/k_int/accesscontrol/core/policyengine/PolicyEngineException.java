@@ -6,6 +6,7 @@ import lombok.Getter;
  * Custom runtime exception class for errors that occur within the Policy Engine.
  * This exception provides specific error codes and can wrap an underlying cause.
  */
+@SuppressWarnings("javadoc")
 public class PolicyEngineException extends RuntimeException {
   /**
    * Generic error code, used when no more specific code is applicable.
@@ -53,11 +54,13 @@ public class PolicyEngineException extends RuntimeException {
 
   /**
    * The specific error code associated with this exception.
+   * @return The specific error code associated with this exception.
    */
   @Getter
   final Long code;
   /**
    * The underlying cause of this exception, if any.
+   * @return The underlying cause of this exception, if any.
    */
   @Getter
   final Throwable cause;
