@@ -94,6 +94,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
     // We have some filters, so we should create a PolicySubquery for them and add to the list
     FilterPolicySubquery filterPolicySubquery = FilterPolicySubquery.builder()
       .policiesFilters(filters)
+      .queryType(queryType)
       .build();
     policySubqueries.add(filterPolicySubquery);
 

@@ -1,8 +1,10 @@
 package com.k_int.accesscontrol.core.sql;
 
 import com.k_int.accesscontrol.core.AccessPolicies;
+import com.k_int.accesscontrol.core.AccessPolicyQueryType;
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
 import com.k_int.accesscontrol.core.http.responses.Policy;
+import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,27 +15,60 @@ import java.util.stream.IntStream;
 
 @Builder
 @Slf4j
+@SuppressWarnings("javadoc")
 public class FilterPolicySubquery implements PolicySubquery {
+  /**
+   * The type of query being generated, either LIST or SINGLE.
+   * This determines how the SQL will be structured.
+   * @param queryType The type of query to generate (LIST or SINGLE)
+   * @return The type of query being generated (LIST or SINGLE)
+   */
+  private final AccessPolicyQueryType queryType;
+
   public static final String FILTER_TEMPLATE = """
     (
       EXISTS (
         SELECT 1 FROM #ACCESS_POLICY_TABLE_NAME #ACCESS_POLICY_TABLE_ALIAS
         WHERE
         #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_TYPE_COLUMN_NAME = #THE_TYPE AND
+        #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME = #RESOURCE_ID_MATCH AND
         #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = #RESOURCE_CLASS AND
         #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_ID_COLUMN_NAME IN (#FILTER_UNITS)
         LIMIT 1
       )
     )
   """;
+
+  /** A list of PoliciesFilter objects representing the filters to be applied.
+   * Each PoliciesFilter contains a list of AccessPolicies that will be ORed together,
+   * while the top-level List<PoliciesFilter> will be ANDed together in the final SQL.
+   * @param policiesFilters A list of PoliciesFilter objects representing the filters to be applied.
+   * @return A list of PoliciesFilter objects representing the filters to be applied.
+   */
   List<PoliciesFilter> policiesFilters; // Set up the policiesFilters, so we can return the correct shape right out the back of getSql
 
+  /**
+   * Generates an SQL subquery based on the provided parameters and the internal policies filters.
+   *
+   * @param parameters the parameters required to generate the SQL subquery
+   * @return an {@link AccessControlSql} object containing the SQL string, parameters, and their types
+   */
   public AccessControlSql getSql(PolicySubqueryParameters parameters) {
     // Spin up a list of all SQL parameters;
     List<String> allParameters = new ArrayList<>();
     // Keep track of their types as well.
     List<AccessControlSqlType> allTypes = new ArrayList<>();
 
+    // Handle resourceIdMatch based on query type -- We will only be using this for Index for now but hopefully this will allow it to work for single record queries in future
+    final String resourceIdMatch;
+    if (queryType == AccessPolicyQueryType.SINGLE) {
+      if (parameters.getResourceId() == null) {
+        throw new PolicyEngineException("PolicySubqueryParameters for AccessPolicyQueryType.SINGLE must include resourceId", PolicyEngineException.INVALID_QUERY_PARAMETERS);
+      }
+      resourceIdMatch = "?"; // We will bind an extra parameter for these, using parameters.getResourceId().
+    } else {
+      resourceIdMatch = parameters.getResourceAlias() + "." + parameters.getResourceIdColumnName();
+    }
 
     String filterSql = "(\n" +
       String.join(
@@ -48,30 +83,26 @@ public class FilterPolicySubquery implements PolicySubquery {
                   .mapToObj(apIndex -> {
                     AccessPolicies ap = pf.getFilters().get(apIndex);
 
+                    if (queryType == AccessPolicyQueryType.SINGLE) {
+                      allParameters.add(parameters.getResourceId()); // Add resource id (But only when in a SINGLE query, list is handled by alias above)
+                      allTypes.add(AccessControlSqlType.STRING); // Resource id is a string
+                    }
+
                     allParameters.add(parameters.getResourceClass()); // Add resource class
                     allTypes.add(AccessControlSqlType.STRING); // Resource class is a string
 
                     allParameters.addAll(ap.getPolicies().stream().map(Policy::getId).toList()); // Add policy ids
                     allTypes.addAll(Collections.nCopies(ap.getPolicies().size(), AccessControlSqlType.STRING)); // all policy ids are strings
 
-                    return """
-                      (
-                        EXISTS (
-                          SELECT 1 FROM #ACCESS_POLICY_TABLE_NAME #ACCESS_POLICY_TABLE_ALIAS
-                          WHERE
-                          #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_TYPE_COLUMN_NAME = #THE_TYPE AND
-                          #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = #RESOURCE_CLASS AND
-                          #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_ID_COLUMN_NAME IN (#FILTER_UNITS)
-                          LIMIT 1
-                        )
-                      )
-                    """
+                    return FILTER_TEMPLATE
                       .replaceAll("#ACCESS_POLICY_TABLE_NAME", parameters.getAccessPolicyTableName())
                       .replaceAll("#ACCESS_POLICY_TABLE_ALIAS", "apFilters" + pfIndex + "_" + apIndex) // Unique alias per EXISTS subquery
                       .replaceAll("#ACCESS_POLICY_TYPE_COLUMN_NAME", parameters.getAccessPolicyTypeColumnName())
                       .replaceAll("#THE_TYPE", "'" + ap.getType().toString() + "'")
                       .replaceAll("#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME", parameters.getAccessPolicyResourceClassColumnName())
                       .replaceAll("#RESOURCE_CLASS", "?") // MAPPING RESOURCE CLASS TO A PARAMETER
+                      .replaceAll("#RESOURCE_ID_MATCH", resourceIdMatch)
+                      .replaceAll("#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME", parameters.getAccessPolicyResourceIdColumnName())
                       .replaceAll("#ACCESS_POLICY_ID_COLUMN_NAME", parameters.getAccessPolicyIdColumnName())
                       .replaceAll("#FILTER_UNITS", String.join(",", Collections.nCopies(ap.getPolicies().size(), "?"))); // MAPPING FILTER UNITS TO PARAMETERS
                   })

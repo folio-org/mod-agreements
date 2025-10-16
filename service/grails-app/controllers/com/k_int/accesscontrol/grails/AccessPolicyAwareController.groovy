@@ -467,8 +467,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       // Remove policiesFilter params from the params map so that the default criteria builder doesn't try to handle them
       params.remove('policiesFilter')
 
-      println("WHAT policiesFilter PARAMS DO WE HAVE? ${policiesFilterParams}")
-      println("WHAT policiesFilters DO WE HAVE? ${policiesFilters}")
+      log.trace("policiesFilters: ${"(" + policiesFilters.collect{ it.filters.collect {"${it.type}:[${it.policies.collect {it.id }.join(', ')}]"}.join(', ') }.join(', ') + ")"}")
 
       List<AccessControlSql> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null, policiesFilters)
       log.trace("AccessControl generated PolicySql: ${policySql.collect{ it.sqlString }.join(', ')}")
