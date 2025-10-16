@@ -4,9 +4,11 @@ import com.k_int.accesscontrol.acqunits.*;
 import com.k_int.accesscontrol.core.*;
 import com.k_int.accesscontrol.core.http.bodies.ClaimBody;
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink;
+import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineImplementor;
+import com.k_int.accesscontrol.core.sql.FilterPolicySubquery;
 import com.k_int.accesscontrol.core.sql.PolicySubquery;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -82,6 +84,21 @@ public class PolicyEngine implements PolicyEngineImplementor {
     return policySubqueries;
   }
 
+  public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType, List<PoliciesFilter> filters) throws PolicyEngineException {
+
+    List<PolicySubquery> policySubqueries = getPolicySubqueries(headers, pr, queryType);
+    if (filters == null || filters.isEmpty()) {
+      return policySubqueries;
+    }
+
+    // We have some filters, so we should create a PolicySubquery for them and add to the list
+    FilterPolicySubquery filterPolicySubquery = FilterPolicySubquery.builder()
+      .policiesFilters(filters)
+      .build();
+    policySubqueries.add(filterPolicySubquery);
+
+    return policySubqueries;
+  }
 
   /**
    * Retrieves a list of access policies grouped by their type for the given policy restriction.

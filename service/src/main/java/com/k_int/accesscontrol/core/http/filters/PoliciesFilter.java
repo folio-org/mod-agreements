@@ -7,6 +7,7 @@ import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import java.util.*;
 
 import lombok.Builder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -28,6 +29,7 @@ public class PoliciesFilter {
    * @param filters A list of {@link AccessPolicies} to be used as filters.
    * @return A list of {@link AccessPolicies} to be used as filters.
    */
+  @Getter
   List<AccessPolicies> filters;
 
   /** Constructor for PoliciesFilter.

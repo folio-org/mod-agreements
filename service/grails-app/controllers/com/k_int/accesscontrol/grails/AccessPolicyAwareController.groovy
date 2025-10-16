@@ -186,14 +186,30 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    * @return A list of SQL string fragments representing the access policies.
    */
   protected List<AccessControlSql> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId) {
+    return getPolicySql(restriction, queryType, resourceId, null)
+  }
+
+  /**
+   * Generates a list of SQL fragments (policy subqueries) based on a given policy restriction,
+   * query type, the resource ID to which the policy applies, and optional policy filters.
+   * This method communicates with the {@link PolicyEngine} to retrieve the policy definitions
+   * and formats them into SQL suitable for database queries.
+   *
+   * @param restriction The type of policy restriction (e.g., READ, UPDATE, DELETE).
+   * @param queryType The type of query (e.g., SINGLE for individual resource checks, LIST for collection checks).
+   * @param resourceId The ID of the resource to apply the policy to. Can be {@code null} for LIST queries.
+   * @param filters Optional list of {@link PoliciesFilter} to refine which policies are considered.
+   * @return A list of SQL string fragments representing the access policies.
+   */
+  protected List<AccessControlSql> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId, List<PoliciesFilter> filters) {
     /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
 
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
-    List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, restriction, queryType)
+    List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, restriction, queryType, filters)
 
     PolicySubqueryParameters params = getPolicySubqueryParameters(resourceId)
-    log.trace("PolicySubqueryParameters configured: ${params}")
+    log.trace("AccessPolicyAwareController::getPolicySql PolicySubqueryParameters configured: ${params}")
 
     return policySubqueries.collect { psq -> psq.getSql(params)}
   }
@@ -437,12 +453,27 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   def index(Integer max) {
     // Protect the index method with access control -- replace the built in "index" method
     AccessPolicyEntity.withNewSession {
-      List<AccessControlSql> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null)
+      // We have special logic for filtering by access control policies here.
+      // If the user sends down queryParams policiesFilter=A,B,C then we will perform an ORed filter on those policies
+      // If the user sends down queryParams policiesFilter=A, policiesFilter=B, policiesFilter=C then we will perform an ANDed filter on those policies.
+
+      // This means we can perform a query like: ( A OR B ) AND C, but can't go arbitrarily deep at the moment.
+
+      // Policy filters (eg "A") MUST be formatted like: "AccessPolicyType:AccessPolicyEntity.id" eg "ACQ_UNIT:e7aa4d3a-d686-42b4-8371-a7055ce95239"
+      // Build the PoliciesFilter list here from the params pushed down.
+      Collection<String> policiesFilterParams = params.list('policiesFilter') // This will be a List of Strings, or an empty list if not present
+      List<PoliciesFilter> policiesFilters = PoliciesFilter.fromStringCollection(policiesFilterParams)
+
+      // Remove policiesFilter params from the params map so that the default criteria builder doesn't try to handle them
+      params.remove('policiesFilter')
+
+      println("WHAT policiesFilter PARAMS DO WE HAVE? ${policiesFilterParams}")
+      println("WHAT policiesFilters DO WE HAVE? ${policiesFilters}")
+
+      List<AccessControlSql> policySql = getPolicySql(PolicyRestriction.READ, AccessPolicyQueryType.LIST, null, policiesFilters)
       log.trace("AccessControl generated PolicySql: ${policySql.collect{ it.sqlString }.join(', ')}")
       log.trace("AccessControl generated PolicySql parameters: ${policySql.collect{ it.parameters.collect { it.toString() } }.join(', ')}")
       log.trace("AccessControl generated PolicySql types: ${policySql.collect{ it.types.collect { it.toString() } }.join(', ')}")
-
-      PolicySubqueryParameters subqueryParams = getPolicySubqueryParameters()
 
       long beforeLookup = System.nanoTime()
       respond doTheLookup(resourceClass) {
@@ -462,71 +493,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
           criteria.add(new MultipleAliasSQLCriterion(sqlString, parameters, types, subCriteria))
         }
-
-
-        // We have special logic for filtering by access control policies here.
-        // If the user sends down queryParams policiesFilter=A,B,C then we will perform an ORed filter on those policies
-        // If the user sends down queryParams policiesFilter=A, policiesFilter=B, policiesFilter=C then we will perform an ANDed filter on those policies.
-
-        // This means we can perform a query like: ( A OR B ) AND C, but can't go arbitrarily deep at the moment.
-
-        // Policy filters (eg "A") MUST be formatted like: "AccessPolicyType:AccessPolicyEntity.id" eg "ACQ_UNIT:e7aa4d3a-d686-42b4-8371-a7055ce95239"
-
-        // FIXME this filter work can PROBABLY go into the PolicyEngine, it's not engine-by-engine specific but can be returned as an additional SQL fragment to be glued on at the end?
-        // Build the PoliciesFilter list here from the params pushed down.
-        Collection<String> policiesFilterParams = params.list('policiesFilter') // This will be a List of Strings, or an empty list if not present
-        List<PoliciesFilter> policiesFilters = PoliciesFilter.fromStringCollection(policiesFilterParams)
-
-        // Remove policiesFilter params from the params map so that the default criteria builder doesn't try to handle them
-        params.remove('policiesFilter')
-
-        println("WHAT policiesFilter PARAMS DO WE HAVE? ${policiesFilterParams}")
-        println("WHAT policiesFilters DO WE HAVE? ${policiesFilters}")
-
-        // Ok we now have PoliciesFilter objects, construct some additional SQL
-        // FIXME type these
-        def filterSQLParams = []
-        def filterSQLTypes = []
-
-        String filterSql = "(\n" +
-          String.join(
-            '\n AND \n', // Take each top level PoliciesFilter and AND them together
-            policiesFilters.withIndex().collect { (pf, pfIndex) ->
-              "(\n" + String.join(
-                '\n OR \n', // Then each PoliciesFilter within that pf contains AccessPolicies, and these are ORed together
-                pf.filters.withIndex().collect { (ap, apIndex) -> {
-                  filterSQLParams.add(subqueryParams.getResourceClass()) // Add resource class
-                  filterSQLTypes.add(typeMapper.getHibernateType(AccessControlSqlType.STRING)) // Resource class is a string
-
-                  filterSQLParams.addAll(ap.policies.collect { it.getId() }) // Add policies
-                  filterSQLParams.addAll(Collections.nCopies(ap.policies.size(), typeMapper.getHibernateType(AccessControlSqlType.STRING))) // all policy ids are strings
-
-                  return """
-                    (
-                      EXISTS (
-                        SELECT 1 FROM #ACCESS_POLICY_TABLE_NAME #ACCESS_POLICY_TABLE_ALIAS
-                        WHERE
-                        #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_TYPE_COLUMN_NAME = #THE_TYPE AND
-                        #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = #RESOURCE_CLASS AND
-                        #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_ID_COLUMN_NAME IN (#FILTER_UNITS)
-                        LIMIT 1
-                      )
-                    )
-                  """
-                    .replaceAll('#ACCESS_POLICY_TABLE_NAME', subqueryParams.getAccessPolicyTableName())
-                    .replaceAll('#ACCESS_POLICY_TABLE_ALIAS', "apFilters${pfIndex}_${apIndex}") // Unique alias per EXISTS subquery
-                    .replaceAll('#ACCESS_POLICY_TYPE_COLUMN_NAME', subqueryParams.getAccessPolicyTypeColumnName())
-                    .replaceAll('#THE_TYPE', ap.type.toString())
-                    .replaceAll('#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME', subqueryParams.getAccessPolicyResourceClassColumnName())
-                    .replaceAll('#RESOURCE_CLASS', "?") // MAPPING RESOURCE CLASS TO A PARAMETER
-                    .replaceAll('#ACCESS_POLICY_ID_COLUMN_NAME', subqueryParams.getAccessPolicyIdColumnName())
-                    .replaceAll('#FILTER_UNITS', String.join(",", Collections.nCopies(ap.policies.size(), "?"))) // MAPPING FILTER UNITS TO PARAMETERS
-                }}
-              ) + "\n)"
-            }
-          ) + "\n)"
-        println("WHAT IS FILTERSQL? ${filterSql}")
-        // TODO add to criteria
 
         // Ensure we return criteria at the bottom?
         return criteria
