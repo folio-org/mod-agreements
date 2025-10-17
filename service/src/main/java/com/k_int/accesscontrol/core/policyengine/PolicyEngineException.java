@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.core.policyengine;
 
-import com.k_int.accesscontrol.core.IDomainAccessPolicy;
+import com.k_int.accesscontrol.core.DomainAccessPolicy;
 import lombok.Getter;
 
 /**
@@ -32,15 +32,15 @@ public class PolicyEngineException extends RuntimeException {
 
   // CLAIM exception codes
   /**
-   * During a CLAIM operation, this error indicates that the {@link IDomainAccessPolicy} specified via an id in the {@link com.k_int.accesscontrol.core.http.bodies.PolicyLink} was not found in the existing policies list
+   * During a CLAIM operation, this error indicates that the {@link DomainAccessPolicy} specified via an id in the {@link com.k_int.accesscontrol.core.http.bodies.PolicyLink} was not found in the existing policies list
    */
   public static final Long ACCESS_POLICY_ID_NOT_FOUND = 5L;
   /**
-   * During a CLAIM operation, this error indicates that the {@link IDomainAccessPolicy} specified does not match the resource id in the {@link com.k_int.accesscontrol.core.http.bodies.PolicyLink}
+   * During a CLAIM operation, this error indicates that the {@link DomainAccessPolicy} specified does not match the resource id in the {@link com.k_int.accesscontrol.core.http.bodies.PolicyLink}
    */
   public static final Long ACCESS_POLICY_RESOURCE_ID_DOES_NOT_MATCH = 6L;
   /**
-   * During a CLAIM operation, this error indicates that the {@link IDomainAccessPolicy} specified does not match the resource class in the {@link com.k_int.accesscontrol.core.http.bodies.PolicyLink}
+   * During a CLAIM operation, this error indicates that the {@link DomainAccessPolicy} specified does not match the resource class in the {@link com.k_int.accesscontrol.core.http.bodies.PolicyLink}
    */
   public static final Long ACCESS_POLICY_RESOURCE_CLASS_DOES_NOT_MATCH = 7L;
   /**

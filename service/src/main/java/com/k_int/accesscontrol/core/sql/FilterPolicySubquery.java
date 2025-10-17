@@ -3,7 +3,7 @@ package com.k_int.accesscontrol.core.sql;
 import com.k_int.accesscontrol.core.GroupedExternalPolicies;
 import com.k_int.accesscontrol.core.AccessPolicyQueryType;
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
-import com.k_int.accesscontrol.core.IExternalPolicy;
+import com.k_int.accesscontrol.core.ExternalPolicy;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -109,7 +109,7 @@ public class FilterPolicySubquery implements PolicySubquery {
                     allParameters.add(parameters.getResourceClass()); // Add resource class
                     allTypes.add(AccessControlSqlType.STRING); // Resource class is a string
 
-                    allParameters.addAll(ap.getPolicies().stream().map(IExternalPolicy::getId).toList()); // Add policy ids
+                    allParameters.addAll(ap.getPolicies().stream().map(ExternalPolicy::getId).toList()); // Add policy ids
                     allTypes.addAll(Collections.nCopies(ap.getPolicies().size(), AccessControlSqlType.STRING)); // all policy ids are strings
 
                     return FILTER_TEMPLATE

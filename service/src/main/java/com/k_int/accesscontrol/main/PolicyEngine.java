@@ -175,7 +175,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
 
   /**
    * A function which takes in a list of {@link GroupedExternalPolicies} objects, likely with a
-   * {@link IExternalPolicy} implementation of
+   * {@link ExternalPolicy} implementation of
    * {@link com.k_int.accesscontrol.core.http.responses.BasicPolicy}
    * @param policies a list of AccessPolicy objects to enrich, it will use the "type" and the "policy.id" fields to enrich
    * with Policy implementations from the individual engine plugins
@@ -192,7 +192,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
   }
 
   /**
-   * Converts a list of {@link IDomainAccessPolicy} entities into a list of {@link PolicyLink} DTOs,
+   * Converts a list of {@link DomainAccessPolicy} entities into a list of {@link PolicyLink} DTOs,
    * preserving enriched policy metadata and per-resource assignment details.
    * <p>
    * This is used primarily when serializing claims or presenting assigned policies
@@ -203,7 +203,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * @param policyEntities the access policy entities assigned to a resource
    * @return a list of enriched {@link PolicyLink} instances
    */
-  public List<PolicyLink> getPolicyLinksFromAccessPolicyList(String[] headers, Collection<IDomainAccessPolicy> policyEntities) {
+  public List<PolicyLink> getPolicyLinksFromAccessPolicyList(String[] headers, Collection<DomainAccessPolicy> policyEntities) {
     // We want to turn this into the shape List<PolicyLink> (We want the enriched Policy information)
     // enrichPolicies needs ids and types, so send as GroupedExternalPolicies object
 
@@ -221,14 +221,14 @@ public class PolicyEngine implements PolicyEngineImplementor {
     return policyLinkList.stream()
       .map(pll -> {
 
-        Optional<IDomainAccessPolicy> relevantAccessPolicyOpt = policyEntities.stream()
+        Optional<DomainAccessPolicy> relevantAccessPolicyOpt = policyEntities.stream()
           .filter(ape -> Objects.equals(ape.getPolicyId(), pll.getPolicy().getId()))
           .findFirst();
 
         if (relevantAccessPolicyOpt.isEmpty()) {
           return pll; // Return the PolicyLink as is if we don't have a relevant AccessPolicy from the DB
         }
-        IDomainAccessPolicy relevantAccessPolicy = relevantAccessPolicyOpt.get();
+        DomainAccessPolicy relevantAccessPolicy = relevantAccessPolicyOpt.get();
 
         pll.setId(relevantAccessPolicy.getId());
         if (relevantAccessPolicy.getDescription() != null && !Objects.equals(relevantAccessPolicy.getDescription(), pll.getDescription())) {
@@ -245,7 +245,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * determining which policies need to be added, removed, or updated.
    * <p>
    * This method compares the claims in the {@link ClaimBody} with the provided list of existing
-   * {@link IDomainAccessPolicy} objects, identifying discrepancies and preparing lists of policies
+   * {@link DomainAccessPolicy} objects, identifying discrepancies and preparing lists of policies
    * to be added, removed, or updated accordingly.
    * </p>
    *
@@ -258,7 +258,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
    */
   public EvaluatedClaimPolicies evaluateClaimPolicies(
     ClaimBody claimBody,
-    List<IDomainAccessPolicy> existingPolicies,
+    List<DomainAccessPolicy> existingPolicies,
     String resourceId,
     String resourceClass
   ) throws PolicyEngineException {
@@ -266,10 +266,10 @@ public class PolicyEngine implements PolicyEngineImplementor {
     // One each for "add", "remove" and "update".
     // This method will throw if
 
-    List<IDomainAccessPolicy> accessPoliciesToAdd = new ArrayList<>();
-    List<IDomainAccessPolicy> accessPoliciesToRemove = new ArrayList<>();
-    List<IDomainAccessPolicy> accessPoliciesToUpdate = new ArrayList<>();
-    for (IDomainAccessPolicy policy : existingPolicies) {
+    List<DomainAccessPolicy> accessPoliciesToAdd = new ArrayList<>();
+    List<DomainAccessPolicy> accessPoliciesToRemove = new ArrayList<>();
+    List<DomainAccessPolicy> accessPoliciesToUpdate = new ArrayList<>();
+    for (DomainAccessPolicy policy : existingPolicies) {
       if (claimBody.getClaims().stream().noneMatch(claim -> Objects.equals(claim.getId(), policy.getId()))) {
         accessPoliciesToRemove.add(policy);
       }
@@ -278,7 +278,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
     for(PolicyLink claim  : claimBody.getClaims()) {
       if (claim.getId() != null) {
         // If the claim has an ID, we assume it is an existing policy that needs to be updated
-        IDomainAccessPolicy existingPolicy = existingPolicies.stream().filter (ape -> Objects.equals(ape.getId(), claim.getId())).findFirst().orElse(null);
+        DomainAccessPolicy existingPolicy = existingPolicies.stream().filter (ape -> Objects.equals(ape.getId(), claim.getId())).findFirst().orElse(null);
 
         // If we're handed a non existing policy ID, we should fail the request
         if (existingPolicy == null) {

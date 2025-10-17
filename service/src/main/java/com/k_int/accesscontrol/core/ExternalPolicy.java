@@ -6,7 +6,7 @@ package com.k_int.accesscontrol.core;
  * and implementations of this interface may then extend to include other fields as needed, which can be "enriched" through
  * the {@link com.k_int.accesscontrol.main.PolicyEngine}
  */
-public interface IExternalPolicy {
+public interface ExternalPolicy {
   /**
    * A String field that MUST be present to identify the policy.
    * For most policies (Such as acquisition units) this will be an identifier. In some cases (KIGrants)

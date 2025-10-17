@@ -2,7 +2,7 @@ package com.k_int.accesscontrol.core.http.bodies;
 
 import com.k_int.accesscontrol.core.GroupedExternalPolicies;
 import com.k_int.accesscontrol.core.http.responses.BasicPolicy;
-import com.k_int.accesscontrol.core.IExternalPolicy;
+import com.k_int.accesscontrol.core.ExternalPolicy;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,7 +50,7 @@ public interface ClaimBody {
         if (relevantTypeIds != null) {
 
           // Update existing type with new policy ID
-          ArrayList<IExternalPolicy> updatedPolicyIds = new ArrayList<>(relevantTypeIds.getPolicies());
+          ArrayList<ExternalPolicy> updatedPolicyIds = new ArrayList<>(relevantTypeIds.getPolicies());
           updatedPolicyIds.add(BasicPolicy.builder().id(curr.getPolicy().getId()).build());
           relevantTypeIds.setPolicies(updatedPolicyIds);
         } else {

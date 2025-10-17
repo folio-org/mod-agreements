@@ -8,7 +8,7 @@ import java.time.Instant;
  * and is typed according to a known `AccessPolicyType` (e.g., ACQ_UNIT).
  * Each implementation (Grails, micronaut, etc) will need to provide its own "entity" class implementing this interface.
  */
-public interface IDomainAccessPolicy {
+public interface DomainAccessPolicy {
   /**
    * Gets the unique identifier for the access policy in the database.
    * This is typically a UUID or similar unique string.

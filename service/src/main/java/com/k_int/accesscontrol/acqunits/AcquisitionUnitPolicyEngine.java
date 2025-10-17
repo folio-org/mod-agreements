@@ -4,7 +4,7 @@ import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitPolicy;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionsUnitSubset;
 import com.k_int.accesscontrol.core.*;
-import com.k_int.accesscontrol.core.IExternalPolicy;
+import com.k_int.accesscontrol.core.ExternalPolicy;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineImplementor;
 import com.k_int.accesscontrol.core.sql.PolicySubquery;
@@ -234,7 +234,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
         .stream()
         .allMatch(pids -> {
           // We grab the policy IDs, then check that they ALL exist in the user's acquisition units
-          return pids.getPolicies().stream().map(IExternalPolicy::getId).toList()
+          return pids.getPolicies().stream().map(ExternalPolicy::getId).toList()
             .stream()
             .allMatch(pid -> Stream.concat(
               Optional.ofNullable(userAcquisitionUnits.getMemberRestrictiveUnits()).stream().flatMap(Collection::stream),
@@ -257,7 +257,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
     Set<String> policyIds = policies.stream().reduce(
       new HashSet<>(),
       (acc, curr) -> {
-        acc.addAll(curr.getPolicies().stream().map(IExternalPolicy::getId).collect(Collectors.toSet()));
+        acc.addAll(curr.getPolicies().stream().map(ExternalPolicy::getId).collect(Collectors.toSet()));
         return acc;
       },
       (idSet1, idSet2) -> {
@@ -271,7 +271,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
     return policies.stream()
       .map(pol -> {
         // Build new List<Policy> using what we had in pol.getPolicies and acqUnitPolicies
-        List<IExternalPolicy> innerPolicies = pol.getPolicies().stream()
+        List<ExternalPolicy> innerPolicies = pol.getPolicies().stream()
           .map(innerPol -> {
             List<AcquisitionUnitPolicy> acqPolCandidates = acqUnitPolicies.stream()
               .filter(acqPol -> Objects.equals(acqPol.getId(), innerPol.getId()))

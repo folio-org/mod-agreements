@@ -1,23 +1,23 @@
 package com.k_int.accesscontrol.core.http.responses;
 
-import com.k_int.accesscontrol.core.IExternalPolicy;
+import com.k_int.accesscontrol.core.ExternalPolicy;
 import lombok.Builder;
 import lombok.Getter;
 
 /**
- * A basic implementation of the {@link IExternalPolicy} interface.
+ * A basic implementation of the {@link ExternalPolicy} interface.
  * <p>
  * This class allows policies to be represented using only their identifier.
  * It is useful when the full policy object is not needed, such as in lightweight references
  * or lookup scenarios.
  * </p>
  *
- * @see IExternalPolicy
+ * @see ExternalPolicy
  */
 @Getter
 @Builder
 @SuppressWarnings("javadoc")
-public class BasicPolicy implements IExternalPolicy {
+public class BasicPolicy implements ExternalPolicy {
 
   /**
    * The identifier of the policy.

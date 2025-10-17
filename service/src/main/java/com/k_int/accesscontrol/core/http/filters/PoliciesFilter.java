@@ -2,7 +2,7 @@ package com.k_int.accesscontrol.core.http.filters;
 
 import com.k_int.accesscontrol.core.GroupedExternalPolicies;
 import com.k_int.accesscontrol.core.AccessPolicyType;
-import com.k_int.accesscontrol.core.IDomainAccessPolicy;
+import com.k_int.accesscontrol.core.DomainAccessPolicy;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 
 import java.util.*;
@@ -42,7 +42,7 @@ public class PoliciesFilter {
   }
 
   /** Create a PoliciesFilter from a string representation of policies.
-   * The string should be formatted as `{@link AccessPolicyType}:{@link IDomainAccessPolicy}.id`.
+   * The string should be formatted as `{@link AccessPolicyType}:{@link DomainAccessPolicy}.id`.
    * @param policyString The string representation of policies.
    * @return A PoliciesFilter object.
    * @throws PolicyEngineException If the policy string is invalid.
@@ -56,7 +56,7 @@ public class PoliciesFilter {
   /** Create a list of PoliciesFilter from a collection of string representations of policies.
    * These top level filters will be ANDed together in a filter operation, with the internal list of {@link GroupedExternalPolicies} being
    * ORed together. Each string should be formatted as
-   * `{@link AccessPolicyType}:{@link IDomainAccessPolicy}.id`.
+   * `{@link AccessPolicyType}:{@link DomainAccessPolicy}.id`.
    * @param policyStrings The collection of string representations of policies.
    * @return A list of PoliciesFilter objects.
    */

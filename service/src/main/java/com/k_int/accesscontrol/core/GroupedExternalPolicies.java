@@ -37,7 +37,7 @@ public class GroupedExternalPolicies {
    * @param policies A list of policies associated with the specified access policy type.
    * @return A list of policies associated with the specified access policy type.
    */
-  List<? extends IExternalPolicy> policies;
+  List<? extends ExternalPolicy> policies;
 
   /**
    * An optional name for the access policy type.
@@ -50,13 +50,13 @@ public class GroupedExternalPolicies {
   String name;
 
   /**
-   * Converts a flat list of {@link IDomainAccessPolicy} entities into a grouped list of {@link GroupedExternalPolicies},
+   * Converts a flat list of {@link DomainAccessPolicy} entities into a grouped list of {@link GroupedExternalPolicies},
    * each containing a set of {@link BasicPolicy} records grouped by their {@link AccessPolicyType}.
    *
-   * @param policyList the raw list of {@link IDomainAccessPolicy} entities, typically retrieved from a database
+   * @param policyList the raw list of {@link DomainAccessPolicy} entities, typically retrieved from a database
    * @return a grouped list of {@link GroupedExternalPolicies}, where each entry holds policies of a single type
    */
-  public static List<GroupedExternalPolicies> fromAccessPolicyList(Collection<IDomainAccessPolicy> policyList) {
+  public static List<GroupedExternalPolicies> fromAccessPolicyList(Collection<DomainAccessPolicy> policyList) {
     return policyList.stream().reduce(
       new ArrayList<>(),
       ( acc, curr) -> {
@@ -67,7 +67,7 @@ public class GroupedExternalPolicies {
 
         if (relevantPoliciesEntry != null) {
           // Update existing type with new policy
-          ArrayList<IExternalPolicy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
+          ArrayList<ExternalPolicy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
           updatedPolicyIds.add(BasicPolicy.builder().id(curr.getPolicyId()).build());
           relevantPoliciesEntry.setPolicies(updatedPolicyIds);
         } else {
@@ -92,7 +92,7 @@ public class GroupedExternalPolicies {
   /**
    * Converts a list of {@link GroupedExternalPolicies} into a flat list of {@link PolicyLink} instances.
    * <p>
-   * Each {@link PolicyLink} includes the original {@link IExternalPolicy} as well as a description and type.
+   * Each {@link PolicyLink} includes the original {@link ExternalPolicy} as well as a description and type.
    * The description is derived from the {@code name} of the access policy group and the policy ID.
    * </p>
    *
@@ -157,7 +157,7 @@ public class GroupedExternalPolicies {
 
           if (relevantPoliciesEntry != null) {
             // Update existing type with new policy
-            ArrayList<IExternalPolicy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
+            ArrayList<ExternalPolicy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
             updatedPolicyIds.add(BasicPolicy.builder().id(parts[1]).build());
             relevantPoliciesEntry.setPolicies(updatedPolicyIds);
           } else {

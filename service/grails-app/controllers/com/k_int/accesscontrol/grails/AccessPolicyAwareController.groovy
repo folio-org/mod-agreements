@@ -2,7 +2,7 @@ package com.k_int.accesscontrol.grails
 
 
 import com.k_int.accesscontrol.core.GroupedExternalPolicies
-import com.k_int.accesscontrol.core.IDomainAccessPolicy
+import com.k_int.accesscontrol.core.DomainAccessPolicy
 import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter
@@ -662,7 +662,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           // We will then add/update policies from the claimBody
           // We do the delete first so that if we are accidentally replacing a policy like-for-like without an id,
           // we don't fail to add it thanks to duplicate check below, and then remove it, leaving resource unprotected
-          for (IDomainAccessPolicy policy : evaluatedClaimPolicies.policiesToRemove) {
+          for (DomainAccessPolicy policy : evaluatedClaimPolicies.policiesToRemove) {
             AccessPolicyEntity policyEntity = accessPoliciesForResource.find {AccessPolicyEntity ape -> ape.id == policy.id }
 
             // This shouldn't happen since the removed ids will be from the existing policies, but just in case
@@ -675,7 +675,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           }
 
           // Now we can update policies from the claimBody
-          for (IDomainAccessPolicy policy  : evaluatedClaimPolicies.policiesToUpdate) {
+          for (DomainAccessPolicy policy  : evaluatedClaimPolicies.policiesToUpdate) {
             AccessPolicyEntity policyEntity = accessPoliciesForResource.find {AccessPolicyEntity ape -> ape.id == policy.id }
 
             // This shouldn't happen since the updated ids will be from the existing policies, but just in case
@@ -689,7 +689,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           }
 
           // Finally we can add any new policies from the claimBody
-          for (IDomainAccessPolicy policy  : evaluatedClaimPolicies.policiesToAdd) {
+          for (DomainAccessPolicy policy  : evaluatedClaimPolicies.policiesToAdd) {
             new AccessPolicyEntity(
               policyId: policy.policyId,
               type: policy.type,
