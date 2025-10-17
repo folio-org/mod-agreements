@@ -132,6 +132,8 @@ public class FilterPolicySubquery implements PolicySubquery {
       ) + "\n)";
 
     log.trace("FilterPolicySubquery::getSql : filterSql = {}", filterSql);
+    log.trace("FilterPolicySubquery::getSql : parameters = {}", allParameters);
+    log.trace("FilterPolicySubquery::getSql : types = {}", allTypes);
 
     return AccessControlSql.builder()
       .sqlString(filterSql)
