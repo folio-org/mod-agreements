@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.core.http.bodies;
 
-import com.k_int.accesscontrol.core.GroupedExternalPolicyList;
+import com.k_int.accesscontrol.core.GroupedExternalPolicies;
 import com.k_int.accesscontrol.core.http.responses.BasicPolicy;
 import com.k_int.accesscontrol.core.IExternalPolicy;
 
@@ -36,13 +36,13 @@ public interface ClaimBody {
    * based on their associated access policy type.
    * </p>
    *
-   * @return a list of {@link GroupedExternalPolicyList} containing policy IDs grouped by type
+   * @return a list of {@link GroupedExternalPolicies} containing policy IDs grouped by type
    */
-  default List<GroupedExternalPolicyList> convertToGroupedExternalPolicyList() {
+  default List<GroupedExternalPolicies> convertToGroupedExternalPolicies() {
     return getClaims().stream().reduce(
       new ArrayList<>(),
       (acc, curr) -> {
-        GroupedExternalPolicyList relevantTypeIds = acc.stream()
+        GroupedExternalPolicies relevantTypeIds = acc.stream()
           .filter(apti -> apti.getType() == curr.getType())
           .findFirst()
           .orElse(null);
@@ -55,7 +55,7 @@ public interface ClaimBody {
           relevantTypeIds.setPolicies(updatedPolicyIds);
         } else {
           acc.add(
-            GroupedExternalPolicyList.builder()
+            GroupedExternalPolicies.builder()
               .type(curr.getType())
               .policies(Collections.singletonList(BasicPolicy.builder().id(curr.getPolicy().getId()).build()))
               .name("POLICY_IDS_FOR_" + curr.getType().toString())

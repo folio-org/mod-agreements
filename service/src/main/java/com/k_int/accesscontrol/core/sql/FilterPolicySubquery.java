@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.core.sql;
 
-import com.k_int.accesscontrol.core.GroupedExternalPolicyList;
+import com.k_int.accesscontrol.core.GroupedExternalPolicies;
 import com.k_int.accesscontrol.core.AccessPolicyQueryType;
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
 import com.k_int.accesscontrol.core.IExternalPolicy;
@@ -17,7 +17,7 @@ import java.util.stream.IntStream;
  * Implementation of {@link PolicySubquery} that generates SQL subqueries based on a list of {@link PoliciesFilter}.
  * <p>
  * This class constructs SQL subqueries to filter records based on access policy restrictions.
- * Each {@link PoliciesFilter} contains a list of {@link GroupedExternalPolicyList} that are ORed together,
+ * Each {@link PoliciesFilter} contains a list of {@link GroupedExternalPolicies} that are ORed together,
  * while the top-level list of {@link PoliciesFilter} is ANDed together in the final SQL.
  * This implementation allows for different query types (LIST or SINGLE), representing an index operation or the fetch
  * of a single record directly filtered by existence of a given policy on that resource.
@@ -54,7 +54,7 @@ public class FilterPolicySubquery implements PolicySubquery {
   """;
 
   /** A list of PoliciesFilter objects representing the filters to be applied.
-   * Each PoliciesFilter contains a list of GroupedExternalPolicyList objects that will be ORed together,
+   * Each PoliciesFilter contains a list of GroupedExternalPolicies objects that will be ORed together,
    * while the top-level list of PoliciesFilter objects will be ANDed together in the final SQL.
    * @param policiesFilters A list of PoliciesFilter objects representing the filters to be applied.
    * @return A list of PoliciesFilter objects representing the filters to be applied.
@@ -84,18 +84,22 @@ public class FilterPolicySubquery implements PolicySubquery {
       resourceIdMatch = parameters.getResourceAlias() + "." + parameters.getResourceIdColumnName();
     }
 
+    // Approach -- we want to AND together each PoliciesFilter. Each of these objects then contains a list of
+    // GroupedExternalPolicyList which we want to OR together. So we build the SQL string from the template above for
+    // each AccessPolicyType group per PoliciesFilter, ORing them together in the process.
+
     String filterSql = "(\n" +
       String.join(
         "\n AND \n", // Take each top level PoliciesFilter and AND them together
-        IntStream.range(0, policiesFilters.size()) // Use IntStream to map WITH pfIndex
+        IntStream.range(0, policiesFilters.size()) // Use IntStream to map WITH pfIndex -- we'll use to uniquely alias the AccessPolicy table
           .mapToObj(pfIndex -> {
             PoliciesFilter pf = policiesFilters.get(pfIndex);
             return "(\n" +
               String.join(
                 "\n OR \n",
-                IntStream.range(0, pf.getFilters().size()) // Use IntStream to get GroupedExternalPolicyList index
+                IntStream.range(0, pf.getFilters().size()) // Use IntStream to get GroupedExternalPolicyList index -- we'll use to uniquely alias the AccessPolicy table
                   .mapToObj(apIndex -> {
-                    GroupedExternalPolicyList ap = pf.getFilters().get(apIndex);
+                    GroupedExternalPolicies ap = pf.getFilters().get(apIndex);
 
                     if (queryType == AccessPolicyQueryType.SINGLE) {
                       allParameters.add(parameters.getResourceId()); // Add resource id (But only when in a SINGLE query, list is handled by alias above)

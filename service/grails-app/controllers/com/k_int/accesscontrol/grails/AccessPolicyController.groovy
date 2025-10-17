@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.grails
 
-import com.k_int.accesscontrol.core.GroupedExternalPolicyList
+import com.k_int.accesscontrol.core.GroupedExternalPolicies
 import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.PolicyRestriction
 
@@ -29,7 +29,7 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
    *
    * @return A PolicyEngine instance configured for the current request.
    */
-  private List<GroupedExternalPolicyList> getPolicies(PolicyRestriction restriction) {
+  private List<GroupedExternalPolicies> getPolicies(PolicyRestriction restriction) {
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 

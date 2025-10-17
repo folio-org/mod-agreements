@@ -1,6 +1,7 @@
 package com.k_int.accesscontrol.grails
 
-import com.k_int.accesscontrol.core.GroupedExternalPolicyList
+
+import com.k_int.accesscontrol.core.GroupedExternalPolicies
 import com.k_int.accesscontrol.core.IDomainAccessPolicy
 import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink
@@ -124,7 +125,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     hql.append(" WHERE t0.id = :leafResourceId") // Filter by the requested leaf resource ID
 
     // Execute the HQL query and return the id at hand
-    String resolvedRootId = AccessPolicyEntity.executeQuery(hql.toString(), ["leafResourceId": leafResourceId])[0]
+    String resolvedRootId = AccessPolicyEntity.executeQuery(hql.toString(), ["leafResourceId": leafResourceId]).getAt(0)
 
     // Return the resolved ID, or fallback to the leaf ID if resolution fails (e.g., entity not found)
     return resolvedRootId ?: leafResourceId
@@ -370,10 +371,10 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    * the current user's permissions and the specified restriction.
    *
    * @param pr The {@link PolicyRestriction} to check against.
-   * @param policies A list of {@link GroupedExternalPolicyList} representing the policies to validate.
+   * @param policies A list of {@link GroupedExternalPolicies} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for the given restriction, {@code false} otherwise.
    */
-  protected boolean arePoliciesValid(PolicyRestriction pr, List<GroupedExternalPolicyList> policies) {
+  protected boolean arePoliciesValid(PolicyRestriction pr, List<GroupedExternalPolicies> policies) {
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
     return policyEngine.arePoliciesValid(grailsHeaders, pr, policies)
   }
@@ -381,60 +382,60 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 /**
  * Checks if a given list of policies are valid for the {@code CREATE} policy restriction.
  *
- * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
+ * @param policyIds A list of {@link GroupedExternalPolicies} representing the policies to validate.
  * @return {@code true} if all provided policies are valid for CREATE, {@code false} otherwise.
  */
-  protected boolean areCreatePoliciesValid(List<GroupedExternalPolicyList> policies) {
+  protected boolean areCreatePoliciesValid(List<GroupedExternalPolicies> policies) {
     return arePoliciesValid(PolicyRestriction.CREATE, policies)
   }
 
   /**
    * Checks if a given list of policies are valid for the {@code READ} policy restriction.
    *
-   * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
+   * @param policyIds A list of {@link com.k_int.accesscontrol.core.GroupedExternalPolicies} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for READ, {@code false} otherwise.
    */
-  protected boolean areReadPoliciesValid(List<GroupedExternalPolicyList> policies) {
+  protected boolean areReadPoliciesValid(List<GroupedExternalPolicies> policies) {
     return arePoliciesValid(PolicyRestriction.READ, policies)
   }
 
   /**
    * Checks if a given list of policies are valid for the {@code UPDATE} policy restriction.
    *
-   * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
+   * @param policyIds A list of {@link GroupedExternalPolicies} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for UPDATE, {@code false} otherwise.
    */
-  protected boolean areUpdatePoliciesValid(List<GroupedExternalPolicyList> policies) {
+  protected boolean areUpdatePoliciesValid(List<GroupedExternalPolicies> policies) {
     return arePoliciesValid(PolicyRestriction.UPDATE, policies)
   }
 
   /**
    * Checks if a given list of policies are valid for the {@code DELETE} policy restriction.
    *
-   * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
+   * @param policyIds A list of {@link GroupedExternalPolicies} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for DELETE, {@code false} otherwise.
    */
-  protected boolean areDeletePoliciesValid(List<GroupedExternalPolicyList> policies) {
+  protected boolean areDeletePoliciesValid(List<GroupedExternalPolicies> policies) {
     return arePoliciesValid(PolicyRestriction.DELETE, policies)
   }
 
   /**
    * Checks if a given list of policies are valid for the {@code CLAIM} policy restriction.
    *
-   * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
+   * @param policyIds A list of {@link GroupedExternalPolicies} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for CLAIM, {@code false} otherwise.
    */
-  protected boolean areClaimPoliciesValid(List<GroupedExternalPolicyList> policies) {
+  protected boolean areClaimPoliciesValid(List<GroupedExternalPolicies> policies) {
     return arePoliciesValid(PolicyRestriction.CLAIM, policies)
   }
 
   /**
    * Checks if a given list of policies are valid for the {@code APPLY_POLICIES} policy restriction.
    *
-   * @param policyIds A list of {@link GroupedExternalPolicyList} representing the policies to validate.
+   * @param policyIds A list of {@link GroupedExternalPolicies} representing the policies to validate.
    * @return {@code true} if all provided policies are valid for APPLY_POLICIES, {@code false} otherwise.
    */
-  protected boolean areApplyPoliciesPoliciesValid(List<GroupedExternalPolicyList> policies) {
+  protected boolean areApplyPoliciesPoliciesValid(List<GroupedExternalPolicies> policies) {
     return arePoliciesValid(PolicyRestriction.APPLY_POLICIES, policies)
   }
 
@@ -644,7 +645,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
         // We must now check whether all policies to add/remove/update are valid for CLAIM
         // EvaluatedClaimPolicies includes a helper method to transform to List<GroupedPolicyList> for use in arePoliciesValid
-        List<GroupedExternalPolicyList> changedPolicies = evaluatedClaimPolicies.changedPolicies()
+        List<GroupedExternalPolicies> changedPolicies = evaluatedClaimPolicies.changedPolicies()
 
         if (!areClaimPoliciesValid(changedPolicies)) {
           success = false

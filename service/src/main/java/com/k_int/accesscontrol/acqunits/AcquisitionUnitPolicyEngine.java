@@ -160,14 +160,14 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
    *
    * @param headers the request context headers, used for FOLIO/internal service authentication
    * @param pr      the policy restriction to filter by
-   * @return a list of {@link GroupedExternalPolicyList} containing policy IDs grouped by type
+   * @return a list of {@link GroupedExternalPolicies} containing policy IDs grouped by type
    */
-  public List<GroupedExternalPolicyList> getRestrictionPolicies(String[] headers, PolicyRestriction pr) {
+  public List<GroupedExternalPolicies> getRestrictionPolicies(String[] headers, PolicyRestriction pr) {
     String[] finalHeaders = handleLoginAndGetHeaders(headers);
 
     AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
     return folioClientExceptionHandler("fetching Acquisition units", () -> {
-      List<GroupedExternalPolicyList> policyIds = new ArrayList<>();
+      List<GroupedExternalPolicies> policyIds = new ArrayList<>();
       UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(
         finalHeaders,
         acqRestriction,
@@ -180,7 +180,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
 
       // Add all the member restrictive unit policy IDs to the list
       policyIds.add(
-        GroupedExternalPolicyList
+        GroupedExternalPolicies
           .builder()
           .type(AccessPolicyType.ACQ_UNIT)
           .policies(userAcquisitionUnits.getMemberRestrictiveUnitPolicies())
@@ -190,7 +190,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
 
       // Add all the member non-restrictive unit policy IDs to the list
       policyIds.add(
-        GroupedExternalPolicyList
+        GroupedExternalPolicies
           .builder()
           .type(AccessPolicyType.ACQ_UNIT)
           .policies(userAcquisitionUnits.getNonMemberNonRestrictiveUnitPolicies())
@@ -200,7 +200,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
 
       // Add all the member non-restrictive unit policy IDs to the list
       policyIds.add(
-        GroupedExternalPolicyList
+        GroupedExternalPolicies
           .builder()
           .type(AccessPolicyType.ACQ_UNIT)
           .policies(userAcquisitionUnits.getMemberNonRestrictiveUnitPolicies())
@@ -212,7 +212,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
     });
   }
 
-  public boolean arePoliciesValid(String[] headers, PolicyRestriction pr, List<GroupedExternalPolicyList> policies) {
+  public boolean arePoliciesValid(String[] headers, PolicyRestriction pr, List<GroupedExternalPolicies> policies) {
     String[] finalHeaders = handleLoginAndGetHeaders(headers);
     AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
 
@@ -245,9 +245,9 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
     });
   }
 
-  public List<GroupedExternalPolicyList> enrichPolicies(String[] headers, List<GroupedExternalPolicyList> policies) {
+  public List<GroupedExternalPolicies> enrichPolicies(String[] headers, List<GroupedExternalPolicies> policies) {
     if (policies.stream().anyMatch(pol -> pol.getType() != AccessPolicyType.ACQ_UNIT)) {
-      throw new PolicyEngineException("enrichPolicies in AcquisitionUnitPolicyEngine is only valid for GroupedExternalPolicyLists of type AccessPolicyType.ACQ_UNIT", PolicyEngineException.INVALID_POLICY_TYPE);
+      throw new PolicyEngineException("enrichPolicies in AcquisitionUnitPolicyEngine is only valid for GroupedExternalPolicies of type AccessPolicyType.ACQ_UNIT", PolicyEngineException.INVALID_POLICY_TYPE);
     }
 
     String[] finalHeaders = handleLoginAndGetHeaders(headers);
@@ -267,7 +267,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
     );
 
     List<AcquisitionUnitPolicy> acqUnitPolicies = acqClient.getAcquisitionUnitPolicies(finalHeaders, policyIds);
-    // We now have the acqUnitPolicies, so we map back to List<GroupedExternalPolicyList>
+    // We now have the acqUnitPolicies, so we map back to List<GroupedExternalPolicies>
     return policies.stream()
       .map(pol -> {
         // Build new List<Policy> using what we had in pol.getPolicies and acqUnitPolicies
@@ -286,7 +286,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
           })
           .toList();
 
-        return GroupedExternalPolicyList.builder()
+        return GroupedExternalPolicies.builder()
           .type(pol.getType())
           .name(pol.getName())
           .policies(innerPolicies)

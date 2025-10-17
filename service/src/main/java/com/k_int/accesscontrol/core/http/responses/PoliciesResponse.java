@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.core.http.responses;
 
-import com.k_int.accesscontrol.core.GroupedExternalPolicyList;
+import com.k_int.accesscontrol.core.GroupedExternalPolicies;
 import lombok.Builder;
 import lombok.Data;
 
@@ -16,54 +16,54 @@ public class PoliciesResponse {
    * List of access policies for reading operations.
    * This field is optional and may be null if no read policies are applicable.
    *
-   * @param readPolicies a list of {@link GroupedExternalPolicyList} for read operations
-   * @return a list of {@link GroupedExternalPolicyList} for read operations
+   * @param readPolicies a list of {@link GroupedExternalPolicies} for read operations
+   * @return a list of {@link GroupedExternalPolicies} for read operations
    */
   @Nullable
-  List<GroupedExternalPolicyList> readPolicies;
+  List<GroupedExternalPolicies> readPolicies;
   /**
    * List of access policies for updating operations.
    * This field is optional and may be null if no update policies are applicable.
    *
-   * @param updatePolicies a list of {@link GroupedExternalPolicyList} for update operations
-   * @return a list of {@link GroupedExternalPolicyList} for update operations
+   * @param updatePolicies a list of {@link GroupedExternalPolicies} for update operations
+   * @return a list of {@link GroupedExternalPolicies} for update operations
    */
   @Nullable
-  List<GroupedExternalPolicyList> updatePolicies;
+  List<GroupedExternalPolicies> updatePolicies;
   /**
    * List of access policies for creating operations.
    * This field is optional and may be null if no create policies are applicable.
    *
-   * @param createPolicies a list of {@link GroupedExternalPolicyList} for create operations
-   * @return a list of {@link GroupedExternalPolicyList} for create operations
+   * @param createPolicies a list of {@link GroupedExternalPolicies} for create operations
+   * @return a list of {@link GroupedExternalPolicies} for create operations
    */
   @Nullable
-  List<GroupedExternalPolicyList> createPolicies;
+  List<GroupedExternalPolicies> createPolicies;
   /**
    * List of access policies for deleting operations.
    * This field is optional and may be null if no delete policies are applicable.
    *
-   * @param deletePolicies a list of {@link GroupedExternalPolicyList} for delete operations
-   * @return a list of {@link GroupedExternalPolicyList} for delete operations
+   * @param deletePolicies a list of {@link GroupedExternalPolicies} for delete operations
+   * @return a list of {@link GroupedExternalPolicies} for delete operations
    */
   @Nullable
-  List<GroupedExternalPolicyList> deletePolicies;
+  List<GroupedExternalPolicies> deletePolicies;
   /**
    * List of access policies for claim operations.
    * This field is optional and may be null if no claim policies are applicable.
    *
-   * @param claimPolicies a list of {@link GroupedExternalPolicyList} for claim operations
-   * @return a list of {@link GroupedExternalPolicyList} for claim operations
+   * @param claimPolicies a list of {@link GroupedExternalPolicies} for claim operations
+   * @return a list of {@link GroupedExternalPolicies} for claim operations
    */
   @Nullable
-  List<GroupedExternalPolicyList> claimPolicies;
+  List<GroupedExternalPolicies> claimPolicies;
   /**
    * List of access policies for applying policies.
    * This field is optional and may be null if no apply policies are applicable.
    *
-   * @param applyPolicies a list of {@link GroupedExternalPolicyList} for apply policy operations
-   * @return a list of {@link GroupedExternalPolicyList} for apply policy operations
+   * @param applyPolicies a list of {@link GroupedExternalPolicies} for apply policy operations
+   * @return a list of {@link GroupedExternalPolicies} for apply policy operations
    */
   @Nullable
-  List<GroupedExternalPolicyList> applyPolicies;
+  List<GroupedExternalPolicies> applyPolicies;
 }

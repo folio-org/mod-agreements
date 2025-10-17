@@ -1,6 +1,6 @@
 package com.k_int.accesscontrol.core.policyengine;
 
-import com.k_int.accesscontrol.core.GroupedExternalPolicyList;
+import com.k_int.accesscontrol.core.GroupedExternalPolicies;
 import com.k_int.accesscontrol.core.IDomainAccessPolicy;
 import lombok.Builder;
 import lombok.Data;
@@ -48,8 +48,8 @@ public class EvaluatedClaimPolicies {
    *
    * @return a list of all changed access policies
    */
-  public List<GroupedExternalPolicyList> changedPolicies() {
-    return GroupedExternalPolicyList.fromAccessPolicyList(
+  public List<GroupedExternalPolicies> changedPolicies() {
+    return GroupedExternalPolicies.fromAccessPolicyList(
       Stream.concat(
         getPoliciesToAdd().stream(),
         Stream.concat(

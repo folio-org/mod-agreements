@@ -86,7 +86,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
 
   /**
    * Extended version of getPolicySubqueries which also takes in a list of PoliciesFilter objects.
-   * These filters will be ANDed together in the final SQL, with the internal list of GroupedExternalPolicyList
+   * These filters will be ANDed together in the final SQL, with the internal list of GroupedExternalPolicies
    * within each PoliciesFilter being ORed together.
    *
    * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
@@ -119,11 +119,11 @@ public class PolicyEngine implements PolicyEngineImplementor {
    *
    * @param headers the request context headers, used for FOLIO/internal service authentication
    * @param pr      the policy restriction to filter by
-   * @return a list of {@link GroupedExternalPolicyList} containing policies grouped by type
+   * @return a list of {@link GroupedExternalPolicies} containing policies grouped by type
    * @throws PolicyEngineException if an error occurs while fetching policy IDs
    */
-  public List<GroupedExternalPolicyList> getRestrictionPolicies(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
-    List<GroupedExternalPolicyList> policyIds = new ArrayList<>();
+  public List<GroupedExternalPolicies> getRestrictionPolicies(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
+    List<GroupedExternalPolicies> policyIds = new ArrayList<>();
 
     if (acquisitionUnitPolicyEngine != null) {
       policyIds.addAll(acquisitionUnitPolicyEngine.getRestrictionPolicies(headers, pr));
@@ -142,7 +142,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * @return true if all policy IDs are valid, false otherwise
    * @throws PolicyEngineException if an error occurs during validation
    */
-  public boolean arePoliciesValid(String[] headers, PolicyRestriction pr, List<GroupedExternalPolicyList> policies) throws PolicyEngineException {
+  public boolean arePoliciesValid(String[] headers, PolicyRestriction pr, List<GroupedExternalPolicies> policies) throws PolicyEngineException {
     boolean isValid = true;
 
     // Check if isValid is true for each sub policyEngine, so that we can short-circuit if any engine returns false.
@@ -174,15 +174,15 @@ public class PolicyEngine implements PolicyEngineImplementor {
   }
 
   /**
-   * A function which takes in a list of {@link GroupedExternalPolicyList} objects, likely with a
+   * A function which takes in a list of {@link GroupedExternalPolicies} objects, likely with a
    * {@link IExternalPolicy} implementation of
    * {@link com.k_int.accesscontrol.core.http.responses.BasicPolicy}
    * @param policies a list of AccessPolicy objects to enrich, it will use the "type" and the "policy.id" fields to enrich
    * with Policy implementations from the individual engine plugins
    * @return A list of AccessPolicy objects with all information provided by the policyEngineImplementors
    */
-  public List<GroupedExternalPolicyList> enrichPolicies(String[] headers, List<GroupedExternalPolicyList> policies) {
-    List<GroupedExternalPolicyList> enrichedPolicies = new ArrayList<>();
+  public List<GroupedExternalPolicies> enrichPolicies(String[] headers, List<GroupedExternalPolicies> policies) {
+    List<GroupedExternalPolicies> enrichedPolicies = new ArrayList<>();
 
     if (acquisitionUnitPolicyEngine != null) {
       enrichedPolicies.addAll(acquisitionUnitPolicyEngine.enrichPolicies(headers, policies));
@@ -205,16 +205,16 @@ public class PolicyEngine implements PolicyEngineImplementor {
    */
   public List<PolicyLink> getPolicyLinksFromAccessPolicyList(String[] headers, Collection<IDomainAccessPolicy> policyEntities) {
     // We want to turn this into the shape List<PolicyLink> (We want the enriched Policy information)
-    // enrichPolicies needs ids and types, so send as GroupedExternalPolicyList object
+    // enrichPolicies needs ids and types, so send as GroupedExternalPolicies object
 
     // This will lose us all id and description information on the AccessPolicy objects for the resource -- we will add those back later
-    List<GroupedExternalPolicyList> groupedExternalPolicyList = GroupedExternalPolicyList.fromAccessPolicyList(policyEntities);
+    List<GroupedExternalPolicies> groupedExternalPolicies = GroupedExternalPolicies.fromAccessPolicyList(policyEntities);
 
-    // use "enrich" method from policyEngine to get List<GroupedExternalPolicyList>
-    List<GroupedExternalPolicyList> enrichedGroupedExternalPolicyLists = enrichPolicies(headers, groupedExternalPolicyList);
+    // use "enrich" method from policyEngine to get List<GroupedExternalPolicies>
+    List<GroupedExternalPolicies> enrichedGroupedExternalPolicies = enrichPolicies(headers, groupedExternalPolicies);
 
     // Then convert into List<PolicyLink> so it's in roughly the same shape we'd send down in a ClaimBody
-    List<PolicyLink> policyLinkList = GroupedExternalPolicyList.convertListToPolicyLinkList(enrichedGroupedExternalPolicyLists);
+    List<PolicyLink> policyLinkList = GroupedExternalPolicies.convertListToPolicyLinkList(enrichedGroupedExternalPolicies);
 
     // Finally, we have to add back the descriptions and ids that were set on the AccessPolicyEntities for resource
     // This isn't strictly necessary, but if not done then description will be reset and the policies will churn on each set
