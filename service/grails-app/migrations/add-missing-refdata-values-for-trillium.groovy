@@ -93,4 +93,51 @@ databaseChangeLog = {
     // Create the foreign key constraints on these columns so when a refDataValue is in use by a package, the refDataValue can't be deleted.
     addForeignKeyConstraint(baseColumnNames: "pkg_availability_scope_fk", baseTableName: "package", constraintName: "availability_scope_to_rdv_fk", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "rdv_id", referencedTableName: "refdata_value")
   }
+
+changeSet(author: "CalamityC (manual)", id: "20251020-1700-001") {
+  // Clean up the placeholder refdata value for Pkg.LifecycleStatus if unused
+  grailsChange {
+    change {
+      sql.execute("""
+        DELETE FROM ${database.defaultSchemaName}.refdata_value rv
+        WHERE rv.rdv_value = 'missingLifecycleStatusRefDataValue'
+          AND rv.rdv_owner = (
+            SELECT rdc_id
+            FROM ${database.defaultSchemaName}.refdata_category
+            WHERE rdc_description = 'Pkg.LifecycleStatus'
+            LIMIT 1
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM ${database.defaultSchemaName}.package p
+            WHERE p.pkg_lifecycle_status_fk = rv.rdv_id
+          );
+      """.toString())
+    }
+  }
+}
+
+changeSet(author: "CalamityC (manual)", id: "20251020-1700-002") {
+  // Clean up the placeholder refdata value for Pkg.AvailabilityScope if unused
+  grailsChange {
+    change {
+      sql.execute("""
+        DELETE FROM ${database.defaultSchemaName}.refdata_value rv
+        WHERE rv.rdv_value = 'missingAvailabilityScopeRefDataValue'
+          AND rv.rdv_owner = (
+            SELECT rdc_id
+            FROM ${database.defaultSchemaName}.refdata_category
+            WHERE rdc_description = 'Pkg.AvailabilityScope'
+            LIMIT 1
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM ${database.defaultSchemaName}.package p
+            WHERE p.pkg_availability_scope_fk = rv.rdv_id
+          );
+      """.toString())
+    }
+  }
+}
+
 }
