@@ -346,19 +346,4 @@ public class PolicyEngine implements PolicyEngineImplementor {
       .policiesToUpdate(accessPoliciesToUpdate)
       .build();
   }
-
-  /**
-   * Converts a string representation of an access policy type to its corresponding enum value.
-   *
-   * @param typeStr the string representation of the access policy type
-   * @return the corresponding {@link AccessPolicyType} enum value
-   * @throws PolicyEngineException if the string does not match any valid access policy type
-   */
-  public AccessPolicyType getTypeFromString(String typeStr) {
-    try {
-      return AccessPolicyType.valueOf(typeStr.toUpperCase());
-    } catch (IllegalArgumentException e) {
-      throw new PolicyEngineException("Failed to parse AccessPolicyType from string: " + typeStr, PolicyEngineException.INVALID_POLICY_TYPE);
-    }
-  }
 }
