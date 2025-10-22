@@ -26,11 +26,11 @@ databaseChangeLog = {
             -- don't recreate if it already exists
             NOT EXISTS (
               SELECT 1
-                FROM ${database.defaultSchemaName}.refdata_value rv
-                JOIN ${database.defaultSchemaName}.refdata_category rc
-                  ON rv.rdv_owner = rc.rdc_id
-                WHERE rc.rdc_description = 'Pkg.LifecycleStatus'
-                AND rv.rdv_value = 'missingLifecycleStatusRefDataValue'
+              FROM ${database.defaultSchemaName}.refdata_value rv
+              JOIN ${database.defaultSchemaName}.refdata_category rc
+              ON rv.rdv_owner = rc.rdc_id
+              WHERE rc.rdc_description = 'Pkg.LifecycleStatus'
+              AND rv.rdv_value = 'missingLifecycleStatusRefDataValue'
             )
             AND
             -- create only if there are orphaned lifecycle_status FKs
@@ -40,8 +40,8 @@ databaseChangeLog = {
                 WHERE p.pkg_lifecycle_status_fk IS NOT NULL
                 AND NOT EXISTS (
                       SELECT 1
-                        FROM ${database.defaultSchemaName}.refdata_value rv2
-                        WHERE rv2.rdv_id = p.pkg_lifecycle_status_fk
+                      FROM ${database.defaultSchemaName}.refdata_value rv2
+                      WHERE rv2.rdv_id = p.pkg_lifecycle_status_fk
                     )
             );
         """.toString())
@@ -55,32 +55,32 @@ databaseChangeLog = {
     grailsChange {
       change {
         sql.execute("""
-          UPDATE ${database.defaultSchemaName}."package" p
-            SET pkg_lifecycle_status_fk = (
-                  SELECT rv.rdv_id
-                    FROM ${database.defaultSchemaName}.refdata_value rv
-                    JOIN ${database.defaultSchemaName}.refdata_category rc
-                      ON rv.rdv_owner = rc.rdc_id
-                    WHERE rc.rdc_description = 'Pkg.LifecycleStatus'
-                      AND rv.rdv_value = 'missingLifecycleStatusRefDataValue'
-                    LIMIT 1
-                )
+          UPDATE ${database.defaultSchemaName}.package p
+          SET pkg_lifecycle_status_fk = (
+            SELECT rv.rdv_id
+            FROM ${database.defaultSchemaName}.refdata_value rv
+            JOIN ${database.defaultSchemaName}.refdata_category rc
+            ON rv.rdv_owner = rc.rdc_id
+            WHERE rc.rdc_description = 'Pkg.LifecycleStatus'
+            AND rv.rdv_value = 'missingLifecycleStatusRefDataValue'
+            LIMIT 1
+          )
           WHERE
             -- only touch rows whose current FK doesn't exist in refdata_value
             NOT EXISTS (
-              SELECT 1
-                FROM ${database.defaultSchemaName}.refdata_value rvx
-                WHERE rvx.rdv_id = p.pkg_lifecycle_status_fk
+            SELECT 1
+            FROM ${database.defaultSchemaName}.refdata_value rvx
+            WHERE rvx.rdv_id = p.pkg_lifecycle_status_fk
             )
             AND
             -- only do this if the placeholder actually exists
             EXISTS (
               SELECT 1
-                FROM ${database.defaultSchemaName}.refdata_value rv
-                JOIN ${database.defaultSchemaName}.refdata_category rc
-                  ON rv.rdv_owner = rc.rdc_id
-                WHERE rc.rdc_description = 'Pkg.LifecycleStatus'
-                  AND rv.rdv_value = 'missingLifecycleStatusRefDataValue'
+              FROM ${database.defaultSchemaName}.refdata_value rv
+              JOIN ${database.defaultSchemaName}.refdata_category rc
+              ON rv.rdv_owner = rc.rdc_id
+              WHERE rc.rdc_description = 'Pkg.LifecycleStatus'
+              AND rv.rdv_value = 'missingLifecycleStatusRefDataValue'
             );
         """.toString())
       }
@@ -107,30 +107,30 @@ databaseChangeLog = {
                 0 AS version,
                 'missingAvailabilityScopeRefDataValue' AS value,
                 (SELECT rdc_id
-                    FROM ${database.defaultSchemaName}.refdata_category
+                  FROM ${database.defaultSchemaName}.refdata_category
                   WHERE rdc_description = 'Pkg.AvailabilityScope'
                   LIMIT 1) AS owner,
                 'missingAvailabilityScopeRefDataValue' AS label
           WHERE
             NOT EXISTS (
               SELECT 1
-                FROM ${database.defaultSchemaName}.refdata_value rv
-                JOIN ${database.defaultSchemaName}.refdata_category rc
-                  ON rv.rdv_owner = rc.rdc_id
+              FROM ${database.defaultSchemaName}.refdata_value rv
+              JOIN ${database.defaultSchemaName}.refdata_category rc
+              ON rv.rdv_owner = rc.rdc_id
               WHERE rc.rdc_description = 'Pkg.AvailabilityScope'
-                AND rv.rdv_value = 'missingAvailabilityScopeRefDataValue'
+              AND rv.rdv_value = 'missingAvailabilityScopeRefDataValue'
             )
             AND
             EXISTS (
               SELECT 1
-                FROM ${database.defaultSchemaName}."package" p
+              FROM ${database.defaultSchemaName}.package p
               WHERE p.pkg_availability_scope_fk IS NOT NULL
-                AND NOT EXISTS (
-                      SELECT 1
-                        FROM ${database.defaultSchemaName}.refdata_value rv2
-                        WHERE rv2.rdv_id = p.pkg_availability_scope_fk
-                    )
-            );
+              AND NOT EXISTS (
+                SELECT 1
+                FROM ${database.defaultSchemaName}.refdata_value rv2
+                WHERE rv2.rdv_id = p.pkg_availability_scope_fk
+            )
+          );
         """.toString())
       }
     }
@@ -143,29 +143,29 @@ databaseChangeLog = {
       change {
         sql.execute("""
           UPDATE ${database.defaultSchemaName}."package" p
-            SET pkg_availability_scope_fk = (
-                  SELECT rv.rdv_id
-                    FROM ${database.defaultSchemaName}.refdata_value rv
-                    JOIN ${database.defaultSchemaName}.refdata_category rc
-                      ON rv.rdv_owner = rc.rdc_id
-                    WHERE rc.rdc_description = 'Pkg.AvailabilityScope'
-                      AND rv.rdv_value = 'missingAvailabilityScopeRefDataValue'
-                    LIMIT 1
-                )
+          SET pkg_availability_scope_fk = (
+            SELECT rv.rdv_id
+              FROM ${database.defaultSchemaName}.refdata_value rv
+              JOIN ${database.defaultSchemaName}.refdata_category rc
+              ON rv.rdv_owner = rc.rdc_id
+              WHERE rc.rdc_description = 'Pkg.AvailabilityScope'
+              AND rv.rdv_value = 'missingAvailabilityScopeRefDataValue'
+              LIMIT 1
+          )
           WHERE
             NOT EXISTS (
               SELECT 1
-                FROM ${database.defaultSchemaName}.refdata_value rvx
-                WHERE rvx.rdv_id = p.pkg_availability_scope_fk
+              FROM ${database.defaultSchemaName}.refdata_value rvx
+              WHERE rvx.rdv_id = p.pkg_availability_scope_fk
             )
             AND
             EXISTS (
               SELECT 1
-                FROM ${database.defaultSchemaName}.refdata_value rv
-                JOIN ${database.defaultSchemaName}.refdata_category rc
-                  ON rv.rdv_owner = rc.rdc_id
-                WHERE rc.rdc_description = 'Pkg.AvailabilityScope'
-                  AND rv.rdv_value = 'missingAvailabilityScopeRefDataValue'
+              FROM ${database.defaultSchemaName}.refdata_value rv
+              JOIN ${database.defaultSchemaName}.refdata_category rc
+              ON rv.rdv_owner = rc.rdc_id
+              WHERE rc.rdc_description = 'Pkg.AvailabilityScope'
+              AND rv.rdv_value = 'missingAvailabilityScopeRefDataValue'
             );
         """.toString())
       }
