@@ -119,17 +119,35 @@ public class PolicyEngine implements PolicyEngineImplementor {
    *
    * @param headers the request context headers, used for FOLIO/internal service authentication
    * @param pr      the policy restriction to filter by
+   * @param type    the type of access policy to retrieve (e.g., acquisition unit). If null, retrieves all types
    * @return a list of {@link GroupedExternalPolicies} containing policies grouped by type
    * @throws PolicyEngineException if an error occurs while fetching policy IDs
    */
-  public List<GroupedExternalPolicies> getRestrictionPolicies(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
+  public List<GroupedExternalPolicies> getRestrictionPolicies(String[] headers, PolicyRestriction pr, AccessPolicyType type) throws PolicyEngineException {
     List<GroupedExternalPolicies> policyIds = new ArrayList<>();
 
-    if (acquisitionUnitPolicyEngine != null) {
+    if (
+      (type == AccessPolicyType.ACQ_UNIT || type == null) &&
+      acquisitionUnitPolicyEngine != null
+    ) {
       policyIds.addAll(acquisitionUnitPolicyEngine.getRestrictionPolicies(headers, pr));
     }
 
     return policyIds;
+  }
+
+  /**
+   * Retrieves a list of access policies grouped by their type for the given policy restriction.
+   * This method is used to fetch valid policies that can be used for operations like claims.
+   *
+   * @param headers the request context headers, used for FOLIO/internal service authentication
+   * @param pr      the policy restriction to filter by
+   * @return a list of {@link GroupedExternalPolicies} containing policies grouped by type
+   * @throws PolicyEngineException if an error occurs while fetching policy IDs
+   */
+  public List<GroupedExternalPolicies> getRestrictionPolicies(String[] headers, PolicyRestriction pr) throws PolicyEngineException {
+    // This method is here to ensure that PolicyEngine in main is compliant with PolicyEngineImplementor interface, shortcuts the null for type-filtering
+    return getRestrictionPolicies(headers, pr, null);
   }
 
   /**

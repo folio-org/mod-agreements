@@ -143,12 +143,8 @@ public class GroupedExternalPolicies {
             throw new PolicyEngineException("GroupedExternalPolicies::fromString error. Invalid entry: " + curr + " -- must be of the form AccessPolicyType:AccessPolicyEntity.id");
           }
 
-          AccessPolicyType apt;
-          try {
-            apt = AccessPolicyType.valueOf(parts[0]);
-          } catch (Exception e) {
-            throw new PolicyEngineException("GroupedExternalPolicies::fromString error. Invalid AccessPolicyType: " + parts[0]);
-          }
+          // We are going to allow NONE here, as it may be useful to filter for resources with no policies on them
+          AccessPolicyType apt = AccessPolicyType.fromString(parts[0], false);
 
           GroupedExternalPolicies relevantPoliciesEntry = acc.stream()
             .filter(policiesEntry -> policiesEntry.getType() == apt)
@@ -156,17 +152,27 @@ public class GroupedExternalPolicies {
             .orElse(null);
 
           if (relevantPoliciesEntry != null) {
-            // Update existing type with new policy
-            ArrayList<ExternalPolicy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
-            updatedPolicyIds.add(BasicPolicy.builder().id(parts[1]).build());
-            relevantPoliciesEntry.setPolicies(updatedPolicyIds);
+            // NONE should have an empty policies list, so we don't add to it whatever is passed after the :. Standard practice is NONE:NONE
+            if (apt != AccessPolicyType.NONE) {
+              // Update existing type with new policy
+              ArrayList<ExternalPolicy> updatedPolicyIds = new ArrayList<>(relevantPoliciesEntry.getPolicies());
+              updatedPolicyIds.add(BasicPolicy.builder().id(parts[1]).build());
+              relevantPoliciesEntry.setPolicies(updatedPolicyIds);
+            }
           } else {
+            GroupedExternalPoliciesBuilder builder = GroupedExternalPolicies.builder()
+              .type(apt)
+              .name("POLICY_IDS_FOR_" + apt);
+
+            if (apt == AccessPolicyType.NONE) {
+              builder.policies(Collections.emptyList());
+            } else {
+              builder.policies(Collections.singletonList(BasicPolicy.builder().id(parts[1]).build()));
+            }
+
             acc.add(
-              GroupedExternalPolicies.builder()
-                .type(apt)
-                .policies(Collections.singletonList(BasicPolicy.builder().id(parts[1]).build()))
-                .name("POLICY_IDS_FOR_" + apt)
-                .build()
+              builder
+              .build()
             );
           }
 
