@@ -53,6 +53,22 @@ public class FilterPolicySubquery implements PolicySubquery {
     )
   """;
 
+  /** Template for the SQL filter subquery for NONE type.
+   * This template is used to construct the SQL string for filtering resources with no access policies.
+   * Placeholders in the template are replaced with actual table names, column names, and parameters.
+   */
+  public static final String NONE_FILTER_TEMPLATE = """
+    (
+      NOT EXISTS (
+        SELECT 1 FROM #ACCESS_POLICY_TABLE_NAME #ACCESS_POLICY_TABLE_ALIAS
+        WHERE
+        #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME = #RESOURCE_ID_MATCH AND
+        #ACCESS_POLICY_TABLE_ALIAS.#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME = #RESOURCE_CLASS
+        LIMIT 1
+      )
+    )
+  """;
+
   /** A list of PoliciesFilter objects representing the filters to be applied.
    * Each PoliciesFilter contains a list of GroupedExternalPolicies objects that will be ORed together,
    * while the top-level list of PoliciesFilter objects will be ANDed together in the final SQL.
@@ -84,6 +100,8 @@ public class FilterPolicySubquery implements PolicySubquery {
       resourceIdMatch = parameters.getResourceAlias() + "." + parameters.getResourceIdColumnName();
     }
 
+
+
     // Approach -- we want to AND together each PoliciesFilter. Each of these objects then contains a list of
     // GroupedExternalPolicyList which we want to OR together. So we build the SQL string from the template above for
     // each AccessPolicyType group per PoliciesFilter, ORing them together in the process.
@@ -101,6 +119,7 @@ public class FilterPolicySubquery implements PolicySubquery {
                   .mapToObj(apIndex -> {
                     GroupedExternalPolicies ap = pf.getFilters().get(apIndex);
 
+                    // Resource id and class are always parameters
                     if (queryType == AccessPolicyQueryType.SINGLE) {
                       allParameters.add(parameters.getResourceId()); // Add resource id (But only when in a SINGLE query, list is handled by alias above)
                       allTypes.add(AccessControlSqlType.STRING); // Resource id is a string
@@ -108,6 +127,19 @@ public class FilterPolicySubquery implements PolicySubquery {
 
                     allParameters.add(parameters.getResourceClass()); // Add resource class
                     allTypes.add(AccessControlSqlType.STRING); // Resource class is a string
+
+                    // Special case for NONE type -- we just want to check that there are no policies on this resource at all
+                    if (ap.getType() == com.k_int.accesscontrol.core.AccessPolicyType.NONE) {
+                      return NONE_FILTER_TEMPLATE
+                        .replaceAll("#ACCESS_POLICY_TABLE_NAME", parameters.getAccessPolicyTableName())
+                        .replaceAll("#ACCESS_POLICY_TABLE_ALIAS", "apFilters" + pfIndex + "_" + apIndex) // Unique alias per EXISTS subquery
+                        .replaceAll("#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME", parameters.getAccessPolicyResourceClassColumnName())
+                        .replaceAll("#RESOURCE_CLASS", "?") // MAPPING RESOURCE CLASS TO A PARAMETER
+                        .replaceAll("#RESOURCE_ID_MATCH", resourceIdMatch)
+                        .replaceAll("#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME", parameters.getAccessPolicyResourceIdColumnName());
+                    }
+
+                    // We have an actual type with policies to filter on
 
                     allParameters.addAll(ap.getPolicies().stream().map(ExternalPolicy::getId).toList()); // Add policy ids
                     allTypes.addAll(Collections.nCopies(ap.getPolicies().size(), AccessControlSqlType.STRING)); // all policy ids are strings
