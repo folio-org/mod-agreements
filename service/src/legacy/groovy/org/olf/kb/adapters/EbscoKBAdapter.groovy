@@ -27,7 +27,7 @@ import groovyx.net.http.*
 
 @Slf4j
 @CompileStatic
-public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, DataBinder {
+public class EbscoKBAdapter implements KBCacheUpdater, DataBinder {
 
   EbscoKBAdapter() {
     super (HttpBuilder.configure {
