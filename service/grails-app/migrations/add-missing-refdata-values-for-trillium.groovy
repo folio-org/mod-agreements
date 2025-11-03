@@ -71,16 +71,6 @@ databaseChangeLog = {
             SELECT 1
             FROM ${database.defaultSchemaName}.refdata_value rvx
             WHERE rvx.rdv_id = p.pkg_lifecycle_status_fk
-            )
-            AND
-            -- only do this if the placeholder actually exists
-            EXISTS (
-              SELECT 1
-              FROM ${database.defaultSchemaName}.refdata_value rv
-              JOIN ${database.defaultSchemaName}.refdata_category rc
-              ON rv.rdv_owner = rc.rdc_id
-              WHERE rc.rdc_description = 'Pkg.LifecycleStatus'
-              AND rv.rdv_value = 'missingLifecycleStatusRefDataValue'
             );
         """.toString())
       }
@@ -157,15 +147,6 @@ databaseChangeLog = {
               SELECT 1
               FROM ${database.defaultSchemaName}.refdata_value rvx
               WHERE rvx.rdv_id = p.pkg_availability_scope_fk
-            )
-            AND
-            EXISTS (
-              SELECT 1
-              FROM ${database.defaultSchemaName}.refdata_value rv
-              JOIN ${database.defaultSchemaName}.refdata_category rc
-              ON rv.rdv_owner = rc.rdc_id
-              WHERE rc.rdc_description = 'Pkg.AvailabilityScope'
-              AND rv.rdv_value = 'missingAvailabilityScopeRefDataValue'
             );
         """.toString())
       }
