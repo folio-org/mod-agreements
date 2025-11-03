@@ -24,16 +24,22 @@ While this README and the module description template offer some guidance on how
 ### Environment variables 
 This is a NON-EXHAUSTIVE list of environment variables which tweak behaviour in this module
 
-| Variable                      | Description                                                                                                                                                                                                                                                         | Options                                                                                      | Default                       |
-|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|-------------------------------|
-| `TIRS`                          | Allows the switching of the default "matching" logic underpinning when we declare two incoming titles as equivalent                                                                                                                                                 | <ul><li>`'IdFirst'`</lit><li>`'TitleFirst'`</lit><li>`'WorkSourceIdentifier'`</li></ul>      | `WorkSourceIdentifier`        |
-| `SYNC_PACKAGES_VIA_HARVEST`     | Allows the turning on/off of "sync" for packages harvested via the GokbOAIAdapter                                                                                                                                                                                   | <ul><li>`'true'`</li><li>`'false'`</li></ul>                                                 | `'false'`                     |
-| `INGRESS_TYPE`                  | Allows the switching between the two main ingress methods to get packages/titles into the local KB.These are mutually exclusive options, which is why they are surfaced as an environment variable                                                                  | <ul><li>`PushKB`</li><li>`Harvest`</li></ul>                                                 | `Harvest` (Subject to change) |
-| `KB_HARVEST_BUFFER`             | Allows changing of the default time it takes for mod-agreements to consider its local KB "stale". Note that this will _not_ change the frequency with which the Jobs are created in the system, simply the rate at which those jobs will finish without doing work. | <ul><li>`ONE_HOUR`</li><li>`ZERO`</li><li>Any integer -- representing milliseconds</li></ul> | `1*60*60*1000` (`ONE_HOUR`)   |
-| `GLOBAL_S3_SECRET_KEY`          | Allows the setting of a global S3 secret key fallback. First module checks older S3SecretKey AppSetting. If not present then it falls back to this value.                                                                                                           | S3 secret                                                                                    |                               |
-| `ENDPOINTS_INCLUDE_STACK_TRACE` | Allows the HTTP response 500 to contain stacktrace from the exception thrown. Default return will be a generic message and a timestamp.                                                                                                                             | <ul><li>`true`</li><li>`false`</li></ul>                                                     | `false`                       |
-### Locks and failure to upgrade
-This module has a few "problem" scenarios that _shouldn't_ occur in general operation, but particular approaches to upgrades in particular can leave the module unable to self right. This occurs especially often where the module or container die/are killed regularly shortly after/during the upgrade.
+| Variable                        | Description                                                                                                                                                                                                                                                                          | Options                                                                                                                                              | Default                       |
+|---------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
+| `TIRS`                          | Allows the switching of the default "matching" logic underpinning when we declare two incoming titles as equivalent                                                                                                                                                                  | <ul><li>`'IdFirst'`</lit><li>`'TitleFirst'`</lit><li>`'WorkSourceIdentifier'`</li></ul>                                                              | `WorkSourceIdentifier`        |
+| `SYNC_PACKAGES_VIA_HARVEST`     | Allows the turning on/off of "sync" for packages harvested via the GokbOAIAdapter                                                                                                                                                                                                    | <ul><li>`'true'`</li><li>`'false'`</li></ul>                                                                                                         | `'false'`                     |
+| `INGRESS_TYPE`                  | Allows the switching between the two main ingress methods to get packages/titles into the local KB.These are mutually exclusive options, which is why they are surfaced as an environment variable                                                                                   | <ul><li>`PushKB`</li><li>`Harvest`</li></ul>                                                                                                         | `Harvest` (Subject to change) |
+| `KB_HARVEST_BUFFER`             | Allows changing of the default time it takes for mod-agreements to consider its local KB "stale". Note that this will _not_ change the frequency with which the Jobs are created in the system, simply the rate at which those jobs will finish without doing work.                  | <ul><li>`ONE_HOUR`</li><li>`ZERO`</li><li>Any integer -- representing milliseconds</li></ul>                                                         | `1*60*60*1000` (`ONE_HOUR`)   |
+| `GLOBAL_S3_SECRET_KEY`          | Allows the setting of a global S3 secret key fallback. First module checks older S3SecretKey AppSetting. If not present then it falls back to this value.                                                                                                                            | S3 secret                                                                                                                                            |                               |
+| `ENDPOINTS_INCLUDE_STACK_TRACE` | Allows the HTTP response 500 to contain stacktrace from the exception thrown. Default return will be a generic message and a timestamp.                                                                                                                                              | <ul><li>`true`</li><li>`false`</li></ul>                                                                                                             | `false`                       |
+| `DB_MAXPOOLSIZE`                | Configure connection pool to the PG instance for [HikariCP](https://github.com/brettwooldridge/HikariCP). This connection pool will be _doubled_ by each instance, to account for the "system" schema. Details below in the [connection pool issue section](#connection-pool-issues) | Integer. Recommended amount is 50 per instance if GOKB harvesting is configured (see [connection pool issue section](#connection-pool-issues) below) | 10                            |
+
+### Issues
+This module has a few "problem" scenarios that _shouldn't_ occur in general operation, their history, reasoning and workarounds are documented below.
+#### Locks and failure to upgrade
+Particular approaches to upgrades in particular can leave the module unable to self right.
+This occurs especially often where the module or container die/are killed regularly shortly after/during the upgrade.
+The issue documented here was exacerbated by transaction handling changes brought about by the grails 5 -> 6 upgrade as part of Quesnalia, and fix attempts are ongoing.
 
 In order of importance to check:
 
@@ -64,6 +70,36 @@ In order of importance to check:
         - It is NOT RECOMMENDED to clear app_instances manually
       - If there are entries in the federated lock table that do not clear after 20 minutes of uninterrupted running then this table should be manually emptied.
 
+#### Connection pool issues
+As of Sunflower release, issues with [federated locks](#locks-and-failure-to-upgrade) and connection pools have been ongoing since Quesnalia.
+The attempted fixes and history is documented in JIRA ticket [ERM-3851](https://folio-org.atlassian.net/browse/ERM-3851)
+
+Initially the Grails 6 upgrade caused federated lock rows to themselves lock in PG.
+A fix was made for Sunflower (v7.2.0) and backported to Quesnalia (v7.0.12) and Ramsons (v7.1.6).
+However this fix is both not fully complete, and worsens an underlying connection pool issue.
+
+The connection pool per instance can be configured via the `DB_MAXPOOLSIZE` environment variable.
+Since the introduction of module-federation for this module, this has been _doubled_ to ensure connections are available
+for the system schema as well. This is necessary as a starved system schema would all but guarantee the fed lock issues
+documented above. As a response, our approach was to request more and more connections, memory, and CPU time to lower the
+chances of this happening as much as possible.
+
+As of right now, the recommended Sunflower connection pool is 50 per GOKB harvesting instance.
+This leads to 100 connections per instance, almost all of which PG will see as idle. The non-dropping of idle connections
+is a [chosen behaviour of Hikari](https://www.postgresql.org/message-id/1395487594923-5797135.post@n5.nabble.com) (and so not a bug)
+but the sheer volume of them does help point out that something is amiss with our module.
+
+At the moment, although postgres sees most of this pool as idle, Hikari internally believes them to be active, causing
+pool starvation unless massively over-resourcing the instance. This in turn locks up the instance entirely and leads to jobs
+silently failing
+
+The workarounds here are to over-resource the module, and to restart problematic instances (or all instances)
+when this behaviour manifests, or to revert to versions where this is less prevalent (v7.0.10, v7.1.5) and handle the
+federated locking issues instead. Obviously these are not proper solutions.
+
+In Trillium, the aim is both to fix these bugs, and hopefully thus free up the connection pool to an extent that it can be
+run with _significantly_ fewer connections, and potentially set up a way for the configured pool size to be mathematically
+split between system and module, so as to avoid the doubling of the pool.
 
 ## Resources exposed by this module
 
