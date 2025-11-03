@@ -1,7 +1,7 @@
 databaseChangeLog = {
   // EXAMPLE: Replacing any missing refdataValue values where FK constraints were erroneously not present
   // See: ERM-3765
-  changeSet(author: "mchaib (manual)", id: "20250716-1620-001") {
+  changeSet(author: "CalamityC (manual)", id: "20251022-1400-001") {
     // create the Pkg.LifecycleStatus category if it doesn't already exist
     grailsChange {
       change {
@@ -9,10 +9,42 @@ databaseChangeLog = {
       }
     }
 
-    // Create the "missingLifecycleStatusRefDataValue" refDataValue for LifecycleStatus category
+    // Create the "missingLifecycleStatusRefDataValue" refDataValue ONLY if needed
     grailsChange {
       change {
-        sql.execute("INSERT INTO ${database.defaultSchemaName}.refdata_value (rdv_id, rdv_version, rdv_value, rdv_owner, rdv_label) SELECT md5(random()::text || clock_timestamp()::text) as id, 0 as version, 'missingLifecycleStatusRefDataValue' as value, (SELECT rdc_id FROM  ${database.defaultSchemaName}.refdata_category WHERE rdc_description='Pkg.LifecycleStatus') as owner, 'missingLifecycleStatusRefDataValue' as label WHERE NOT EXISTS (SELECT rdv_id FROM ${database.defaultSchemaName}.refdata_value INNER JOIN ${database.defaultSchemaName}.refdata_category ON refdata_value.rdv_owner = refdata_category.rdc_id WHERE rdc_description='Pkg.LifecycleStatus' AND rdv_value='missingLifecycleStatusRefDataValue' LIMIT 1);".toString())
+        sql.execute("""
+          INSERT INTO ${database.defaultSchemaName}.refdata_value (rdv_id, rdv_version, rdv_value, rdv_owner, rdv_label)
+          SELECT md5(random()::text || clock_timestamp()::text) AS id,
+                0 AS version,
+                'missingLifecycleStatusRefDataValue' AS value,
+                (SELECT rdc_id
+                  FROM ${database.defaultSchemaName}.refdata_category
+                  WHERE rdc_description = 'Pkg.LifecycleStatus'
+                  LIMIT 1) AS owner,
+                'missingLifecycleStatusRefDataValue' AS label
+          WHERE
+            -- don't recreate if it already exists
+            NOT EXISTS (
+              SELECT 1
+              FROM ${database.defaultSchemaName}.refdata_value rv
+              JOIN ${database.defaultSchemaName}.refdata_category rc
+              ON rv.rdv_owner = rc.rdc_id
+              WHERE rc.rdc_description = 'Pkg.LifecycleStatus'
+              AND rv.rdv_value = 'missingLifecycleStatusRefDataValue'
+            )
+            AND
+            -- create only if there are orphaned lifecycle_status FKs
+            EXISTS (
+              SELECT 1
+                FROM ${database.defaultSchemaName}."package" p
+                WHERE p.pkg_lifecycle_status_fk IS NOT NULL
+                AND NOT EXISTS (
+                      SELECT 1
+                      FROM ${database.defaultSchemaName}.refdata_value rv2
+                      WHERE rv2.rdv_id = p.pkg_lifecycle_status_fk
+                    )
+            );
+        """.toString())
       }
     }
 
@@ -23,22 +55,23 @@ databaseChangeLog = {
     grailsChange {
       change {
         sql.execute("""
-          UPDATE ${database.defaultSchemaName}.package
-          SET
-            pkg_lifecycle_status_fk = (
-              SELECT ${database.defaultSchemaName}.refdata_value.rdv_id
-              FROM ${database.defaultSchemaName}.refdata_value
-              INNER JOIN ${database.defaultSchemaName}.refdata_category ON ${database.defaultSchemaName}.refdata_value.rdv_owner = ${database.defaultSchemaName}.refdata_category.rdc_id
-              WHERE ${database.defaultSchemaName}.refdata_category.rdc_description = 'Pkg.LifecycleStatus'
-                AND ${database.defaultSchemaName}.refdata_value.rdv_value = 'missingLifecycleStatusRefDataValue'
-              LIMIT 1
-            )
+          UPDATE ${database.defaultSchemaName}.package p
+          SET pkg_lifecycle_status_fk = (
+            SELECT rv.rdv_id
+            FROM ${database.defaultSchemaName}.refdata_value rv
+            JOIN ${database.defaultSchemaName}.refdata_category rc
+            ON rv.rdv_owner = rc.rdc_id
+            WHERE rc.rdc_description = 'Pkg.LifecycleStatus'
+            AND rv.rdv_value = 'missingLifecycleStatusRefDataValue'
+            LIMIT 1
+          )
           WHERE
+            -- only touch rows whose current FK doesn't exist in refdata_value
             NOT EXISTS (
-              SELECT 1
-              FROM ${database.defaultSchemaName}.refdata_value
-              WHERE ${database.defaultSchemaName}.refdata_value.rdv_id = ${database.defaultSchemaName}.package.pkg_lifecycle_status_fk
-            )
+            SELECT 1
+            FROM ${database.defaultSchemaName}.refdata_value rvx
+            WHERE rvx.rdv_id = p.pkg_lifecycle_status_fk
+            );
         """.toString())
       }
     }
@@ -47,7 +80,7 @@ databaseChangeLog = {
     addForeignKeyConstraint(baseColumnNames: "pkg_lifecycle_status_fk", baseTableName: "package", constraintName: "lifecycle_status_to_rdv_fk", deferrable: "false", initiallyDeferred: "false", referencedColumnNames: "rdv_id", referencedTableName: "refdata_value")
   }
 
-  changeSet(author: "mchaib (manual)", id: "20250716-1620-002") {
+  changeSet(author: "CalamityC (manual)", id: "20251022-1400-002") {
     // create the Pkg.AvailabilityScope category if it doesn't already exist
     grailsChange {
       change {
@@ -55,11 +88,40 @@ databaseChangeLog = {
       }
     }
 
-
-    // Create the "missingAvailabilityScopeRefDataValue" refDataValue for AvailabilityScope category
+    // Create the "missingAvailabilityScopeRefDataValue" ONLY if needed
     grailsChange {
       change {
-        sql.execute("INSERT INTO ${database.defaultSchemaName}.refdata_value (rdv_id, rdv_version, rdv_value, rdv_owner, rdv_label) SELECT md5(random()::text || clock_timestamp()::text) as id, 0 as version, 'missingAvailabilityScopeRefDataValue' as value, (SELECT rdc_id FROM  ${database.defaultSchemaName}.refdata_category WHERE rdc_description='Pkg.AvailabilityScope') as owner, 'missingAvailabilityScopeRefDataValue' as label WHERE NOT EXISTS (SELECT rdv_id FROM ${database.defaultSchemaName}.refdata_value INNER JOIN ${database.defaultSchemaName}.refdata_category ON refdata_value.rdv_owner = refdata_category.rdc_id WHERE rdc_description='Pkg.AvailabilityScope' AND rdv_value='missingAvailabilityScopeRefDataValue' LIMIT 1);".toString())
+        sql.execute("""
+          INSERT INTO ${database.defaultSchemaName}.refdata_value (rdv_id, rdv_version, rdv_value, rdv_owner, rdv_label)
+          SELECT md5(random()::text || clock_timestamp()::text) AS id,
+                0 AS version,
+                'missingAvailabilityScopeRefDataValue' AS value,
+                (SELECT rdc_id
+                  FROM ${database.defaultSchemaName}.refdata_category
+                  WHERE rdc_description = 'Pkg.AvailabilityScope'
+                  LIMIT 1) AS owner,
+                'missingAvailabilityScopeRefDataValue' AS label
+          WHERE
+            NOT EXISTS (
+              SELECT 1
+              FROM ${database.defaultSchemaName}.refdata_value rv
+              JOIN ${database.defaultSchemaName}.refdata_category rc
+              ON rv.rdv_owner = rc.rdc_id
+              WHERE rc.rdc_description = 'Pkg.AvailabilityScope'
+              AND rv.rdv_value = 'missingAvailabilityScopeRefDataValue'
+            )
+            AND
+            EXISTS (
+              SELECT 1
+              FROM ${database.defaultSchemaName}.package p
+              WHERE p.pkg_availability_scope_fk IS NOT NULL
+              AND NOT EXISTS (
+                SELECT 1
+                FROM ${database.defaultSchemaName}.refdata_value rv2
+                WHERE rv2.rdv_id = p.pkg_availability_scope_fk
+            )
+          );
+        """.toString())
       }
     }
 
@@ -70,22 +132,22 @@ databaseChangeLog = {
     grailsChange {
       change {
         sql.execute("""
-          UPDATE ${database.defaultSchemaName}.package
-          SET
-            pkg_availability_scope_fk = (
-              SELECT ${database.defaultSchemaName}.refdata_value.rdv_id
-              FROM ${database.defaultSchemaName}.refdata_value
-              INNER JOIN ${database.defaultSchemaName}.refdata_category ON ${database.defaultSchemaName}.refdata_value.rdv_owner = ${database.defaultSchemaName}.refdata_category.rdc_id
-              WHERE ${database.defaultSchemaName}.refdata_category.rdc_description = 'Pkg.AvailabilityScope'
-                AND ${database.defaultSchemaName}.refdata_value.rdv_value = 'missingAvailabilityScopeRefDataValue'
+          UPDATE ${database.defaultSchemaName}."package" p
+          SET pkg_availability_scope_fk = (
+            SELECT rv.rdv_id
+              FROM ${database.defaultSchemaName}.refdata_value rv
+              JOIN ${database.defaultSchemaName}.refdata_category rc
+              ON rv.rdv_owner = rc.rdc_id
+              WHERE rc.rdc_description = 'Pkg.AvailabilityScope'
+              AND rv.rdv_value = 'missingAvailabilityScopeRefDataValue'
               LIMIT 1
-            )
+          )
           WHERE
             NOT EXISTS (
               SELECT 1
-              FROM ${database.defaultSchemaName}.refdata_value
-              WHERE ${database.defaultSchemaName}.refdata_value.rdv_id = ${database.defaultSchemaName}.package.pkg_availability_scope_fk
-            )
+              FROM ${database.defaultSchemaName}.refdata_value rvx
+              WHERE rvx.rdv_id = p.pkg_availability_scope_fk
+            );
         """.toString())
       }
     }
