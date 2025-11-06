@@ -100,4 +100,17 @@ public class PolicyControlledMetadata {
    */
   @Nullable
   final String aliasOwnerField;
+
+  /**
+   * The map of policy restrictions and their inheritance/mapping for this resource.
+   * This defines how each {@link com.k_int.accesscontrol.core.PolicyRestriction} is controlled,
+   * either by mapping to the parent or by specifying standalone policies for this resource.
+   * May be {@code null} if no mappings are defined at this level, which will assume that any restrictions
+   * are directly controlled by that restriction on the parent
+   *
+   * @param restrictionMap the restriction map for this resource
+   * @return the restriction map for this resource
+   */
+  @Nullable
+  final PolicyControlledRestrictionMap restrictionMap;
 }

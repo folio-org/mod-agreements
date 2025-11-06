@@ -1,5 +1,6 @@
 package com.k_int.accesscontrol.core.policycontrolled;
 
+import com.k_int.accesscontrol.core.PolicyRestriction;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -13,6 +14,13 @@ import java.util.Set;
  * for the purpose of access control policy evaluation.
  */
 public class PolicyControlledManager {
+  // FIXME IDEA
+  // At the moment, it is assumed that if a PCM is for a class that has owners, the owner's policies are DIRECTLY responsible for the child class
+  // What if we need the child class to have its own CREATE policies, or for child class DELETE to rely on parent's EDIT instead?
+  // What do we do in the case of no owner?
+  // What if we want the class to obey policies on its level AND on the parent's level?
+
+
   /**
    * The resolved ownership chain, ordered from the leaf class up to the root owner.
    * Each element in the list represents the {@link PolicyControlledMetadata} for a level in the chain.
@@ -33,6 +41,96 @@ public class PolicyControlledManager {
   public PolicyControlledManager(Class<?> leafClass) {
     this.ownershipChain = PolicyControlledManager.resolveOwnershipChain(leafClass);
   }
+
+  /**
+   * Determine whether a given {@link PolicyRestriction} is declared as having standalone policies
+   * on the supplied {@link PolicyControlled} annotation.
+   *
+   * @param annotation  the {@code PolicyControlled} annotation instance to inspect
+   * @param restriction the policy restriction to check
+   * @return {@code true} if the annotation declares standalone policies for the restriction, otherwise {@code false}
+   */
+  public static boolean hasStandalonePolicies(
+    PolicyControlled annotation,
+    PolicyRestriction restriction) {
+
+    return switch (restriction) {
+      case READ -> annotation.hasStandaloneReadPolicies();
+      case CREATE -> annotation.hasStandaloneCreatePolicies();
+      case UPDATE -> annotation.hasStandaloneUpdatePolicies();
+      case DELETE -> annotation.hasStandaloneDeletePolicies();
+      case APPLY_POLICIES -> annotation.hasStandaloneApplyPolicies();
+      // Default for PolicyRestriction.NONE or other types
+      default -> false;
+    };
+  }
+
+  /**
+   * Map a child-level {@link PolicyRestriction} to the corresponding owner-level restriction
+   * as declared on the provided {@link PolicyControlled} annotation.
+   *
+   * @param annotation  the {@code PolicyControlled} annotation instance to consult
+   * @param restriction the child-level restriction
+   * @return the {@link PolicyRestriction} that should be consulted on the owner level; {@link PolicyRestriction#NONE}
+   *         when no mapping is provided for the supplied restriction
+   */
+  public static PolicyRestriction getOwnerRestrictionMapping(
+    PolicyControlled annotation,
+    PolicyRestriction restriction) {
+
+    return switch (restriction) {
+      case READ -> annotation.readRestrictionMapping();
+      case CREATE -> annotation.createRestrictionMapping();
+      case UPDATE -> annotation.updateRestrictionMapping();
+      case DELETE -> annotation.deleteRestrictionMapping();
+      case APPLY_POLICIES -> annotation.applyPoliciesRestrictionMapping();
+      // Default or error handling as appropriate
+      default -> PolicyRestriction.NONE;
+    };
+  }
+
+  /**
+   * Build a {@link PolicyControlledRestrictionMap} from a {@link PolicyControlled} annotation.
+   * <p>
+   * The resulting map includes only entries where:
+   * <ul>
+   *   <li>the annotation declares standalone policies for the restriction, or</li>
+   *   <li>the owner-level mapping differs from the child-level restriction.</li>
+   * </ul>
+   * </p>
+   *
+   * @param annotation the annotation from which to build the mapping
+   * @return a populated {@link PolicyControlledRestrictionMap} describing non-trivial mappings for the level
+   */
+  public static PolicyControlledRestrictionMap buildRestrictionMapFromAnnotation(PolicyControlled annotation) {
+    // Set up Restriction mapping for this level
+    PolicyControlledRestrictionMap restrictionMap = new PolicyControlledRestrictionMap();
+
+    List<PolicyRestriction> relevantPolicies = List.of(
+      PolicyRestriction.READ,
+      PolicyRestriction.CREATE,
+      PolicyRestriction.UPDATE,
+      PolicyRestriction.DELETE,
+      PolicyRestriction.APPLY_POLICIES
+    );
+
+    relevantPolicies.forEach(pr -> {
+      PolicyRestriction ownerRestriction = getOwnerRestrictionMapping(annotation, pr);
+      boolean hasStandalonePolicies = hasStandalonePolicies(annotation, pr);
+      if (hasStandalonePolicies || ownerRestriction != pr) {
+        restrictionMap.put(
+          pr,
+          RestrictionMapEntry.builder()
+            .ownerRestriction(ownerRestriction)
+            .hasStandalonePolicies(hasStandalonePolicies)
+            .build()
+        );
+      }
+    });
+
+    return restrictionMap;
+  }
+
 
   /**
    * Walks the full ownership chain starting from a given leaf class and builds a list of
@@ -77,6 +175,9 @@ public class PolicyControlledManager {
         aliasOwnerField = aliasBase + previous.getOwnerField();
       }
 
+      // Build the restriction mapping for this chain level
+      PolicyControlledRestrictionMap restrictionMap = buildRestrictionMapFromAnnotation(annotation);
+
       chain.add(PolicyControlledMetadata.builder()
         .resourceClassName(current.getCanonicalName())
         .resourceIdColumn(annotation.resourceIdColumn())
@@ -88,6 +189,7 @@ public class PolicyControlledManager {
         .aliasName(aliasName)
         .aliasOwnerColumn(aliasOwnerColumn)
         .aliasOwnerField(aliasOwnerField)
+        .restrictionMap(restrictionMap)
         .build()
       );
 
