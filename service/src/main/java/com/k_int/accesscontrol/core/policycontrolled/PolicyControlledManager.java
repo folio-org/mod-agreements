@@ -91,13 +91,11 @@ public class PolicyControlledManager {
 
   /**
    * Build a {@link PolicyControlledRestrictionMap} from a {@link PolicyControlled} annotation.
-   * <p>
    * The resulting map includes only entries where:
    * <ul>
    *   <li>the annotation declares standalone policies for the restriction, or</li>
    *   <li>the owner-level mapping differs from the child-level restriction.</li>
    * </ul>
-   * </p>
    *
    * @param annotation the annotation from which to build the mapping
    * @return a populated {@link PolicyControlledRestrictionMap} describing non-trivial mappings for the level
