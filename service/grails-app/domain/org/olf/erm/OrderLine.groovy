@@ -5,8 +5,6 @@ import com.k_int.web.toolkit.domain.traits.Clonable
 import grails.gorm.MultiTenant
 import groovy.util.logging.Slf4j
 
-// FIXME ownership chain testing DO NOT MERGE
-
 public class OrderLine implements MultiTenant<OrderLine>, Clonable<OrderLine> {
 	
 	String id
