@@ -7,6 +7,7 @@ import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
+import com.k_int.accesscontrol.core.policycontrolled.RestrictionMapEntry
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
@@ -92,55 +93,29 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     this.typeMapper = new AccessControlHibernateTypeMapper(hibernateSessionFactory as SessionFactoryImplementor)
   }
 
-  /**
-   * Resolves the ID of the ultimate owner (root) in an ownership chain, starting from a leaf resource ID.
-   * If no ownership chain is configured, the leaf resource itself is considered the root.
-   * This method dynamically constructs an HQL query to traverse the chain and fetch the root ID.
-   *
-   * @param leafResourceId The ID of the leaf resource for which to find the root owner.
-   * @return The ID of the root owner, or the {@code leafResourceId} if no owners are configured or resolution fails.
-   */
-  protected String resolveRootOwnerId(String leafResourceId) {
-    if (!policyControlledManager.hasOwners()) {
-      // If there are no configured owners, the leaf resource itself is the "root" for policy purposes
-      return leafResourceId
+  protected String resolveOwnerId(
+    int ownerLevel, // The level in the ownershipChain we want to return the id of
+    String leafId, // The "bottom" identifier, applied to level $startLevel
+    int startLevel // The level at which the given resourceId applies. For CREATE we will want to start at level 1 with id Y, instead of level 0 with id X, since we don't have id in hand for create
+  ) {
+    // Hmm... for now shortcut out if we hand null in, since we don't actually need to resolve the id for READ LIST for example... not certain about this though
+    if (leafId == null) {
+      return null;
     }
-    List<PolicyControlledMetadata> ownershipChain = policyControlledManager.getOwnershipChain()
-    PolicyControlledMetadata leafMetadata = policyControlledManager.getLeafPolicyControlledMetadata()
-    PolicyControlledMetadata rootMetadata = policyControlledManager.getRootPolicyControlledMetadata()
 
-    // Dynamically build an HQL query to traverse the ownership chain
-    StringBuilder hql = new StringBuilder("SELECT t${ownershipChain.size() - 1}.${rootMetadata.resourceIdField}")
-    hql.append(" FROM ${leafMetadata.resourceClassName} t0") // Start from the leaf entity
+    // First we get the SQL to resolve the owner id
+    AccessControlSql sql = policyControlledManager.getOwnerIdSql(ownerLevel, leafId, startLevel)
 
-    // Build the JOINs up the chain
-    for (int i = 0; i < ownershipChain.size() - 1; i++) {
-      PolicyControlledMetadata currentMetadata = ownershipChain.get(i)
-      // Ensure currentMetadata.ownerField is not null/empty before appending join
-      if (currentMetadata.ownerField) {
-        hql.append(" JOIN t${i}.${currentMetadata.ownerField} t${i+1}")
+    // Then we build the SQL and perform the query
+    AccessPolicyEntity.withNewSession { Session sess ->
+      NativeQuery identifierQuery = sess.createNativeQuery(sql.getSqlString());
+      sql.getParameters().eachWithIndex { Object param, int paramIndex  ->
+        // Hibernate params start at 1 :(
+        identifierQuery.setParameter(paramIndex + 1, param, (Type) typeMapper.getHibernateType((AccessControlSqlType) sql.getTypes()[paramIndex]))
       }
+      String id = identifierQuery.list()[0]
+      return id;
     }
-
-    hql.append(" WHERE t0.id = :leafResourceId") // Filter by the requested leaf resource ID
-
-    // Execute the HQL query and return the id at hand
-    String resolvedRootId = AccessPolicyEntity.executeQuery(hql.toString(), ["leafResourceId": leafResourceId]).getAt(0)
-
-    // Return the resolved ID, or fallback to the leaf ID if resolution fails (e.g., entity not found)
-    return resolvedRootId ?: leafResourceId
-  }
-
-  protected String resolveRootOwnerClass() {
-    PolicyControlledMetadata leafMetadata = policyControlledManager.getLeafPolicyControlledMetadata()
-
-    if (!policyControlledManager.hasOwners()) {
-      // If there are no configured owners, the leaf resource itself is the "root" for policy purposes
-
-      return leafMetadata?.resourceClassName
-    }
-    PolicyControlledMetadata rootMetadata = policyControlledManager.getRootPolicyControlledMetadata()
-    return rootMetadata.resourceClassName
   }
 
   /**
@@ -151,12 +126,15 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    * @param resourceId The ID of the resource to which the policies apply. Can be {@code null} for LIST queries.
    * @return A {@link PolicySubqueryParameters} object populated with the relevant parameters.
    */
-  protected PolicySubqueryParameters getPolicySubqueryParameters(String resourceId) {
+  protected PolicySubqueryParameters getPolicySubqueryParameters(String resourceId, int ownerLevel) {
     String resourceAlias = '{alias}'
-    PolicyControlledMetadata rootPolicyControlledMetadata = policyControlledManager.getRootPolicyControlledMetadata()
-    if (policyControlledManager.hasOwners()) {
-      resourceAlias = rootPolicyControlledMetadata.getAliasName()
-    } // If there are no "owners" then rootPolicyControlledMetadata should equal leafPolicyControlledMetadata ie, resourceClass
+    PolicyControlledMetadata ownerLevelMetadata = policyControlledManager.getOwnerLevelMetadata(ownerLevel)
+    if (ownerLevelMetadata.getAliasName()) {
+      resourceAlias = ownerLevelMetadata.getAliasName()
+    } // This should always be calculated, except for "root" entry which uses the base alias
+
+    String resourceClass = policyControlledManager.resolveOwnerClass(ownerLevel)
+    String resourceIdColumn = policyControlledManager.resolveOwnerResourceIdColumn(ownerLevel)
 
     return PolicySubqueryParameters
       .builder()
@@ -166,9 +144,9 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
       .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
       .resourceAlias(resourceAlias) // This alias can be deeply nested from owner or '{alias}' for hibernate top level queries
-      .resourceIdColumnName(rootPolicyControlledMetadata.resourceIdColumn)
+      .resourceIdColumnName(resourceIdColumn)
       .resourceId(resourceId) // This might be null (For LIST type queries)
-      .resourceClass(rootPolicyControlledMetadata.resourceClassName)
+      .resourceClass(resourceClass)
       .build()
   }
 
@@ -180,11 +158,11 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    *
    * @param restriction The type of policy restriction (e.g., READ, UPDATE, DELETE).
    * @param queryType The type of query (e.g., SINGLE for individual resource checks, LIST for collection checks).
-   * @param resourceId The ID of the resource to apply the policy to. Can be {@code null} for LIST queries.
+   * @param leafResourceId The ID of the resource in hand we apply the policy against. Can be {@code null} for LIST queries.
    * @return A list of SQL string fragments representing the access policies.
    */
-  protected List<AccessControlSql> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId) {
-    return getPolicySql(restriction, queryType, resourceId, null)
+  protected List<AccessControlSql> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String leafResourceId) {
+    return getPolicySql(restriction, queryType, leafResourceId, null)
   }
 
   /**
@@ -195,21 +173,103 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    *
    * @param restriction The type of policy restriction (e.g., READ, UPDATE, DELETE).
    * @param queryType The type of query (e.g., SINGLE for individual resource checks, LIST for collection checks).
-   * @param resourceId The ID of the resource to apply the policy to. Can be {@code null} for LIST queries.
+   * @param leafResourceId The ID of the resource in hand we apply the policy against. Can be {@code null} for LIST queries.
    * @param filters Optional list of {@link PoliciesFilter} to refine which policies are considered.
    * @return A list of SQL string fragments representing the access policies.
    */
-  protected List<AccessControlSql> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId, List<PoliciesFilter> filters) {
+  protected List<AccessControlSql> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String leafResourceId, List<PoliciesFilter> filters) {
     /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
 
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
-    List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, restriction, queryType, filters)
 
-    PolicySubqueryParameters params = getPolicySubqueryParameters(resourceId)
-    log.trace("AccessPolicyAwareController::getPolicySql PolicySubqueryParameters configured: ${params}")
+    // Attempt to work out which policySubqueries and which subqueryParams we will need
+    // Starting at the leaf, work out whether we need to get hold of subqueries at this level, pass through to parent (with mapping?) or break out.
 
-    return policySubqueries.collect { psq -> psq.getSql(params)}
+    // FIXME does any of this logic belong in the java library?
+
+    // We only need to get the relevant subqueries once each.
+    // Store the policy subqueries we get back for PolicyRestriction, as well as keeping a List of all the levels which need that list of policy subqueries
+    // This Map is quite a complex object, not 100% sure it's the right approach
+    // FIXME perhaps change into a class PolicyLevel or something
+    Map<PolicyRestriction, Tuple2<List<PolicySubquery>, List<PolicySubqueryParameters>>> relevantSubqueries = new HashMap<>();
+    PolicyRestriction levelRestriction = restriction // We will change this at each level to follow the mapping tree
+
+    // Find out whether we've hit the root or not
+    PolicyControlledMetadata rootMetadata = policyControlledManager.getRootPolicyControlledMetadata()
+
+    for (int i = 0; policyControlledManager.ownershipChain; i++) {
+      PolicyControlledMetadata levelMetadata = policyControlledManager.ownershipChain.get(i)
+      RestrictionMapEntry rme = levelMetadata.getRestrictionMap().get(levelRestriction)
+      if (levelMetadata.equals(rootMetadata)) {
+        // We have hit the final level, whatever the levelRestriction is at this point is the restriction we want to apply
+        String resourceId = resolveOwnerId(i, leafResourceId, 0)
+        if (relevantSubqueries.get(levelRestriction) == null) {
+
+          relevantSubqueries.put(
+            levelRestriction,
+            Tuple2.tuple(
+              policyEngine.getPolicySubqueries(grailsHeaders, levelRestriction, queryType, filters),
+              new ArrayList<PolicySubqueryParameters>(Arrays.asList(getPolicySubqueryParameters(resourceId, i)))
+            )
+          )
+        } else {
+          relevantSubqueries.get(levelRestriction).getV2().add(getPolicySubqueryParameters(resourceId, i))
+        }
+
+        // No need to do the rest of the loop
+        break
+      }
+
+      // We're not at the root yet, so continue onwards
+      if (rme != null) {
+        // We have a mapping for this level, work out what to do
+
+        // Whether we continue on up the ownership chain or not, we need to check for standalone policies at this level
+        if (rme.hasStandalonePolicies() && relevantSubqueries.get(levelRestriction) == null) {
+          String resourceId = resolveOwnerId(i, leafResourceId, 0)
+
+          relevantSubqueries.put(
+            levelRestriction,
+            Tuple2.tuple(
+              policyEngine.getPolicySubqueries(grailsHeaders, levelRestriction, queryType, filters),
+              new ArrayList<PolicySubqueryParameters>(Arrays.asList(getPolicySubqueryParameters(resourceId, i)))
+            )
+          )
+        } else if (rme.hasStandalonePolicies()) {
+          String resourceId = resolveOwnerId(i, leafResourceId, 0)
+
+          relevantSubqueries.get(levelRestriction).getV2().add(getPolicySubqueryParameters(resourceId, i))
+        }
+
+        if (rme.getOwnerRestriction() == PolicyRestriction.NONE) {
+          // We are NOT taking parent policies into account, so must break out of the loop here.
+          break;
+        }
+
+        // At this point we know we have a parent mapping, so we use that for the next level
+        levelRestriction = rme.getOwnerRestriction()
+      }
+    }
+
+    // We now have the complex Map from above ready to build the params and combine the SQL
+    List<AccessControlSql> sqlList = new ArrayList<>()
+    for (entry in relevantSubqueries) {
+      List<PolicySubquery> subqueries = entry.getValue().getV1()
+      List<PolicySubqueryParameters> paramsToApply = entry.getValue().getV2()
+
+      // We need to apply each param to each subquery and collect all the SQL together
+      for (subquery in subqueries) {
+        for (paramSet in paramsToApply) {
+          sqlList.add(subquery.getSql(paramSet))
+        }
+      }
+    }
+
+    return sqlList
+
+    //log.trace("AccessPolicyAwareController::getPolicySql PolicySubqueryParameters configured: ${params}")
+    //return policySubqueries.collect { psq -> psq.getSql(params)}
   }
 
 
@@ -255,15 +315,13 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     AccessPolicyEntity.withNewSession { Session sess ->
       // Handle OWNER logic
 
-      // If there are NO owners, we can use the queryResourceId from the request itself
-      String queryResourceId = resolveRootOwnerId(params.id)
-
       if (!getCanAccessValidPolicyRestrictions().contains(pr)) {
         throw new PolicyEngineException("Restriction: ${pr.toString()} is not accessible here", PolicyEngineException.INVALID_RESTRICTION)
       }
 
       // We have a valid restriction, lets get the policySql
-      List<AccessControlSql> policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, queryResourceId)
+      // FIXME YIKES what do we do about create here? It obviously doesn't have an id yet, so we can't resolve owner id :(
+      List<AccessControlSql> policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, params.id)
 
       // If we have no SQL here, just shortcut to true
       if (policySqlFragments.size() == 0) {
@@ -585,6 +643,10 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
+    // FIXME We need to allow this if this leaf resource has standalone ANYTHING.
+    // HOWEVER we MUST only allow the editing of those AccessPolicyEntity objects for the leaf itself,
+    // NOT anywhere else in the ownership chain
+
     if (policyControlledManager.hasOwners()) {
       // If there are owners, then don't allow claiming (for now)
       respond ([ message: 'Claiming is not supported on resources PolicyControlled via an owner' ], status: 400 )
@@ -600,6 +662,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     // At this point, we know that the user has permission to apply policies
 
     // Might not need to do this now, since we're cancelling early if there are owners
+    // FIXME check whether we still want this from the root
     String resourceId = resolveRootOwnerId(params.id)
     String resourceClass = resolveRootOwnerClass()
     boolean success = true
@@ -725,11 +788,14 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     respond ([ message: "Access policies updated for this resource" ], status: 201 )
   }
 
+  // FIXME this will no longer be ALL relevant policies :'(
   @Transactional
   def policies() {
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
     AccessPolicyEntity.withNewSession {
       Set<AccessPolicyType> enabledEngines = policyEngine.getEnabledEngineSet()
+
+      // TODO walk up the owner tree, and every level where there's possibly policies, request those policies here.
 
       // Fetch the ENABLED access policy entities for the resource at hand
       List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.executeQuery(
