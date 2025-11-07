@@ -1,12 +1,10 @@
 package com.k_int.accesscontrol.core.policycontrolled;
 
 import com.k_int.accesscontrol.core.PolicyRestriction;
+import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Manages and resolves the ownership chain for entities marked with {@link PolicyControlled} annotations.
@@ -223,6 +221,30 @@ public class PolicyControlledManager {
    */
   public List<PolicyControlledMetadata> getNonLeafOwnershipChain() {
     return ownershipChain.stream().filter(pcm -> pcm.getOwnerLevel() > -1 ).toList();
+  }
+
+  /**
+   * Retrieves the {@link PolicyControlledMetadata} for the specified owner level in the ownership chain.
+   *
+   * @param ownerLevel the zero-based index of the owner level to retrieve
+   * @return the {@link PolicyControlledMetadata} at the specified owner level
+   * @throws PolicyEngineException if the owner level is out of range
+   */
+  public PolicyControlledMetadata getOwnerLevelMetadata(int ownerLevel) {
+    if (ownerLevel > ownershipChain.size() - 1 || ownerLevel < 0) {
+      throw new PolicyEngineException("Cannot access PolicyControlledManager ownershipChain[${ownerLevel}]. Ownership chain has size: ${ownershipChain.size()}");
+    }
+
+    return ownershipChain.get(ownerLevel);
+  }
+
+  /**
+   * Returns the number of levels in the ownership chain, including the leaf and all owners.
+   *
+   * @return the size of the ownership chain
+   */
+  public int getOwnershipChainSize() {
+    return ownershipChain.size();
   }
 
   /**
