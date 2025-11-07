@@ -250,7 +250,14 @@ public class PolicyControlledManager {
     return ownershipChain.size() > 1;
   }
 
-
+  /**
+   * Generates an {@link AccessControlSql} statement to retrieve the owner id at the specified level,
+   * starting from the leaf id.
+   *
+   * @param ownerLevel the level in the ownership chain for which to return the id
+   * @param leafId the identifier of the leaf resource
+   * @return an {@link AccessControlSql} object representing the SQL to retrieve the owner id
+   */
   public AccessControlSql getOwnerIdSql(
     int ownerLevel, // The level in the ownershipChain we want to return the id of
     String leafId // The "bottom" identifier, applied to level $startLevel
@@ -258,6 +265,16 @@ public class PolicyControlledManager {
     return getOwnerIdSql(ownerLevel, leafId, 0);
   }
 
+  /**
+   * Generates an {@link AccessControlSql} statement to retrieve the owner id at the specified level,
+   * starting from a given start level and resource id.
+   *
+   * @param ownerLevel the level in the ownership chain for which to return the id
+   * @param leafId the identifier of the resource at the start level
+   * @param startLevel the level at which the given resourceId applies
+   * @return an {@link AccessControlSql} object representing the SQL to retrieve the owner id
+   * @throws IllegalArgumentException if {@code ownerLevel} is less than {@code startLevel}
+   */
   public AccessControlSql getOwnerIdSql(
     int ownerLevel, // The level in the ownershipChain we want to return the id of
     String leafId, // The "bottom" identifier, applied to level $startLevel
@@ -321,5 +338,29 @@ public class PolicyControlledManager {
       .types(new AccessControlSqlType[]{AccessControlSqlType.STRING})
       .parameters(new String[] { leafId })
       .build();
+  }
+
+  /**
+   * Resolves the class name of the owner at the specified level in the ownership chain.
+   *
+   * @param ownerLevel the zero-based index of the owner level to resolve
+   * @return the class name of the owner at the specified level as a {@code String}
+   * @throws PolicyEngineException if the owner level is out of range or if the required metadata is missing
+   */
+  public String resolveOwnerClass(int ownerLevel) {
+    PolicyControlledMetadata ownerLevelMetadata = getOwnerLevelMetadata(ownerLevel);
+    return ownerLevelMetadata.resourceClassName;
+  }
+
+  /**
+   * Resolves the resourceIdColumn of the owner at the specified level in the ownership chain.
+   *
+   * @param ownerLevel the zero-based index of the owner level to resolve
+   * @return the resource id column name of the owner at the specified level as a {@code String}
+   * @throws PolicyEngineException if the owner level is out of range or if the required metadata is missing
+   */
+  public String resolveOwnerResourceIdColumn(int ownerLevel) {
+    PolicyControlledMetadata ownerLevelMetadata = getOwnerLevelMetadata(ownerLevel);
+    return ownerLevelMetadata.resourceIdColumn;
   }
 }
