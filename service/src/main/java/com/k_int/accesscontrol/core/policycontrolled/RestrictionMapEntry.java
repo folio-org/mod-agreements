@@ -1,9 +1,8 @@
 package com.k_int.accesscontrol.core.policycontrolled;
 
 import com.k_int.accesscontrol.core.PolicyRestriction;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
+import lombok.experimental.Accessors;
 
 /**
  * Represents an entry in the policy restriction map, associating a policy restriction
@@ -11,8 +10,9 @@ import lombok.ToString;
  */
 @Builder
 @SuppressWarnings("javadoc")
-@EqualsAndHashCode
+@Getter
 @ToString
+@EqualsAndHashCode
 public class RestrictionMapEntry {
   /**
    * The owner restriction associated with this entry.
@@ -30,5 +30,6 @@ public class RestrictionMapEntry {
    * @return this builder instance
    */
   @Builder.Default
+  @Accessors(fluent = true)
   boolean hasStandalonePolicies = false;
 }
