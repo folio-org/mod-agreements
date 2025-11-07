@@ -18,6 +18,13 @@ import javax.annotation.Nullable;
 @SuppressWarnings("javadoc")
 public class PolicyControlledMetadata {
   /**
+   * The table name of the resource entity (e.g., "subscription_agreement"). Can be used by the AccessControl framework layer to perform SQL queries
+   * @param resourceTableName The resource table name
+   * @return The resource table name
+   */
+  final String resourceTableName;
+
+  /**
    * The fully qualified class name of the resource entity (e.g., "org.olf.erm.SubscriptionAgreement").
    * @param resourceClassName The resource class name
    * @return The resource class name

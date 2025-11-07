@@ -6,7 +6,10 @@ import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledRestriction
 @PolicyControlled(
   ownerColumn = "owner_column",
   ownerField = "owner",
-  ownerClass = TopOwner.class
+  ownerClass = TopOwner.class,
+  resourceTableName = "a_table",
+  resourceIdColumn = "a_id",
+  resourceIdField = "id"
 )
 public class ChildA {
   String id;

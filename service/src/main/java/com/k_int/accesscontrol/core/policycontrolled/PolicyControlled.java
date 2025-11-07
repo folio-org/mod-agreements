@@ -20,6 +20,14 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 public @interface PolicyControlled {
   /**
+   * The name of the database table that identifies the resource.
+   * <p>
+   * This is used to determine the resource for policy evaluation.
+   * </p>
+   * @return the resource table name
+   */
+  String resourceTableName() default "";
+  /**
    * The name of the database column that identifies the resource.
    * <p>
    * This is used to determine the resource for policy evaluation.

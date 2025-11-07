@@ -9,6 +9,9 @@ import com.k_int.accesscontrol.core.policycontrolled.RestrictionMapEntry;
   ownerColumn = "owner_column",
   ownerField = "owner",
   ownerClass = ChildA.class,
+  resourceTableName = "c_table",
+  resourceIdColumn = "c_id",
+  resourceIdField = "id",
   hasStandaloneReadPolicies = true, // Allow separate READ restrictions on this level (THESE WILL BE ANDed)
   createRestrictionMapping = PolicyRestriction.UPDATE, // Use UPDATE from ChildA to handle CREATE
   deleteRestrictionMapping = PolicyRestriction.UPDATE, // Use UPDATE from ChildA to handle DELETE

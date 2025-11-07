@@ -151,10 +151,7 @@ public class PolicyControlledManager {
         throw new IllegalStateException("Cycle detected in @PolicyControlled ownership chain for " + current.getName());
       }
 
-      PolicyControlled annotation = current.getAnnotation(PolicyControlled.class);
-      if (annotation == null) {
-        throw new IllegalArgumentException("Missing @PolicyControlled on " + current.getName());
-      }
+      PolicyControlled annotation = PolicyControlledValidator.validateAndGet(current);
 
       // Work out ALIAS stuff
       String aliasName = null; // Nullable field
@@ -176,6 +173,7 @@ public class PolicyControlledManager {
 
       chain.add(PolicyControlledMetadata.builder()
         .resourceClassName(current.getCanonicalName())
+        .resourceTableName(annotation.resourceTableName())
         .resourceIdColumn(annotation.resourceIdColumn())
         .resourceIdField(annotation.resourceIdField())
         .ownerColumn(annotation.ownerColumn())

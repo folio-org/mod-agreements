@@ -5,7 +5,8 @@ import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledRestriction
 
 @PolicyControlled(
   resourceIdColumn = "top_owner_id",
-  resourceIdField = "id"
+  resourceIdField = "id",
+  resourceTableName = "top_owner_table"
 )
 public class TopOwner {
   String id;
