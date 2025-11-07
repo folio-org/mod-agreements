@@ -6,7 +6,7 @@ import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledRestriction
 import com.k_int.accesscontrol.core.policycontrolled.RestrictionMapEntry;
 
 @PolicyControlled(
-  ownerColumn = "owner_column",
+  ownerColumn = "c_owner_column",
   ownerField = "owner",
   ownerClass = ChildA.class,
   resourceTableName = "c_table",

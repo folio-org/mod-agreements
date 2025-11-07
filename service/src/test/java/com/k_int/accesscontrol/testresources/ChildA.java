@@ -4,7 +4,7 @@ import com.k_int.accesscontrol.core.policycontrolled.PolicyControlled;
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledRestrictionMap;
 
 @PolicyControlled(
-  ownerColumn = "owner_column",
+  ownerColumn = "a_owner_column",
   ownerField = "owner",
   ownerClass = TopOwner.class,
   resourceTableName = "a_table",

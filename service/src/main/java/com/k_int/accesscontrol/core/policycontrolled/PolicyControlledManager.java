@@ -2,6 +2,8 @@ package com.k_int.accesscontrol.core.policycontrolled;
 
 import com.k_int.accesscontrol.core.PolicyRestriction;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
+import com.k_int.accesscontrol.core.sql.AccessControlSql;
+import com.k_int.accesscontrol.core.sql.AccessControlSqlType;
 import lombok.Getter;
 
 import java.util.*;
@@ -12,13 +14,6 @@ import java.util.*;
  * for the purpose of access control policy evaluation.
  */
 public class PolicyControlledManager {
-  // FIXME IDEA
-  // At the moment, it is assumed that if a PCM is for a class that has owners, the owner's policies are DIRECTLY responsible for the child class
-  // What if we need the child class to have its own CREATE policies, or for child class DELETE to rely on parent's EDIT instead?
-  // What do we do in the case of no owner?
-  // What if we want the class to obey policies on its level AND on the parent's level?
-
-
   /**
    * The resolved ownership chain, ordered from the leaf class up to the root owner.
    * Each element in the list represents the {@link PolicyControlledMetadata} for a level in the chain.
@@ -253,5 +248,78 @@ public class PolicyControlledManager {
    */
   public boolean hasOwners() {
     return ownershipChain.size() > 1;
+  }
+
+
+  public AccessControlSql getOwnerIdSql(
+    int ownerLevel, // The level in the ownershipChain we want to return the id of
+    String leafId // The "bottom" identifier, applied to level $startLevel
+  ) {
+    return getOwnerIdSql(ownerLevel, leafId, 0);
+  }
+
+  public AccessControlSql getOwnerIdSql(
+    int ownerLevel, // The level in the ownershipChain we want to return the id of
+    String leafId, // The "bottom" identifier, applied to level $startLevel
+    int startLevel // The level at which the given resourceId applies. For CREATE we will want to start at level 1 with id Y, instead of level 0 with id X, since we don't have id in hand for create
+  ) {
+    if (ownerLevel < startLevel) {
+      throw new IllegalArgumentException("PolicyControlledManager::getOwnerIdSql ownerLevel: '" + ownerLevel + "' is less than configured start level: '" + startLevel + "'");
+    }
+
+    // If we start on the level we're attempting to find the id for, we have it in hand already
+    if (ownerLevel == startLevel) {
+      return AccessControlSql.builder()
+        .sqlString("SELECT ? as id;")
+        .types(new AccessControlSqlType[]{AccessControlSqlType.STRING})
+        .parameters(new String[] { leafId })
+        .build();
+    }
+
+    PolicyControlledMetadata ownerLevelMetadata = getOwnerLevelMetadata(ownerLevel);
+    PolicyControlledMetadata leafLevelMetadata = getOwnerLevelMetadata(startLevel);
+
+    // At this stage we have to build some SQL
+    // We will JOIN tables from leaf -> ownerLevel as t0, t1 etc etc (if startLevel is 1 we actually start from t1 but the principle is the same)
+    StringBuilder sqlString = new StringBuilder("SELECT t" + ownerLevel + "." + ownerLevelMetadata.resourceIdColumn + " as id");
+    sqlString
+      .append(" FROM ")
+      .append(leafLevelMetadata.resourceTableName)
+      .append(" as t")
+      .append(startLevel); // Start from the startPoint entity
+
+    // Build the JOINs up the chain
+    for (int i = startLevel + 1; i <= ownerLevel; i++) {
+      PolicyControlledMetadata previousMetadata = getOwnerLevelMetadata(i - 1);
+      PolicyControlledMetadata currentMetadata = getOwnerLevelMetadata(i);
+
+      if (previousMetadata.ownerColumn != null && !Objects.equals(previousMetadata.ownerColumn, "")) {
+        sqlString.append(" JOIN ")
+          .append(currentMetadata.resourceTableName)
+          .append(" AS t")
+          .append(i)
+          .append(" ON t")
+          .append(i - 1)
+          .append(".")
+          .append(previousMetadata.ownerColumn)
+          .append(" = t")
+          .append(i)
+          .append(".")
+          .append(currentMetadata.resourceIdColumn);
+      }
+    }
+
+    sqlString
+      .append(" WHERE t")
+      .append(startLevel)
+      .append(".")
+      .append(leafLevelMetadata.resourceIdColumn)
+      .append(" = ?;");
+
+    return AccessControlSql.builder()
+      .sqlString(sqlString.toString())
+      .types(new AccessControlSqlType[]{AccessControlSqlType.STRING})
+      .parameters(new String[] { leafId })
+      .build();
   }
 }

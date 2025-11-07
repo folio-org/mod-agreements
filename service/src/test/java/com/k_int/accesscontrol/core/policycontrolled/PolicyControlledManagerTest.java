@@ -4,6 +4,7 @@ import com.k_int.accesscontrol.testresources.*;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -114,5 +115,50 @@ public class PolicyControlledManagerTest {
     for(int i=0; i < expectedRestrictionMaps.size(); i++) {
       assertEquals(expectedRestrictionMaps.get(i), pcm.getOwnershipChain().get(i).getRestrictionMap());
     }
+  }
+
+  @Test
+  @DisplayName("PolicyControlledManager generates expected id SQL")
+  void pcmIdSQLTest() {
+    // WHEN
+    PolicyControlledManager pcm = new PolicyControlledManager(ChildD.class);
+
+    // THEN
+    assertEquals(
+      "SELECT t3.top_owner_id as id " +
+        "FROM d_table as t0 " +
+        "JOIN c_table AS t1 ON t0.d_owner_column = t1.c_id " +
+        "JOIN a_table AS t2 ON t1.c_owner_column = t2.a_id " +
+        "JOIN top_owner_table AS t3 ON t2.a_owner_column = t3.top_owner_id " +
+        "WHERE t0.d_id = ?;",
+      pcm.getOwnerIdSql( 3, "theId").getSqlString()
+    );
+
+    assertEquals(
+      "SELECT t3.top_owner_id as id " +
+        "FROM c_table as t1 " +
+        "JOIN a_table AS t2 ON t1.c_owner_column = t2.a_id " +
+        "JOIN top_owner_table AS t3 ON t2.a_owner_column = t3.top_owner_id " +
+        "WHERE t1.c_id = ?;",
+      pcm.getOwnerIdSql( 3, "theId", 1).getSqlString()
+    );
+
+    assertEquals(
+      "SELECT t2.a_id as id " +
+        "FROM c_table as t1 " +
+        "JOIN a_table AS t2 ON t1.c_owner_column = t2.a_id " +
+        "WHERE t1.c_id = ?;",
+      pcm.getOwnerIdSql( 2, "theId", 1).getSqlString()
+    );
+
+    assertEquals(
+      "SELECT ? as id;",
+      pcm.getOwnerIdSql( 2, "theId", 2).getSqlString()
+    );
+
+    assertThrows(
+      IllegalArgumentException.class,
+      () -> pcm.getOwnerIdSql( 1, "theId", 2)
+    );
   }
 }
