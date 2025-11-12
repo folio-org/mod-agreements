@@ -134,8 +134,8 @@ dependencies {
   //testImplementation("org.spockframework:spock-core")
 
   /*  ---- Manually installed dependencies ---- */
-	implementation 'com.k_int.grails:web-toolkit-ce:10.2.0'
-	implementation('com.k_int.okapi:grails-okapi:8.0.1') {
+	implementation 'com.k_int.grails:web-toolkit-ce:10.4.0'
+	implementation('com.k_int.okapi:grails-okapi:8.0.2') {
     exclude group: 'com.vaadin.external.google', module: 'android-json'
   }
 
@@ -244,7 +244,7 @@ bootRun {
     '-Dspring.output.ansi.enabled=always',
     '-noverify',
     '-XX:TieredStopAtLevel=1',
-    '-Xmx1592m'
+    '-Xmx4500m'
     //'-Xmx2592m'
   )
 	sourceResources sourceSets.main
