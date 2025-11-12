@@ -30,8 +30,8 @@ class KbManagementService {
   OkapiTenantAdminService okapiTenantAdminService
   EntitlementService entitlementService
 
-  // Runs every hour, starting one minute after app startup
-  @Scheduled(fixedDelay = 3600000L, initialDelay = 60000L)
+  // Runs every half hour, starting one minute after app startup
+  @Scheduled(fixedDelay = 1800000L, initialDelay = 60000L)
   @CompileStatic(SKIP)
   triggerEntitlementJob() {
     ResourceIngressType ingressType = kbManagementBean.ingressType
