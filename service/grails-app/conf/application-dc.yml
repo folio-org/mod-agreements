@@ -13,9 +13,9 @@ dataSource:
   schemaHandler: com.k_int.okapi.OkapiSchemaHandler
   logSql: false
   properties:
-      jmxEnabled: ${db.jmxEnabled}
-      maximumPoolSize: ${db.maxpoolsize}
-      transactionIsolation: ${db.transactionIsolation}
+    jmxEnabled: ${db.jmxEnabled}
+    maximumPoolSize: ${db.maxpoolsize}
+    transactionIsolation: ${db.transactionIsolation}
 
   hibernate:
     enable_lazy_load_no_trans: true
