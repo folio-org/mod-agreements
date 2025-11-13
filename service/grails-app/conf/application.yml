@@ -185,6 +185,12 @@ management:
      defaults:
         enabled: false
 
+db:
+  maxpoolsize: 10
+  transactionIsolation: TRANSACTION_READ_COMMITTED
+  jmxEnabled: false
+  jmxExport: false
+
 okapi:
   linkListener:
     allowedControllerActions:
@@ -195,13 +201,6 @@ okapi:
         - create
         - publicLookup
         - export
-
-
-#db:
-#  maxpoolsize: 10
-#  transactionIsolation: TRANSACTION_READ_COMMITTED
-#  jmxEnabled: false
-#  jmxExport: false
   schema:
     appName: 'mod-agreements'
   service:
