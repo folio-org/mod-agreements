@@ -97,9 +97,12 @@ The workarounds here are to over-resource the module, and to restart problematic
 when this behaviour manifests, or to revert to versions where this is less prevalent (v7.0.10, v7.1.5) and handle the
 federated locking issues instead. Obviously these are not proper solutions.
 
-In Trillium, the aim is both to fix these bugs, and hopefully thus free up the connection pool to an extent that it can be
+In Trillium (v7.3.0), the aim is both to fix these bugs, and hopefully thus free up the connection pool to an extent that it can be
 run with _significantly_ fewer connections, and potentially set up a way for the configured pool size to be mathematically
 split between system and module, so as to avoid the doubling of the pool.
+
+The recommendation for the versions containing the fix is to run with a minimum of 15 connections per instance
+(Which will be doubled to 30 to account for the system schema).
 
 ## Resources exposed by this module
 
