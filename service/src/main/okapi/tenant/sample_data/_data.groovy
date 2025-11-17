@@ -27,14 +27,14 @@ import org.olf.kb.RemoteKB
 ).save(failOnError:true)) */
 
 RemoteKB.findByName('GOKb') ?: (new RemoteKB(
-    name:'GOKb',
-    type:'org.olf.kb.adapters.GOKbOAIAdapter',
-    uri:'https://gokb.org/gokb/oai/index',
-    fullPrefix:'gokb',
-    rectype: RemoteKB.RECTYPE_PACKAGE,
-    active:Boolean.FALSE,
-    supportsHarvesting:true,
-    activationEnabled:false
+  name:'GOKb',
+  type:'org.olf.kb.adapters.GOKbOAIAdapter',
+  uri:'https://gokb.org/gokb/oai/index',
+  fullPrefix:'gokb',
+  rectype: RemoteKB.RECTYPE_PACKAGE,
+  active:Boolean.FALSE,
+  supportsHarvesting:true,
+  activationEnabled:false
 ).save(failOnError:true))
 
 /* RemoteKB.findByName('DEBUG') ?: (new RemoteKB(
