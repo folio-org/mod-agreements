@@ -85,7 +85,7 @@ dataSource:
   password: "${db.password:folio}"
   driverClassName: org.postgresql.Driver
   dialect: com.k_int.hibernate.dialects.postgres.KIPostgres94Dialect
-  url: "jdbc:postgresql://${db.host:localhost}:${db.port:54322}/${db.database:folio}?ApplicationName=${okapi.schema.appName}"
+  url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:olfdev}?ApplicationName=${okapi.schema.appName}"
   hikari:
     data-source-properties:
       ApplicationName: "${okapi.schema.appName}"
