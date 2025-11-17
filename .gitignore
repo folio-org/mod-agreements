@@ -5,7 +5,13 @@
 .DS_Store
 /bin/
 
+*.env
+
 ## There are a lot of extra files created when running the docker compose,
 ## only keep the .keep files
 tools/testing/zk-single-kafka-single
 !.keep
+
+*.iml
+
+*/.idea
