@@ -21,6 +21,7 @@ import com.k_int.accesscontrol.grails.criteria.AccessControlHibernateTypeMapper
 import com.k_int.accesscontrol.main.PolicyEngine
 import com.k_int.accesscontrol.grails.criteria.MultipleAliasSQLCriterion
 import com.k_int.utils.Json
+import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.transactions.Transactional
 import org.hibernate.Criteria
 import org.hibernate.Session
@@ -40,6 +41,7 @@ import java.time.Duration
  *
  * @param <T> The type of the resource entity managed by this controller.
  */
+@CurrentTenant
 class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   /**
    * The Class object representing the resource entity type managed by this controller.
@@ -252,7 +254,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    * @throws PolicyEngineException if the provided restriction type is not supported as per {@link #getCanAccessValidPolicyRestrictions()}.
    */
   protected boolean canAccess(PolicyRestriction pr) {
-    AccessPolicyEntity.withNewSession { Session sess ->
+    AccessPolicyEntity.withSession { Session sess ->
       // Handle OWNER logic
 
       // If there are NO owners, we can use the queryResourceId from the request itself
@@ -450,7 +452,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def index(Integer max) {
     // Protect the index method with access control -- replace the built in "index" method
-    AccessPolicyEntity.withNewSession {
+    AccessPolicyEntity.withSession {
       // We have special logic for filtering by access control policies here.
       // If the user sends down queryParams policiesFilter=A,B,C then we will perform an ORed filter on those policies
       // If the user sends down queryParams policiesFilter=A, policiesFilter=B, policiesFilter=C then we will perform an ANDed filter on those policies.
@@ -523,7 +525,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    *
    * @return A response containing the created resource if access is granted, or an error message if access is denied.
    */
-  @Transactional
   def save() {
     if (canUserCreate()) {
       super.save()
@@ -606,7 +607,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     boolean changesMade = true
     String failureMessage = ''
     int failureCode = 400
-    AccessPolicyEntity.withNewSession { sess ->
+    AccessPolicyEntity.withSession { sess ->
       AccessPolicyEntity.withTransaction { transactionStatus ->
         // Fetch the original policies for this resource
         List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
@@ -728,7 +729,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def policies() {
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
-    AccessPolicyEntity.withNewSession {
+    AccessPolicyEntity.withSession {
       Set<AccessPolicyType> enabledEngines = policyEngine.getEnabledEngineSet()
 
       // Fetch the ENABLED access policy entities for the resource at hand
