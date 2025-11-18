@@ -13,9 +13,9 @@ dataSource:
   schemaHandler: com.k_int.okapi.OkapiSchemaHandler
   logSql: false
   properties:
-      jmxEnabled: false
-      maximumPoolSize: ${db.maxpoolsize:50}
-      transactionIsolation: TRANSACTION_READ_COMMITTED
+    jmxEnabled: ${db.jmxEnabled}
+    maximumPoolSize: ${db.maxpoolsize}
+    transactionIsolation: ${db.transactionIsolation}
 
   hibernate:
     enable_lazy_load_no_trans: true
@@ -26,6 +26,12 @@ okapi:
     port: 30100
 logging:
   config: classpath:logback-development.xml
+
+db:
+  maxpoolsize: 15
+  transactionIsolation: TRANSACTION_READ_COMMITTED
+  jmxEnabled: true
+  jmxExport: true
 
 concurrentJobsGlobal: "${CONCURRENT_JOBS_GLOBAL:3}"
 
@@ -52,8 +58,6 @@ accesscontrol:
 #    userlogin: "diku_admin"
 #    userpassword: "admin"
 
-#    register: true
-#    deploy: true
 
 # Snapshot folio client config override
 #accesscontrol:
@@ -68,3 +72,5 @@ accesscontrol:
 #  acqunits:
 #    enabled: true
 
+#    register: true
+#    deploy: true
