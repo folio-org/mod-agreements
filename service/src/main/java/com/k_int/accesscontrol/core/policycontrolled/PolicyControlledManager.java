@@ -140,7 +140,7 @@ public class PolicyControlledManager {
     Class<?> current = leafClass;
     Set<Class<?>> visited = new HashSet<>();
 
-    int ownerLevel = -1;
+    int ownerLevel = 0;
     while (current != null && current != Object.class) {
       if (!visited.add(current)) {
         throw new IllegalStateException("Cycle detected in @PolicyControlled ownership chain for " + current.getName());
@@ -153,11 +153,12 @@ public class PolicyControlledManager {
       String aliasOwnerColumn = null; // Nullable field
       String aliasOwnerField = null; // Nullable field
 
-      if (ownerLevel > -1) {
+      // If we are an owner (not the leaf), we need to set up aliasing
+      if (ownerLevel > 0) {
         PolicyControlledMetadata previous = chain.get(chain.size() - 1);
         aliasName = "owner_alias_" + ownerLevel;
         // Special case for FIRST owner, where we don't need the alias at all
-        String aliasBase = (ownerLevel > 0 ? "owner_alias_" + (ownerLevel - 1) + "." : "");
+        String aliasBase = (ownerLevel > 1 ? "owner_alias_" + (ownerLevel - 1) + "." : "");
 
         aliasOwnerColumn = aliasBase + previous.getOwnerColumn();
         aliasOwnerField = aliasBase + previous.getOwnerField();

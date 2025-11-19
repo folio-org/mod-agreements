@@ -35,7 +35,7 @@ public class PolicyControlledManagerTest {
         ),
         2, // Ownership chain size
         false, // Leaf != Root
-        "owner_alias_0", // Root alias name (1 level deep)
+        "owner_alias_1", // Root alias name (1 level deep)
         List.of(
           ChildA.expectedRestrictionMap(),
           TopOwner.expectedRestrictionMap()
@@ -48,7 +48,7 @@ public class PolicyControlledManagerTest {
         ),
         3, // Ownership chain size
         false, // Leaf != Root
-        "owner_alias_1", // Root alias name (2 levels deep)
+        "owner_alias_2", // Root alias name (2 levels deep)
         List.of(
           ChildB.expectedRestrictionMap(),
           ChildA.expectedRestrictionMap(),
@@ -62,7 +62,7 @@ public class PolicyControlledManagerTest {
         ),
         3, // Ownership chain size
         false, // Leaf != Root
-        "owner_alias_1", // Root alias name (2 levels deep)
+        "owner_alias_2", // Root alias name (2 levels deep)
         List.of(
           ChildC.expectedRestrictionMap(),
           ChildA.expectedRestrictionMap(),
@@ -76,7 +76,7 @@ public class PolicyControlledManagerTest {
         ),
         4, // Ownership chain size
         false, // Leaf != Root
-        "owner_alias_2", // Root alias name (3 levels deep)
+        "owner_alias_3", // Root alias name (3 levels deep)
         List.of(
           ChildD.expectedRestrictionMap(),
           ChildC.expectedRestrictionMap(),

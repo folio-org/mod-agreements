@@ -69,14 +69,14 @@ public class PolicyControlledMetadata {
   final Class<?> ownerClass;
   /**
    * Tracks how "far up" the hierarchy this {@code PolicyControlledMetadata} instance is. <br/>
-   * -1: Represents the "base class" or leaf resource. <br/>
-   * 0: Represents the direct owner of the base class. <br/>
-   * 1: Represents the owner of the owner of the base class, and so on.
+   * 0: Represents the "base class" or leaf resource. <br/>
+   * 1: Represents the direct owner of the base class. <br/>
+   * 2: Represents the owner of the owner of the base class, and so on.
    * @param ownerLevel the level in the heirarchy for this policy controlled object
    * @return the level in the heirarchy for this policy controlled object
    */
   @Builder.Default
-  final int ownerLevel = -1;
+  final int ownerLevel = 0;
 
   // Owner alias fields
   /**
