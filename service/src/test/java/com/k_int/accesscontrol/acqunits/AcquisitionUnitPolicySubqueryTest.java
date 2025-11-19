@@ -120,7 +120,7 @@ public class AcquisitionUnitPolicySubqueryTest {
     // Note: The SQL template uses three EXISTS blocks which are OR'd together.
     // The resource ID match is via the alias: 'res_alias.id_col'.
     assertEquals("""
-        -- ACQUISITION UNIT RESTRICTION FOR READ ON res_alias.id_col
+        /* ACQUISITION UNIT RESTRICTION FOR READ ON org.olf.TestResource */
         (
           NOT EXISTS (
             SELECT 1 FROM acq_unit_policy_table ap1
@@ -200,7 +200,7 @@ public class AcquisitionUnitPolicySubqueryTest {
     // THEN
     // SQL uses '?' for the resource ID match in all three EXISTS blocks
     assertEquals("""
-        -- ACQUISITION UNIT RESTRICTION FOR READ ON LEAF RESOURCE
+        /* ACQUISITION UNIT RESTRICTION FOR READ ON org.olf.TestResource */
         (
           NOT EXISTS (
             SELECT 1 FROM acq_unit_policy_table ap1

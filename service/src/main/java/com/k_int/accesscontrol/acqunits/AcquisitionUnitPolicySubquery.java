@@ -31,7 +31,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
 
   private static String sqlSafe(String id, String label) {
     if (id == null || !SAFE_SQL.matcher(id).matches()) {
-      throw new PolicyEngineException("Invalid SQL identifier for " + label + ": " + id,
+      throw new PolicyEngineException("Unacceptable SQL injected for " + label + ": " + id,
         PolicyEngineException.INVALID_QUERY_PARAMETERS);
     }
     return id;
@@ -80,7 +80,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
      * There is at least one non-restrictive policy
      */
     static final String SQL_TEMPLATE = """
-      -- #CLAUSE_LABEL
+      /* #CLAUSE_LABEL */
       (
         NOT EXISTS (
           SELECT 1 FROM #ACCESS_POLICY_TABLE_NAME ap1
@@ -187,7 +187,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
     }
 
     // Set up a label for the clause that might help debugging in system
-    String clauseLabel = "ACQUISITION UNIT RESTRICTION FOR " + restriction.toString() + " ON ";
+    String clauseLabel = "ACQUISITION UNIT RESTRICTION FOR " + restriction.toString() + " ON " + sqlSafe(parameters.getResourceClass(), "resource class");
 
     // Spin up a list of all SQL parameters;
     List<String> allParameters = new ArrayList<>();
@@ -211,11 +211,6 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
         throw new PolicyEngineException("PolicySubqueryParameters for AccessPolicyQueryType.SINGLE must include resourceId", PolicyEngineException.INVALID_QUERY_PARAMETERS);
       }
       resourceIdMatch = "?"; // We will bind an extra parameter for these, using parameters.getResourceId().
-
-      // Update the clause label to make it clear that this is the leaf resource.
-      clauseLabel += "LEAF RESOURCE";
-    } else {
-      clauseLabel += sqlSafe(resourceIdMatch, "resource ID match");
     }
 
     // Fill out the SQL parameters with the units, as well as their types (STRING for all)
