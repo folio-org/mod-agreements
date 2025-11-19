@@ -8,6 +8,7 @@ import com.k_int.accesscontrol.core.http.bodies.PolicyLink
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
 import com.k_int.accesscontrol.core.policycontrolled.RestrictionMapEntry
+import com.k_int.accesscontrol.core.policycontrolled.RestrictionTree
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
@@ -18,6 +19,7 @@ import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.sql.AccessControlSqlType
 import com.k_int.accesscontrol.core.sql.PolicySubquery
 import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters
+import com.k_int.accesscontrol.core.sql.RestrictionSubqueryCache
 import com.k_int.accesscontrol.grails.criteria.AccessControlHibernateTypeMapper
 import com.k_int.accesscontrol.main.PolicyEngine
 import com.k_int.accesscontrol.grails.criteria.MultipleAliasSQLCriterion
@@ -190,58 +192,71 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
     // FIXME does any of this logic belong in the java library?
 
-    // We only need to get the relevant subqueries once each.
-    // Store the policy subqueries we get back for PolicyRestriction, as well as keeping a List of all the levels which need that list of policy subqueries
-    // This Map is quite a complex object, not 100% sure it's the right approach
-    // FIXME perhaps change into a class PolicyLevel or something
-    Map<PolicyRestriction, Tuple2<List<PolicySubquery>, List<PolicySubqueryParameters>>> relevantSubqueries = new HashMap<>()
+    // Cache the PolicySubqueries as we fetch them, as we only need to fetch them once per restriction type
+    RestrictionSubqueryCache subqueryCache = new RestrictionSubqueryCache()
+    RestrictionTree restrictionTree = RestrictionTree.builder()
+      .build()
+
+    // Track the child from each parent level
+    RestrictionTree previousRestrictionTree
     PolicyRestriction levelRestriction = restriction // We will change this at each level to follow the mapping tree
 
-    // Find out whether we've hit the root or not
-    PolicyControlledMetadata rootMetadata = policyControlledManager.getRootPolicyControlledMetadata()
+    for (int i = 0; i < policyControlledManager.getOwnershipChainSize(); i++) {
+      // Set up the tree for the current level
+      RestrictionTree currentLevelTree
+      if (i == 0) {
+        currentLevelTree = restrictionTree
+      } else {
+        currentLevelTree = RestrictionTree.builder()
+          .build()
+      }
 
-    for (int i = 0; policyControlledManager.ownershipChain; i++) {
+      if (previousRestrictionTree) {
+        // Set the parent on the previous tree.
+        previousRestrictionTree.setParent(currentLevelTree)
+      }
+
       PolicyControlledMetadata levelMetadata = policyControlledManager.ownershipChain.get(i)
       RestrictionMapEntry rme = levelMetadata.getRestrictionMap().get(levelRestriction)
-      if (levelMetadata.equals(rootMetadata)) {
-        // We have hit the final level, whatever the levelRestriction is at this point is the restriction we want to apply
-        String resourceId = resolveOwnerId(i, leafResourceId, 0)
-        if (relevantSubqueries.get(levelRestriction) == null) {
+      String resourceId = resolveOwnerId(i, leafResourceId, 0)
 
-          relevantSubqueries.put(
-            levelRestriction,
-            Tuple2.tuple(
-              policyEngine.getPolicySubqueries(grailsHeaders, levelRestriction, queryType, filters),
-              new ArrayList<PolicySubqueryParameters>(Arrays.asList(getPolicySubqueryParameters(resourceId, i)))
-            )
-          )
+      // Ensure that the current tree node is set to this level
+      currentLevelTree.setOwnerLevel(i)
+      currentLevelTree.setRestriction(levelRestriction)
+
+      if (i == policyControlledManager.getOwnershipChainSize() - 1) {
+        // We have hit the final level, whatever the levelRestriction is at this point is the restriction we want to apply
+        currentLevelTree.hasStandalonePolicies(true) // The root ALWAYS has standalone policies
+        currentLevelTree.setParameters(getPolicySubqueryParameters(resourceId, i))
+
+        List<PolicySubquery> cachedSubqueries = subqueryCache.get(levelRestriction)
+        if (cachedSubqueries != null) {
+          currentLevelTree.setSubqueries(cachedSubqueries)
         } else {
-          relevantSubqueries.get(levelRestriction).getV2().add(getPolicySubqueryParameters(resourceId, i))
+          List<PolicySubquery> subqueries = policyEngine.getPolicySubqueries(grailsHeaders, levelRestriction, queryType, filters)
+          subqueryCache.put(levelRestriction, subqueries)
+          currentLevelTree.setSubqueries(subqueries)
         }
 
         // No need to do the rest of the loop
         break
       }
 
-      // We're not at the root yet, so continue onwards
+      // We have a mapping for this level, work out what to do
       if (rme != null) {
-        // We have a mapping for this level, work out what to do
+        if (rme.hasStandalonePolicies()) {
+          currentLevelTree.hasStandalonePolicies(true)
+          // We need to add the subquery parameters to this level
+          currentLevelTree.setParameters(getPolicySubqueryParameters(resourceId, i))
 
-        // Whether we continue on up the ownership chain or not, we need to check for standalone policies at this level
-        if (rme.hasStandalonePolicies() && relevantSubqueries.get(levelRestriction) == null) {
-          String resourceId = resolveOwnerId(i, leafResourceId, 0)
-
-          relevantSubqueries.put(
-            levelRestriction,
-            Tuple2.tuple(
-              policyEngine.getPolicySubqueries(grailsHeaders, levelRestriction, queryType, filters),
-              new ArrayList<PolicySubqueryParameters>(Arrays.asList(getPolicySubqueryParameters(resourceId, i)))
-            )
-          )
-        } else if (rme.hasStandalonePolicies()) {
-          String resourceId = resolveOwnerId(i, leafResourceId, 0)
-
-          relevantSubqueries.get(levelRestriction).getV2().add(getPolicySubqueryParameters(resourceId, i))
+          List<PolicySubquery> cachedSubqueries = subqueryCache.get(levelRestriction)
+          if (cachedSubqueries != null) {
+            currentLevelTree.setSubqueries(cachedSubqueries)
+          } else {
+            List<PolicySubquery> subqueries = policyEngine.getPolicySubqueries(grailsHeaders, levelRestriction, queryType, filters)
+            subqueryCache.put(levelRestriction, subqueries)
+            currentLevelTree.setSubqueries(subqueries)
+          }
         }
 
         if (rme.getOwnerRestriction() == PolicyRestriction.NONE) {
@@ -249,26 +264,15 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           break
         }
 
-        // At this point we know we have a parent mapping, so we use that for the next level
+        // Finally, step up to the next level in the tree
         levelRestriction = rme.getOwnerRestriction()
+        previousRestrictionTree = currentLevelTree
       }
+      // If there is no mapping, we assume that the restriction at this level ALSO applies to the parent level
     }
 
     // We now have the complex Map from above ready to build the params and combine the SQL
-    List<AccessControlSql> sqlList = new ArrayList<>()
-    for (entry in relevantSubqueries) {
-      List<PolicySubquery> subqueries = entry.getValue().getV1()
-      List<PolicySubqueryParameters> paramsToApply = entry.getValue().getV2()
-
-      // We need to apply each param to each subquery and collect all the SQL together
-      for (subquery in subqueries) {
-        for (paramSet in paramsToApply) {
-          sqlList.add(subquery.getSql(paramSet))
-        }
-      }
-    }
-
-    return sqlList
+    return restrictionTree.getSql()
 
     //log.trace("AccessPolicyAwareController::getPolicySql PolicySubqueryParameters configured: ${params}")
     //return policySubqueries.collect { psq -> psq.getSql(params)}
