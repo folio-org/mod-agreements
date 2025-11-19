@@ -102,21 +102,21 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   ) {
     // Hmm... for now shortcut out if we hand null in, since we don't actually need to resolve the id for READ LIST for example... not certain about this though
     if (leafId == null) {
-      return null;
+      return null
     }
 
     // First we get the SQL to resolve the owner id
     AccessControlSql sql = policyControlledManager.getOwnerIdSql(ownerLevel, leafId, startLevel)
 
     // Then we build the SQL and perform the query
-    AccessPolicyEntity.withNewSession { Session sess ->
-      NativeQuery identifierQuery = sess.createNativeQuery(sql.getSqlString());
+    AccessPolicyEntity.withSession { Session sess ->
+      NativeQuery identifierQuery = sess.createNativeQuery(sql.getSqlString())
       sql.getParameters().eachWithIndex { Object param, int paramIndex  ->
         // Hibernate params start at 1 :(
         identifierQuery.setParameter(paramIndex + 1, param, (Type) typeMapper.getHibernateType((AccessControlSqlType) sql.getTypes()[paramIndex]))
       }
       String id = identifierQuery.list()[0]
-      return id;
+      return id
     }
   }
 
@@ -194,7 +194,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     // Store the policy subqueries we get back for PolicyRestriction, as well as keeping a List of all the levels which need that list of policy subqueries
     // This Map is quite a complex object, not 100% sure it's the right approach
     // FIXME perhaps change into a class PolicyLevel or something
-    Map<PolicyRestriction, Tuple2<List<PolicySubquery>, List<PolicySubqueryParameters>>> relevantSubqueries = new HashMap<>();
+    Map<PolicyRestriction, Tuple2<List<PolicySubquery>, List<PolicySubqueryParameters>>> relevantSubqueries = new HashMap<>()
     PolicyRestriction levelRestriction = restriction // We will change this at each level to follow the mapping tree
 
     // Find out whether we've hit the root or not
@@ -246,7 +246,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
         if (rme.getOwnerRestriction() == PolicyRestriction.NONE) {
           // We are NOT taking parent policies into account, so must break out of the loop here.
-          break;
+          break
         }
 
         // At this point we know we have a parent mapping, so we use that for the next level
