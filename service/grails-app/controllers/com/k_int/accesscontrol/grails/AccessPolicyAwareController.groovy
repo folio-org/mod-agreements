@@ -664,8 +664,8 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
     // Might not need to do this now, since we're cancelling early if there are owners
     // FIXME check whether we still want this from the root
-    String resourceId = resolveRootOwnerId(params.id)
-    String resourceClass = resolveRootOwnerClass()
+    String resourceId = resolveOwnerId(policyControlledManager.getOwnershipChainSize() - 1, params.id, 0)
+    String resourceClass = policyControlledManager.getRootPolicyControlledMetadata().getResourceClassName()
     boolean success = true
     boolean changesMade = true
     String failureMessage = ''
@@ -807,7 +807,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
             type IN :enabledEngines
         """.toString(),
         [
-          resId: resolveRootOwnerId(params.id),
+          resId: resolveOwnerId(policyControlledManager.getOwnershipChainSize() - 1, params.id, 0),
           enabledEngines: enabledEngines
         ]
       )

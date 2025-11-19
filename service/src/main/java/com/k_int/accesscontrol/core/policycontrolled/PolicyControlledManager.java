@@ -214,7 +214,7 @@ public class PolicyControlledManager {
    * @return A {@link List} of {@link PolicyControlledMetadata} excluding the leaf class metadata.
    */
   public List<PolicyControlledMetadata> getNonLeafOwnershipChain() {
-    return ownershipChain.stream().filter(pcm -> pcm.getOwnerLevel() > -1 ).toList();
+    return ownershipChain.stream().filter(pcm -> pcm.getOwnerLevel() > 0 ).toList();
   }
 
   /**
