@@ -25,8 +25,9 @@ import java.util.regex.Pattern;
 @SuppressWarnings("javadoc")
 public class AcquisitionUnitPolicySubquery implements PolicySubquery {
   // Mitigate against SQL injection by ensuring only safe characters are used for params (bind OR identifiers)
+  // This ALSO allows for hibernate {alias} style parameters.
   private static final Pattern SAFE_SQL =
-    Pattern.compile("^(\\?|[A-Za-z_][A-Za-z0-9_$.]*)$");
+    Pattern.compile("^(\\?|[A-Za-z_][A-Za-z0-9_$.]*|\\{[A-Za-z_][A-Za-z0-9_$.]*}(?:\\.[A-Za-z_][A-Za-z0-9_$.]*)?)$");
 
   private static String sqlSafe(String id, String label) {
     if (id == null || !SAFE_SQL.matcher(id).matches()) {
