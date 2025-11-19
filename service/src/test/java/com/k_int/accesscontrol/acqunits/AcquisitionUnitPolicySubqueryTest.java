@@ -120,6 +120,7 @@ public class AcquisitionUnitPolicySubqueryTest {
     // Note: The SQL template uses three EXISTS blocks which are OR'd together.
     // The resource ID match is via the alias: 'res_alias.id_col'.
     assertEquals("""
+        -- ACQUISITION UNIT RESTRICTION FOR READ ON res_alias.id_col
         (
           NOT EXISTS (
             SELECT 1 FROM acq_unit_policy_table ap1
@@ -180,7 +181,7 @@ public class AcquisitionUnitPolicySubqueryTest {
   void testSingleQuery_Success() {
     // GIVEN
     UserAcquisitionUnits units = setupSampleUserAcquisitionUnits();
-    String expectedResourceId = "single-resource-uuid-123";
+    String expectedResourceId = "32f37944-6643-4365-a633-fe6ab20f8ddd"; // A made up UUID4 identifier
     AcquisitionUnitPolicySubquery fps = AcquisitionUnitPolicySubquery
       .builder()
       .userAcquisitionUnits(units)
@@ -199,6 +200,7 @@ public class AcquisitionUnitPolicySubqueryTest {
     // THEN
     // SQL uses '?' for the resource ID match in all three EXISTS blocks
     assertEquals("""
+        -- ACQUISITION UNIT RESTRICTION FOR READ ON LEAF RESOURCE
         (
           NOT EXISTS (
             SELECT 1 FROM acq_unit_policy_table ap1
