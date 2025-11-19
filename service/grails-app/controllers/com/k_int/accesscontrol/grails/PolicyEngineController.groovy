@@ -8,6 +8,7 @@ import com.k_int.okapi.OkapiClient
 import com.k_int.okapi.OkapiHeaders
 import com.k_int.okapi.OkapiTenantAwareController
 import com.k_int.okapi.OkapiTenantResolver
+import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.multitenancy.Tenants
 import org.springframework.security.core.userdetails.UserDetails
 
@@ -21,6 +22,7 @@ import javax.servlet.http.HttpServletRequest
  *
  * @param <T> The type of resource this controller manages.
  */
+@CurrentTenant
 class PolicyEngineController<T> extends OkapiTenantAwareController<T> {
   /**
    * The Okapi client used for interacting with the FOLIO Okapi gateway.
