@@ -23,7 +23,7 @@ public enum PolicyRestriction {
    * Represents the restriction on associating with a given policy (e.g., an acquisition unit).
    * Importantly, this is the restriction which is used to find the list of policies that are valid for the user,
    * and NOT the restriction for assigning a policy to a resource (See {@link #APPLY_POLICIES}).
-   * <p>Note: The mapping from `AcquisitionUnitRestriction.CLAIM` is not always a direct relationship.
+   * <p>Note: The mapping from `AcquisitionUnitRestriction` is not always a direct relationship.
    * In the context of Acquisition Units, {@code PolicyRestriction.CLAIM} maps to the
    * {@code AcquisitionUnitRestriction.CREATE} flag.</p>
    */
@@ -48,5 +48,12 @@ public enum PolicyRestriction {
    * Represents the restriction on removing a record.
    * If this restriction is active, a user may not be able to delete the resource.
    */
-  DELETE
+  DELETE,
+
+  /**
+   * Sometimes it is useful to be able to define "no restrictions".
+   * However, this enum value's use is not necessarily intuitive, so use at your peril.
+   * For example, it is not utilised in the NONE:NONE case for filtering at present.
+   */
+  NONE,
 }

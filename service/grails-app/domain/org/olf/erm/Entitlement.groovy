@@ -1,5 +1,6 @@
 package org.olf.erm
 
+import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlled
 
 import java.time.LocalDate
@@ -35,7 +36,14 @@ import groovy.util.logging.Slf4j
 @PolicyControlled(
   ownerColumn = 'ent_owner_fk',
   ownerField = 'owner',
-  ownerClass = SubscriptionAgreement.class
+  ownerClass = SubscriptionAgreement.class,
+  resourceTableName = 'entitlement',
+  resourceIdColumn = "ent_id", // For grails modules we use SQL Column name for resourceId
+  resourceIdField = "id",
+  createRestrictionMapping = PolicyRestriction.UPDATE,
+  deleteRestrictionMapping = PolicyRestriction.UPDATE,
+  hasStandaloneReadPolicies = true//, // FIXME we probably don't want to actually do this
+  //readRestrictionMapping = PolicyRestriction.NONE
 )
 public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitlement> {
   public static final Class<? extends ErmResource>[] ALLOWED_RESOURCES = [Pkg, PackageContentItem, PlatformTitleInstance] as Class[]
