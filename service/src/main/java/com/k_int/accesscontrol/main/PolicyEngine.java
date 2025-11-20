@@ -5,11 +5,15 @@ import com.k_int.accesscontrol.core.*;
 import com.k_int.accesscontrol.core.http.bodies.ClaimBody;
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink;
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager;
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata;
+import com.k_int.accesscontrol.core.policycontrolled.RestrictionMapEntry;
+import com.k_int.accesscontrol.core.policycontrolled.RestrictionTree;
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineImplementor;
-import com.k_int.accesscontrol.core.sql.FilterPolicySubquery;
-import com.k_int.accesscontrol.core.sql.PolicySubquery;
+import com.k_int.accesscontrol.core.sql.*;
+import io.minio.messages.Owner;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,6 +63,44 @@ public class PolicyEngine implements PolicyEngineImplementor {
       this.acquisitionUnitPolicyEngine = null;
     }
     // In future we may add more policy engines here, such as KI Grants
+  }
+
+  // FIXME obviously this can't stay long term
+  public int test(PolicyParameterProvider ppp, OwnerIdProvider oip) {
+    PolicySubqueryParameters psp = ppp.apply("the_id", 0);
+    String s = oip.apply("the_id", 0, 0);
+    return 1;
+  }
+
+
+  public RestrictionTree enrichRestrictionTree(
+    String[] headers,
+    AccessPolicyQueryType queryType,
+    List<PoliciesFilter> filters,
+    RestrictionTree restrictionTree
+  ) throws PolicyEngineException {
+    // Cache the PolicySubqueries as we fetch them, as we only need to fetch them once per restriction type
+    RestrictionSubqueryCache subqueryCache = new RestrictionSubqueryCache();
+
+    RestrictionTree currentNode = restrictionTree;
+    while (currentNode != null) {
+      if (currentNode.hasStandalonePolicies()) {
+        PolicyRestriction levelRestriction = currentNode.getRestriction();
+
+        List<PolicySubquery> cachedSubqueries = subqueryCache.get(levelRestriction);
+        if (cachedSubqueries != null) {
+          currentNode.setSubqueries(cachedSubqueries);
+        } else {
+          List<PolicySubquery> subqueries = getPolicySubqueries(headers, levelRestriction, queryType, filters);
+          subqueryCache.put(levelRestriction, subqueries);
+          currentNode.setSubqueries(subqueries);
+        }
+      }
+
+      currentNode = currentNode.getParent();
+    }
+
+    return restrictionTree;
   }
 
   /**

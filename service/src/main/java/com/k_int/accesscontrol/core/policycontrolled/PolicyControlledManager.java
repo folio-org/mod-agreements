@@ -260,10 +260,10 @@ public class PolicyControlledManager {
    * @return an {@link AccessControlSql} object representing the SQL to retrieve the owner id
    */
   public AccessControlSql getOwnerIdSql(
-    int ownerLevel, // The level in the ownershipChain we want to return the id of
-    String leafId // The "bottom" identifier, applied to level $startLevel
+    String leafId, // The "bottom" identifier, applied to level $startLevel
+    int ownerLevel // The level in the ownershipChain we want to return the id of
   ) {
-    return getOwnerIdSql(ownerLevel, leafId, 0);
+    return getOwnerIdSql(leafId, ownerLevel, 0);
   }
 
   /**
@@ -277,8 +277,8 @@ public class PolicyControlledManager {
    * @throws IllegalArgumentException if {@code ownerLevel} is less than {@code startLevel}
    */
   public AccessControlSql getOwnerIdSql(
-    int ownerLevel, // The level in the ownershipChain we want to return the id of
     String leafId, // The "bottom" identifier, applied to level $startLevel
+    int ownerLevel, // The level in the ownershipChain we want to return the id of
     int startLevel // The level at which the given resourceId applies. For CREATE we will want to start at level 1 with id Y, instead of level 0 with id X, since we don't have id in hand for create
   ) {
     if (ownerLevel < startLevel) {

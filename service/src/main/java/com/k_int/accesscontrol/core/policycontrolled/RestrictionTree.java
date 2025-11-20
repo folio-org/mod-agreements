@@ -1,12 +1,11 @@
 package com.k_int.accesscontrol.core.policycontrolled;
 
 import com.k_int.accesscontrol.core.PolicyRestriction;
-import com.k_int.accesscontrol.core.sql.AccessControlSql;
-import com.k_int.accesscontrol.core.sql.PolicySubquery;
-import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters;
+import com.k_int.accesscontrol.core.sql.*;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import org.springframework.security.core.parameters.P;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,5 +102,89 @@ public class RestrictionTree {
     }
 
     return sqlList;
+  }
+
+  /**
+   * Builds a skeleton RestrictionTree for the given restriction, walking up the ownership chain
+   * of the provided PolicyControlledManager.
+   * <p>
+   * This method constructs a RestrictionTree by traversing the ownership levels,
+   * applying the provided OwnerIdProvider and PolicyParameterProvider to set resource IDs and parameters.
+   * </p>
+   *
+   * @param policyControlledManager the manager providing ownership metadata
+   * @param restriction the initial policy restriction to build the tree for
+   * @param leafResourceId the resource ID of the leaf resource
+   * @param ownerIdProvider function to provide owner IDs based on resource ID and level
+   * @param parameterProvider function to provide policy subquery parameters based on resource ID and level
+   * @return the constructed RestrictionTree
+   */
+  public static RestrictionTree buildSkeletonRestrictionTree(
+    PolicyControlledManager policyControlledManager,
+    PolicyRestriction restriction,
+    String leafResourceId,
+    OwnerIdProvider ownerIdProvider, // TODO I'm not overly convinced by this provider pattern
+    PolicyParameterProvider parameterProvider
+  ) {
+    RestrictionTree restrictionTree = RestrictionTree.builder()
+      .build();
+
+    // Track the child from each parent level
+    RestrictionTree previousRestrictionTree = null;
+    PolicyRestriction levelRestriction = restriction; // We will change this at each level to follow the mapping tree
+
+    for (int i = 0; i < policyControlledManager.getOwnershipChainSize(); i++) {
+      // Set up the tree for the current level
+      RestrictionTree currentLevelTree;
+      if (i == 0) {
+        currentLevelTree = restrictionTree;
+      } else {
+        currentLevelTree = RestrictionTree.builder()
+          .build();
+      }
+
+      if (previousRestrictionTree != null) {
+        // Set the parent on the previous tree.
+        previousRestrictionTree.setParent(currentLevelTree);
+      }
+
+      PolicyControlledMetadata levelMetadata = policyControlledManager.getOwnerLevelMetadata(i);
+      RestrictionMapEntry rme = levelMetadata.getRestrictionMap().get(levelRestriction);
+      String resourceId = ownerIdProvider.apply(leafResourceId, i, 0);
+
+      // Ensure that the current tree node is set to this level
+      currentLevelTree.setOwnerLevel(i);
+      currentLevelTree.setRestriction(levelRestriction);
+
+      if (i == policyControlledManager.getOwnershipChainSize() - 1) {
+        // We have hit the final level, whatever the levelRestriction is at this point is the restriction we want to apply
+        currentLevelTree.hasStandalonePolicies(true); // The root ALWAYS has standalone policies
+        currentLevelTree.setParameters(parameterProvider.apply(resourceId, i));
+
+        // No need to do the rest of the loop
+        break;
+      }
+
+      // We have a mapping for this level, work out what to do
+      if (rme != null) {
+        if (rme.hasStandalonePolicies()) {
+          currentLevelTree.hasStandalonePolicies(true);
+          // We need to add the subquery parameters to this level
+          currentLevelTree.setParameters(parameterProvider.apply(resourceId, i));
+        }
+
+        if (rme.getOwnerRestriction() == PolicyRestriction.NONE) {
+          // We are NOT taking parent policies into account, so must break out of the loop here.
+          break;
+        }
+
+        // Finally, step up to the next level in the tree
+        levelRestriction = rme.getOwnerRestriction();
+        previousRestrictionTree = currentLevelTree;
+      }
+      // If there is no mapping, we assume that the restriction at this level ALSO applies to the parent level
+    }
+
+    return restrictionTree;
   }
 }
