@@ -139,7 +139,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
         .map(AcquisitionUnitRestriction::getRestrictionFromPolicyRestriction)
         .collect(Collectors.toSet());
 
-      Map<AcquisitionUnitRestriction, UserAcquisitionUnits> userAcquisitionUnitsMap = acqClient.getRestrictionMappedUserAcquisitionUnits(
+      Map<AcquisitionUnitRestriction, UserAcquisitionUnits> userAcquisitionUnitsMap = acqClient.getMappedRestrictionUserAcquisitionUnits(
         finalHeaders,
         acqRestrictions,
         Set.of(
