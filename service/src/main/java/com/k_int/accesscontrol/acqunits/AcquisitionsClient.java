@@ -1,5 +1,6 @@
 package com.k_int.accesscontrol.acqunits;
 
+import com.k_int.accesscontrol.acqunits.dto.AcquisitionUnitRestrictionProtectedPair;
 import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitMembershipResponse;
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitPolicy;
@@ -198,6 +199,112 @@ public class AcquisitionsClient extends FolioClient {
     );
   }
 
+  /**
+   * Asynchronously fetches acquisition units filtered by multiple restriction-protection pairs.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @param restrictionPairs List of restriction-protection pairs to filter by
+   * @return Future with acquisition unit response
+   */
+  public CompletableFuture<AcquisitionUnitResponse> getAsyncRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, List<AcquisitionUnitRestrictionProtectedPair> restrictionPairs) {
+    Map<String, String> restrictionQueryParams;
+
+    String queryString = restrictionPairs
+      .stream()
+      .map(pair -> {
+        if (pair.getRestriction() == AcquisitionUnitRestriction.NONE) {
+          return null;
+        }
+        return "(" + pair.getRestriction().getRestrictionAccessor() + "==" + pair.isProtected() + ")";
+      })
+      .filter(Objects::nonNull)
+      .collect(Collectors.joining(" OR "));
+
+    if (queryString.isEmpty()) {
+      restrictionQueryParams = new HashMap<>();
+    } else {
+      restrictionQueryParams = new HashMap<>() {{
+        put("query", queryString);
+      }};
+    }
+
+    // Turn CompletableFuture<AcquisitionUnitResponse> into CompletableFuture<Map<AcquisitionUnitRestrictionProtectedPair, AcquisitionUnitResponse>> HERE
+    return getAsyncAcquisitionUnits(
+      headers,
+      combineQueryParams(
+        restrictionQueryParams,
+        queryParams
+      )
+    );
+  }
+
+  /**
+   * Synchronously fetches acquisition units filtered by multiple restriction-protection pairs.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @param restrictionPairs List of restriction-protection pairs to filter by
+   * @return Filtered acquisition units
+   * @throws FolioClientException If the async path fails
+   */
+  public AcquisitionUnitResponse getRestrictionAcquisitionUnits(String[] headers, Map<String,String> queryParams, List<AcquisitionUnitRestrictionProtectedPair> restrictionPairs) {
+    return asyncFolioClientExceptionHelper(() -> getAsyncRestrictionAcquisitionUnits(headers, queryParams, restrictionPairs));
+  }
+
+ /**
+   * Asynchronously fetches acquisition units split by multiple restriction-protection pairs.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @param restrictionPairs List of restriction-protection pairs to filter by
+   * @return Future with map of restriction-protection pairs to acquisition unit responses
+   */
+  public CompletableFuture<Map<AcquisitionUnitRestrictionProtectedPair, AcquisitionUnitResponse>> getAsyncRestrictionSplitAcquisitionUnits(String[] headers, Map<String,String> queryParams, List<AcquisitionUnitRestrictionProtectedPair> restrictionPairs) {
+    // Turn CompletableFuture<AcquisitionUnitResponse> into CompletableFuture<Map<AcquisitionUnitRestrictionProtectedPair, AcquisitionUnitResponse>> HERE
+    CompletableFuture<AcquisitionUnitResponse> response = getAsyncRestrictionAcquisitionUnits(
+      headers,
+      queryParams,
+      restrictionPairs
+    );
+
+    return response.thenApply(acquisitionUnitResponse -> {
+      Map<AcquisitionUnitRestrictionProtectedPair, AcquisitionUnitResponse> result = new HashMap<>();
+      // We need to map each restriction pair to the units that match it
+      for (AcquisitionUnitRestrictionProtectedPair restrictionPair : restrictionPairs) {
+        List<AcquisitionUnit> filteredUnits = acquisitionUnitResponse.getAcquisitionsUnits()
+          .stream()
+          // Find all the AcquisitionUnits that match this restriction/protection pair
+          .filter(au -> au.getProtectionFromRestriction(restrictionPair.getRestriction()) == restrictionPair.isProtected())
+          .toList();
+
+        // Set up (Builder paradigm caused isssues with the HTTP response shape casting
+        AcquisitionUnitResponse aur = new AcquisitionUnitResponse();
+        aur.setAcquisitionsUnits(filteredUnits);
+        aur.setTotalRecords(filteredUnits.size());
+
+        result.put(
+          restrictionPair,
+          aur
+        );
+      }
+
+      return result;
+    });
+  }
+
+  /**
+   * Synchronously fetches acquisition units split by multiple restriction-protection pairs.
+   *
+   * @param headers Request headers
+   * @param queryParams Additional query parameters
+   * @param restrictionPairs List of restriction-protection pairs to filter by
+   * @return Map of restriction-protection pairs to filtered acquisition units
+   * @throws FolioClientException If the async path fails
+   */
+  public Map<AcquisitionUnitRestrictionProtectedPair, AcquisitionUnitResponse> getRestrictionSplitAcquisitionUnits(String[] headers, Map<String,String> queryParams, List<AcquisitionUnitRestrictionProtectedPair> restrictionPairs) {
+    return asyncFolioClientExceptionHelper(() -> getAsyncRestrictionSplitAcquisitionUnits(headers, queryParams, restrictionPairs));
+  }
 
   /**
    * Synchronously fetches acquisition units filtered by restriction flag.
