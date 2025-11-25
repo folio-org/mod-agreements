@@ -81,7 +81,6 @@ ext['jackson.version'] = '2.18.3'
 dependencies {
   /* Grails 6 */
   compileOnly("io.micronaut:micronaut-inject-groovy")
-  compileOnly('com.github.spotbugs:spotbugs-annotations:4.9.8')
   console("org.grails:grails-console")
   profile "org.grails.profiles:rest-api"
 
@@ -200,6 +199,7 @@ dependencies {
 
 
   /* FIXME Temporary imports for accesscontrol work -- SHOULD BE EXTERNAL LIBRARY */
+  compileOnly('com.github.spotbugs:spotbugs-annotations:4.9.8') // This is tied to the javax -> jakarta migration
   lombokDelombok 'org.projectlombok:lombok:1.18.38'
   compileOnly("org.projectlombok:lombok:1.18.38")
   annotationProcessor("org.projectlombok:lombok:1.18.38")
