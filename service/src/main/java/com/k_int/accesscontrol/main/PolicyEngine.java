@@ -5,15 +5,14 @@ import com.k_int.accesscontrol.core.*;
 import com.k_int.accesscontrol.core.http.bodies.ClaimBody;
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink;
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
-import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager;
-import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata;
-import com.k_int.accesscontrol.core.policycontrolled.RestrictionMapEntry;
-import com.k_int.accesscontrol.core.policycontrolled.RestrictionTree;
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.EnrichedRestrictionTree;
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.IRestrictionTree;
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.RTParameterProvider;
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.RTSubqueriesProvider;
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineImplementor;
 import com.k_int.accesscontrol.core.sql.*;
-import io.minio.messages.Owner;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -65,42 +64,52 @@ public class PolicyEngine implements PolicyEngineImplementor {
     // In future we may add more policy engines here, such as KI Grants
   }
 
-  // FIXME obviously this can't stay long term
-  public int test(PolicyParameterProvider ppp, OwnerIdProvider oip) {
-    PolicySubqueryParameters psp = ppp.apply("the_id", 0);
-    String s = oip.apply("the_id", 0, 0);
-    return 1;
-  }
-
-
-  public RestrictionTree enrichRestrictionTree(
+  // TODO I'm not 100% convinced that this is the RIGHT shape for this "enrichment" operation right now
+  /**
+   * Enriches a given restriction tree by populating it with policy subqueries and parameters.
+   * This method traverses the restriction tree and fills in the necessary subqueries
+   * for each restriction based on the provided query type and filters.
+   *
+   * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
+   * @param queryType The type of access policy query (e.g., LIST or SINGLE)
+   * @param filters A list of PoliciesFilter objects representing additional filters to apply
+   * @param restrictionTree The restriction tree to be enriched
+   * @param leafResourceId The ID of the leaf resource in the restriction tree
+   * @param parameterProvider A provider function to fetch policy parameters based on owner ID and level
+   * @param ownerIdProvider A provider function to fetch owner IDs based on resource ID and owner level
+   * @return An enriched restriction tree with populated subqueries and parameters
+   * @throws PolicyEngineException if an error occurs during enrichment
+   */
+  public EnrichedRestrictionTree enrichRestrictionTree(
     String[] headers,
     AccessPolicyQueryType queryType,
     List<PoliciesFilter> filters,
-    RestrictionTree restrictionTree
+    IRestrictionTree restrictionTree,
+    String leafResourceId,
+    PolicyParameterProvider parameterProvider,
+    OwnerIdProvider ownerIdProvider
   ) throws PolicyEngineException {
     // Cache the PolicySubqueries as we fetch them, as we only need to fetch them once per restriction type
+    // FIXME should we instead find all relevant restrictions and have a method to return ALL subqueries mapped by restriction?
     RestrictionSubqueryCache subqueryCache = new RestrictionSubqueryCache();
 
-    RestrictionTree currentNode = restrictionTree;
-    while (currentNode != null) {
-      if (currentNode.hasStandalonePolicies()) {
-        PolicyRestriction levelRestriction = currentNode.getRestriction();
+    RTParameterProvider rtParameterProvider = (int ownerLevel, PolicyRestriction restriction) -> {
+      String ownerId = ownerIdProvider.apply(leafResourceId, ownerLevel, 0);
+      return parameterProvider.apply(ownerId, ownerLevel);
+    };
 
-        List<PolicySubquery> cachedSubqueries = subqueryCache.get(levelRestriction);
-        if (cachedSubqueries != null) {
-          currentNode.setSubqueries(cachedSubqueries);
-        } else {
-          List<PolicySubquery> subqueries = getPolicySubqueries(headers, levelRestriction, queryType, filters);
-          subqueryCache.put(levelRestriction, subqueries);
-          currentNode.setSubqueries(subqueries);
-        }
+    RTSubqueriesProvider rtSubqueriesProvider = (int ownerLevel, PolicyRestriction restriction) -> {
+      List<PolicySubquery> cachedSubqueries = subqueryCache.get(restriction);
+      if (cachedSubqueries != null) {
+        return cachedSubqueries;
+      } else {
+        List<PolicySubquery> subqueries = getPolicySubqueries(headers, restriction, queryType, filters);
+        subqueryCache.put(restriction, subqueries);
+        return subqueries;
       }
+    };
 
-      currentNode = currentNode.getParent();
-    }
-
-    return restrictionTree;
+    return EnrichedRestrictionTree.buildFromRestrictionTree(restrictionTree, rtSubqueriesProvider, rtParameterProvider);
   }
 
   /**
@@ -125,6 +134,8 @@ public class PolicyEngine implements PolicyEngineImplementor {
 
     return policySubqueries;
   }
+
+  // TODO add getPolicySubqueires MUTLIPLE option
 
   /**
    * Extended version of getPolicySubqueries which also takes in a list of PoliciesFilter objects.

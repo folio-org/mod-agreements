@@ -118,6 +118,5 @@ public class PolicyControlledMetadata {
    * @param restrictionMap the restriction map for this resource
    * @return the restriction map for this resource
    */
-  @Nullable
-  final PolicyControlledRestrictionMap restrictionMap;
+  final PolicyControlledMetadataRestrictionMap restrictionMap;
 }

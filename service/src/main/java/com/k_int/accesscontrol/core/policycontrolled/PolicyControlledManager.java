@@ -1,6 +1,7 @@
 package com.k_int.accesscontrol.core.policycontrolled;
 
 import com.k_int.accesscontrol.core.PolicyRestriction;
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.SkeletonRestrictionTree;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.sql.AccessControlSql;
 import com.k_int.accesscontrol.core.sql.AccessControlSqlType;
@@ -24,15 +25,47 @@ public class PolicyControlledManager {
   private final List<PolicyControlledMetadata> ownershipChain;
 
   /**
-   * Constructs a {@code PolicyControlledManager} by resolving the complete ownership chain
+   * A map of policy restrictions to their corresponding skeleton restriction trees.
+   * This map provides a structured representation of how each policy restriction
+   * is evaluated across the ownership chain.
+   * @return A PolicyControlledRestrictionTreeMap representing the restriction tree map
+   */
+  @Getter
+  @SuppressWarnings("javadoc")
+  private final PolicyControlledRestrictionTreeMap restrictionTreeMap;
+
+  /**
+   * A list of relevant policy restrictions to consider when building restriction maps.
+   */
+  private static final List<PolicyRestriction> relevantPolicies = List.of(
+    PolicyRestriction.READ,
+    PolicyRestriction.CREATE,
+    PolicyRestriction.UPDATE,
+    PolicyRestriction.DELETE,
+    PolicyRestriction.APPLY_POLICIES
+  );
+
+  /**
+   * Constructs a {@code PolicyControlledManager} with a pre-resolved ownership chain.
+   *
+   * @param ownershipChain A list of {@link PolicyControlledMetadata} representing the ownership chain,
+   *                       ordered from the leaf class to the root owner.
+   * @param restrictionTreeMap A {@link PolicyControlledRestrictionTreeMap} representing the restriction tree map.
+   */
+  public PolicyControlledManager(List<PolicyControlledMetadata> ownershipChain, PolicyControlledRestrictionTreeMap restrictionTreeMap) {
+    this.ownershipChain = ownershipChain;
+    this.restrictionTreeMap = restrictionTreeMap;
+  }
+
+  /**
+   * Constructs a {@code PolicyControlledManager} by resolving the ownership chain
    * starting from the specified leaf class.
-   * @param leafClass The {@link Class} object representing the leaf entity for which the ownership chain is to be resolved.
-   * @throws IllegalArgumentException if the {@code @PolicyControlled} annotation is missing on any class in the chain.
-   * @throws IllegalStateException if a cycle is detected in the ownership chain.
-   * @see #resolveOwnershipChain(Class)
+   *
+   * @param leafClass The class representing the most granular resource in the ownership hierarchy.
    */
   public PolicyControlledManager(Class<?> leafClass) {
-    this.ownershipChain = PolicyControlledManager.resolveOwnershipChain(leafClass);
+    this.ownershipChain = resolveOwnershipChain(leafClass);
+    this.restrictionTreeMap = this.buildRestrictionTreeMap();
   }
 
   /**
@@ -45,7 +78,12 @@ public class PolicyControlledManager {
    */
   public static boolean hasStandalonePolicies(
     PolicyControlled annotation,
-    PolicyRestriction restriction) {
+    PolicyRestriction restriction
+  ) {
+    if (annotation.ownerClass() == null || annotation.ownerClass() == Object.class) {
+      // At root, we ALWAYS have standalone policies
+      return true;
+    }
 
     return switch (restriction) {
       case READ -> annotation.hasStandaloneReadPolicies();
@@ -69,7 +107,8 @@ public class PolicyControlledManager {
    */
   public static PolicyRestriction getOwnerRestrictionMapping(
     PolicyControlled annotation,
-    PolicyRestriction restriction) {
+    PolicyRestriction restriction
+  ) {
 
     return switch (restriction) {
       case READ -> annotation.readRestrictionMapping();
@@ -77,13 +116,12 @@ public class PolicyControlledManager {
       case UPDATE -> annotation.updateRestrictionMapping();
       case DELETE -> annotation.deleteRestrictionMapping();
       case APPLY_POLICIES -> annotation.applyPoliciesRestrictionMapping();
-      // Default or error handling as appropriate
       default -> PolicyRestriction.NONE;
     };
   }
 
   /**
-   * Build a {@link PolicyControlledRestrictionMap} from a {@link PolicyControlled} annotation.
+   * Build a {@link PolicyControlledMetadataRestrictionMap} from a {@link PolicyControlled} annotation.
    * The resulting map includes only entries where:
    * <ul>
    *   <li>the annotation declares standalone policies for the restriction, or</li>
@@ -91,19 +129,11 @@ public class PolicyControlledManager {
    * </ul>
    *
    * @param annotation the annotation from which to build the mapping
-   * @return a populated {@link PolicyControlledRestrictionMap} describing non-trivial mappings for the level
+   * @return a populated {@link PolicyControlledMetadataRestrictionMap} describing non-trivial mappings for the level
    */
-  public static PolicyControlledRestrictionMap buildRestrictionMapFromAnnotation(PolicyControlled annotation) {
+  public static PolicyControlledMetadataRestrictionMap buildRestrictionMapFromAnnotation(PolicyControlled annotation) {
     // Set up Restriction mapping for this level
-    PolicyControlledRestrictionMap restrictionMap = new PolicyControlledRestrictionMap();
-
-    List<PolicyRestriction> relevantPolicies = List.of(
-      PolicyRestriction.READ,
-      PolicyRestriction.CREATE,
-      PolicyRestriction.UPDATE,
-      PolicyRestriction.DELETE,
-      PolicyRestriction.APPLY_POLICIES
-    );
+    PolicyControlledMetadataRestrictionMap restrictionMap = new PolicyControlledMetadataRestrictionMap();
 
     relevantPolicies.forEach(pr -> {
       PolicyRestriction ownerRestriction = getOwnerRestrictionMapping(annotation, pr);
@@ -165,7 +195,7 @@ public class PolicyControlledManager {
       }
 
       // Build the restriction mapping for this chain level
-      PolicyControlledRestrictionMap restrictionMap = buildRestrictionMapFromAnnotation(annotation);
+      PolicyControlledMetadataRestrictionMap restrictionMap = buildRestrictionMapFromAnnotation(annotation);
 
       chain.add(PolicyControlledMetadata.builder()
         .resourceClassName(current.getCanonicalName())
@@ -189,6 +219,66 @@ public class PolicyControlledManager {
 
     return chain;
   }
+
+  public SkeletonRestrictionTree buildSkeletonRestrictionTree(
+    PolicyRestriction restriction
+  ) {
+    // Set up a list of builders, we will walk backwards down this later to do the parent builds of the final tree
+    List<SkeletonRestrictionTree.SkeletonRestrictionTreeBuilder> restrictionTreeBuilders = new ArrayList<>();
+    PolicyRestriction levelRestriction = restriction; // We will change this at each level to follow the mapping tree
+
+
+    for (int i = 0; i < getOwnershipChainSize(); i++) {
+      // Set up the builder for the current level
+      SkeletonRestrictionTree.SkeletonRestrictionTreeBuilder builder = SkeletonRestrictionTree.builder();
+      builder.ownerLevel(i);
+
+      PolicyControlledMetadata levelMetadata = getOwnerLevelMetadata(i);
+      RestrictionMapEntry rme = levelMetadata.getRestrictionMap().get(levelRestriction);
+
+      builder.restriction(levelRestriction);
+      if (rme != null) {
+        // We have a mapping for this restriction at this level
+        builder.hasStandalonePolicies(rme.hasStandalonePolicies());
+
+        levelRestriction = rme.getOwnerRestriction();
+      }
+
+      restrictionTreeBuilders.add(builder);
+    }
+
+    if (restrictionTreeBuilders.isEmpty()) {
+      return null;
+    }
+
+    // Walk backwards down the builders list to get the tree at the base
+    SkeletonRestrictionTree previousChild = null;
+    for (int i = restrictionTreeBuilders.size() - 1; i >= 0; i--) {
+      SkeletonRestrictionTree.SkeletonRestrictionTreeBuilder builder = restrictionTreeBuilders.get(i);
+
+      // The previously constructed node (`currentChild`) becomes the parent of the node
+      // currently being built (`builder`).
+
+      // The "parent" of the current node being built is the previously fully built node (currentChild).
+      builder.parent(previousChild);
+
+      // Build the new, immutable node and update currentChild for the next iteration.
+      previousChild = builder.build();
+    }
+
+    // return the last child we dealt with
+    return previousChild;
+  }
+
+  public PolicyControlledRestrictionTreeMap buildRestrictionTreeMap() {
+    PolicyControlledRestrictionTreeMap treeMap = new PolicyControlledRestrictionTreeMap();
+    for (PolicyRestriction pol : relevantPolicies ) {
+      treeMap.put(pol, buildSkeletonRestrictionTree(pol));
+    }
+
+    return treeMap;
+  }
+
 
   /**
    * Retrieves the {@link PolicyControlledMetadata} for the leaf (most granular) class

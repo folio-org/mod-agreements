@@ -7,8 +7,7 @@ import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
-import com.k_int.accesscontrol.core.policycontrolled.RestrictionMapEntry
-import com.k_int.accesscontrol.core.policycontrolled.RestrictionTree
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.EnrichedRestrictionTree
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
@@ -19,9 +18,7 @@ import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.sql.AccessControlSqlType
 import com.k_int.accesscontrol.core.sql.OwnerIdProvider
 import com.k_int.accesscontrol.core.sql.PolicyParameterProvider
-import com.k_int.accesscontrol.core.sql.PolicySubquery
 import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters
-import com.k_int.accesscontrol.core.sql.RestrictionSubqueryCache
 import com.k_int.accesscontrol.grails.criteria.AccessControlHibernateTypeMapper
 import com.k_int.accesscontrol.main.PolicyEngine
 import com.k_int.accesscontrol.grails.criteria.MultipleAliasSQLCriterion
@@ -184,17 +181,15 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     // Attempt to work out which policySubqueries and which subqueryParams we will need
     // Starting at the leaf, work out whether we need to get hold of subqueries at this level, pass through to parent (with mapping?) or break out.
 
-    RestrictionTree restrictionTree = policyEngine.enrichRestrictionTree(
+    // Is this the right pattern?
+    EnrichedRestrictionTree restrictionTree = policyEngine.enrichRestrictionTree(
       grailsHeaders,
       queryType,
       filters,
-      RestrictionTree.buildSkeletonRestrictionTree(
-        policyControlledManager,
-        restriction,
-        leafResourceId,
-        ownerIdProvider, // FIXME This pattern is kinda gross...
-        parameterProvider // Ditto
-      )
+      policyControlledManager.getRestrictionTreeMap().get(restriction),
+      leafResourceId,
+      parameterProvider,
+      ownerIdProvider
     )
 
     // We now have the complex Map from above ready to build the params and combine the SQL

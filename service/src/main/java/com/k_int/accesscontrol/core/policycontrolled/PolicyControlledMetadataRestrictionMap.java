@@ -13,5 +13,5 @@ import java.util.HashMap;
  * the EDIT action on the parent, or a child may have its own standalone policies.
  * </p>
  */
-public class PolicyControlledRestrictionMap extends HashMap<PolicyRestriction, RestrictionMapEntry> {
+public class PolicyControlledMetadataRestrictionMap extends HashMap<PolicyRestriction, RestrictionMapEntry> {
 }

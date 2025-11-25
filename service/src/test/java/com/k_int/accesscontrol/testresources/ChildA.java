@@ -1,7 +1,7 @@
 package com.k_int.accesscontrol.testresources;
 
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlled;
-import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledRestrictionMap;
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadataRestrictionMap;
 
 @PolicyControlled(
   ownerColumn = "a_owner_column",
@@ -17,7 +17,7 @@ public class ChildA {
   ChildB childB;
   ChildC childC;
 
-  public static PolicyControlledRestrictionMap expectedRestrictionMap() {
-    return new PolicyControlledRestrictionMap();
+  public static PolicyControlledMetadataRestrictionMap expectedRestrictionMap() {
+    return new PolicyControlledMetadataRestrictionMap();
   }
 }

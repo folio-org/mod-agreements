@@ -1,7 +1,7 @@
 package com.k_int.accesscontrol.testresources;
 
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlled;
-import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledRestrictionMap;
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadataRestrictionMap;
 
 @PolicyControlled(
   resourceIdColumn = "top_owner_id",
@@ -12,8 +12,8 @@ public class TopOwner {
   String id;
   ChildA childA;
 
-  public static PolicyControlledRestrictionMap expectedRestrictionMap() {
-    return new PolicyControlledRestrictionMap();
+  public static PolicyControlledMetadataRestrictionMap expectedRestrictionMap() {
+    return new PolicyControlledMetadataRestrictionMap();
   }
 }
 

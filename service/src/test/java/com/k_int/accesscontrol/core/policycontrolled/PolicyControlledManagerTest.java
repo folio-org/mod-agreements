@@ -95,7 +95,7 @@ public class PolicyControlledManagerTest {
     int chainSize,
     boolean leafEqualsRoot,
     String rootAliasName,
-    List<PolicyControlledRestrictionMap> expectedRestrictionMaps
+    List<PolicyControlledMetadataRestrictionMap> expectedRestrictionMaps
   ) {
     // WHEN
     // Set up for TopOwner
@@ -131,7 +131,7 @@ public class PolicyControlledManagerTest {
         "JOIN a_table AS t2 ON t1.c_owner_column = t2.a_id " +
         "JOIN top_owner_table AS t3 ON t2.a_owner_column = t3.top_owner_id " +
         "WHERE t0.d_id = ?;",
-      pcm.getOwnerIdSql( 3, "theId").getSqlString()
+      pcm.getOwnerIdSql("theId", 3).getSqlString()
     );
 
     assertEquals(
@@ -140,7 +140,7 @@ public class PolicyControlledManagerTest {
         "JOIN a_table AS t2 ON t1.c_owner_column = t2.a_id " +
         "JOIN top_owner_table AS t3 ON t2.a_owner_column = t3.top_owner_id " +
         "WHERE t1.c_id = ?;",
-      pcm.getOwnerIdSql( 3, "theId", 1).getSqlString()
+      pcm.getOwnerIdSql( "theId", 3, 1).getSqlString()
     );
 
     assertEquals(
@@ -148,17 +148,17 @@ public class PolicyControlledManagerTest {
         "FROM c_table as t1 " +
         "JOIN a_table AS t2 ON t1.c_owner_column = t2.a_id " +
         "WHERE t1.c_id = ?;",
-      pcm.getOwnerIdSql( 2, "theId", 1).getSqlString()
+      pcm.getOwnerIdSql( "theId", 2, 1).getSqlString()
     );
 
     assertEquals(
       "SELECT ? as id;",
-      pcm.getOwnerIdSql( 2, "theId", 2).getSqlString()
+      pcm.getOwnerIdSql( "theId", 2, 2).getSqlString()
     );
 
     assertThrows(
       IllegalArgumentException.class,
-      () -> pcm.getOwnerIdSql( 1, "theId", 2)
+      () -> pcm.getOwnerIdSql( "theId", 1, 2)
     );
   }
 }

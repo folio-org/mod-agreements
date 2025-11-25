@@ -2,7 +2,7 @@ package com.k_int.accesscontrol.testresources;
 
 import com.k_int.accesscontrol.core.PolicyRestriction;
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlled;
-import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledRestrictionMap;
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadataRestrictionMap;
 import com.k_int.accesscontrol.core.policycontrolled.RestrictionMapEntry;
 
 @PolicyControlled(
@@ -19,8 +19,8 @@ public class ChildD {
   String id;
   ChildC owner;
 
-  public static PolicyControlledRestrictionMap expectedRestrictionMap() {
-    return new PolicyControlledRestrictionMap() {{
+  public static PolicyControlledMetadataRestrictionMap expectedRestrictionMap() {
+    return new PolicyControlledMetadataRestrictionMap() {{
       put(
         PolicyRestriction.READ,
         RestrictionMapEntry.builder()
