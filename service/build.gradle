@@ -175,7 +175,7 @@ dependencies {
   implementation 'org.z3950.zing:cql-java:1.13'
 
   // Minio for file storage to S3
-  implementation "io.minio:minio:8.5.17"
+  implementation "io.minio:minio:8.6.0"
   implementation 'com.squareup.okhttp3:okhttp:4.10.0'
   implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.10'
 
