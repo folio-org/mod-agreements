@@ -432,6 +432,50 @@ public class AcquisitionsClient extends FolioClient {
     return asyncFolioClientExceptionHelper(() -> getAsyncUserAcquisitionUnits(headers, restriction, fetchSubsets));
   }
 
+  /**
+   * Asynchronously fetches user acquisition units for multiple restrictions.
+   *
+   * @param headers Request headers
+   * @param restrictions Collection of restrictions to fetch units for
+   * @param fetchSubsets Subset of user acquisition units to fetch
+   * @return CompletableFuture with map of restrictions to UserAcquisitionUnits
+   */
+  public CompletableFuture<Map<AcquisitionUnitRestriction, UserAcquisitionUnits>> getAsyncRestrictionMappedUserAcquisitionUnits(String[] headers, Collection<AcquisitionUnitRestriction> restrictions, Set<UserAcquisitionsUnitSubset> fetchSubsets) {
+    if (restrictions == null || restrictions.isEmpty()) {
+      return CompletableFuture.completedFuture(Collections.emptyMap());
+    }
+
+    // Set up a completableFuture map
+    CompletableFuture<Map<AcquisitionUnitRestriction, UserAcquisitionUnits>> result =
+      CompletableFuture.completedFuture(new HashMap<>());
+
+    for (AcquisitionUnitRestriction restriction : restrictions) {
+      CompletableFuture<UserAcquisitionUnits> fut =
+        getAsyncUserAcquisitionUnits(headers, restriction, fetchSubsets);
+
+      // Asynchronously combine into result map once complete
+      result = result.thenCombine(fut, (map, value) -> {
+        map.put(restriction, value);
+        return map;
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Synchronously fetches user acquisition units for multiple restrictions.
+   *
+   * @param headers Request headers
+   * @param restrictions Collection of restrictions to fetch units for
+   * @param fetchSubsets Subset of user acquisition units to fetch
+   * @return Map of restrictions to UserAcquisitionUnits
+   * @throws FolioClientException If any async call fails or is interrupted
+   */
+  public Map<AcquisitionUnitRestriction, UserAcquisitionUnits> getRestrictionMappedUserAcquisitionUnits(String[] headers, Collection<AcquisitionUnitRestriction> restrictions, Set<UserAcquisitionsUnitSubset> fetchSubsets) {
+    return asyncFolioClientExceptionHelper(() -> getAsyncRestrictionMappedUserAcquisitionUnits(headers, restrictions, fetchSubsets));
+  }
+
 
   /**
    * Asynchronously fetches {@link AcquisitionUnitPolicy} instances for the specified acquisition unit IDs.

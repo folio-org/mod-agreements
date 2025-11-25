@@ -114,18 +114,34 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
    * @throws PolicyEngineException if acquisition unit lookup fails or FOLIO client errors occur
    */
   public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType) {
+    return getRestrictionMappedPolicySubqueries(headers, Collections.singleton(pr), queryType).get(pr);
+  }
+
+  /**
+   * Generates a mapping of policy restrictions to their corresponding policy subqueries.
+   *
+   * @param headers      the request context headers, used for FOLIO/internal service authentication
+   * @param restrictions the collection of policy restrictions to process
+   * @param queryType    the type of query to generate (boolean or filter)
+   * @return a map where each key is a {@link PolicyRestriction} and the value is a list of {@link PolicySubquery} objects
+   *         associated with that restriction
+   * @throws PolicyEngineException if acquisition unit lookup fails or FOLIO client errors occur
+   */
+  public Map<PolicyRestriction, List<PolicySubquery>> getRestrictionMappedPolicySubqueries(String[] headers, Collection<PolicyRestriction> restrictions, AccessPolicyQueryType queryType) {
+    Map<PolicyRestriction, List<PolicySubquery>> resultMap = new HashMap<>();
+
     String[] finalHeaders = handleLoginAndGetHeaders(headers);
 
     return folioClientExceptionHandler("fetching Acquisition units", () -> {
-      List<PolicySubquery> policySubqueries = new ArrayList<>();
-
       long beforePolicyLookup = System.nanoTime();
       // Do the acquisition unit logic
-      AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
-      // Fetch the acquisition units for the user (MemberRestrictiveUnits and NonMemberRestrictiveUnits);
-      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(
+      Collection<AcquisitionUnitRestriction> acqRestrictions = restrictions.stream()
+        .map(AcquisitionUnitRestriction::getRestrictionFromPolicyRestriction)
+        .collect(Collectors.toSet());
+
+      Map<AcquisitionUnitRestriction, UserAcquisitionUnits> userAcquisitionUnitsMap = acqClient.getRestrictionMappedUserAcquisitionUnits(
         finalHeaders,
-        acqRestriction,
+        acqRestrictions,
         Set.of(
           UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE,
           UserAcquisitionsUnitSubset.NON_MEMBER_RESTRICTIVE,
@@ -136,22 +152,33 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
       long afterPolicyLookup = System.nanoTime();
       log.trace("AcquisitionUnitPolicyEngineImplementor policy lookup time: {}", Duration.ofNanos(afterPolicyLookup - beforePolicyLookup));
 
-      /* In theory we could have a separate individual PolicySubquery class for every Restriction,
-       * but READ/UPDPATE/DELETE are all the same for Acq Units (with slight tweak when LIST vs SINGLE),
-       * and CREATE is simple, so we'll do all the work on one class.
-       *
-       * If we want to make this more performant we could shortcut in the "CREATE" case since that doesn't need the acquisition unit fetch
-       */
-      policySubqueries.add(
-        AcquisitionUnitPolicySubquery
-          .builder()
-          .userAcquisitionUnits(userAcquisitionUnits)
-          .queryType(queryType)
-          .restriction(pr)
-          .build()
-      );
+      // For every restriction we have, build the policy subqueries
 
-      return policySubqueries;
+      for (PolicyRestriction restriction : restrictions) {
+        AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(restriction);
+        UserAcquisitionUnits userAcquisitionUnits = userAcquisitionUnitsMap.get(acqRestriction);
+
+        List<PolicySubquery> restrictionPolicySubqueries = new ArrayList<>();
+
+        /* In theory we could have a separate individual PolicySubquery class for every Restriction,
+         * but READ/UPDPATE/DELETE are all the same for Acq Units (with slight tweak when LIST vs SINGLE),
+         * and CREATE is simple, so we'll do all the work on one class.
+         *
+         * If we want to make this more performant we could shortcut in the "CREATE" case since that doesn't need the acquisition unit fetch
+         */
+        restrictionPolicySubqueries.add(
+          AcquisitionUnitPolicySubquery
+            .builder()
+            .userAcquisitionUnits(userAcquisitionUnits)
+            .queryType(queryType)
+            .restriction(restriction)
+            .build()
+        );
+
+        resultMap.put(restriction, restrictionPolicySubqueries);
+      }
+
+      return resultMap;
     });
   }
 

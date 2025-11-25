@@ -89,25 +89,14 @@ public class PolicyEngine implements PolicyEngineImplementor {
     PolicyParameterProvider parameterProvider,
     OwnerIdProvider ownerIdProvider
   ) throws PolicyEngineException {
-    // Cache the PolicySubqueries as we fetch them, as we only need to fetch them once per restriction type
-    // FIXME should we instead find all relevant restrictions and have a method to return ALL subqueries mapped by restriction?
-    RestrictionSubqueryCache subqueryCache = new RestrictionSubqueryCache();
+    Map<PolicyRestriction, List<PolicySubquery>> policySubqueryMap = getRestrictionMappedPolicySubqueries(headers, restrictionTree.getAncestralRestrictions(), queryType, filters);
 
     RTParameterProvider rtParameterProvider = (int ownerLevel, PolicyRestriction restriction) -> {
       String ownerId = ownerIdProvider.apply(leafResourceId, ownerLevel, 0);
       return parameterProvider.apply(ownerId, ownerLevel);
     };
 
-    RTSubqueriesProvider rtSubqueriesProvider = (int ownerLevel, PolicyRestriction restriction) -> {
-      List<PolicySubquery> cachedSubqueries = subqueryCache.get(restriction);
-      if (cachedSubqueries != null) {
-        return cachedSubqueries;
-      } else {
-        List<PolicySubquery> subqueries = getPolicySubqueries(headers, restriction, queryType, filters);
-        subqueryCache.put(restriction, subqueries);
-        return subqueries;
-      }
-    };
+    RTSubqueriesProvider rtSubqueriesProvider = (int ownerLevel, PolicyRestriction restriction) -> policySubqueryMap.get(restriction);
 
     return EnrichedRestrictionTree.buildFromRestrictionTree(restrictionTree, rtSubqueriesProvider, rtParameterProvider);
   }
@@ -122,20 +111,40 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * @throws PolicyEngineException -- the understanding is that within a request context this should be caught and return a 500
    */
   public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType) throws PolicyEngineException {
-    List<PolicySubquery> policySubqueries = new ArrayList<>();
+    return getRestrictionMappedPolicySubqueries(headers, Collections.singletonList(pr), queryType).get(pr);
+  }
 
-    if (pr.equals(PolicyRestriction.CLAIM)) {
-      throw new PolicyEngineException("getPolicySubqueries is not valid for PolicyRestriction.CLAIM", PolicyEngineException.INVALID_RESTRICTION);
+  /**
+   * Retrieves a map of policy subqueries grouped by their corresponding policy restrictions.
+   * This method is used to fetch SQL subqueries for multiple policy restrictions at once.
+   *
+   * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
+   * @param restrictions A collection of policy restrictions to filter by
+   * @param queryType Whether to return boolean queries for single use or filter queries for all records
+   * @return A map where each key is a PolicyRestriction and the value is a list of corresponding PolicySubqueries
+   * @throws PolicyEngineException if an error occurs while fetching policy subqueries
+   */
+  public Map<PolicyRestriction, List<PolicySubquery>> getRestrictionMappedPolicySubqueries(String[] headers, Collection<PolicyRestriction> restrictions, AccessPolicyQueryType queryType) throws PolicyEngineException {
+    if (restrictions.contains(PolicyRestriction.CLAIM)) {
+      throw new PolicyEngineException("getRestrictionMappedPolicySubqueries is not valid for PolicyRestriction.CLAIM", PolicyEngineException.INVALID_RESTRICTION);
+    }
+
+    // Set up the original map structure
+    Map<PolicyRestriction, List<PolicySubquery>> subqueryMap = new HashMap<>();
+    for (PolicyRestriction restriction : restrictions) {
+      subqueryMap.put(restriction, new ArrayList<>());
     }
 
     if (acquisitionUnitPolicyEngine != null) {
-      policySubqueries.addAll(acquisitionUnitPolicyEngine.getPolicySubqueries(headers, pr, queryType));
+      Map<PolicyRestriction, List<PolicySubquery>> acquisitionUnitPolicySubqueryMap = acquisitionUnitPolicyEngine.getRestrictionMappedPolicySubqueries(headers, restrictions, queryType);
+
+      for (PolicyRestriction restriction : restrictions) {
+        subqueryMap.get(restriction).addAll(acquisitionUnitPolicySubqueryMap.get(restriction));
+      }
     }
 
-    return policySubqueries;
+    return subqueryMap;
   }
-
-  // TODO add getPolicySubqueires MUTLIPLE option
 
   /**
    * Extended version of getPolicySubqueries which also takes in a list of PoliciesFilter objects.
@@ -150,10 +159,26 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * @throws PolicyEngineException -- the understanding is that within a request context this should be caught and return a 500
    */
   public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType, List<PoliciesFilter> filters) throws PolicyEngineException {
+    return getRestrictionMappedPolicySubqueries(headers, Collections.singletonList(pr), queryType, filters).get(pr);
+  }
 
-    List<PolicySubquery> policySubqueries = getPolicySubqueries(headers, pr, queryType);
+  /**
+   * Extended version of getRestrictionMappedPolicySubqueries which also takes in a list of PoliciesFilter objects.
+   * These filters will be ANDed together in the final SQL, with the internal list of GroupedExternalPolicies
+   * within each PoliciesFilter being ORed together.
+   *
+   * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
+   * @param restrictions A collection of policy restrictions to filter by
+   * @param queryType Whether to return boolean queries for single use or filter queries for all records
+   * @param filters A list of PoliciesFilter objects representing additional filters to apply
+   * @return A map where each key is a PolicyRestriction and the value is a list of corresponding PolicySubqueries, including the provided filters
+   * @throws PolicyEngineException if an error occurs while fetching policy subqueries
+   */
+  public Map<PolicyRestriction, List<PolicySubquery>> getRestrictionMappedPolicySubqueries(String[] headers, Collection<PolicyRestriction> restrictions, AccessPolicyQueryType queryType, List<PoliciesFilter> filters) throws PolicyEngineException {
+    Map<PolicyRestriction, List<PolicySubquery>> subqueryMap = getRestrictionMappedPolicySubqueries(headers, restrictions, queryType);
+
     if (filters == null || filters.isEmpty()) {
-      return policySubqueries;
+      return subqueryMap;
     }
 
     // We have some filters, so we should create a PolicySubquery for them and add to the list
@@ -161,9 +186,14 @@ public class PolicyEngine implements PolicyEngineImplementor {
       .policiesFilters(filters)
       .queryType(queryType)
       .build();
-    policySubqueries.add(filterPolicySubquery);
 
-    return policySubqueries;
+    // Add the filter map to ALL the restriction subquery lists in the map
+    for (PolicyRestriction restriction : restrictions) {
+      List<PolicySubquery> policySubqueries = subqueryMap.get(restriction);
+      policySubqueries.add(filterPolicySubquery);
+    }
+
+    return subqueryMap;
   }
 
   /**

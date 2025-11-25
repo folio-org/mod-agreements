@@ -2,6 +2,8 @@ package com.k_int.accesscontrol.core.policycontrolled.restrictiontree;
 
 import com.k_int.accesscontrol.core.PolicyRestriction;
 
+import java.util.Set;
+
 /**
  * Represents a tree structure for policy restrictions, allowing traversal of parent-child relationships.
  */
@@ -33,4 +35,19 @@ public interface IRestrictionTree {
    * @return true if standalone policies exist, false otherwise
    */
   boolean hasStandalonePolicies();
+
+  /**
+   * Gathers all policy restrictions from this node up to the root of the tree.
+   *
+   * @return a set of {@link PolicyRestriction} objects representing the ancestral restrictions
+   */
+  default Set<PolicyRestriction> getAncestralRestrictions() {
+    Set<PolicyRestriction> restrictions = new java.util.HashSet<>();
+    IRestrictionTree current = this;
+    while (current != null) {
+      restrictions.add(current.getRestriction());
+      current = current.getParent();
+    }
+    return restrictions;
+  }
 }
