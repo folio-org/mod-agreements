@@ -6,6 +6,7 @@ import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.ERTParamete
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.sql.AccessControlSqlType
 import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters
+import com.k_int.accesscontrol.grails.criteria.AccessControlHibernateTypeMapper
 import org.hibernate.Session
 import org.hibernate.query.NativeQuery
 import org.hibernate.type.Type
@@ -18,10 +19,12 @@ import org.hibernate.type.Type
 class GrailsERTParameterProvider implements ERTParameterProvider {
 
   GrailsERTParameterProvider(
+    AccessControlHibernateTypeMapper typeMapper,
     PolicyControlledManager policyControlledManager,
     String resourceId,
     int startLevel
   ) {
+    this.typeMapper = typeMapper
     this.policyControlledManager = policyControlledManager
     this.resourceId = resourceId
     this.startLevel = startLevel
@@ -38,9 +41,12 @@ class GrailsERTParameterProvider implements ERTParameterProvider {
   String resourceId
   int startLevel
 
+  AccessControlHibernateTypeMapper typeMapper // FIXME THIS IS DEFINITELY NOT A GOOD PATTERN
+
+  // FIXME when resourceId is wibble and startLevel is 1 then we have OWNER in hand, and so need to
   String ownerIdProvider(int ownerLevel) {
     // Hmm... for now shortcut out if we hand null in, since we don't actually need to resolve the id for READ LIST for example... not certain about this though
-    if (resourceId == null) {
+    if (resourceId == null || ownerLevel < startLevel) { // FIXME I'm not sure about the ownerLevel < startLevel part here -- necessary to avoid issues in getOwnerIdSql
       return null
     }
 

@@ -30,6 +30,8 @@ import org.hibernate.SessionFactory
 import org.hibernate.engine.spi.SessionFactoryImplementor
 import org.hibernate.query.NativeQuery
 import org.hibernate.type.Type
+import org.json.JSONException
+import org.json.JSONObject
 import org.springframework.beans.factory.annotation.Autowired
 
 import javax.annotation.PostConstruct
@@ -134,9 +136,10 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
     // TODO I'm not 100% behind this approach, but it definitely feels like we're keeping the framework layer and engine layer more separate
     GrailsERTParameterProvider parameterProvider = new GrailsERTParameterProvider(
+      typeMapper,
       policyControlledManager,
       resourceId,
-      0 // TODO is this always the case? See CREATE.
+      restriction != PolicyRestriction.CREATE ? 0 : 1 // For CREATE we are working on the owner NOT on the leaf object itself since it doesn't yet have an id
     )
 
     // Is this the right pattern?
@@ -203,8 +206,29 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       }
 
       // We have a valid restriction, lets get the policySql
-      // FIXME YIKES what do we do about create here? It obviously doesn't have an id yet, so we can't resolve owner id :(
-      List<AccessControlSql> policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, params.id)
+
+      // For CREATE we need to include the owner id, not the params id, where we are creating a child object
+      String resourceId = params.id
+      if (pr == PolicyRestriction.CREATE && policyControlledManager.hasOwners()) {
+        JSONObject body = getObjectToBind()
+        String ownerField = policyControlledManager.getOwnerLevelMetadata(0).getOwnerField()
+
+        try {
+          def rawOwnerValue = body.get(ownerField)
+
+          // We have historically allowed both "owner": "the-owner-uuid" AND "owner": { "id": "the-owner-uuid" } so allow for either here
+          if (rawOwnerValue instanceof String) {
+            resourceId = rawOwnerValue
+          } else {
+            String ownerIdField = policyControlledManager.getOwnerLevelMetadata(1).getResourceIdField()
+            resourceId = rawOwnerValue.get(ownerIdField)
+          }
+        } catch (JSONException jex) {
+          throw new PolicyEngineException("Error attempting to resolve owner identifier from CREATE body", PolicyEngineException.GENERIC_ERROR, jex)
+        }
+      }
+
+      List<AccessControlSql> policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, resourceId)
 
       // If we have no SQL here, just shortcut to true
       if (policySqlFragments.size() == 0) {
@@ -704,6 +728,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   // FIXME do we still need this once everything shakes out?
   String getRootOwnerId(String leafId) {
     GrailsERTParameterProvider parameterProvider = new GrailsERTParameterProvider(
+      typeMapper,
       policyControlledManager,
       leafId,
       0
