@@ -35,7 +35,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import javax.annotation.PostConstruct
 import java.time.Duration
 
-// FIXME I'm not sure about the ERTParameterProvider :/
 /**
  * Extends com.k_int.okapi.OkapiTenantAwareController to incorporate access policy enforcement for resources.
  * This controller provides methods to check read, update, and delete permissions based on defined
@@ -44,7 +43,7 @@ import java.time.Duration
  * @param <T> The type of the resource entity managed by this controller.
  */
 @CurrentTenant
-class AccessPolicyAwareController<T> extends PolicyEngineController<T> implements ERTParameterProvider {
+class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   /**
    * The Class object representing the resource entity type managed by this controller.
    */
@@ -64,83 +63,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> implement
    */
   AccessControlHibernateTypeMapper typeMapper // Initialised in PostConstruct
 
-/**
- * Implementation of {@link ERTParameterProvider#provideParameters}.
- * <p>
- * Constructs the parameters necessary for a SQL subquery for a specific level
- * in the resource's ownership chain. It bridges the generic Access Control SQL
- * definitions with the specific Hibernate/Domain entity details.
- * </p>
- * <p>
- * This method resolves:
- * <ul>
- * <li>The specific Resource ID for the given owner level (by traversing up from the leaf ID).</li>
- * <li>The SQL alias to use (handling nested aliases for ownership chains or standard aliases for root objects).</li>
- * <li>The entity class name and ID column name for the resource at that level.</li>
- * </ul>
- * </p>
- *
- * @param leafResourceId The unique identifier of the target resource (the "leaf" of the ownership tree).
- * This is used as the starting point to resolve the ID of the owner at the specified level.
- * @param ownerLevel     The index in the ownership hierarchy for which parameters are being generated.
- * (e.g., 0 for the leaf resource itself, 1 for its direct parent, etc.).
- * @return A {@link PolicySubqueryParameters} builder object containing the table names, columns, aliases,
- * and values required to join the Access Policy table against the Resource table in a native SQL query.
- */
-  PolicySubqueryParameters provideParameters(String leafResourceId, int ownerLevel) {
-    String resourceId = ownerIdProvider(leafResourceId, ownerLevel, 0) // FIXME do we need startLevel other than 0 for create?
-    String resourceAlias = '{alias}'
-    PolicyControlledMetadata ownerLevelMetadata = policyControlledManager.getOwnerLevelMetadata(ownerLevel)
-    if (ownerLevelMetadata.getAliasName()) {
-      resourceAlias = ownerLevelMetadata.getAliasName()
-    } // This should always be calculated, except for "root" entry which uses the base alias
-
-    String resourceClass = policyControlledManager.resolveOwnerClass(ownerLevel)
-    String resourceIdColumn = policyControlledManager.resolveOwnerResourceIdColumn(ownerLevel)
-
-    return PolicySubqueryParameters
-      .builder()
-      .accessPolicyTableName(AccessPolicyEntity.TABLE_NAME)
-      .accessPolicyTypeColumnName(AccessPolicyEntity.TYPE_COLUMN)
-      .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
-      .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
-      .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
-      .resourceAlias(resourceAlias) // This alias can be deeply nested from owner or '{alias}' for hibernate top level queries
-      .resourceIdColumnName(resourceIdColumn)
-      .resourceId(resourceId) // This might be null (For LIST type queries)
-      .resourceClass(resourceClass)
-      .build()
-  }
-
-  /**
-   * Resolves the owner ID for a given leaf resource, owner level, and start level.
-   * Executes the SQL to fetch the owner ID from the database.
-   *
-   * @param leafId the ID of the leaf resource
-   * @param ownerLevel the level in the ownership chain
-   * @param startLevel the starting level for the lookup
-   * @return the owner ID as a String
-   */
-  String ownerIdProvider(String leafId, int ownerLevel, int startLevel) {
-    // Hmm... for now shortcut out if we hand null in, since we don't actually need to resolve the id for READ LIST for example... not certain about this though
-    if (leafId == null) {
-      return null
-    }
-
-    // First we get the SQL to resolve the owner id
-    AccessControlSql sql = policyControlledManager.getOwnerIdSql(leafId, ownerLevel, startLevel)
-
-    // Then we build the SQL and perform the query
-    AccessPolicyEntity.withSession { Session sess ->
-      NativeQuery identifierQuery = sess.createNativeQuery(sql.getSqlString())
-      sql.getParameters().eachWithIndex { Object param, int paramIndex  ->
-        // Hibernate params start at 1 :(
-        identifierQuery.setParameter(paramIndex + 1, param, (Type) typeMapper.getHibernateType((AccessControlSqlType) sql.getTypes()[paramIndex]))
-      }
-      String id = identifierQuery.list()[0]
-      return id
-    }
-  }
 
   /**
    * Constructs an {@code AccessPolicyAwareController} for a given resource class.
@@ -197,11 +119,11 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> implement
    *
    * @param restriction The type of policy restriction (e.g., READ, UPDATE, DELETE).
    * @param queryType The type of query (e.g., SINGLE for individual resource checks, LIST for collection checks).
-   * @param leafResourceId The ID of the resource in hand we apply the policy against. Can be {@code null} for LIST queries.
+   * @param resourceId The ID of the resource in hand we apply the policy against. Can be {@code null} for LIST queries.
    * @param filters Optional list of {@link PoliciesFilter} to refine which policies are considered.
    * @return A list of SQL string fragments representing the access policies.
    */
-  protected List<AccessControlSql> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String leafResourceId, List<PoliciesFilter> filters) {
+  protected List<AccessControlSql> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId, List<PoliciesFilter> filters) {
     /* ------------------------------- ACTUALLY DO THE WORK FOR EACH POLICY RESTRICTION ------------------------------- */
 
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
@@ -210,14 +132,20 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> implement
     // Attempt to work out which policySubqueries and which subqueryParams we will need
     // Starting at the leaf, work out whether we need to get hold of subqueries at this level, pass through to parent (with mapping?) or break out.
 
+    // TODO I'm not 100% behind this approach, but it definitely feels like we're keeping the framework layer and engine layer more separate
+    GrailsERTParameterProvider parameterProvider = new GrailsERTParameterProvider(
+      policyControlledManager,
+      resourceId,
+      0 // TODO is this always the case? See CREATE.
+    )
+
     // Is this the right pattern?
     EnrichedRestrictionTree restrictionTree = policyEngine.enrichRestrictionTree(
       grailsHeaders,
       queryType,
       filters,
       policyControlledManager.getRestrictionTreeMap().get(restriction),
-      leafResourceId, // Passing this in doesn't make an awful lot of sense tbh, we have it here, and then pass it down to pass back into the method living in this class.
-      this // FIXME not super happy with this pattern yet... but this is slightly less painful than the callback methods
+      parameterProvider
     )
 
     // We now have the complex Map from above ready to build the params and combine the SQL
@@ -617,7 +545,8 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> implement
 
     // Might not need to do this now, since we're cancelling early if there are owners
     // FIXME check whether we still want this from the root
-    String resourceId = ownerIdProvider.apply(params.id, policyControlledManager.getOwnershipChainSize() - 1, 0)
+    String resourceId = getRootOwnerId(params.id)
+
     String resourceClass = policyControlledManager.getRootPolicyControlledMetadata().getResourceClassName()
     boolean success = true
     boolean changesMade = true
@@ -760,7 +689,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> implement
             type IN :enabledEngines
         """.toString(),
         [
-          resId: ownerIdProvider.apply(params.id, policyControlledManager.getOwnershipChainSize() - 1, 0),
+          resId: getRootOwnerId(params.id),
           enabledEngines: enabledEngines
         ]
       )
@@ -770,5 +699,15 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> implement
       // Grails gets confused with the Policy extensions, so instead lets render it out with Jackson
       render text: Json.toJson(policyLinks), contentType: 'application/json'
     }
+  }
+
+  // FIXME do we still need this once everything shakes out?
+  String getRootOwnerId(String leafId) {
+    GrailsERTParameterProvider parameterProvider = new GrailsERTParameterProvider(
+      policyControlledManager,
+      leafId,
+      0
+    )
+    return parameterProvider.ownerIdProvider(policyControlledManager.getOwnershipChainSize() - 1)
   }
 }

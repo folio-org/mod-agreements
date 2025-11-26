@@ -71,7 +71,6 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * @param queryType The type of access policy query (e.g., LIST or SINGLE)
    * @param filters A list of PoliciesFilter objects representing additional filters to apply
    * @param restrictionTree The restriction tree to be enriched
-   * @param leafResourceId The ID of the leaf resource in the restriction tree
    * @param parameterProvider A provider implementation to fetch policy parameters based on leafResourceId and owner level
    * @return An enriched restriction tree with populated subqueries and parameters
    * @throws PolicyEngineException if an error occurs during enrichment
@@ -81,7 +80,6 @@ public class PolicyEngine implements PolicyEngineImplementor {
     AccessPolicyQueryType queryType,
     List<PoliciesFilter> filters,
     IRestrictionTree restrictionTree,
-    String leafResourceId,
     ERTParameterProvider parameterProvider // TODO Is this pattern acceptable?
   ) throws PolicyEngineException {
     // Fetch policySubqueries for ALL restrictions present in the tree
@@ -89,13 +87,14 @@ public class PolicyEngine implements PolicyEngineImplementor {
 
     // The framework layer is currently providing a way to get the owner id for a given level,
     // and parameters given an id and a given level
-    RTParameterProvider rtParameterProvider = (int ownerLevel, PolicyRestriction restriction) -> parameterProvider.provideParameters(leafResourceId, ownerLevel);
+    RTParameterProvider rtParameterProvider = (int ownerLevel, PolicyRestriction restriction) -> parameterProvider.provideParameters(ownerLevel);
 
     RTSubqueriesProvider rtSubqueriesProvider = (int ownerLevel, PolicyRestriction restriction) -> policySubqueryMap.get(restriction);
 
     return EnrichedRestrictionTree.buildFromRestrictionTree(restrictionTree, rtSubqueriesProvider, rtParameterProvider);
   }
 
+  // TODO get rid of single restriction variations?
   /**
    * There are two types of AccessPolicy query that we might want to handle, LIST: "Show me all records for which I can do RESTRICTION" and SINGLE: "Can I do RESTRICTION for resource X?"
    *

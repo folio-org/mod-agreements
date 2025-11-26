@@ -14,9 +14,8 @@ public interface ERTParameterProvider {
   /**
    * A method to take in an ownerLevel from a {@link com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager}
    * ownership chain and provide {@link PolicySubqueryParameters} for a given level of it.
-   * @param leafResourceId The lowest child identifier in the ownership chain
    * @param ownerLevel The level in the PolicyControlledManager ownership chain to get parameters for
    * @return The parameters to assign to some PolicySubquery SQL at a given level in an {@link IRestrictionTree}
    */
-  PolicySubqueryParameters provideParameters(String leafResourceId, int ownerLevel);
+  PolicySubqueryParameters provideParameters(int ownerLevel);
 }
