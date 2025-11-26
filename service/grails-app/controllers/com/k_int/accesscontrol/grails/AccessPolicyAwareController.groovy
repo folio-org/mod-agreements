@@ -7,6 +7,7 @@ import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.ERTParameterProvider
 import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.EnrichedRestrictionTree
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies
 import com.k_int.accesscontrol.core.sql.AccessControlSql
@@ -16,8 +17,6 @@ import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException
 import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.sql.AccessControlSqlType
-import com.k_int.accesscontrol.core.sql.OwnerIdProvider
-import com.k_int.accesscontrol.core.sql.PolicyParameterProvider
 import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters
 import com.k_int.accesscontrol.grails.criteria.AccessControlHibernateTypeMapper
 import com.k_int.accesscontrol.main.PolicyEngine
@@ -36,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import javax.annotation.PostConstruct
 import java.time.Duration
 
+// FIXME I'm not sure about the ERTParameterProvider :/
 /**
  * Extends com.k_int.okapi.OkapiTenantAwareController to incorporate access policy enforcement for resources.
  * This controller provides methods to check read, update, and delete permissions based on defined
@@ -44,7 +44,7 @@ import java.time.Duration
  * @param <T> The type of the resource entity managed by this controller.
  */
 @CurrentTenant
-class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
+class AccessPolicyAwareController<T> extends PolicyEngineController<T> implements ERTParameterProvider {
   /**
    * The Class object representing the resource entity type managed by this controller.
    */
@@ -64,7 +64,31 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    */
   AccessControlHibernateTypeMapper typeMapper // Initialised in PostConstruct
 
-  PolicyParameterProvider parameterProvider = (String resourceId, int ownerLevel) -> {
+/**
+ * Implementation of {@link ERTParameterProvider#provideParameters}.
+ * <p>
+ * Constructs the parameters necessary for a SQL subquery for a specific level
+ * in the resource's ownership chain. It bridges the generic Access Control SQL
+ * definitions with the specific Hibernate/Domain entity details.
+ * </p>
+ * <p>
+ * This method resolves:
+ * <ul>
+ * <li>The specific Resource ID for the given owner level (by traversing up from the leaf ID).</li>
+ * <li>The SQL alias to use (handling nested aliases for ownership chains or standard aliases for root objects).</li>
+ * <li>The entity class name and ID column name for the resource at that level.</li>
+ * </ul>
+ * </p>
+ *
+ * @param leafResourceId The unique identifier of the target resource (the "leaf" of the ownership tree).
+ * This is used as the starting point to resolve the ID of the owner at the specified level.
+ * @param ownerLevel     The index in the ownership hierarchy for which parameters are being generated.
+ * (e.g., 0 for the leaf resource itself, 1 for its direct parent, etc.).
+ * @return A {@link PolicySubqueryParameters} builder object containing the table names, columns, aliases,
+ * and values required to join the Access Policy table against the Resource table in a native SQL query.
+ */
+  PolicySubqueryParameters provideParameters(String leafResourceId, int ownerLevel) {
+    String resourceId = ownerIdProvider(leafResourceId, ownerLevel, 0) // FIXME do we need startLevel other than 0 for create?
     String resourceAlias = '{alias}'
     PolicyControlledMetadata ownerLevelMetadata = policyControlledManager.getOwnerLevelMetadata(ownerLevel)
     if (ownerLevelMetadata.getAliasName()) {
@@ -88,11 +112,16 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       .build()
   }
 
-  OwnerIdProvider ownerIdProvider = (
-    String leafId, // The "bottom" identifier, applied to level $startLevel
-    int ownerLevel, // The level in the ownershipChain we want to return the id of
-    int startLevel // The level at which the given resourceId applies. For CREATE we will want to start at level 1 with id Y, instead of level 0 with id X, since we don't have id in hand for create
-  ) -> {
+  /**
+   * Resolves the owner ID for a given leaf resource, owner level, and start level.
+   * Executes the SQL to fetch the owner ID from the database.
+   *
+   * @param leafId the ID of the leaf resource
+   * @param ownerLevel the level in the ownership chain
+   * @param startLevel the starting level for the lookup
+   * @return the owner ID as a String
+   */
+  String ownerIdProvider(String leafId, int ownerLevel, int startLevel) {
     // Hmm... for now shortcut out if we hand null in, since we don't actually need to resolve the id for READ LIST for example... not certain about this though
     if (leafId == null) {
       return null
@@ -187,9 +216,8 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       queryType,
       filters,
       policyControlledManager.getRestrictionTreeMap().get(restriction),
-      leafResourceId,
-      parameterProvider,
-      ownerIdProvider
+      leafResourceId, // Passing this in doesn't make an awful lot of sense tbh, we have it here, and then pass it down to pass back into the method living in this class.
+      this // FIXME not super happy with this pattern yet... but this is slightly less painful than the callback methods
     )
 
     // We now have the complex Map from above ready to build the params and combine the SQL

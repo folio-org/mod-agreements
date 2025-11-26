@@ -5,10 +5,7 @@ import com.k_int.accesscontrol.core.*;
 import com.k_int.accesscontrol.core.http.bodies.ClaimBody;
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink;
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
-import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.EnrichedRestrictionTree;
-import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.IRestrictionTree;
-import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.RTParameterProvider;
-import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.RTSubqueriesProvider;
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.*;
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineImplementor;
@@ -75,8 +72,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * @param filters A list of PoliciesFilter objects representing additional filters to apply
    * @param restrictionTree The restriction tree to be enriched
    * @param leafResourceId The ID of the leaf resource in the restriction tree
-   * @param parameterProvider A provider function to fetch policy parameters based on owner ID and level
-   * @param ownerIdProvider A provider function to fetch owner IDs based on resource ID and owner level
+   * @param parameterProvider A provider implementation to fetch policy parameters based on leafResourceId and owner level
    * @return An enriched restriction tree with populated subqueries and parameters
    * @throws PolicyEngineException if an error occurs during enrichment
    */
@@ -86,15 +82,14 @@ public class PolicyEngine implements PolicyEngineImplementor {
     List<PoliciesFilter> filters,
     IRestrictionTree restrictionTree,
     String leafResourceId,
-    PolicyParameterProvider parameterProvider,
-    OwnerIdProvider ownerIdProvider
+    ERTParameterProvider parameterProvider // TODO Is this pattern acceptable?
   ) throws PolicyEngineException {
+    // Fetch policySubqueries for ALL restrictions present in the tree
     Map<PolicyRestriction, List<PolicySubquery>> policySubqueryMap = getRestrictionMappedPolicySubqueries(headers, restrictionTree.getAncestralRestrictions(), queryType, filters);
 
-    RTParameterProvider rtParameterProvider = (int ownerLevel, PolicyRestriction restriction) -> {
-      String ownerId = ownerIdProvider.apply(leafResourceId, ownerLevel, 0);
-      return parameterProvider.apply(ownerId, ownerLevel);
-    };
+    // The framework layer is currently providing a way to get the owner id for a given level,
+    // and parameters given an id and a given level
+    RTParameterProvider rtParameterProvider = (int ownerLevel, PolicyRestriction restriction) -> parameterProvider.provideParameters(leafResourceId, ownerLevel);
 
     RTSubqueriesProvider rtSubqueriesProvider = (int ownerLevel, PolicyRestriction restriction) -> policySubqueryMap.get(restriction);
 
