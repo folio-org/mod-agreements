@@ -3,6 +3,7 @@ package org.olf.general.jobs
 import services.k_int.core.SystemDataService
 
 import static org.springframework.transaction.annotation.Propagation.MANDATORY
+import static org.springframework.transaction.annotation.Propagation.REQUIRED
 import static org.springframework.transaction.annotation.Propagation.REQUIRES_NEW
 
 import java.time.Instant
@@ -13,10 +14,11 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 import javax.annotation.PostConstruct
-
+import org.grails.datastore.gorm.GormEnhancer
 import org.hibernate.SessionFactory
 import org.olf.ComparisonService
 import org.olf.CoverageService
@@ -28,6 +30,9 @@ import org.olf.KbManagementService
 import org.olf.PackageSyncService
 import org.olf.general.jobs.PersistentJob.Type
 import org.springframework.jdbc.support.JdbcUtils
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionDefinition
+import org.springframework.transaction.support.DefaultTransactionDefinition
 
 import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.okapi.OkapiTenantResolver
@@ -39,7 +44,9 @@ import grails.events.annotation.Subscriber
 import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.multitenancy.Tenants
 import grails.gorm.multitenancy.Tenant
+import grails.gorm.transactions.GrailsTransactionTemplate
 import grails.gorm.transactions.Transactional
+import grails.util.Holders
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import services.k_int.core.AppFederationService
@@ -238,15 +245,14 @@ order by pj.dateCreated
   public void shutdown() {
     log.info("JobRunnerService::shutdown()");
   }
-  
-  
-	//@Transactional(propagation = MANDATORY)
-  protected Collection<String> getViableRunners() {
-    appFederationService.allHealthyInstanceIds()
+	
+	
+	@Tenant({ SystemDataService.DATASOURCE_SYSTEM })
+	@Transactional(propagation = REQUIRES_NEW)
+  public Collection<String> getViableRunners() {
+		appFederationService.allHealthyInstanceIds()
   }
 	
-  // Protected methods @Transactional gets ignored
-	//@Transactional(propagation = MANDATORY)
   protected void cleanupAfterDeadRunners() {
     Collection<String> viableRunnerIds = getViableRunners()
     
@@ -280,8 +286,8 @@ order by pj.dateCreated
   }
 	
 	private volatile boolean firstTick = true;
-  
-  @Subscriber('federation:tick:leader')
+	
+	@Subscriber('federation:tick:leader')
   void leaderTick(final String instanceId) {
 		
 		if (firstTick == true) {
@@ -290,19 +296,18 @@ order by pj.dateCreated
 			return
 		}
 		
-		WithPromises.task { 
-			Tenants.withId(SystemDataService.DATASOURCE_SYSTEM) {
-        GormUtils.withTransaction {
-          log.debug("JobRunnerService::leaderTick")
-          cleanupAfterDeadRunners()
-          findAndRunNextJob()
-          log.debug("JobRunnerService::leaderTick:done")
-        }
-      }
-		}
+		// Shift to background to free up scheduler thread.
+		WithPromises.task ({
+			log.debug("JobRunnerService::leaderTick")
+			cleanupAfterDeadRunners()
+			findAndRunNextJob()
+			log.debug("JobRunnerService::leaderTick:done")
+		})
+			.onError { Throwable err -> throw err }
   }
 
-  @Subscriber('federation:tick:drone')
+	
+	@Subscriber('federation:tick:drone')
   void droneTick(final String instanceId) {
 		
 		if (firstTick == true) {
@@ -311,15 +316,12 @@ order by pj.dateCreated
 			return
 		}
 		
-		WithPromises.task {
-			Tenants.withId(SystemDataService.DATASOURCE_SYSTEM) {
-        GormUtils.withTransaction {
-          log.debug("JobRunnerService::droneTick")
-          findAndRunNextJob()
-          log.debug("JobRunnerService::droneTick:done")
-        }
-      }
-		}
+		WithPromises.task ({
+			log.debug("JobRunnerService::droneTick")
+	    findAndRunNextJob()
+	    log.debug("JobRunnerService::droneTick:done")
+		})
+			.onError { Throwable err -> throw err }
   }
   
   FolioLockService folioLockService
@@ -349,9 +351,9 @@ order by pj.dateCreated
 		
 	}
 	
-  // @Transactional on protected methods get ignored
-	//@Transactional(propagation = MANDATORY)
-  protected synchronized void findAndRunNextJob() {
+	private final AtomicBoolean instanceJobCheck = new AtomicBoolean(false);
+	
+  private void findAndRunNextJob() {
     log.debug("JobRunnerService::findAndRunNextJob")
     
 		final int jobCapacity = CONCURRENT_JOBS_GLOBAL - executorSvc.getActiveCount()
@@ -363,7 +365,7 @@ order by pj.dateCreated
 			return
 		}
     
-    folioLockService.federatedLockAndDo("agreements:job:queue") {
+    folioLockService.federatedLockAndDoWithTimeoutOrSkip("agreements:job:queue", 5000) {
 
       if (shouldCheckForNewJobs()) {
         log.debug "We have capacity to run jobs / tasks lets check the queue."
@@ -499,13 +501,6 @@ order by pj.dateCreated
     log.debug("exiting JobRunnerService::findAndRunNextJob")
   }
   
-/*   @Transactional(propagation=REQUIRES_NEW, readOnly=true)
-  private Runnable getJobWork(final String tId, final String jobId) {
-    Tenants.withId(tId) { PersistentJob.read( jobId )?.getWork() }
-  } */
-  
-  // @Transactional ignored on private methods
-  //@Transactional(propagation=REQUIRES_NEW, readOnly=true)
   private boolean executeJob ( final Type type, final String tId, final String jobId, final Instant key) {
     boolean added = false
     
@@ -584,23 +579,4 @@ order by pj.dateCreated
 		// Default.
 		return executorSvc
 	}
-  
-//  @Subscriber('jobs:job_created')
-//  void handleNewJob(final String jobId, final String tenantId) {
-//    // Attempt to append to queue.
-//    log.info "onJobCreated(${jobId}, ${tenantId})"
-//    enqueueJob(jobId, tenantId)
-//  }
-  
-//  @Subscriber('okapi:tenant_enabled')
-//  public void onTenantEnabled(final String tenantId) {
-//    log.debug "New tenant (re)registered"
-//    
-//    // initialize the tenants jobs if these were in the deferred list
-//    final String tenantSchema = OkapiTenantResolver.getTenantSchemaName(tenantId)
-//    if (deferredTenants.contains(tenantSchema)) {
-//      // load...
-//      enqueueJobMap (initializeTenantJobs(tenantSchema))
-//    }
-//  }
 }
