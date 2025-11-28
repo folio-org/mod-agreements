@@ -1,5 +1,10 @@
 ## 7.3.0 IN PROGRESS
 
+## 7.2.3 2025-11-28
+  * ERM-3857 Upgrade minio version to 8.6.0 or upwards for mod-agreements and mod-licenses
+  * ERM-3851 Long standing connection issues bug
+  * ERM-3292 Stack traces should not be included in API responses
+
 ## 7.2.2 2025-04-15
   * ERM-3660 Upgrade undertow from 2.2.28.Final to 2.2.37.Final fixing vulns
   * ERM-3659 minio 8.5.17, kafka-clients 3.7.2, jackson 2.18.3 fixing vulns
