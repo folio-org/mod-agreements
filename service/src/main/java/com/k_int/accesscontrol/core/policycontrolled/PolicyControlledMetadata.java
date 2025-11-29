@@ -18,6 +18,13 @@ import javax.annotation.Nullable;
 @SuppressWarnings("javadoc")
 public class PolicyControlledMetadata {
   /**
+   * The table name of the resource entity (e.g., "subscription_agreement"). Can be used by the AccessControl framework layer to perform SQL queries
+   * @param resourceTableName The resource table name
+   * @return The resource table name
+   */
+  final String resourceTableName;
+
+  /**
    * The fully qualified class name of the resource entity (e.g., "org.olf.erm.SubscriptionAgreement").
    * @param resourceClassName The resource class name
    * @return The resource class name
@@ -62,14 +69,14 @@ public class PolicyControlledMetadata {
   final Class<?> ownerClass;
   /**
    * Tracks how "far up" the hierarchy this {@code PolicyControlledMetadata} instance is. <br/>
-   * -1: Represents the "base class" or leaf resource. <br/>
-   * 0: Represents the direct owner of the base class. <br/>
-   * 1: Represents the owner of the owner of the base class, and so on.
+   * 0: Represents the "base class" or leaf resource. <br/>
+   * 1: Represents the direct owner of the base class. <br/>
+   * 2: Represents the owner of the owner of the base class, and so on.
    * @param ownerLevel the level in the heirarchy for this policy controlled object
    * @return the level in the heirarchy for this policy controlled object
    */
   @Builder.Default
-  final int ownerLevel = -1;
+  final int ownerLevel = 0;
 
   // Owner alias fields
   /**
@@ -100,4 +107,16 @@ public class PolicyControlledMetadata {
    */
   @Nullable
   final String aliasOwnerField;
+
+  /**
+   * The map of policy restrictions and their inheritance/mapping for this resource.
+   * This defines how each {@link com.k_int.accesscontrol.core.PolicyRestriction} is controlled,
+   * either by mapping to the parent or by specifying standalone policies for this resource.
+   * May be {@code null} if no mappings are defined at this level, which will assume that any restrictions
+   * are directly controlled by that restriction on the parent
+   *
+   * @param restrictionMap the restriction map for this resource
+   * @return the restriction map for this resource
+   */
+  final PolicyControlledMetadataRestrictionMap restrictionMap;
 }

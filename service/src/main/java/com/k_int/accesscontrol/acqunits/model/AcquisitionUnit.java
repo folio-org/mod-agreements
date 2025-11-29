@@ -1,7 +1,7 @@
 package com.k_int.accesscontrol.acqunits.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.AllArgsConstructor;
+import com.k_int.accesscontrol.acqunits.AcquisitionUnitRestriction;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -85,4 +85,21 @@ public class AcquisitionUnit {
     * @return true if updating is protected, false otherwise
    */
   boolean protectUpdate;
+
+  /**
+   * Determines if the acquisition unit provides protection for the specified restriction type.
+   *
+   * @param restriction the type of acquisition unit restriction to check
+   * @return true if the restriction is protected, false otherwise
+   * @throws IllegalArgumentException if the restriction type is unknown
+   */
+  public boolean getProtectionFromRestriction(AcquisitionUnitRestriction restriction) {
+    return switch (restriction) {
+      case CREATE -> protectCreate;
+      case DELETE -> protectDelete;
+      case READ -> protectRead;
+      case UPDATE -> protectUpdate;
+      case NONE -> true;
+    };
+  }
 }
