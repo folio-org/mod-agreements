@@ -549,13 +549,11 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
-    // FIXME We need to allow this if this leaf resource has standalone ANYTHING.
-    // HOWEVER we MUST only allow the editing of those AccessPolicyEntity objects for the leaf itself,
-    // NOT anywhere else in the ownership chain
+    if (!policyControlledManager.hasStandalonePolicies() && policyControlledManager.hasOwners()) {
+      // If there are owners and the resource does NOT support standalone policies then don't allow claiming
+      String message = "Claiming is not supported on resource ${resourceClass.toString()}"
 
-    if (policyControlledManager.hasOwners()) {
-      // If there are owners, then don't allow claiming (for now)
-      respond ([ message: 'Claiming is not supported on resources PolicyControlled via an owner' ], status: 400 )
+      respond ([ message: message ], status: 405 )
       return
     }
 
@@ -567,11 +565,9 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
     // At this point, we know that the user has permission to apply policies
 
-    // Might not need to do this now, since we're cancelling early if there are owners
-    // FIXME check whether we still want this from the root
-    String resourceId = getRootOwnerId(params.id)
+    // Get the identifier from the request params
+    String resourceId = params.id
 
-    String resourceClass = policyControlledManager.getRootPolicyControlledMetadata().getResourceClassName()
     boolean success = true
     boolean changesMade = true
     String failureMessage = ''
@@ -579,13 +575,13 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     AccessPolicyEntity.withSession { sess ->
       AccessPolicyEntity.withTransaction { transactionStatus ->
         // Fetch the original policies for this resource
-        List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
+        List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass.toString())
 
         // Set up the evaluated claim policies object
         EvaluatedClaimPolicies evaluatedClaimPolicies
         try {
           // Attempt to evaluate the claimBody against the existing policies for this resource, returning the policies to add/remove/update
-          evaluatedClaimPolicies = policyEngine.evaluateClaimPolicies(claimBody, accessPoliciesForResource, resourceId, resourceClass)
+          evaluatedClaimPolicies = policyEngine.evaluateClaimPolicies(claimBody, accessPoliciesForResource, resourceId, resourceClass.toString())
         } catch (PolicyEngineException pee) {
           // We can catch the PolicyEngineException here and return a 400 with the message -- we're expecting it in cases where the changed policies are invalid for some reason
           if ([
@@ -665,7 +661,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
               type: policy.type,
               description: policy.description,
               resourceId: resourceId,
-              resourceClass: resourceClass
+              resourceClass: resourceClass.toString()
             ).save(flush: true, failOnError: true)
           }
         } catch(Exception e) {

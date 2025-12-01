@@ -1,6 +1,7 @@
 package com.k_int.accesscontrol.core.policycontrolled;
 
 import com.k_int.accesscontrol.core.PolicyRestriction;
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.PolicyControlledRestrictionTreeMap;
 import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.SkeletonRestrictionTree;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.sql.AccessControlSql;
@@ -339,6 +340,29 @@ public class PolicyControlledManager {
    */
   public boolean hasOwners() {
     return ownershipChain.size() > 1;
+  }
+
+  /**
+   * Checks if any restriction at the specified owner level declares standalone policies.
+   *
+   * @param ownerLevel the zero-based index of the owner level to check
+   * @return {@code true} if any restriction at this level has standalone policies, otherwise {@code false}
+   */
+  public boolean hasStandalonePolicies(int ownerLevel) {
+    return getOwnerLevelMetadata(ownerLevel)
+      .getRestrictionMap()
+      .entrySet()
+      .stream()
+      .anyMatch(entry -> entry.getValue().hasStandalonePolicies);
+  }
+
+  /**
+   * Checks if any restriction at the leaf level (level 0) declares standalone policies.
+   *
+   * @return {@code true} if any restriction at the leaf level has standalone policies, otherwise {@code false}
+   */
+  public boolean hasStandalonePolicies() {
+    return hasStandalonePolicies(0);
   }
 
   /**
