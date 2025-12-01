@@ -1,8 +1,6 @@
-package com.k_int.accesscontrol.core.policycontrolled;
+package com.k_int.accesscontrol.core.policycontrolled.restrictiontree;
 
 import com.k_int.accesscontrol.core.PolicyRestriction;
-import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.EnrichedRestrictionTree;
-import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.SkeletonRestrictionTree;
 
 import java.util.HashMap;
 

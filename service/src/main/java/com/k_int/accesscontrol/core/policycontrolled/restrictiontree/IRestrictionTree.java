@@ -5,7 +5,10 @@ import com.k_int.accesscontrol.core.PolicyRestriction;
 import java.util.Set;
 
 /**
- * Represents a tree structure for policy restrictions, allowing traversal of parent-child relationships.
+ * This interface represents the path up a parent-child ownership tree for a given restriction.
+ * Restriction A on the bottom node might map to Restriction B on the parent node, and so on.
+ * Implementations of this are used generally with {@link com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager}
+ * to represent
  */
 public interface IRestrictionTree {
   /**
