@@ -1,6 +1,8 @@
 package com.k_int.accesscontrol.acqunits;
 
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitPolicy;
+import com.k_int.accesscontrol.acqunits.subqueries.AcquisitionUnitPolicyEntitySubquery;
+import com.k_int.accesscontrol.acqunits.subqueries.AcquisitionUnitPolicySubquery;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionsUnitSubset;
 import com.k_int.accesscontrol.core.*;
@@ -320,5 +322,28 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
           .build();
       })
       .toList();
+  }
+
+  /**
+   * Returns the list of {@link PolicySubquery} implementations that should be used
+   * to fetch {@link DomainAccessPolicy} rows whose linkage is
+   * determined by acquisition-unit based policies.
+   *
+   * <p>Each subquery in the returned list represents one policy source or policy
+   * type that contributes DomainAccessPolicy rows. For acquisition units, this
+   * currently consists of a single {@link AcquisitionUnitPolicyEntitySubquery}.
+   *
+   * <p>The framework layer is expected to apply these subqueries at each ownership
+   * traversal level when constructing queries that aggregate DomainAccessPolicy
+   * records for a resource.
+   *
+   * @param headers the request headers, allowing future subquery implementations
+   *                to perform authenticated remote lookups if required
+   * @return a list containing the {@link AcquisitionUnitPolicyEntitySubquery}
+   */
+  public List<PolicySubquery> getPolicyEntitySubqueries(String[] headers) {
+    List<PolicySubquery> subqueryList = new ArrayList<>();
+    subqueryList.add(new AcquisitionUnitPolicyEntitySubquery());
+    return subqueryList;
   }
 }

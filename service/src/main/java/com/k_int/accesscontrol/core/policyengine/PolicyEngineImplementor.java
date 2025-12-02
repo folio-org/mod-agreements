@@ -67,4 +67,20 @@ public interface PolicyEngineImplementor {
    * @return A list of AccessPolicy objects with all policy information provided
    */
   List<GroupedExternalPolicies> enrichPolicies(String[] headers, List<GroupedExternalPolicies> policies);
+
+  /**
+   * Generates a list of {@link PolicySubquery} objects representing subqueries
+   * required to filter {@link com.k_int.accesscontrol.grails.AccessPolicyEntity} objects for a given {@link com.k_int.accesscontrol.core.sql.PolicySubqueryParameters}
+   *  <p>
+   * This method is typically used to construct SQL subqueries for access control entity resources.
+   * The resourceAlias parameter is expected to control the named alias for the AccessControlEntity table,
+   * and the expectation is that each subquery will be ORed together in a WHERE clause.
+   * The subqeuries should focus on whether or not an AccessPolicyEntity object applies to a given resource given the resourceId in parameters
+   * If resourceId is null then it is expected that each implementation should provide ALL AccessPolicyEntities.
+   * </p>
+   *
+   * @param headers the request context headers, used for authentication and context propagation
+   * @return a list of {@link PolicySubquery} objects for use on a DB query for AccessPolicyEntity objects
+   */
+  List<PolicySubquery> getPolicyEntitySubqueries(String[] headers);
 }

@@ -5,6 +5,7 @@ import com.k_int.accesscontrol.core.*;
 import com.k_int.accesscontrol.core.http.bodies.ClaimBody;
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink;
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager;
 import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.*;
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
@@ -422,5 +423,42 @@ public class PolicyEngine implements PolicyEngineImplementor {
       .policiesToRemove(accessPoliciesToRemove)
       .policiesToUpdate(accessPoliciesToUpdate)
       .build();
+  }
+
+
+  /**
+   * Returns the collection of {@link PolicySubquery} implementations that the
+   * {@link PolicyEngine} should use when resolving {@link DomainAccessPolicy}
+   * rows for a resource.
+   *
+   * <p>Each {@link PolicySubquery} in the returned list is responsible for
+   * generating an SQL fragment that selects policy-entity records associated with
+   * a resource through a particular policy mechanism or linkage strategy.
+   * </p>
+   *
+   * <p>The method is structured to support future expansion; additional policy
+   * mechanisms (e.g. KI_GRANT, departmental policies, hierarchical group
+   * policies) can be incorporated simply by adding further {@link PolicySubquery}
+   * instances to the returned list.
+   * </p>
+   *
+   * <p>The {@code headers} argument can be used by subquery implementations that
+   * require authenticated outbound requests (e.g. to FOLIO services or other
+   * external policy sources), although the acquisition-unit implementation does
+   * not currently rely on them.
+   * </p>
+   *
+   * @param headers request headers, provided for subqueries that may require
+   *                authenticated remote lookups
+   * @return a list of {@link PolicySubquery} implementations defining how
+   *         DomainAccessPolicy rows are selected for this policy engine
+   */
+  public List<PolicySubquery> getPolicyEntitySubqueries(String[] headers) {
+    List<PolicySubquery> policyEntitySubqueries = new ArrayList<>();
+    if (acquisitionUnitPolicyEngine != null) {
+      policyEntitySubqueries.addAll(acquisitionUnitPolicyEngine.getPolicyEntitySubqueries(headers));
+    }
+
+    return policyEntitySubqueries;
   }
 }

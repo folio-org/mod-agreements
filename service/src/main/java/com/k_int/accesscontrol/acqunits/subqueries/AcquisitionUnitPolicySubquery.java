@@ -1,4 +1,4 @@
-package com.k_int.accesscontrol.acqunits;
+package com.k_int.accesscontrol.acqunits.subqueries;
 
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.core.*;
@@ -24,18 +24,7 @@ import java.util.regex.Pattern;
 @Builder
 @SuppressWarnings("javadoc")
 public class AcquisitionUnitPolicySubquery implements PolicySubquery {
-  // Mitigate against SQL injection by ensuring only safe characters are used for params (bind OR identifiers)
-  // This ALSO allows for hibernate {alias} style parameters.
-  private static final Pattern SAFE_SQL =
-    Pattern.compile("^(\\?|[A-Za-z_][A-Za-z0-9_$.]*|\\{[A-Za-z_][A-Za-z0-9_$.]*}(?:\\.[A-Za-z_][A-Za-z0-9_$.]*)?)$");
 
-  private static String sqlSafe(String id, String label) {
-    if (id == null || !SAFE_SQL.matcher(id).matches()) {
-      throw new PolicyEngineException("Unacceptable SQL injected for " + label + ": " + id,
-        PolicyEngineException.INVALID_QUERY_PARAMETERS);
-    }
-    return id;
-  }
 
   /**
    * The user acquisition units that this subquery will use to determine access.
@@ -187,7 +176,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
     }
 
     // Set up a label for the clause that might help debugging in system
-    String clauseLabel = "ACQUISITION UNIT RESTRICTION FOR " + restriction.toString() + " ON " + sqlSafe(parameters.getResourceClass(), "resource class");
+    String clauseLabel = "ACQUISITION UNIT RESTRICTION FOR " + restriction.toString() + " ON " + PolicySubquery.sqlSafe(parameters.getResourceClass(), "resource class");
 
     // Spin up a list of all SQL parameters;
     List<String> allParameters = new ArrayList<>();
@@ -235,12 +224,12 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
 
     return AccessControlSql.builder()
       .sqlString(SQL_TEMPLATE
-        .replaceAll("#ACCESS_POLICY_TABLE_NAME", sqlSafe(parameters.getAccessPolicyTableName(), "access policy table name"))
-        .replaceAll("#ACCESS_POLICY_TYPE_COLUMN_NAME", sqlSafe(parameters.getAccessPolicyTypeColumnName(), "access policy type column name"))
-        .replaceAll("#ACCESS_POLICY_ID_COLUMN_NAME", sqlSafe(parameters.getAccessPolicyIdColumnName(), "access policy ID column name"))
-        .replaceAll("#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME", sqlSafe(parameters.getAccessPolicyResourceIdColumnName(), "access policy resource ID column name"))
-        .replaceAll("#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME", sqlSafe(parameters.getAccessPolicyResourceClassColumnName(), "access policy resource class column name"))
-        .replaceAll("#RESOURCE_ID_MATCH", sqlSafe(resourceIdMatch, "resource ID match"))
+        .replaceAll("#ACCESS_POLICY_TABLE_NAME", PolicySubquery.sqlSafe(parameters.getAccessPolicyTableName(), "access policy table name"))
+        .replaceAll("#ACCESS_POLICY_TYPE_COLUMN_NAME", PolicySubquery.sqlSafe(parameters.getAccessPolicyTypeColumnName(), "access policy type column name"))
+        .replaceAll("#ACCESS_POLICY_ID_COLUMN_NAME", PolicySubquery.sqlSafe(parameters.getAccessPolicyIdColumnName(), "access policy ID column name"))
+        .replaceAll("#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME", PolicySubquery.sqlSafe(parameters.getAccessPolicyResourceIdColumnName(), "access policy resource ID column name"))
+        .replaceAll("#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME", PolicySubquery.sqlSafe(parameters.getAccessPolicyResourceClassColumnName(), "access policy resource class column name"))
+        .replaceAll("#RESOURCE_ID_MATCH", PolicySubquery.sqlSafe(resourceIdMatch, "resource ID match"))
         .replaceAll("#RESOURCE_CLASS", "?") // Map resource class to a parameter
         // Fill out "?" placeholders, one per id
         .replaceAll("#NON_MEMBER_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(nonMemberRestrictiveUnits.size(), "?")))

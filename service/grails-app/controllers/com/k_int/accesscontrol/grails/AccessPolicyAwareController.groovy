@@ -3,20 +3,20 @@ package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.core.GroupedExternalPolicies
 import com.k_int.accesscontrol.core.DomainAccessPolicy
-import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
-import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.ERTParameterProvider
+import com.k_int.accesscontrol.core.http.responses.OwnerPolicyLinkList
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata
 import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.EnrichedRestrictionTree
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager
-import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException
 import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.sql.AccessControlSqlType
+import com.k_int.accesscontrol.core.sql.PolicySubquery
 import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters
 import com.k_int.accesscontrol.grails.criteria.AccessControlHibernateTypeMapper
 import com.k_int.accesscontrol.main.PolicyEngine
@@ -153,9 +153,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
     // We now have the complex Map from above ready to build the params and combine the SQL
     return restrictionTree.getSql()
-
-    //log.trace("AccessPolicyAwareController::getPolicySql PolicySubqueryParameters configured: ${params}")
-    //return policySubqueries.collect { psq -> psq.getSql(params)}
   }
 
 
@@ -661,7 +658,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
               type: policy.type,
               description: policy.description,
               resourceId: resourceId,
-              resourceClass: resourceClass.toString()
+              resourceClass: resourceClass.getName()
             ).save(flush: true, failOnError: true)
           }
         } catch(Exception e) {
@@ -691,44 +688,102 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     respond ([ message: "Access policies updated for this resource" ], status: 201 )
   }
 
-  // FIXME this will no longer be ALL relevant policies :'(
   @Transactional
   def policies() {
-    String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
-    AccessPolicyEntity.withSession {
-      Set<AccessPolicyType> enabledEngines = policyEngine.getEnabledEngineSet()
+    AccessPolicyEntity.withSession { Session sess ->
+      String DOMAIN_ACCESS_POLICY_TABLE_ALIAS = "domain_access_policies"
+      String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 
-      // TODO walk up the owner tree, and every level where there's possibly policies, request those policies here.
+      List<PolicySubquery> domainAccessPolicySqlList = policyEngine.getPolicyEntitySubqueries(grailsHeaders)
 
-      // Fetch the ENABLED access policy entities for the resource at hand
-      List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.executeQuery(
-        """
-          SELECT ape FROM AccessPolicyEntity ape
-          WHERE
-            resourceId = :resId AND
-            type IN :enabledEngines
-        """.toString(),
-        [
-          resId: getRootOwnerId(params.id),
-          enabledEngines: enabledEngines
-        ]
+      // Getting owner ids with a parameter provider
+      GrailsERTParameterProvider parameterProvider = new GrailsERTParameterProvider(
+        typeMapper,
+        policyControlledManager,
+        params.id,
+        0
       )
 
-      List<PolicyLink> policyLinks = policyEngine.getPolicyLinksFromAccessPolicyList(grailsHeaders, accessPoliciesForResource)
+
+      List<OwnerPolicyLinkList> ownerPolicyLinks = new ArrayList<>()
+
+      // We're going to build this map.
+      Map<String, List<AccessPolicyEntity>> policyEntityMap = new HashMap<>();
+      // For each owner level, get all relevant policies.
+      policyControlledManager.ownershipChain.stream().forEach { PolicyControlledMetadata metadata -> {
+        String ownerId = parameterProvider.ownerIdProvider(metadata.ownerLevel)
+
+        OwnerPolicyLinkList ownerPolicyLinkList = OwnerPolicyLinkList.builder()
+          .resourceClass(metadata.getResourceClassName())
+          .ownerLevel(metadata.getOwnerLevel())
+          .ownerId(ownerId)
+          .build()
+
+
+        // Check if we have any policies at this level
+        if (policyControlledManager.hasStandalonePolicies(metadata.ownerLevel)) {
+          ownerPolicyLinkList.hasStandalonePolicies(true)
+          // TODO can I do this as a subquery? -- Difficult because we parameterise it...
+          //  For now just fetch for each level.
+
+          PolicySubqueryParameters params = PolicySubqueryParameters.builder()
+            .accessPolicyTableName(AccessPolicyEntity.TABLE_NAME)
+            .accessPolicyTypeColumnName(AccessPolicyEntity.TYPE_COLUMN)
+            .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
+            .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
+            .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
+            .resourceAlias(DOMAIN_ACCESS_POLICY_TABLE_ALIAS)
+            .resourceId(ownerId)
+            .resourceClass(metadata.getResourceClassName())
+            .build()
+
+          List<AccessControlSql> accessControlSqlList = domainAccessPolicySqlList
+            .stream()
+            .map(sql -> {
+              sql.getSql(params)
+            })
+            .toList()
+
+
+          // TODO we do this pattern twice with only slightly different queries, can we unify?
+          // We're going to do this with hibernate criteria builder to match doTheLookup logic
+          String bigSql = accessControlSqlList.collect {"(${it.getSqlString()})" }.join(" OR ") // JOIN all sql subqueries together here. We want ALL relevant entities, so we OR
+          NativeQuery accessPolicyEntityQuery = sess.createNativeQuery("SELECT * FROM ${AccessPolicyEntity.TABLE_NAME} AS ${DOMAIN_ACCESS_POLICY_TABLE_ALIAS} WHERE ${bigSql}".toString())
+          accessPolicyEntityQuery.addEntity(AccessPolicyEntity.class) // Ensure we get back AccessPolicyEntity objects
+
+
+          // Now bind all parameters for all sql fragments. We ASSUME they're all using ? for bind params.
+          // Track where we're up to with hibernateParamIndex -- hibernate is 1-indexed
+          int hibernateParamIndex = 1
+          accessControlSqlList.each { AccessControlSql entry ->
+            entry.getParameters().eachWithIndex { Object param, int paramIndex  ->
+              accessPolicyEntityQuery.setParameter(hibernateParamIndex, param, (Type) typeMapper.getHibernateType((AccessControlSqlType) entry.getTypes()[paramIndex]))
+              hibernateParamIndex++ // Iterate the outer index
+            }
+          }
+
+          List<AccessPolicyEntity> entityList = accessPolicyEntityQuery.list()
+
+          policyEntityMap.put(ownerId, entityList)
+        }
+
+        ownerPolicyLinks.add(ownerPolicyLinkList)
+      }}
+
+      // We have a Map from id -> List<AccessPolicyEntities>. We want to enrich these into PolicyLinks to render out,
+      // but don't want to make multiple calls to the policyEngine. So instead we'll flatten to a single list, then map
+      // back onto the proper shape after enrichment
+      Set<AccessPolicyEntity> flattenedAccessPolicyEntities = policyEntityMap.values().flatten().toSet()
+      List<PolicyLink> enrichedPolicyLinks = policyEngine.getPolicyLinksFromAccessPolicyList(grailsHeaders, flattenedAccessPolicyEntities)
+
+
+      ownerPolicyLinks.forEach { ownerPolicyLinkList -> {
+        List<PolicyLink> relevantPolicyLinks = policyEntityMap.get(ownerPolicyLinkList.getOwnerId()).collect(ape -> enrichedPolicyLinks.find(epl -> epl.getId() === ape.getId()))
+        ownerPolicyLinkList.setPolicies(relevantPolicyLinks)
+      }}
 
       // Grails gets confused with the Policy extensions, so instead lets render it out with Jackson
-      render text: Json.toJson(policyLinks), contentType: 'application/json'
+      render text: Json.toJson(ownerPolicyLinks), contentType: 'application/json'
     }
-  }
-
-  // FIXME do we still need this once everything shakes out?
-  String getRootOwnerId(String leafId) {
-    GrailsERTParameterProvider parameterProvider = new GrailsERTParameterProvider(
-      typeMapper,
-      policyControlledManager,
-      leafId,
-      0
-    )
-    return parameterProvider.ownerIdProvider(policyControlledManager.getOwnershipChainSize() - 1)
   }
 }

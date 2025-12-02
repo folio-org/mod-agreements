@@ -1,6 +1,7 @@
 package com.k_int.accesscontrol.acqunits;
 
 import com.k_int.accesscontrol.acqunits.model.AcquisitionUnit;
+import com.k_int.accesscontrol.acqunits.subqueries.AcquisitionUnitPolicySubquery;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.core.AccessPolicyQueryType;
 import com.k_int.accesscontrol.core.PolicyRestriction;
