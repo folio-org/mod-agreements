@@ -694,7 +694,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       String DOMAIN_ACCESS_POLICY_TABLE_ALIAS = "domain_access_policies"
       String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 
-      List<PolicySubquery> domainAccessPolicySqlList = policyEngine.getPolicyEntitySubqueries(grailsHeaders)
+      List<PolicySubquery> apeSubqueryList = policyEngine.getPolicyEntitySubqueries(grailsHeaders)
 
       // Getting owner ids with a parameter provider
       GrailsERTParameterProvider parameterProvider = new GrailsERTParameterProvider(
@@ -704,11 +704,10 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         0
       )
 
-
       List<OwnerPolicyLinkList> ownerPolicyLinks = new ArrayList<>()
 
       // We're going to build this map.
-      Map<String, List<AccessPolicyEntity>> policyEntityMap = new HashMap<>();
+      Map<String, List<AccessPolicyEntity>> policyEntityMap = new HashMap<>()
       // For each owner level, get all relevant policies.
       policyControlledManager.ownershipChain.stream().forEach { PolicyControlledMetadata metadata -> {
         String ownerId = parameterProvider.ownerIdProvider(metadata.ownerLevel)
@@ -719,38 +718,20 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           .ownerId(ownerId)
           .build()
 
-
         // Check if we have any policies at this level
         if (policyControlledManager.hasStandalonePolicies(metadata.ownerLevel)) {
           ownerPolicyLinkList.hasStandalonePolicies(true)
-          // TODO can I do this as a subquery? -- Difficult because we parameterise it...
-          //  For now just fetch for each level.
+          PolicySubqueryParameters params = parameterProvider.provideParameters(metadata.ownerLevel)
+          params.setResourceAlias(DOMAIN_ACCESS_POLICY_TABLE_ALIAS) // Override the params for the resource alias.
 
-          PolicySubqueryParameters params = PolicySubqueryParameters.builder()
-            .accessPolicyTableName(AccessPolicyEntity.TABLE_NAME)
-            .accessPolicyTypeColumnName(AccessPolicyEntity.TYPE_COLUMN)
-            .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
-            .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
-            .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
-            .resourceAlias(DOMAIN_ACCESS_POLICY_TABLE_ALIAS)
-            .resourceId(ownerId)
-            .resourceClass(metadata.getResourceClassName())
-            .build()
-
-          List<AccessControlSql> accessControlSqlList = domainAccessPolicySqlList
-            .stream()
-            .map(sql -> {
-              sql.getSql(params)
-            })
-            .toList()
-
+          // Set up list of AccessControlSql
+          List<AccessControlSql> accessControlSqlList = apeSubqueryList.collect {it.getSql(params)}
 
           // TODO we do this pattern twice with only slightly different queries, can we unify?
           // We're going to do this with hibernate criteria builder to match doTheLookup logic
           String bigSql = accessControlSqlList.collect {"(${it.getSqlString()})" }.join(" OR ") // JOIN all sql subqueries together here. We want ALL relevant entities, so we OR
           NativeQuery accessPolicyEntityQuery = sess.createNativeQuery("SELECT * FROM ${AccessPolicyEntity.TABLE_NAME} AS ${DOMAIN_ACCESS_POLICY_TABLE_ALIAS} WHERE ${bigSql}".toString())
           accessPolicyEntityQuery.addEntity(AccessPolicyEntity.class) // Ensure we get back AccessPolicyEntity objects
-
 
           // Now bind all parameters for all sql fragments. We ASSUME they're all using ? for bind params.
           // Track where we're up to with hibernateParamIndex -- hibernate is 1-indexed

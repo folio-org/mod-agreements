@@ -5,7 +5,6 @@ import com.k_int.accesscontrol.core.*;
 import com.k_int.accesscontrol.core.http.bodies.ClaimBody;
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink;
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
-import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager;
 import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.*;
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
