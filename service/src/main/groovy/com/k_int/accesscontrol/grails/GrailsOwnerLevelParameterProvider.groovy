@@ -2,7 +2,7 @@ package com.k_int.accesscontrol.grails
 
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata
-import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.ERTParameterProvider
+import com.k_int.accesscontrol.core.sql.OwnerLevelParameterProvider
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.sql.AccessControlSqlType
 import com.k_int.accesscontrol.core.sql.PolicySubqueryParameters
@@ -12,23 +12,34 @@ import org.hibernate.query.NativeQuery
 import org.hibernate.type.Type
 
 /**
- * A grails implementation of the {@link ERTParameterProvider} from the AccessControl library.
+ * A grails implementation of the {@link OwnerLevelParameterProvider} from the AccessControl library.
  * This allows a grails controller to construct an object with all the context necessary to then act as a provider
  * within the PolicyEngine for enriching a RestrictionTree.
  */
-class GrailsERTParameterProvider implements ERTParameterProvider {
-
-  GrailsERTParameterProvider(
+class GrailsOwnerLevelParameterProvider implements OwnerLevelParameterProvider {
+  GrailsOwnerLevelParameterProvider(
     AccessControlHibernateTypeMapper typeMapper,
     PolicyControlledManager policyControlledManager,
     String resourceId,
-    int startLevel
+    int startLevel,
+    String aliasOverride
   ) {
     this.typeMapper = typeMapper
     this.policyControlledManager = policyControlledManager
     this.resourceId = resourceId
     this.startLevel = startLevel
+    this.aliasOverride = aliasOverride
   }
+
+  GrailsOwnerLevelParameterProvider(
+    AccessControlHibernateTypeMapper typeMapper,
+    PolicyControlledManager policyControlledManager,
+    String resourceId,
+    int startLevel
+  ) {
+    this(typeMapper, policyControlledManager, resourceId, startLevel, null)
+  }
+
   /**
    * The {@link PolicyControlledManager} containing the ownership chain to calculate parameters on for a given ownerLevel
    * @param policyControlledManager
@@ -41,12 +52,14 @@ class GrailsERTParameterProvider implements ERTParameterProvider {
   String resourceId
   int startLevel
 
-  AccessControlHibernateTypeMapper typeMapper // FIXME THIS IS DEFINITELY NOT A GOOD PATTERN
+  AccessControlHibernateTypeMapper typeMapper
 
-  // FIXME when resourceId is wibble and startLevel is 1 then we have OWNER in hand, and so need to
+  // TODO It feels a bit like we're gluing stuff in here to avoid doing it "properly", but we can rethink this later
+  String aliasOverride // A way to override the resource alias below. Used for fetching AccessPolicyEntity objects from the DB
+
   String ownerIdProvider(int ownerLevel) {
     // Hmm... for now shortcut out if we hand null in, since we don't actually need to resolve the id for READ LIST for example... not certain about this though
-    if (resourceId == null || ownerLevel < startLevel) { // FIXME I'm not sure about the ownerLevel < startLevel part here -- necessary to avoid issues in getOwnerIdSql
+    if (resourceId == null || ownerLevel < startLevel) { // I'm not sure about the ownerLevel < startLevel part here -- necessary to avoid issues in getOwnerIdSql
       return null
     }
 
@@ -69,10 +82,14 @@ class GrailsERTParameterProvider implements ERTParameterProvider {
     String resourceId = ownerIdProvider(ownerLevel)
 
     String resourceAlias = '{alias}'
-    PolicyControlledMetadata ownerLevelMetadata = policyControlledManager.getOwnerLevelMetadata(ownerLevel)
-    if (ownerLevelMetadata.getAliasName()) {
-      resourceAlias = ownerLevelMetadata.getAliasName()
-    } // This should always be calculated, except for "root" entry which uses the base alias
+    if (aliasOverride) {
+      resourceAlias = aliasOverride
+    } else {
+      PolicyControlledMetadata ownerLevelMetadata = policyControlledManager.getOwnerLevelMetadata(ownerLevel)
+      if (ownerLevelMetadata.getAliasName()) {
+        resourceAlias = ownerLevelMetadata.getAliasName()
+      } // This should always be calculated, except for "root" entry which uses the base alias
+    }
 
     String resourceClass = policyControlledManager.resolveOwnerClass(ownerLevel)
     String resourceIdColumn = policyControlledManager.resolveOwnerResourceIdColumn(ownerLevel)

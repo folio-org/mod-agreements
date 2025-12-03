@@ -80,7 +80,7 @@ public class PolicyEngine implements PolicyEngineImplementor {
     AccessPolicyQueryType queryType,
     List<PoliciesFilter> filters,
     IRestrictionTree restrictionTree,
-    ERTParameterProvider parameterProvider // TODO Is this pattern acceptable?
+    OwnerLevelParameterProvider parameterProvider // TODO Is this pattern acceptable?
   ) throws PolicyEngineException {
     // Fetch policySubqueries for ALL restrictions present in the tree
     Map<PolicyRestriction, List<PolicySubquery>> policySubqueryMap = getRestrictionMappedPolicySubqueries(headers, restrictionTree.getAncestralRestrictions(), queryType, filters);

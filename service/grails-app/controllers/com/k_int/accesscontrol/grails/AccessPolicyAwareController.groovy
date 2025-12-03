@@ -1,6 +1,5 @@
 package com.k_int.accesscontrol.grails
 
-
 import com.k_int.accesscontrol.core.GroupedExternalPolicies
 import com.k_int.accesscontrol.core.DomainAccessPolicy
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink
@@ -37,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import javax.annotation.PostConstruct
 import java.time.Duration
 
+import static org.springframework.http.HttpStatus.*
 /**
  * Extends com.k_int.okapi.OkapiTenantAwareController to incorporate access policy enforcement for resources.
  * This controller provides methods to check read, update, and delete permissions based on defined
@@ -46,6 +46,11 @@ import java.time.Duration
  */
 @CurrentTenant
 class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
+  /**
+   * The alias name for the domain access policy (AccessPolicyEntity) table in SQL queries
+   */
+  final static String DOMAIN_ACCESS_POLICY_TABLE_ALIAS = "domain_access_policies"
+
   /**
    * The Class object representing the resource entity type managed by this controller.
    */
@@ -135,7 +140,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     // Starting at the leaf, work out whether we need to get hold of subqueries at this level, pass through to parent (with mapping?) or break out.
 
     // TODO I'm not 100% behind this approach, but it definitely feels like we're keeping the framework layer and engine layer more separate
-    GrailsERTParameterProvider parameterProvider = new GrailsERTParameterProvider(
+    GrailsOwnerLevelParameterProvider parameterProvider = new GrailsOwnerLevelParameterProvider(
       typeMapper,
       policyControlledManager,
       resourceId,
@@ -236,22 +241,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       log.trace("AccessControl generated PolicySql parameters: ${policySqlFragments.collect{ it.parameters.collect { it.toString() } }.join(', ')}")
       log.trace("AccessControl generated PolicySql types: ${policySqlFragments.collect{ it.types.collect { it.toString() } }.join(', ')}")
 
-      // We're going to do this with hibernate criteria builder to match doTheLookup logic
-      String bigSql = policySqlFragments.collect {"(${it.getSqlString()})" }.join(" AND ") // JOIN all sql subqueries together here.
-      NativeQuery accessAllowedQuery = sess.createNativeQuery("SELECT ${bigSql} AS access_allowed".toString())
-
-      // Now bind all parameters for all sql fragments. We ASSUME they're all using ? for bind params.
-      // Track where we're up to with hibernateParamIndex -- hibernate is 1-indexed
-      int hibernateParamIndex = 1
-      policySqlFragments.each { AccessControlSql entry ->
-        entry.getParameters().eachWithIndex { Object param, int paramIndex  ->
-          accessAllowedQuery.setParameter(hibernateParamIndex, param, (Type) typeMapper.getHibernateType((AccessControlSqlType) entry.getTypes()[paramIndex]))
-          hibernateParamIndex++ // Iterate the outer index
-        }
-      }
-
-      boolean result = accessAllowedQuery.list()[0]
-
+      boolean result = performHibernateQuery(buildCanAccessSql(policySqlFragments), null)[0]
       return result
     }
   }
@@ -476,7 +466,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
-    respond ([ message: "PolicyRestriction.READ check failed in access control" ], status: 403 )
+    respond ([ message: "PolicyRestriction.READ check failed in access control" ], status: FORBIDDEN )
   }
 
   /**
@@ -491,7 +481,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
-    respond ([ message: "PolicyRestriction.CREATE check failed in access control" ], status: 403 )
+    respond ([ message: "PolicyRestriction.CREATE check failed in access control" ], status: FORBIDDEN )
   }
 
   /**
@@ -508,7 +498,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
-    respond ([ message: "PolicyRestriction.UPDATE check failed in access control" ], status: 403 )
+    respond ([ message: "PolicyRestriction.UPDATE check failed in access control" ], status: FORBIDDEN )
   }
 
   /**
@@ -518,14 +508,55 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    *
    * @return A response indicating successful deletion if access is granted, or an error message if access is denied.
    */
-  @Transactional
   def delete() {
-    if (canUserDelete()) {
-      super.delete()
+    if (!canUserDelete()) {
+      // Overwrite the default behaviour
+      request.withFormat {
+        '*' { respond([message: "PolicyRestriction.DELETE check failed in access control"], status: FORBIDDEN) }
+      }
       return
     }
 
-    respond ([ message: "PolicyRestriction.DELETE check failed in access control" ], status: 403 )
+    AccessPolicyEntity.withTransaction { transactionStatus -> {
+      try {
+        // We also need to get rid of any AccessPolicyEntity objects for this level
+
+        if (policyControlledManager.hasStandalonePolicies(0)) {
+          String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
+
+          // TODO we must be able to pull this bit out surely
+          List<PolicySubquery> apeSubqueryList = policyEngine.getPolicyEntitySubqueries(grailsHeaders)
+
+          // Getting owner ids with a parameter provider
+          GrailsOwnerLevelParameterProvider parameterProvider = new GrailsOwnerLevelParameterProvider(
+            typeMapper,
+            policyControlledManager,
+            params.id,
+            0,
+            DOMAIN_ACCESS_POLICY_TABLE_ALIAS
+          )
+
+          List<AccessControlSql> accessControlSqlList = apeSubqueryList.collect {it.getSql(parameterProvider.provideParameters(0))}
+          List<AccessPolicyEntity> entityList = performHibernateQuery(buildAccessPolicyEntitySql(accessControlSqlList), AccessPolicyEntity.class)
+
+          entityList.forEach {ape -> {
+            ape.delete()
+          }}
+        }
+
+        // Perform the original delete from super controller if we got to this stage
+        super.delete()
+      } catch (Exception e) {
+        String failureMessage = "Failed to delete entity or associated AccessPolicyEntity objects"
+        log.error(failureMessage, e)
+
+        // Some of the deletes failed, rollback here.
+        transactionStatus.setRollbackOnly()
+        request.withFormat {
+          '*' { respond([message: failureMessage], status: INTERNAL_SERVER_ERROR) }
+        }
+      }
+    }}
   }
 
   /**
@@ -556,7 +587,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
     // Strategy - Check whether APPLY_POLICIES is allowed on the resource, and if so, then check whether all policies in the request body are valid for CLAIM.
     if (!canUserApplyPolicies()) {
-      respond ([ message: "PolicyRestriction.APPLY_POLICIES check failed in access control" ], status: 403 )
+      respond ([ message: "PolicyRestriction.APPLY_POLICIES check failed in access control" ], status: FORBIDDEN )
       return
     }
 
@@ -568,7 +599,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     boolean success = true
     boolean changesMade = true
     String failureMessage = ''
-    int failureCode = 400
+    int failureCode = BAD_REQUEST.value()
     AccessPolicyEntity.withSession { sess ->
       AccessPolicyEntity.withTransaction { transactionStatus ->
         // Fetch the original policies for this resource
@@ -613,7 +644,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         if (!areClaimPoliciesValid(changedPolicies)) {
           success = false
           failureMessage = "PolicyRestriction.CLAIM not valid for one or more changed policies in claims"
-          failureCode = 403
+          failureCode = FORBIDDEN.value()
           log.error(failureMessage)
           return // Kick out to the post-transaction success check
         }
@@ -665,7 +696,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
           // Something went wrong with the DB changes -- Rollback and return 500
           success = false
           failureMessage = "Something went wrong saving access policies to the database"
-          failureCode = 500
+          failureCode = INTERNAL_SERVER_ERROR.value()
           log.error("${failureMessage}: ${e.getMessage()}", e)
 
           transactionStatus.setRollbackOnly()
@@ -691,17 +722,17 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   @Transactional
   def policies() {
     AccessPolicyEntity.withSession { Session sess ->
-      String DOMAIN_ACCESS_POLICY_TABLE_ALIAS = "domain_access_policies"
       String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 
       List<PolicySubquery> apeSubqueryList = policyEngine.getPolicyEntitySubqueries(grailsHeaders)
 
       // Getting owner ids with a parameter provider
-      GrailsERTParameterProvider parameterProvider = new GrailsERTParameterProvider(
+      GrailsOwnerLevelParameterProvider parameterProvider = new GrailsOwnerLevelParameterProvider(
         typeMapper,
         policyControlledManager,
         params.id,
-        0
+        0,
+        DOMAIN_ACCESS_POLICY_TABLE_ALIAS
       )
 
       List<OwnerPolicyLinkList> ownerPolicyLinks = new ArrayList<>()
@@ -722,28 +753,12 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         if (policyControlledManager.hasStandalonePolicies(metadata.ownerLevel)) {
           ownerPolicyLinkList.hasStandalonePolicies(true)
           PolicySubqueryParameters params = parameterProvider.provideParameters(metadata.ownerLevel)
-          params.setResourceAlias(DOMAIN_ACCESS_POLICY_TABLE_ALIAS) // Override the params for the resource alias.
 
           // Set up list of AccessControlSql
           List<AccessControlSql> accessControlSqlList = apeSubqueryList.collect {it.getSql(params)}
 
-          // TODO we do this pattern twice with only slightly different queries, can we unify?
-          // We're going to do this with hibernate criteria builder to match doTheLookup logic
-          String bigSql = accessControlSqlList.collect {"(${it.getSqlString()})" }.join(" OR ") // JOIN all sql subqueries together here. We want ALL relevant entities, so we OR
-          NativeQuery accessPolicyEntityQuery = sess.createNativeQuery("SELECT * FROM ${AccessPolicyEntity.TABLE_NAME} AS ${DOMAIN_ACCESS_POLICY_TABLE_ALIAS} WHERE ${bigSql}".toString())
-          accessPolicyEntityQuery.addEntity(AccessPolicyEntity.class) // Ensure we get back AccessPolicyEntity objects
 
-          // Now bind all parameters for all sql fragments. We ASSUME they're all using ? for bind params.
-          // Track where we're up to with hibernateParamIndex -- hibernate is 1-indexed
-          int hibernateParamIndex = 1
-          accessControlSqlList.each { AccessControlSql entry ->
-            entry.getParameters().eachWithIndex { Object param, int paramIndex  ->
-              accessPolicyEntityQuery.setParameter(hibernateParamIndex, param, (Type) typeMapper.getHibernateType((AccessControlSqlType) entry.getTypes()[paramIndex]))
-              hibernateParamIndex++ // Iterate the outer index
-            }
-          }
-
-          List<AccessPolicyEntity> entityList = accessPolicyEntityQuery.list()
+          List<AccessPolicyEntity> entityList = performHibernateQuery(buildAccessPolicyEntitySql(accessControlSqlList), AccessPolicyEntity.class)
 
           policyEntityMap.put(ownerId, entityList)
         }
@@ -765,6 +780,49 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
       // Grails gets confused with the Policy extensions, so instead lets render it out with Jackson
       render text: Json.toJson(ownerPolicyLinks), contentType: 'application/json'
+    }
+  }
+
+  /* **************** SQL HELPERS **************** */
+  protected static AccessControlSql buildAccessPolicyEntitySql(Collection<AccessControlSql> subqueries) {
+    AccessControlSql combinedSubqueries = AccessControlSql.combineSqlSubqueries(subqueries, " OR ")
+
+    String sqlString = "SELECT * FROM ${AccessPolicyEntity.TABLE_NAME} AS ${DOMAIN_ACCESS_POLICY_TABLE_ALIAS} WHERE ${combinedSubqueries.getSqlString()}"
+
+    return AccessControlSql.builder()
+      .sqlString(sqlString)
+      .parameters(combinedSubqueries.getParameters())
+      .types(combinedSubqueries.getTypes())
+      .build()
+  }
+
+  protected static AccessControlSql buildCanAccessSql(Collection<AccessControlSql> subqueries) {
+    AccessControlSql combinedSubqueries = AccessControlSql.combineSqlSubqueries(subqueries, " AND ")
+
+    String sqlString = "SELECT ${combinedSubqueries.getSqlString()} AS access_allowed"
+
+    return AccessControlSql.builder()
+      .sqlString(sqlString)
+      .parameters(combinedSubqueries.getParameters())
+      .types(combinedSubqueries.getTypes())
+      .build()
+  }
+
+  protected <S> List<S> performHibernateQuery(AccessControlSql theSql, Class<S> clazz) {
+    // We know this class exists, so use it to get a hold of the session.
+    AccessPolicyEntity.withSession { Session sess ->
+      NativeQuery nativeQuery = sess.createNativeQuery(theSql.getSqlString())
+
+      if (clazz != null) {
+        nativeQuery.addEntity(clazz) // Ensure we get back the right class
+      }
+
+      // Set all the parameters and types on the request
+      theSql.getParameters().eachWithIndex{ Object param, int i ->
+        nativeQuery.setParameter(i + 1, param, (Type) typeMapper.getHibernateType((AccessControlSqlType) theSql.getTypes()[i]))
+      }
+
+      return nativeQuery.list()
     }
   }
 }
