@@ -14,6 +14,7 @@ import lombok.experimental.Accessors;
 public class SkeletonRestrictionTree implements IRestrictionTree {
   /**
    * The parent restriction tree node. Null if this is the root.
+   * @param parent the parent restriction tree node
    * @return the parent restriction tree node
    */
   final SkeletonRestrictionTree parent;
@@ -23,18 +24,21 @@ public class SkeletonRestrictionTree implements IRestrictionTree {
    * 0: Represents the "base class" or leaf resource. <br/>
    * 1: Represents the direct owner of the base class. <br/>
    * 2: Represents the owner of the owner of the base class, and so on.
+   * @param ownerLevel the level in the hierarchy for this policy controlled object
    * @return the level in the hierarchy for this policy controlled object
    */
   final int ownerLevel;
 
   /**
    * The policy restriction represented by this tree node.
+   * @param restriction the policy restriction
    * @return the policy restriction
    */
   final PolicyRestriction restriction;
 
   /**
    * Indicates whether this level has standalone policies, independent of the parent.
+   * @param hasStandalonePolicies true if standalone policies exist, false otherwise
    * @return true if standalone policies exist, false otherwise
    */
   @Builder.Default
