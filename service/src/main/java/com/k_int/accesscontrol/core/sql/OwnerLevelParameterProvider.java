@@ -1,6 +1,10 @@
 package com.k_int.accesscontrol.core.sql;
 
-// FIXME This is a model under consideration, I am not thrilled with it at the moment.
+// I'm not 100% on board with this model, as I think it creates a bit of a difficult to understand coupling between
+// the framework layer and the engine. The intention is that given a level in the ownership tree, the parameters from
+// the framework layer can and will change. These parameters are needed within structures like the enrichedRestrictionTree
+// To avoid having to build that tree in every framework layer, this interface allows the building logic to be offloaded
+// onto the engine, with the framework layer instead only responsible for handling the owner level -> parameters logic.
 
 import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.IRestrictionTree;
 

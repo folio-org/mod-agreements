@@ -19,8 +19,8 @@ import java.util.regex.Pattern;
  * hierarchical ownership rules, or any other policy structure—into SQL that can be
  * applied within a larger query. All generated SQL must use positional JDBC
  * placeholders ({@code ?}) for parameter binding.</p>
- *
- * <h3>SQL Safety</h3>
+ * <hr />
+ * <strong>SQL Safety</strong>
  * <p>
  * To mitigate SQL injection risks, implementations should rely on
  * {@link #sqlSafe(String, String)} to validate all identifiers that are interpolated

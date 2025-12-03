@@ -212,7 +212,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       // For CREATE we need to include the owner id, not the params id, where we are creating a child object
       String resourceId = params.id
       if (pr == PolicyRestriction.CREATE && policyControlledManager.hasOwners()) {
-        JSONObject body = getObjectToBind()
+        JSONObject body = getObjectToBind() as JSONObject
         String ownerField = policyControlledManager.getOwnerLevelMetadata(0).getOwnerField()
 
         try {
@@ -390,7 +390,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   protected boolean areApplyPoliciesPoliciesValid(List<GroupedExternalPolicies> policies) {
     return arePoliciesValid(PolicyRestriction.APPLY_POLICIES, policies)
   }
-
 
 
   // Comment out to allow quick revert to default index behaviour for development
@@ -769,7 +768,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       // We have a Map from id -> List<AccessPolicyEntities>. We want to enrich these into PolicyLinks to render out,
       // but don't want to make multiple calls to the policyEngine. So instead we'll flatten to a single list, then map
       // back onto the proper shape after enrichment
-      Set<AccessPolicyEntity> flattenedAccessPolicyEntities = policyEntityMap.values().flatten().toSet()
+      Set<AccessPolicyEntity> flattenedAccessPolicyEntities = policyEntityMap.values().flatten().toSet() as Set<AccessPolicyEntity>
       List<PolicyLink> enrichedPolicyLinks = policyEngine.getPolicyLinksFromAccessPolicyList(grailsHeaders, flattenedAccessPolicyEntities)
 
 
