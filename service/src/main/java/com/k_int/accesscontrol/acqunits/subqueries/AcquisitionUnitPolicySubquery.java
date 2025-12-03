@@ -171,7 +171,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
     // Firstly we can handle the "CREATE" logic, since Acq Units never restricts CREATE
     if (restriction == PolicyRestriction.CREATE) {
       return AccessControlSql.builder()
-        .sqlString("1")
+        .sqlString("1=1") // Return TRUE up front
         .build();
     }
 
