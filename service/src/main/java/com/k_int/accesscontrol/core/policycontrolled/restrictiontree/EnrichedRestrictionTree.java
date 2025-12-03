@@ -83,11 +83,8 @@ public class EnrichedRestrictionTree implements IRestrictionTree {
     EnrichedRestrictionTree node = this;
     while (node != null) {
       if (node.hasStandalonePolicies()) {
-        if (node.getSubqueries() == null || node.getSubqueries().isEmpty()) {
-          throw new IllegalStateException("RestrictionTree node at level " + node.getOwnerLevel() +
-              " with restriction " + node.getRestriction() +
-              " indicates it has standalone policies but has no subqueries defined.");
-        }
+        // It is ok if there are no subqueries. That simply means that the resource is unprotected.
+        // Examples include when no policy engines are configured, or the only engine chooses not to return a subquery
         for (PolicySubquery subquery : node.getSubqueries()) {
           if (node.getParameters() == null) {
             throw new IllegalStateException("RestrictionTree node at level " + node.getOwnerLevel() +
