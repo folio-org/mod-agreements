@@ -156,6 +156,15 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       parameterProvider
     )
 
+    // TODO See comment about "orphaned" CREATE elsewhere in the controller. If we are performing a CREATE and we have
+    //  no resourceId then for now assume that the restriction tree is invalid beyond the current level.
+    //  It may eventually be necessary to instead walk up the tree to the first non-CREATE mapping, as being able to
+    //  CREATE on the parent resource is also not id bound. But I'm leaving that use case unfinished right now as it's
+    //  not one that we need.
+    if (!resourceId && restriction == PolicyRestriction.CREATE) {
+      restrictionTree.setParent(null)
+    }
+
     // We now have the complex Map from above ready to build the params and combine the SQL
     return restrictionTree.getSql()
   }
@@ -211,22 +220,36 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
       // For CREATE we need to include the owner id, not the params id, where we are creating a child object
       String resourceId = params.id
-      if (pr == PolicyRestriction.CREATE && policyControlledManager.hasOwners()) {
+      if (
+        pr == PolicyRestriction.CREATE &&
+          policyControlledManager.hasOwners()
+      ) {
         JSONObject body = getObjectToBind() as JSONObject
         String ownerField = policyControlledManager.getOwnerLevelMetadata(0).getOwnerField()
 
-        try {
-          def rawOwnerValue = body.get(ownerField)
+        // Check whether the POST body has an owner
+        if (body.has(ownerField)) {
+          try {
+            def rawOwnerValue = body.get(ownerField)
 
-          // We have historically allowed both "owner": "the-owner-uuid" AND "owner": { "id": "the-owner-uuid" } so allow for either here
-          if (rawOwnerValue instanceof String) {
-            resourceId = rawOwnerValue
-          } else {
-            String ownerIdField = policyControlledManager.getOwnerLevelMetadata(1).getResourceIdField()
-            resourceId = rawOwnerValue.get(ownerIdField)
+            // We have historically allowed both "owner": "the-owner-uuid" AND "owner": { "id": "the-owner-uuid" } so allow for either here
+            if (rawOwnerValue instanceof String) {
+              resourceId = rawOwnerValue
+            } else {
+              String ownerIdField = policyControlledManager.getOwnerLevelMetadata(1).getResourceIdField()
+              resourceId = rawOwnerValue.get(ownerIdField)
+            }
+          } catch (JSONException jex) {
+            throw new PolicyEngineException("Error attempting to resolve owner identifier from CREATE body", PolicyEngineException.GENERIC_ERROR, jex)
           }
-        } catch (JSONException jex) {
-          throw new PolicyEngineException("Error attempting to resolve owner identifier from CREATE body", PolicyEngineException.GENERIC_ERROR, jex)
+        } else {
+          // TODO In some cases we may have an "orphaned" CREATE. As things stand if a CREATE call comes in with no owner
+          //  we will let it through here, it's not up to this library to prevent something that MUST have an owner not
+          //  having one. However we _do_ have an issue if an orphaned create comes through and there are standalone CREATE
+          //  calls AND mapped parent (say UPDATE) calls. UPDATE will sometimes require an id, and so it is up to the
+          //  library to understand that we are in an "orphaned CREATE" situation and to only perform CREATE type checks
+          //  at the base level. See the sibling comment inside getPolicySql for how we handle null resourceId in the
+          //  CREATE case. If this solution doesn't prove sufficient then this logic may need revisiting.
         }
       }
 
