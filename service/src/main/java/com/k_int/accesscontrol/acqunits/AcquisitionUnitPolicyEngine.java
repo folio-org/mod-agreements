@@ -46,6 +46,16 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
   }
 
   /**
+   * Constructs a new AcquisitionUnitPolicyEngineImplementor where an AcquisitionsClient already exists
+   * @param acqClient The pre existing Acquisitions client
+   * @param config The PolicyEngineConfiguration config. This is basically only used to determine if the folio is external or not
+   */
+  public AcquisitionUnitPolicyEngine(AcquisitionsClient acqClient, PolicyEngineConfiguration config) {
+    this.config = config.getAcquisitionUnitPolicyEngineConfiguration();
+    this.acqClient = acqClient;
+  }
+
+  /**
    * Handles exceptions thrown by FOLIO client calls, wrapping them in a PolicyEngineException.
    *
    * @param context the context of the operation being performed
