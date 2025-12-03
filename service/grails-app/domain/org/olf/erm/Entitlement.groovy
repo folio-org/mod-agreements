@@ -23,7 +23,6 @@ import grails.databinding.BindInitializer
 import grails.gorm.MultiTenant
 import groovy.util.logging.Slf4j
 
-
 /**
  * Entitlement (A description of a right to access a specific digital resource, which can be an
  * title on a platform (But not listed in a package), a title named in a package, a full package of resources
@@ -32,7 +31,6 @@ import groovy.util.logging.Slf4j
  * without perhaps knowing which agreement controls that right.
  *
  */
-@Slf4j
 @PolicyControlled(
   ownerColumn = 'ent_owner_fk',
   ownerField = 'owner',
@@ -41,10 +39,9 @@ import groovy.util.logging.Slf4j
   resourceIdColumn = "ent_id", // For grails modules we use SQL Column name for resourceId
   resourceIdField = "id",
   createRestrictionMapping = PolicyRestriction.UPDATE,
-  deleteRestrictionMapping = PolicyRestriction.UPDATE,
-  hasStandaloneReadPolicies = true//, // FIXME we probably don't want to actually do this
-  //readRestrictionMapping = PolicyRestriction.NONE
+  deleteRestrictionMapping = PolicyRestriction.UPDATE
 )
+@Slf4j
 public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitlement> {
   public static final Class<? extends ErmResource>[] ALLOWED_RESOURCES = [Pkg, PackageContentItem, PlatformTitleInstance] as Class[]
 
