@@ -5,11 +5,11 @@ import com.k_int.accesscontrol.core.*;
 import com.k_int.accesscontrol.core.http.bodies.ClaimBody;
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink;
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter;
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.*;
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineImplementor;
-import com.k_int.accesscontrol.core.sql.FilterPolicySubquery;
-import com.k_int.accesscontrol.core.sql.PolicySubquery;
+import com.k_int.accesscontrol.core.sql.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,6 +61,40 @@ public class PolicyEngine implements PolicyEngineImplementor {
     // In future we may add more policy engines here, such as KI Grants
   }
 
+  // TODO I'm not 100% convinced that this is the RIGHT shape for this "enrichment" operation right now
+  /**
+   * Enriches a given restriction tree by populating it with policy subqueries and parameters.
+   * This method traverses the restriction tree and fills in the necessary subqueries
+   * for each restriction based on the provided query type and filters.
+   *
+   * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
+   * @param queryType The type of access policy query (e.g., LIST or SINGLE)
+   * @param filters A list of PoliciesFilter objects representing additional filters to apply
+   * @param restrictionTree The restriction tree to be enriched
+   * @param parameterProvider A provider implementation to fetch policy parameters based on leafResourceId and owner level
+   * @return An enriched restriction tree with populated subqueries and parameters
+   * @throws PolicyEngineException if an error occurs during enrichment
+   */
+  public EnrichedRestrictionTree enrichRestrictionTree(
+    String[] headers,
+    AccessPolicyQueryType queryType,
+    List<PoliciesFilter> filters,
+    IRestrictionTree restrictionTree,
+    OwnerLevelParameterProvider parameterProvider // TODO Is this pattern acceptable?
+  ) throws PolicyEngineException {
+    // Fetch policySubqueries for ALL restrictions present in the tree
+    Map<PolicyRestriction, List<PolicySubquery>> policySubqueryMap = getRestrictionMappedPolicySubqueries(headers, restrictionTree.getAncestralRestrictions(), queryType, filters);
+
+    // The framework layer is currently providing a way to get the owner id for a given level,
+    // and parameters given an id and a given level
+    RTParameterProvider rtParameterProvider = (int ownerLevel, PolicyRestriction restriction) -> parameterProvider.provideParameters(ownerLevel);
+
+    RTSubqueriesProvider rtSubqueriesProvider = (int ownerLevel, PolicyRestriction restriction) -> policySubqueryMap.get(restriction);
+
+    return EnrichedRestrictionTree.buildFromRestrictionTree(restrictionTree, rtSubqueriesProvider, rtParameterProvider);
+  }
+
+  // TODO get rid of single restriction variations?
   /**
    * There are two types of AccessPolicy query that we might want to handle, LIST: "Show me all records for which I can do RESTRICTION" and SINGLE: "Can I do RESTRICTION for resource X?"
    *
@@ -71,17 +105,39 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * @throws PolicyEngineException -- the understanding is that within a request context this should be caught and return a 500
    */
   public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType) throws PolicyEngineException {
-    List<PolicySubquery> policySubqueries = new ArrayList<>();
+    return getRestrictionMappedPolicySubqueries(headers, Collections.singletonList(pr), queryType).get(pr);
+  }
 
-    if (pr.equals(PolicyRestriction.CLAIM)) {
-      throw new PolicyEngineException("getPolicySubqueries is not valid for PolicyRestriction.CLAIM", PolicyEngineException.INVALID_RESTRICTION);
+  /**
+   * Retrieves a map of policy subqueries grouped by their corresponding policy restrictions.
+   * This method is used to fetch SQL subqueries for multiple policy restrictions at once.
+   *
+   * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
+   * @param restrictions A collection of policy restrictions to filter by
+   * @param queryType Whether to return boolean queries for single use or filter queries for all records
+   * @return A map where each key is a PolicyRestriction and the value is a list of corresponding PolicySubqueries
+   * @throws PolicyEngineException if an error occurs while fetching policy subqueries
+   */
+  public Map<PolicyRestriction, List<PolicySubquery>> getRestrictionMappedPolicySubqueries(String[] headers, Collection<PolicyRestriction> restrictions, AccessPolicyQueryType queryType) throws PolicyEngineException {
+    if (restrictions.contains(PolicyRestriction.CLAIM)) {
+      throw new PolicyEngineException("getRestrictionMappedPolicySubqueries is not valid for PolicyRestriction.CLAIM", PolicyEngineException.INVALID_RESTRICTION);
+    }
+
+    // Set up the original map structure
+    Map<PolicyRestriction, List<PolicySubquery>> subqueryMap = new HashMap<>();
+    for (PolicyRestriction restriction : restrictions) {
+      subqueryMap.put(restriction, new ArrayList<>());
     }
 
     if (acquisitionUnitPolicyEngine != null) {
-      policySubqueries.addAll(acquisitionUnitPolicyEngine.getPolicySubqueries(headers, pr, queryType));
+      Map<PolicyRestriction, List<PolicySubquery>> acquisitionUnitPolicySubqueryMap = acquisitionUnitPolicyEngine.getRestrictionMappedPolicySubqueries(headers, restrictions, queryType);
+
+      for (PolicyRestriction restriction : restrictions) {
+        subqueryMap.get(restriction).addAll(acquisitionUnitPolicySubqueryMap.get(restriction));
+      }
     }
 
-    return policySubqueries;
+    return subqueryMap;
   }
 
   /**
@@ -97,10 +153,26 @@ public class PolicyEngine implements PolicyEngineImplementor {
    * @throws PolicyEngineException -- the understanding is that within a request context this should be caught and return a 500
    */
   public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType, List<PoliciesFilter> filters) throws PolicyEngineException {
+    return getRestrictionMappedPolicySubqueries(headers, Collections.singletonList(pr), queryType, filters).get(pr);
+  }
 
-    List<PolicySubquery> policySubqueries = getPolicySubqueries(headers, pr, queryType);
+  /**
+   * Extended version of getRestrictionMappedPolicySubqueries which also takes in a list of PoliciesFilter objects.
+   * These filters will be ANDed together in the final SQL, with the internal list of GroupedExternalPolicies
+   * within each PoliciesFilter being ORed together.
+   *
+   * @param headers The request context headers -- used mainly to connect to FOLIO (or other "internal" services)
+   * @param restrictions A collection of policy restrictions to filter by
+   * @param queryType Whether to return boolean queries for single use or filter queries for all records
+   * @param filters A list of PoliciesFilter objects representing additional filters to apply
+   * @return A map where each key is a PolicyRestriction and the value is a list of corresponding PolicySubqueries, including the provided filters
+   * @throws PolicyEngineException if an error occurs while fetching policy subqueries
+   */
+  public Map<PolicyRestriction, List<PolicySubquery>> getRestrictionMappedPolicySubqueries(String[] headers, Collection<PolicyRestriction> restrictions, AccessPolicyQueryType queryType, List<PoliciesFilter> filters) throws PolicyEngineException {
+    Map<PolicyRestriction, List<PolicySubquery>> subqueryMap = getRestrictionMappedPolicySubqueries(headers, restrictions, queryType);
+
     if (filters == null || filters.isEmpty()) {
-      return policySubqueries;
+      return subqueryMap;
     }
 
     // We have some filters, so we should create a PolicySubquery for them and add to the list
@@ -108,9 +180,14 @@ public class PolicyEngine implements PolicyEngineImplementor {
       .policiesFilters(filters)
       .queryType(queryType)
       .build();
-    policySubqueries.add(filterPolicySubquery);
 
-    return policySubqueries;
+    // Add the filter map to ALL the restriction subquery lists in the map
+    for (PolicyRestriction restriction : restrictions) {
+      List<PolicySubquery> policySubqueries = subqueryMap.get(restriction);
+      policySubqueries.add(filterPolicySubquery);
+    }
+
+    return subqueryMap;
   }
 
   /**
@@ -345,5 +422,42 @@ public class PolicyEngine implements PolicyEngineImplementor {
       .policiesToRemove(accessPoliciesToRemove)
       .policiesToUpdate(accessPoliciesToUpdate)
       .build();
+  }
+
+
+  /**
+   * Returns the collection of {@link PolicySubquery} implementations that the
+   * {@link PolicyEngine} should use when resolving {@link DomainAccessPolicy}
+   * rows for a resource.
+   *
+   * <p>Each {@link PolicySubquery} in the returned list is responsible for
+   * generating an SQL fragment that selects policy-entity records associated with
+   * a resource through a particular policy mechanism or linkage strategy.
+   * </p>
+   *
+   * <p>The method is structured to support future expansion; additional policy
+   * mechanisms (e.g. KI_GRANT, departmental policies, hierarchical group
+   * policies) can be incorporated simply by adding further {@link PolicySubquery}
+   * instances to the returned list.
+   * </p>
+   *
+   * <p>The {@code headers} argument can be used by subquery implementations that
+   * require authenticated outbound requests (e.g. to FOLIO services or other
+   * external policy sources), although the acquisition-unit implementation does
+   * not currently rely on them.
+   * </p>
+   *
+   * @param headers request headers, provided for subqueries that may require
+   *                authenticated remote lookups
+   * @return a list of {@link PolicySubquery} implementations defining how
+   *         DomainAccessPolicy rows are selected for this policy engine
+   */
+  public List<PolicySubquery> getPolicyEntitySubqueries(String[] headers) {
+    List<PolicySubquery> policyEntitySubqueries = new ArrayList<>();
+    if (acquisitionUnitPolicyEngine != null) {
+      policyEntitySubqueries.addAll(acquisitionUnitPolicyEngine.getPolicyEntitySubqueries(headers));
+    }
+
+    return policyEntitySubqueries;
   }
 }

@@ -1,4 +1,4 @@
-package com.k_int.accesscontrol.acqunits;
+package com.k_int.accesscontrol.acqunits.subqueries;
 
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.core.*;
@@ -12,6 +12,7 @@ import lombok.Builder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Represents a subquery for acquisition unit policies in the context of access control.
@@ -23,6 +24,8 @@ import java.util.List;
 @Builder
 @SuppressWarnings("javadoc")
 public class AcquisitionUnitPolicySubquery implements PolicySubquery {
+
+
   /**
    * The user acquisition units that this subquery will use to determine access.
    * This should be populated by the PolicyEngine before calling getSql().
@@ -66,6 +69,7 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
      * There is at least one non-restrictive policy
      */
     static final String SQL_TEMPLATE = """
+      /* #CLAUSE_LABEL */
       (
         NOT EXISTS (
           SELECT 1 FROM #ACCESS_POLICY_TABLE_NAME ap1
@@ -167,9 +171,12 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
     // Firstly we can handle the "CREATE" logic, since Acq Units never restricts CREATE
     if (restriction == PolicyRestriction.CREATE) {
       return AccessControlSql.builder()
-        .sqlString("1")
+        .sqlString("1=1") // Return TRUE up front
         .build();
     }
+
+    // Set up a label for the clause that might help debugging in system
+    String clauseLabel = "ACQUISITION UNIT RESTRICTION FOR " + restriction.toString() + " ON " + PolicySubquery.sqlSafe(parameters.getResourceClass(), "resource class");
 
     // Spin up a list of all SQL parameters;
     List<String> allParameters = new ArrayList<>();
@@ -217,17 +224,18 @@ public class AcquisitionUnitPolicySubquery implements PolicySubquery {
 
     return AccessControlSql.builder()
       .sqlString(SQL_TEMPLATE
-        .replaceAll("#ACCESS_POLICY_TABLE_NAME", parameters.getAccessPolicyTableName())
-        .replaceAll("#ACCESS_POLICY_TYPE_COLUMN_NAME", parameters.getAccessPolicyTypeColumnName())
-        .replaceAll("#ACCESS_POLICY_ID_COLUMN_NAME", parameters.getAccessPolicyIdColumnName())
-        .replaceAll("#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME", parameters.getAccessPolicyResourceIdColumnName())
-        .replaceAll("#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME", parameters.getAccessPolicyResourceClassColumnName())
-        .replaceAll("#RESOURCE_ID_MATCH", resourceIdMatch)
+        .replaceAll("#ACCESS_POLICY_TABLE_NAME", PolicySubquery.sqlSafe(parameters.getAccessPolicyTableName(), "access policy table name"))
+        .replaceAll("#ACCESS_POLICY_TYPE_COLUMN_NAME", PolicySubquery.sqlSafe(parameters.getAccessPolicyTypeColumnName(), "access policy type column name"))
+        .replaceAll("#ACCESS_POLICY_ID_COLUMN_NAME", PolicySubquery.sqlSafe(parameters.getAccessPolicyIdColumnName(), "access policy ID column name"))
+        .replaceAll("#ACCESS_POLICY_RESOURCE_ID_COLUMN_NAME", PolicySubquery.sqlSafe(parameters.getAccessPolicyResourceIdColumnName(), "access policy resource ID column name"))
+        .replaceAll("#ACCESS_POLICY_RESOURCE_CLASS_COLUMN_NAME", PolicySubquery.sqlSafe(parameters.getAccessPolicyResourceClassColumnName(), "access policy resource class column name"))
+        .replaceAll("#RESOURCE_ID_MATCH", PolicySubquery.sqlSafe(resourceIdMatch, "resource ID match"))
         .replaceAll("#RESOURCE_CLASS", "?") // Map resource class to a parameter
         // Fill out "?" placeholders, one per id
         .replaceAll("#NON_MEMBER_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(nonMemberRestrictiveUnits.size(), "?")))
         .replaceAll("#MEMBER_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(memberRestrictiveUnits.size(), "?")))
         .replaceAll("#NON_RESTRICTIVE_UNITS", String.join(",", Collections.nCopies(nonRestrictiveUnits.size(), "?")))
+        .replaceAll("#CLAUSE_LABEL", clauseLabel) // This has been SQLSafe checked above
       )
       .parameters(allParameters.toArray())
       .types(allTypes.toArray(new AccessControlSqlType[0]))

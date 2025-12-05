@@ -1,6 +1,8 @@
 package com.k_int.accesscontrol.acqunits;
 
 import com.k_int.accesscontrol.acqunits.responses.AcquisitionUnitPolicy;
+import com.k_int.accesscontrol.acqunits.subqueries.AcquisitionUnitPolicyEntitySubquery;
+import com.k_int.accesscontrol.acqunits.subqueries.AcquisitionUnitPolicySubquery;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionUnits;
 import com.k_int.accesscontrol.acqunits.useracquisitionunits.UserAcquisitionsUnitSubset;
 import com.k_int.accesscontrol.core.*;
@@ -41,6 +43,16 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
 
     this.config = acqConfig;
     this.acqClient = new AcquisitionsClient(acqConfig.getFolioClientConfig());
+  }
+
+  /**
+   * Constructs a new AcquisitionUnitPolicyEngineImplementor where an AcquisitionsClient already exists
+   * @param acqClient The pre existing Acquisitions client
+   * @param config The PolicyEngineConfiguration config. This is basically only used to determine if the folio is external or not
+   */
+  public AcquisitionUnitPolicyEngine(AcquisitionsClient acqClient, PolicyEngineConfiguration config) {
+    this.config = config.getAcquisitionUnitPolicyEngineConfiguration();
+    this.acqClient = acqClient;
   }
 
   /**
@@ -114,18 +126,34 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
    * @throws PolicyEngineException if acquisition unit lookup fails or FOLIO client errors occur
    */
   public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType) {
+    return getRestrictionMappedPolicySubqueries(headers, Collections.singleton(pr), queryType).get(pr);
+  }
+
+  /**
+   * Generates a mapping of policy restrictions to their corresponding policy subqueries.
+   *
+   * @param headers      the request context headers, used for FOLIO/internal service authentication
+   * @param restrictions the collection of policy restrictions to process
+   * @param queryType    the type of query to generate (boolean or filter)
+   * @return a map where each key is a {@link PolicyRestriction} and the value is a list of {@link PolicySubquery} objects
+   *         associated with that restriction
+   * @throws PolicyEngineException if acquisition unit lookup fails or FOLIO client errors occur
+   */
+  public Map<PolicyRestriction, List<PolicySubquery>> getRestrictionMappedPolicySubqueries(String[] headers, Collection<PolicyRestriction> restrictions, AccessPolicyQueryType queryType) {
+    Map<PolicyRestriction, List<PolicySubquery>> resultMap = new HashMap<>();
+
     String[] finalHeaders = handleLoginAndGetHeaders(headers);
 
     return folioClientExceptionHandler("fetching Acquisition units", () -> {
-      List<PolicySubquery> policySubqueries = new ArrayList<>();
-
       long beforePolicyLookup = System.nanoTime();
       // Do the acquisition unit logic
-      AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(pr);
-      // Fetch the acquisition units for the user (MemberRestrictiveUnits and NonMemberRestrictiveUnits);
-      UserAcquisitionUnits userAcquisitionUnits = acqClient.getUserAcquisitionUnits(
+      Collection<AcquisitionUnitRestriction> acqRestrictions = restrictions.stream()
+        .map(AcquisitionUnitRestriction::getRestrictionFromPolicyRestriction)
+        .collect(Collectors.toSet());
+
+      Map<AcquisitionUnitRestriction, UserAcquisitionUnits> userAcquisitionUnitsMap = acqClient.getMappedRestrictionUserAcquisitionUnits(
         finalHeaders,
-        acqRestriction,
+        acqRestrictions,
         Set.of(
           UserAcquisitionsUnitSubset.MEMBER_RESTRICTIVE,
           UserAcquisitionsUnitSubset.NON_MEMBER_RESTRICTIVE,
@@ -136,22 +164,33 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
       long afterPolicyLookup = System.nanoTime();
       log.trace("AcquisitionUnitPolicyEngineImplementor policy lookup time: {}", Duration.ofNanos(afterPolicyLookup - beforePolicyLookup));
 
-      /* In theory we could have a separate individual PolicySubquery class for every Restriction,
-       * but READ/UPDPATE/DELETE are all the same for Acq Units (with slight tweak when LIST vs SINGLE),
-       * and CREATE is simple, so we'll do all the work on one class.
-       *
-       * If we want to make this more performant we could shortcut in the "CREATE" case since that doesn't need the acquisition unit fetch
-       */
-      policySubqueries.add(
-        AcquisitionUnitPolicySubquery
-          .builder()
-          .userAcquisitionUnits(userAcquisitionUnits)
-          .queryType(queryType)
-          .restriction(pr)
-          .build()
-      );
+      // For every restriction we have, build the policy subqueries
 
-      return policySubqueries;
+      for (PolicyRestriction restriction : restrictions) {
+        AcquisitionUnitRestriction acqRestriction = AcquisitionUnitRestriction.getRestrictionFromPolicyRestriction(restriction);
+        UserAcquisitionUnits userAcquisitionUnits = userAcquisitionUnitsMap.get(acqRestriction);
+
+        List<PolicySubquery> restrictionPolicySubqueries = new ArrayList<>();
+
+        /* In theory we could have a separate individual PolicySubquery class for every Restriction,
+         * but READ/UPDPATE/DELETE are all the same for Acq Units (with slight tweak when LIST vs SINGLE),
+         * and CREATE is simple, so we'll do all the work on one class.
+         *
+         * If we want to make this more performant we could shortcut in the "CREATE" case since that doesn't need the acquisition unit fetch
+         */
+        restrictionPolicySubqueries.add(
+          AcquisitionUnitPolicySubquery
+            .builder()
+            .userAcquisitionUnits(userAcquisitionUnits)
+            .queryType(queryType)
+            .restriction(restriction)
+            .build()
+        );
+
+        resultMap.put(restriction, restrictionPolicySubqueries);
+      }
+
+      return resultMap;
     });
   }
 
@@ -293,5 +332,28 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
           .build();
       })
       .toList();
+  }
+
+  /**
+   * Returns the list of {@link PolicySubquery} implementations that should be used
+   * to fetch {@link DomainAccessPolicy} rows whose linkage is
+   * determined by acquisition-unit based policies.
+   *
+   * <p>Each subquery in the returned list represents one policy source or policy
+   * type that contributes DomainAccessPolicy rows. For acquisition units, this
+   * currently consists of a single {@link AcquisitionUnitPolicyEntitySubquery}.
+   *
+   * <p>The framework layer is expected to apply these subqueries at each ownership
+   * traversal level when constructing queries that aggregate DomainAccessPolicy
+   * records for a resource.
+   *
+   * @param headers the request headers, allowing future subquery implementations
+   *                to perform authenticated remote lookups if required
+   * @return a list containing the {@link AcquisitionUnitPolicyEntitySubquery}
+   */
+  public List<PolicySubquery> getPolicyEntitySubqueries(String[] headers) {
+    List<PolicySubquery> subqueryList = new ArrayList<>();
+    subqueryList.add(new AcquisitionUnitPolicyEntitySubquery());
+    return subqueryList;
   }
 }
