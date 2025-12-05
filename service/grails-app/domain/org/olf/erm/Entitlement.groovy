@@ -39,7 +39,8 @@ import groovy.util.logging.Slf4j
   resourceIdColumn = "ent_id", // For grails modules we use SQL Column name for resourceId
   resourceIdField = "id",
   createRestrictionMapping = PolicyRestriction.UPDATE,
-  deleteRestrictionMapping = PolicyRestriction.UPDATE
+  deleteRestrictionMapping = PolicyRestriction.UPDATE,
+  hasStandaloneCreatePolicies = true // FIXME this isn't a good idea
 )
 @Slf4j
 public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitlement> {

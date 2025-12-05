@@ -9,11 +9,14 @@ class UrlMappings {
       "/erm",
       [
         [path: '/sas', controller: 'subscriptionAgreement'],
-        [path: '/entitlements', controller: 'entitlement']
+        [path: '/entitlements', controller: 'entitlement'],
+        [path: '/orderlines', controller: 'orderLine'] // FIXME remove this too
       ]
     )
     buildAccessControlRoutes.delegate = delegate // Ensure we call the helper closure from the UrlMapping context
     buildAccessControlRoutes.call()
+
+    "/erm/orderlines"(resources: 'orderLine') // FIXME remove this
 
     "/erm/compare"(controller: 'comparison', action: 'compare', method: 'POST')
 
