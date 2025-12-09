@@ -137,17 +137,10 @@ class AccessPolicyController extends PolicyEngineController<AccessPolicyEntity> 
   }
 
   /**
-   * Fetch the enabled engines for the PolicyEngine sorted by AccessPolicyType (Converted to String)
+   * Fetch the enabled engines for the PolicyEngine sorted by AccessPolicyType
    */
   def getEnabledEngines() {
-    // Map <AccessPolicyType, Boolean> won't render as is, convert to Map<String, Boolean>
-    Map<AccessPolicyType, Boolean> enabledEngines = policyEngine.getEnabledEngines()
-
-    Map<String, Boolean> enabledEnginesResponse = new HashMap<>()
-    enabledEngines.keySet().each {
-      enabledEnginesResponse.put(it.toString(), enabledEngines.get(it))
-    }
-
-    respond enabledEnginesResponse
+    // Grails gets confused trying to render AccessPolicyType, so use Jackson to render it out
+    render text: Json.toJson(policyEngine.getEnabledEngines()), contentType: 'application/json'
   }
 }
