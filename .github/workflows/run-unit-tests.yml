@@ -1,10 +1,15 @@
-name: Unit test module
-
 on:
-  push:
+  workflow_call:
+    inputs:
+      testPath:
+        required: true
+        type: string
+      outputDirectory:
+        required: true
+        type: string
 
 jobs:
-  run-unit-tests:
+  reusable_unit_test_job:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,13 +26,18 @@ jobs:
           build-root-directory: service
       - name: Run unit tests
         working-directory: ./service
+        env:
+          TEST_PATH: ${{inputs.testPath}}
         run: |
-          ./gradlew test
+          ./gradlew test --tests "$TEST_PATH"
       - name: Upload Test Results Files
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: unit-test-results
+          name: ${{ inputs.outputDirectory }}
           path: |
+            service/build/spock-reports/*.json
+            service/build/spock-reports/*.html
             service/build/test-results/**/*.xml
+            tools/testing/*.log
           retention-days: 1
