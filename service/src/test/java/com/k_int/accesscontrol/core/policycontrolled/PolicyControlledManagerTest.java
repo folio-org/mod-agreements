@@ -1,5 +1,6 @@
 package com.k_int.accesscontrol.core.policycontrolled;
 
+import com.k_int.accesscontrol.core.PolicyRestriction;
 import com.k_int.accesscontrol.testresources.policycontrolled.domainobjects.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
@@ -25,7 +26,7 @@ public class PolicyControlledManagerTest {
         1, // Ownership chain size
         true, // Leaf == Root
         null, // Root alias name (no need for alias since this is top level)
-        List.of(TopOwner.expectedRestrictionMap()) // Expected restriction mappings are empty
+        List.of(TopOwner.expectedRestrictionMap())
       ),
       Arguments.of(
         Named.of( // We'll name the test case against the first argument for clarity in test reports

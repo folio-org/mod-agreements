@@ -29,7 +29,6 @@ public class ChildD {
           .build()
       );
 
-
       put(
         PolicyRestriction.DELETE,
         RestrictionMapEntry.builder()
