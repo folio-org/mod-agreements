@@ -30,5 +30,5 @@ public class BasicPolicy implements ExternalPolicy {
    * @param id The policy id string
    * @return The policy ID string.
    */
-  String id;
+  public String id;
 }

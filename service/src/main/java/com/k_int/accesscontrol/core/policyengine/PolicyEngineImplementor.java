@@ -29,7 +29,8 @@ public interface PolicyEngineImplementor {
   List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType);
 
   /**
-   * Generates a mapping of policy restrictions to their corresponding policy subqueries.
+   * Generates a mapping of policy restrictions to their corresponding policy subqueries. This is an extension of the
+   * getPolicySubqueries method, allowing for the fetching of multiple restriction subqueries at once for efficiency reasons.
    *
    * @param headers      the request context headers, used for FOLIO/internal service authentication
    * @param restrictions the collection of policy restrictions to process
