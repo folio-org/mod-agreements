@@ -1,7 +1,9 @@
 package com.k_int.accesscontrol.core.sql;
 
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
  */
 @Builder
 @Getter
+@EqualsAndHashCode
+@ToString
 @SuppressWarnings("javadoc")
 public class AccessControlSql {
   /**
