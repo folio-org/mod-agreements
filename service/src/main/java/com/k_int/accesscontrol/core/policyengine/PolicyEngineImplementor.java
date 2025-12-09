@@ -17,19 +17,8 @@ import java.util.*;
  */
 public interface PolicyEngineImplementor {
   /**
-   * Generates policy subqueries for the given policy restriction and query type.
-   * Generally this will be a simpler case of getRestrictionMappedPolicySubqueries
-   *
-   * @param headers   the request context headers, used for FOLIO/internal service authentication
-   * @param pr        the policy restriction to filter by
-   * @param queryType the type of query to generate (SINGLE or LIST)
-   * @return a list of {@link PolicySubquery} objects for the given restriction and query type
-   * @throws PolicyEngineException if an error occurs while generating policy subqueries
-   */
-  List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType);
-
-  /**
-   * Generates a mapping of policy restrictions to their corresponding policy subqueries.
+   * Generates a mapping of policy restrictions to their corresponding policy subqueries. This is an extension of the
+   * getPolicySubqueries method, allowing for the fetching of multiple restriction subqueries at once for efficiency reasons.
    *
    * @param headers      the request context headers, used for FOLIO/internal service authentication
    * @param restrictions the collection of policy restrictions to process
@@ -37,7 +26,7 @@ public interface PolicyEngineImplementor {
    * @return a map where each key is a {@link PolicyRestriction} and the value is a list of {@link PolicySubquery} objects
    *         associated with that restriction
    */
-  Map<PolicyRestriction, List<PolicySubquery>> getRestrictionMappedPolicySubqueries(String[] headers, Collection<PolicyRestriction> restrictions, AccessPolicyQueryType queryType);
+  Map<PolicyRestriction, List<PolicySubquery>> getPolicySubqueries(String[] headers, Collection<PolicyRestriction> restrictions, AccessPolicyQueryType queryType);
 
   /**
    * Retrieves a list of access policy IDs grouped by their type for the given policy restriction.

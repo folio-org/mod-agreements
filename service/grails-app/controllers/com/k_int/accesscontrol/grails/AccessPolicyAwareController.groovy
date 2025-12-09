@@ -186,8 +186,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    *
    * @return An {@link EnumSet} containing the valid policy restrictions for access checks.
    */
-  @SuppressWarnings('GrMethodMayBeStatic') // Intellij won't shut up about making this static
-  protected Set<PolicyRestriction> getCanAccessValidPolicyRestrictions() {
+  protected static Set<PolicyRestriction> getCanAccessValidPolicyRestrictions() {
     return EnumSet.of(
       PolicyRestriction.CREATE,
       PolicyRestriction.DELETE,
@@ -546,7 +545,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         if (policyControlledManager.hasStandalonePolicies(0)) {
           String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 
-          // TODO we must be able to pull this bit out surely
           List<PolicySubquery> apeSubqueryList = policyEngine.getPolicyEntitySubqueries(grailsHeaders)
 
           // Getting owner ids with a parameter provider
@@ -595,7 +593,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   def claim(GrailsClaimBody claimBody) {
     if (claimBody.hasErrors()) {
       // If there are errors, respond with a 400 Bad Request and the errors object
-      respond claimBody.errors, status: 400
+      respond claimBody.errors, status: BAD_REQUEST
       return
     }
 
@@ -603,7 +601,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       // If there are owners and the resource does NOT support standalone policies then don't allow claiming
       String message = "Claiming is not supported on resource ${resourceClass.toString()}"
 
-      respond ([ message: message ], status: 405 )
+      respond ([ message: message ], status: METHOD_NOT_ALLOWED )
       return
     }
 
@@ -734,11 +732,11 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     }
 
     if (!changesMade) {
-      respond ([ message: "No changes to the access policies for this resource" ], status: 200 )
+      respond ([ message: "No changes to the access policies for this resource" ], status: OK )
       return
     }
 
-    respond ([ message: "Access policies updated for this resource" ], status: 201 )
+    respond ([ message: "Access policies updated for this resource" ], status: CREATED )
   }
 
   @Transactional

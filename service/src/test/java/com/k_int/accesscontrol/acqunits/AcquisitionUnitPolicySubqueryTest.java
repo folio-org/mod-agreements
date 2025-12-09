@@ -94,7 +94,7 @@ public class AcquisitionUnitPolicySubqueryTest {
     AccessControlSql sqlObject = fps.getSql(params);
 
     // THEN
-    assertEquals("1", sqlObject.getSqlString(), "SQL string for CREATE should be '1'");
+    assertEquals("1=1", sqlObject.getSqlString(), "SQL string for CREATE should be '1'");
     assertNull(sqlObject.getParameters(), "CREATE query should have no parameters");
   }
 

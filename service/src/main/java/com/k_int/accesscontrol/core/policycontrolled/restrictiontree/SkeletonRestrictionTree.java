@@ -2,7 +2,9 @@ package com.k_int.accesscontrol.core.policycontrolled.restrictiontree;
 
 import com.k_int.accesscontrol.core.PolicyRestriction;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 
 /**
@@ -10,6 +12,8 @@ import lombok.experimental.Accessors;
  */
 @Getter
 @Builder
+@EqualsAndHashCode
+@ToString
 @SuppressWarnings("javadoc")
 public class SkeletonRestrictionTree implements IRestrictionTree {
   /**

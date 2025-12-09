@@ -117,19 +117,6 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
   }
 
   /**
-   * Generates policy subqueries for acquisition unit restrictions.
-   *
-   * @param headers   the request context headers, used for FOLIO/internal service authentication
-   * @param pr        the policy restriction to filter by
-   * @param queryType the type of query to generate (boolean or filter)
-   * @return a list of {@link PolicySubquery} objects for the given restriction and query type
-   * @throws PolicyEngineException if acquisition unit lookup fails or FOLIO client errors occur
-   */
-  public List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType) {
-    return getRestrictionMappedPolicySubqueries(headers, Collections.singleton(pr), queryType).get(pr);
-  }
-
-  /**
    * Generates a mapping of policy restrictions to their corresponding policy subqueries.
    *
    * @param headers      the request context headers, used for FOLIO/internal service authentication
@@ -139,7 +126,7 @@ public class AcquisitionUnitPolicyEngine implements PolicyEngineImplementor {
    *         associated with that restriction
    * @throws PolicyEngineException if acquisition unit lookup fails or FOLIO client errors occur
    */
-  public Map<PolicyRestriction, List<PolicySubquery>> getRestrictionMappedPolicySubqueries(String[] headers, Collection<PolicyRestriction> restrictions, AccessPolicyQueryType queryType) {
+  public Map<PolicyRestriction, List<PolicySubquery>> getPolicySubqueries(String[] headers, Collection<PolicyRestriction> restrictions, AccessPolicyQueryType queryType) {
     Map<PolicyRestriction, List<PolicySubquery>> resultMap = new HashMap<>();
 
     String[] finalHeaders = handleLoginAndGetHeaders(headers);

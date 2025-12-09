@@ -106,15 +106,17 @@ model")
 ## Overview
 
 The basic approach is as follows. Each module will be responsible for several "PolicyControlled" resources. These
-resources will not need to change, no addition of "access control" fields etc etc. If a resource is API accessible
-and owned by some other PolicyControlled resource then the access policies on the _owner_ will determine access to
-the resource. This will all be managed via an @PolicyControlled tag on the resource.
+resources will not need to change, no addition of "access control" fields etc etc. A PolicyControlled resource is able
+to configure ownership chains by pointing at other PolicyControlled resources. By default, the access policies on the 
+owner will directly determine access to the resource, but it is possible to map restrictions or have standalone policies
+on the resource. This will all be managed via an @PolicyControlled tag on the resource, and the configuration of a
+PolicyControlledManager object to parse the chain.
 
 A separate table for AccessPolicyEntities will act as a join between policies from an external system (external to
 the module, such as Acquisition units, or even external to FOLIO, such as KI Grants potentially in future. In
 theory nothing prevents an internal access system but that has not been planned for.)
 
-When a resource is accessed through some sort of framework (Grails, micronaut, etc), an intepretation layer will
+When a resource is accessed through some sort of framework (Grails, micronaut, etc), an interpretation layer will
 provide the API calls, either intercepting normal CRUD operations or providing helper API calls such as `canRead` etc.
 
 This framework layer will call down to a pure java library PolicyEngine, which will parse which types of access control
@@ -131,7 +133,7 @@ The structure of this work as delivered is as follows:
 - Grails framework layer (com.k-int.accesscontrol.grails)
 - Module layer (setup of the PolicyControlled resources)
 
-As per the overview, we have the "main" java library, which is interracted with by the "framework layer" which in
+As per the overview, we have the "main" java library, which is interacted with by the "framework layer" which in
 turn can be imported into each implementing module.
 
 The "main" library delegates the acquisition unit logic to a "plugin" library, and all 3 of those are shaped by
@@ -167,9 +169,11 @@ PolicyEngine is a class which combines the PolicyEngine methods from the various
 below). The methods available are:
 
 - getPolicySubqueries
+- getRestrictionMappedPolicySubqueries
 - arePoliciesValid
 - getRestrictionPolicies
 - enrichPolicies
+- getPolicyEntitySubqueries
 - getPolicyLinksFromAccessPolicyList
 - getEnabledEngines/getEnabledEngineSet
   Most methods are applicable across several `PolicyRestrictions` (see `core` section), and require the passing down
@@ -226,126 +230,19 @@ resources for which access is granted by the plugins. Type `SINGLE` is expected 
 to return a single result, likely in the form of a boolean (1 if exists, 0 else, etc) to ascertain whether or not a
 given resource is restricted.
 
+#### getRestrictionMappedPolicySubqueries
+
+Much the same as the getPolicySubqueries above, except this takes a collection of Restrictions and returns a Map from
+Restriction to list of PolicySubquery objects.
+
 #### arePoliciesValid
 
-This method takes in a `PolicyRestriction` and a List<`AccessPolicies`> (which are in turn a collection of `Policy`
+This method takes in a `PolicyRestriction` and a List<`GroupedExternalPolicies`> (which are in turn a collection of `Policy`
 objects along with an `AccessPolicyType` type. See `core` section) and returns a boolean. The use case for this method
 in the framework library is to allow an API which can check whether some collection of Policies are valid for the user
 at hand. This is useful to perform before database commits have happened. The main use case in particular is to ensure
 that all of the policy ids are valid for the CLAIM restriction for the user BEFORE they are assigned to the resource.
 This is particularly important for the claim operation (See core section for how CLAIM and APPLY_POLICIES interact)
-
-[//]: # (#### getPolicyIds)
-
-[//]: # (Returns a list of `AccessPolicyTypeIds`, a collection of collections of ids, grouped by `AccessPolicyType` )
-
-[//]: # (&#40;`ACQ_UNIT` etc&#41;, corresponding to all the policy ids which are valid for a given `PolicyRestriction`.)
-
-[//]: # (This is expected to be used by the `framework` layer to provide APIs by which a user can ascertain which policies in )
-
-[//]: # (the various access control systems can be used in order to allow them to perform some operation on a resource.)
-
-[//]: # ()
-
-[//]: # (For example, one such output might be:)
-
-[//]: # (```)
-
-[//]: # ({)
-
-[//]: # (  "readPolicyIds": [)
-
-[//]: # (    {)
-
-[//]: # (      "name": "MEMBER_RESTRICTIVE",)
-
-[//]: # (      "policyIds": [)
-
-[//]: # (        "11d68595-e2a1-4342-af76-346942196cd0",)
-
-[//]: # (        "b35f1e8d-0a65-495b-ad50-1712978d4d10",)
-
-[//]: # (        "d5a3b023-e83a-46d5-857a-91c65822f0c3")
-
-[//]: # (      ],)
-
-[//]: # (      "type": "ACQ_UNIT")
-
-[//]: # (    },)
-
-[//]: # (    {)
-
-[//]: # (      "name": "NON_RESTRICTIVE",)
-
-[//]: # (      "policyIds": [)
-
-[//]: # (        "feb88e13-70ea-4b7c-a520-760aedd9de61",)
-
-[//]: # (        "76c3ebdf-b7a3-493e-b7c0-3c5ed3208266",)
-
-[//]: # (        "ddaec974-82a1-4516-a12a-97d6411d1ad5",)
-
-[//]: # (        "03ea0c24-448a-4882-8b7f-032c5f303f55",)
-
-[//]: # (        "348aaa0b-7e95-4b9b-8153-38863f522191",)
-
-[//]: # (        "b5e377b9-dbbd-4e71-ac18-f5f0dca905dc",)
-
-[//]: # (        "b50828f9-84f6-457f-b078-d223bbe0e5e3",)
-
-[//]: # (        "038373fe-6405-40e0-b017-8e52a63adb1f",)
-
-[//]: # (        "ac9f5d95-fa07-44f2-89e6-18e440a4a6a2",)
-
-[//]: # (        "29711f57-448e-4e6c-9b60-215cfd7b0451",)
-
-[//]: # (        "5dd4c689-d707-484d-8d03-d8dc6213adff",)
-
-[//]: # (        "0ebb1f7d-983f-3026-8a4c-5318e0ebc041",)
-
-[//]: # (        "c36dd39b-4373-433a-8dc9-8d50a837172d",)
-
-[//]: # (        "9c53c2e9-0e05-48c9-b4df-22d8d03086a8",)
-
-[//]: # (        "b8b410d3-cc17-48f7-8938-fbe8e6a5863d",)
-
-[//]: # (        "efd03229-3559-4164-b223-b709bee83dd2",)
-
-[//]: # (        "1e16cd89-d670-4079-ad4a-4e69b879413a",)
-
-[//]: # (        "c6bf977e-b14e-46d6-a3bb-c633bcb39be5",)
-
-[//]: # (        "e0ae9543-7f8a-4b66-b0e8-ebfa529f4f9e",)
-
-[//]: # (        "392f3386-d1a5-4935-a8ee-d15ab3c6f4fe",)
-
-[//]: # (        "2db4cacd-a2d5-4106-873f-ff60ece6fedb")
-
-[//]: # (      ],)
-
-[//]: # (      "type": "ACQ_UNIT")
-
-[//]: # (    })
-
-[//]: # (  ])
-
-[//]: # (})
-
-[//]: # (```)
-
-[//]: # (This output corresponds to finding the policy ids which would provide `READ` access to the user should they be )
-
-[//]: # (assigned to a resource. The name field is used to provide a little extra context, where the `type` and `policyIds` )
-
-[//]: # (are the important fields. Applying any one of these policy ids to a resource _should_ result in that resource being )
-
-[//]: # (accessible to the user for `READ` operation.)
-
-[//]: # ()
-
-[//]: # (The main use case for this is to find the policy ids valid for `CLAIM` &#40;see `core` section for more explanation )
-
-[//]: # (about what each `PolicyRestriction` does&#41;)
 
 ### PolicyEngineConfiguration
 
@@ -416,13 +313,13 @@ expandable to include future implementations such as `KI_GRANT` or `KEYCLOAK` et
 
 Each type is expected to come with its own `plugin` implementation library, `PolicyEngineImplementor` etc.
 
-### AccessPolicyTypeIds
+### GroupedExternalPolicies
 
-This class represents a grouped collection of policy id strings, grouped by `AccessPolicyType`. These have fields:
+This class represents a grouped collection of policies, grouped by `AccessPolicyType`. These have fields:
 
 - name: A descriptive name for the group, mostly useful for human readable reasons like an API response
-- policyIds: A list of strings containing the identifiers of various policies for a given `AccessPolicyType`
-- type: The `AccessPolicyType` to which this group of policy ids belongs.
+- policies: A list ExternalPolicy objects for a given `AccessPolicyType`
+- type: The `AccessPolicyType` to which this group of policies belongs.
 
 ### PolicyControlled
 
@@ -434,20 +331,34 @@ provides fields to house
 - ownerColumn
 - ownerField
 - ownerClass
+- <restriction>RestrictionMapping
+- hasStandalone<restriction>Policies
 
 The column/field is to provide all information potentially required for any framework implementation. An
-implementation using hibernate in Grails will likely utilise the field names, whereas a raw SQL implementation may
+implementation using hibernate in Grails might utilise the field names, whereas a raw SQL implementation may
 require the column names in the underlying database.
 
 The owner columns allow these annotations to reference another `PolicyControlled` resource as "owner", providing a
 way to build up an ownership chain that the `framework` layer can use to ensure that a child resource is still
 protected by its owner's restrictions.
 
+The restriction mapping fields, `readRestrictionMapping` or `updateRestrictionMapping` etc, allow for actions on a child
+resource to be protected by DIFFERENT actions on the parent resource. For example it is often natural that the ability to
+create or delete a child object be treated as an "update" on the parent.
+
+The standalone policies fields allows for policies on a child resource to be taken into account for that action alone.
+For example setting `hasStandaloneReadPolicies` on a resource with a parent would mean that READ is determined by whether
+the user can READ the child and the parent, but UPDATE is determined only by UPDATE on the parent. NOTE: It is worth
+noting that the policies assigned to a child resource might NOT influence the restriction which they are taken into
+account for. An Acquisition unit could not restrict read, but be assigned to a child resource which
+`hasStandaloneReadPolicies`. The reverse is also true, that Acquisition unit might protect create, but if the child
+resource isn't set up to take that into account it will not do so.
+
 This management is facilitated via `PolicyControlledManager` and `PolicyControlledMetadata`.
 
 ### PolicyControlledManager / PolicyControlledMetadata
 
-This class has a single field `ownershipChain`, and the logic required to resolve that ownership chain via iteration
+This class has two fields `ownershipChain`, and `restrictionTreeMap`, and the logic required to resolve those via iteration
 through the annotated fields. This allows multi-level ownership chains to be represented for a given `PolicyControlled`
 resource. This chain can then be parsed, each level represented by a `PolicyControlledMetadata` holding the
 information provided by the annotation, in addition to:
@@ -456,6 +367,16 @@ information provided by the annotation, in addition to:
 - aliasName (A generated alias name for each level, eg "owner_alias_0")
 - aliasOwnerColumn (A helper field containing the concatenation of aliasName and ownerColumn)
 - aliasOwnerField (A helper field containing the concatenation of aliasName and ownerField)
+
+The restrictionTreeMap maps each restriction to an IRestrictionTree, which is an object with properties
+- ownerLevel
+    - How far up the ownership chain has been traversed
+- restriction
+    - Keeping tabs on what restriction is mapped from each level
+- hasStandalonePolicies
+    - whether this level of the tree (representing some class of the ownership chain) has standalone policies
+- parent
+    - another IRestrictionTree, allowing for walks "up" the chain to follow the restriction mappings from the annotations
 
 ### PolicyEngineImplementor
 
@@ -504,7 +425,7 @@ This parameter object will be set up by the `framework` layer to make use of the
 
 ### AccessControlSql / AccessControlSqlType
 
-A class to hold the SQL returned by `PolicySubquery`. This comprises of:
+A class to hold the SQL returned by `PolicySubquery`. This comprises:
 
 - sqlString: The actual SQL in string form, with "?" parameter bindings
 - parameters: An Object[] array of parameters to be bound to sqlString
@@ -526,7 +447,7 @@ these types to the types of choice (For Grails this is indeed Hibernate types)
 
 This list may be expanded in future if more types are needed. For the current implementation only `STRING` is utilised.
 
-### HTTP bodies / responses
+### HTTP bodies / filters / responses
 
 The `core` layer additionally provides some helpers for setting up APIs in the various `framework` layers, although
 those layers are absolutely free to ignore these and provide their own bespoke API.
@@ -537,6 +458,12 @@ those layers are absolutely free to ignore these and provide their own bespoke A
   `PolicyRestriction` enum options.
 - `PolicyIdsResponse` - contains List<`AccessPolicyTypeIds`> for each `PolicyRestriction`, `readPolicies`,
   `createPolicies` etc.
+
+#### Filters
+
+- `PoliciesFilter` - a class containing a list of GroupedExternalPolicies to use as a filter.
+  - This filter should set up an extra FilterPolicySubquery on the fetch
+  - If _any_ of the policies are active for a resource, then the resource is included, otherwise not.
 
 #### Bodies
 
@@ -687,7 +614,7 @@ This has the "least restrictive wins" effect described in the acquisition unit d
 Each id is inserted into the SQL as a "?" parameter to be bound, and added to the `AccessControlSql` parameters
 array, with a requisite entry in the types array for type `STRING`.
 
-> ⚠️ WIP: document still under construction. ️⚠️
+> ⚠️ WIP: document still under construction. ⚠️
 
 ## Framework layer
 
