@@ -46,7 +46,7 @@ jobs:
   unit-tests: # Keep unit test runner(s)  in same place as int test runner(s)
     uses: ./.github/workflows/run-unit-tests.yml
     with:
-      testPath: *
+      testPath: '*'
       outputDirectory: UnitTests
   publish-test-results:
     if: always()
