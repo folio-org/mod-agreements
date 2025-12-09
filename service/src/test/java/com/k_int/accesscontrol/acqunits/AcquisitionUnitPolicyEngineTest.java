@@ -51,8 +51,8 @@ public class AcquisitionUnitPolicyEngineTest {
   }
 
   @Test
-  @DisplayName("getRestrictionMappedPolicySubqueries builds a subquery for given policy restriction")
-  void testGetRestrictionMappedPolicySubqueries_basic() {
+  @DisplayName("getPolicySubqueries builds a subquery for given policy restriction")
+  void testGetPolicySubqueries_basic() {
     PolicyRestriction pr = PolicyRestriction.READ;
 
     // Prepare a fake UserAcquisitionUnits which will be returned by the acquisitions client
@@ -74,7 +74,7 @@ public class AcquisitionUnitPolicyEngineTest {
     com.k_int.accesscontrol.core.AccessPolicyQueryType queryType = AccessPolicyQueryType.LIST;
 
     Map<PolicyRestriction, List<com.k_int.accesscontrol.core.sql.PolicySubquery>> result =
-      engine.getRestrictionMappedPolicySubqueries(HEADERS, Collections.singleton(pr), queryType);
+      engine.getPolicySubqueries(HEADERS, Collections.singleton(pr), queryType);
 
     assertNotNull(result);
     assertTrue(result.containsKey(pr));
