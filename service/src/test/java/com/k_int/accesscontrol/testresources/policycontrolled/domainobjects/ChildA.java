@@ -1,19 +1,21 @@
-package com.k_int.accesscontrol.testresources;
+package com.k_int.accesscontrol.testresources.policycontrolled.domainobjects;
 
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlled;
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadataRestrictionMap;
 
 @PolicyControlled(
-  ownerColumn = "b_owner_column",
+  ownerColumn = "a_owner_column",
   ownerField = "owner",
-  ownerClass = ChildA.class,
-  resourceTableName = "b_table",
-  resourceIdColumn = "b_id",
+  ownerClass = TopOwner.class,
+  resourceTableName = "a_table",
+  resourceIdColumn = "a_id",
   resourceIdField = "id"
 )
-public class ChildB {
+public class ChildA {
   String id;
-  ChildA owner;
+  TopOwner owner;
+  ChildB childB;
+  ChildC childC;
 
   public static PolicyControlledMetadataRestrictionMap expectedRestrictionMap() {
     return new PolicyControlledMetadataRestrictionMap();

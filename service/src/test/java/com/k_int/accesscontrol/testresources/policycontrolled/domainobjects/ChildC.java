@@ -1,4 +1,4 @@
-package com.k_int.accesscontrol.testresources;
+package com.k_int.accesscontrol.testresources.policycontrolled.domainobjects;
 
 import com.k_int.accesscontrol.core.PolicyRestriction;
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlled;

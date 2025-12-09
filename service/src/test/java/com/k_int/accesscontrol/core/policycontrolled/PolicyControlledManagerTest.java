@@ -1,7 +1,6 @@
 package com.k_int.accesscontrol.core.policycontrolled;
 
-import com.k_int.accesscontrol.testresources.*;
-
+import com.k_int.accesscontrol.testresources.policycontrolled.domainobjects.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
