@@ -1,11 +1,16 @@
 package com.k_int.accesscontrol.core.policycontrolled;
 
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.PolicyControlledRestrictionTreeMap;
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException;
 import com.k_int.accesscontrol.core.sql.AccessControlSql;
 import com.k_int.accesscontrol.core.sql.AccessControlSqlType;
-import com.k_int.accesscontrol.testresources.policycontrolled.domainobjects.*;
+import com.k_int.accesscontrol.testresources.policycontrolled.domainobjects.cycle.CycleA;
+import com.k_int.accesscontrol.testresources.policycontrolled.domainobjects.cycle.CycleB;
+import com.k_int.accesscontrol.testresources.policycontrolled.domainobjects.cycle.CycleC;
+import com.k_int.accesscontrol.testresources.policycontrolled.domainobjects.nicechain.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -334,5 +339,87 @@ public class PolicyControlledManagerTest {
         );
       }
     }
+  }
+
+  private static Stream<Arguments> restrictionTreeArguments() {
+    return Stream.of(
+      Arguments.of(
+        Named.of("ChildD", ChildD.class),
+        ChildD.expectedRestrictionTreeMap()
+      ),
+      Arguments.of(
+        Named.of("ChildC", ChildC.class),
+        ChildC.expectedRestrictionTreeMap()
+      ),
+      Arguments.of(
+        Named.of("ChildB", ChildB.class),
+        ChildB.expectedRestrictionTreeMap()
+      ),
+      Arguments.of(
+        Named.of("ChildA", ChildA.class),
+        ChildA.expectedRestrictionTreeMap()
+      ),
+      Arguments.of(
+        Named.of("TopOwner", TopOwner.class),
+        TopOwner.expectedRestrictionTreeMap()
+      )
+    );
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("restrictionTreeArguments")
+  @DisplayName("PolicyControlledManager builds expected SkeletonRestrictionTree")
+  void restrictionTreeTest(
+    Class<?> theClass,
+    PolicyControlledRestrictionTreeMap expectedTreeMap
+  ) {
+    PolicyControlledManager pcm = new PolicyControlledManager(theClass);
+    PolicyControlledRestrictionTreeMap actualTreeMap = pcm.getRestrictionTreeMap();
+
+    assertEquals(expectedTreeMap, actualTreeMap);
+  }
+
+  @Test
+  @DisplayName("PolicyControlledManager detects control cycles")
+  void cycleTest() {
+    assertThrows(
+      IllegalStateException.class,
+      () -> new PolicyControlledManager(CycleA.class)
+    );
+
+    assertThrows(
+      IllegalStateException.class,
+      () -> new PolicyControlledManager(CycleB.class)
+    );
+
+    assertThrows(
+      IllegalStateException.class,
+      () -> new PolicyControlledManager(CycleC.class)
+    );
+  }
+
+  @Test
+  @DisplayName("Utility methods (hasOwners, getNonLeafOwnershipChain) operate correctly")
+  void utilityMethodsTest() {
+    // ARRANGE 1: TopOwner (Chain size 1, Leaf=Root, NO owners)
+    PolicyControlledManager pcmRoot = new PolicyControlledManager(TopOwner.class);
+
+    // ASSERT 1
+    assertFalse(pcmRoot.hasOwners(), "TopOwner should report hasOwners=false.");
+    assertTrue(pcmRoot.getNonLeafOwnershipChain().isEmpty(), "TopOwner should have an empty non-leaf chain.");
+
+    // ARRANGE 2: ChildA (Chain size 2, Leaf!=Root, HAS owners)
+    PolicyControlledManager pcmChild = new PolicyControlledManager(ChildA.class);
+
+    // ASSERT 2
+    assertTrue(pcmChild.hasOwners(), "ChildA should report hasOwners=true.");
+    assertEquals(1, pcmChild.getNonLeafOwnershipChain().size(), "ChildA should have one non-leaf owner (TopOwner).");
+    assertEquals(TopOwner.class.getCanonicalName(), pcmChild.getNonLeafOwnershipChain().get(0).getResourceClassName(), "Non-leaf chain should contain the owner.");
+
+    // ARRANGE 3: ChildD (Chain size 4)
+    PolicyControlledManager pcmDeep = new PolicyControlledManager(ChildD.class);
+
+    // ASSERT 3
+    assertEquals(3, pcmDeep.getNonLeafOwnershipChain().size(), "ChildD should have three non-leaf owners.");
   }
 }

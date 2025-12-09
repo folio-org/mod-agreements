@@ -4,6 +4,8 @@ import com.k_int.accesscontrol.core.PolicyRestriction;
 import com.k_int.accesscontrol.core.sql.*;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
@@ -17,6 +19,8 @@ import java.util.List;
  */
 @Data
 @Builder
+@EqualsAndHashCode
+@ToString
 @SuppressWarnings("javadoc")
 public class EnrichedRestrictionTree implements IRestrictionTree {
   /**
