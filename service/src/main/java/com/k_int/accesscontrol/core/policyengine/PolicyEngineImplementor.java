@@ -5,7 +5,7 @@ import com.k_int.accesscontrol.core.GroupedExternalPolicies;
 import com.k_int.accesscontrol.core.PolicyRestriction;
 import com.k_int.accesscontrol.core.sql.PolicySubquery;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * Interface for implementing policy engine logic.
@@ -17,15 +17,16 @@ import java.util.List;
  */
 public interface PolicyEngineImplementor {
   /**
-   * Generates policy subqueries for the given policy restriction and query type.
+   * Generates a mapping of policy restrictions to their corresponding policy subqueries. This is an extension of the
+   * getPolicySubqueries method, allowing for the fetching of multiple restriction subqueries at once for efficiency reasons.
    *
-   * @param headers   the request context headers, used for FOLIO/internal service authentication
-   * @param pr        the policy restriction to filter by
-   * @param queryType the type of query to generate (SINGLE or LIST)
-   * @return a list of {@link PolicySubquery} objects for the given restriction and query type
-   * @throws PolicyEngineException if an error occurs while generating policy subqueries
+   * @param headers      the request context headers, used for FOLIO/internal service authentication
+   * @param restrictions the collection of policy restrictions to process
+   * @param queryType    the type of query to generate (SINGLE or LIST)
+   * @return a map where each key is a {@link PolicyRestriction} and the value is a list of {@link PolicySubquery} objects
+   *         associated with that restriction
    */
-  List<PolicySubquery> getPolicySubqueries(String[] headers, PolicyRestriction pr, AccessPolicyQueryType queryType);
+  Map<PolicyRestriction, List<PolicySubquery>> getPolicySubqueries(String[] headers, Collection<PolicyRestriction> restrictions, AccessPolicyQueryType queryType);
 
   /**
    * Retrieves a list of access policy IDs grouped by their type for the given policy restriction.
@@ -55,4 +56,20 @@ public interface PolicyEngineImplementor {
    * @return A list of AccessPolicy objects with all policy information provided
    */
   List<GroupedExternalPolicies> enrichPolicies(String[] headers, List<GroupedExternalPolicies> policies);
+
+  /**
+   * Generates a list of {@link PolicySubquery} objects representing subqueries
+   * required to filter {@link com.k_int.accesscontrol.core.DomainAccessPolicy} objects for a given {@link com.k_int.accesscontrol.core.sql.PolicySubqueryParameters}
+   *  <p>
+   * This method is typically used to construct SQL subqueries for access control entity resources.
+   * The resourceAlias parameter is expected to control the named alias for the AccessControlEntity table,
+   * and the expectation is that each subquery will be ORed together in a WHERE clause.
+   * The subqueries should focus on whether an DomainAccessPolicy object applies to a given resource given the resourceId in parameters
+   * If resourceId is null then it is expected that each implementation should provide ALL DomainAccessPolicies.
+   * </p>
+   *
+   * @param headers the request context headers, used for authentication and context propagation
+   * @return a list of {@link PolicySubquery} objects for use on a DB query for DomainAccessPolicy objects
+   */
+  List<PolicySubquery> getPolicyEntitySubqueries(String[] headers);
 }

@@ -1,17 +1,17 @@
 package com.k_int.accesscontrol.grails
 
-
 import com.k_int.accesscontrol.core.GroupedExternalPolicies
 import com.k_int.accesscontrol.core.DomainAccessPolicy
-import com.k_int.accesscontrol.core.AccessPolicyType
 import com.k_int.accesscontrol.core.http.bodies.PolicyLink
 import com.k_int.accesscontrol.core.http.filters.PoliciesFilter
 import com.k_int.accesscontrol.core.http.responses.CanAccessResponse
+import com.k_int.accesscontrol.core.http.responses.OwnerPolicyLinkList
+import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata
+import com.k_int.accesscontrol.core.policycontrolled.restrictiontree.EnrichedRestrictionTree
 import com.k_int.accesscontrol.core.policyengine.EvaluatedClaimPolicies
 import com.k_int.accesscontrol.core.sql.AccessControlSql
 import com.k_int.accesscontrol.core.AccessPolicyQueryType
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledManager
-import com.k_int.accesscontrol.core.policycontrolled.PolicyControlledMetadata
 import com.k_int.accesscontrol.core.policyengine.PolicyEngineException
 import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.sql.AccessControlSqlType
@@ -29,11 +29,14 @@ import org.hibernate.SessionFactory
 import org.hibernate.engine.spi.SessionFactoryImplementor
 import org.hibernate.query.NativeQuery
 import org.hibernate.type.Type
+import org.json.JSONException
+import org.json.JSONObject
 import org.springframework.beans.factory.annotation.Autowired
 
 import javax.annotation.PostConstruct
 import java.time.Duration
 
+import static org.springframework.http.HttpStatus.*
 /**
  * Extends com.k_int.okapi.OkapiTenantAwareController to incorporate access policy enforcement for resources.
  * This controller provides methods to check read, update, and delete permissions based on defined
@@ -43,6 +46,11 @@ import java.time.Duration
  */
 @CurrentTenant
 class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
+  /**
+   * The alias name for the domain access policy (AccessPolicyEntity) table in SQL queries
+   */
+  final static String DOMAIN_ACCESS_POLICY_TABLE_ALIAS = "domain_access_policies"
+
   /**
    * The Class object representing the resource entity type managed by this controller.
    */
@@ -94,85 +102,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     this.typeMapper = new AccessControlHibernateTypeMapper(hibernateSessionFactory as SessionFactoryImplementor)
   }
 
-  /**
-   * Resolves the ID of the ultimate owner (root) in an ownership chain, starting from a leaf resource ID.
-   * If no ownership chain is configured, the leaf resource itself is considered the root.
-   * This method dynamically constructs an HQL query to traverse the chain and fetch the root ID.
-   *
-   * @param leafResourceId The ID of the leaf resource for which to find the root owner.
-   * @return The ID of the root owner, or the {@code leafResourceId} if no owners are configured or resolution fails.
-   */
-  protected String resolveRootOwnerId(String leafResourceId) {
-    if (!policyControlledManager.hasOwners()) {
-      // If there are no configured owners, the leaf resource itself is the "root" for policy purposes
-      return leafResourceId
-    }
-    List<PolicyControlledMetadata> ownershipChain = policyControlledManager.getOwnershipChain()
-    PolicyControlledMetadata leafMetadata = policyControlledManager.getLeafPolicyControlledMetadata()
-    PolicyControlledMetadata rootMetadata = policyControlledManager.getRootPolicyControlledMetadata()
-
-    // Dynamically build an HQL query to traverse the ownership chain
-    StringBuilder hql = new StringBuilder("SELECT t${ownershipChain.size() - 1}.${rootMetadata.resourceIdField}")
-    hql.append(" FROM ${leafMetadata.resourceClassName} t0") // Start from the leaf entity
-
-    // Build the JOINs up the chain
-    for (int i = 0; i < ownershipChain.size() - 1; i++) {
-      PolicyControlledMetadata currentMetadata = ownershipChain.get(i)
-      // Ensure currentMetadata.ownerField is not null/empty before appending join
-      if (currentMetadata.ownerField) {
-        hql.append(" JOIN t${i}.${currentMetadata.ownerField} t${i+1}")
-      }
-    }
-
-    hql.append(" WHERE t0.id = :leafResourceId") // Filter by the requested leaf resource ID
-
-    // Execute the HQL query and return the id at hand
-    String resolvedRootId = AccessPolicyEntity.executeQuery(hql.toString(), ["leafResourceId": leafResourceId]).getAt(0)
-
-    // Return the resolved ID, or fallback to the leaf ID if resolution fails (e.g., entity not found)
-    return resolvedRootId ?: leafResourceId
-  }
-
-  protected String resolveRootOwnerClass() {
-    PolicyControlledMetadata leafMetadata = policyControlledManager.getLeafPolicyControlledMetadata()
-
-    if (!policyControlledManager.hasOwners()) {
-      // If there are no configured owners, the leaf resource itself is the "root" for policy purposes
-
-      return leafMetadata?.resourceClassName
-    }
-    PolicyControlledMetadata rootMetadata = policyControlledManager.getRootPolicyControlledMetadata()
-    return rootMetadata.resourceClassName
-  }
-
-  /**
-   * Constructs a {@link PolicySubqueryParameters} object for use in policy subqueries.
-   * This method sets up the necessary parameters based on the resource ID and the
-   * ownership chain configuration.
-   *
-   * @param resourceId The ID of the resource to which the policies apply. Can be {@code null} for LIST queries.
-   * @return A {@link PolicySubqueryParameters} object populated with the relevant parameters.
-   */
-  protected PolicySubqueryParameters getPolicySubqueryParameters(String resourceId) {
-    String resourceAlias = '{alias}'
-    PolicyControlledMetadata rootPolicyControlledMetadata = policyControlledManager.getRootPolicyControlledMetadata()
-    if (policyControlledManager.hasOwners()) {
-      resourceAlias = rootPolicyControlledMetadata.getAliasName()
-    } // If there are no "owners" then rootPolicyControlledMetadata should equal leafPolicyControlledMetadata ie, resourceClass
-
-    return PolicySubqueryParameters
-      .builder()
-      .accessPolicyTableName(AccessPolicyEntity.TABLE_NAME)
-      .accessPolicyTypeColumnName(AccessPolicyEntity.TYPE_COLUMN)
-      .accessPolicyIdColumnName(AccessPolicyEntity.POLICY_ID_COLUMN)
-      .accessPolicyResourceIdColumnName(AccessPolicyEntity.RESOURCE_ID_COLUMN)
-      .accessPolicyResourceClassColumnName(AccessPolicyEntity.RESOURCE_CLASS_COLUMN)
-      .resourceAlias(resourceAlias) // This alias can be deeply nested from owner or '{alias}' for hibernate top level queries
-      .resourceIdColumnName(rootPolicyControlledMetadata.resourceIdColumn)
-      .resourceId(resourceId) // This might be null (For LIST type queries)
-      .resourceClass(rootPolicyControlledMetadata.resourceClassName)
-      .build()
-  }
 
   /**
    * Generates a list of SQL fragments (policy subqueries) based on a given policy restriction,
@@ -182,11 +111,11 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    *
    * @param restriction The type of policy restriction (e.g., READ, UPDATE, DELETE).
    * @param queryType The type of query (e.g., SINGLE for individual resource checks, LIST for collection checks).
-   * @param resourceId The ID of the resource to apply the policy to. Can be {@code null} for LIST queries.
+   * @param leafResourceId The ID of the resource in hand we apply the policy against. Can be {@code null} for LIST queries.
    * @return A list of SQL string fragments representing the access policies.
    */
-  protected List<AccessControlSql> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String resourceId) {
-    return getPolicySql(restriction, queryType, resourceId, null)
+  protected List<AccessControlSql> getPolicySql(PolicyRestriction restriction, AccessPolicyQueryType queryType, String leafResourceId) {
+    return getPolicySql(restriction, queryType, leafResourceId, null)
   }
 
   /**
@@ -197,7 +126,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    *
    * @param restriction The type of policy restriction (e.g., READ, UPDATE, DELETE).
    * @param queryType The type of query (e.g., SINGLE for individual resource checks, LIST for collection checks).
-   * @param resourceId The ID of the resource to apply the policy to. Can be {@code null} for LIST queries.
+   * @param resourceId The ID of the resource in hand we apply the policy against. Can be {@code null} for LIST queries.
    * @param filters Optional list of {@link PoliciesFilter} to refine which policies are considered.
    * @return A list of SQL string fragments representing the access policies.
    */
@@ -206,12 +135,38 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
     // This should pass down all headers to the policyEngine. We can then choose to ignore those should we wish (Such as when logging into an external FOLIO)
     String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
-    List<PolicySubquery> policySubqueries = policyEngine.getPolicySubqueries(grailsHeaders, restriction, queryType, filters)
 
-    PolicySubqueryParameters params = getPolicySubqueryParameters(resourceId)
-    log.trace("AccessPolicyAwareController::getPolicySql PolicySubqueryParameters configured: ${params}")
+    // Attempt to work out which policySubqueries and which subqueryParams we will need
+    // Starting at the leaf, work out whether we need to get hold of subqueries at this level, pass through to parent (with mapping?) or break out.
 
-    return policySubqueries.collect { psq -> psq.getSql(params)}
+    // TODO I'm not 100% behind this approach, but it definitely feels like we're keeping the framework layer and engine layer more separate
+    GrailsOwnerLevelParameterProvider parameterProvider = new GrailsOwnerLevelParameterProvider(
+      typeMapper,
+      policyControlledManager,
+      resourceId,
+      restriction != PolicyRestriction.CREATE ? 0 : 1 // For CREATE we are working on the owner NOT on the leaf object itself since it doesn't yet have an id
+    )
+
+    // Is this the right pattern?
+    EnrichedRestrictionTree restrictionTree = policyEngine.enrichRestrictionTree(
+      grailsHeaders,
+      queryType,
+      filters,
+      policyControlledManager.getRestrictionTreeMap().get(restriction),
+      parameterProvider
+    )
+
+    // TODO See comment about "orphaned" CREATE elsewhere in the controller. If we are performing a CREATE and we have
+    //  no resourceId then for now assume that the restriction tree is invalid beyond the current level.
+    //  It may eventually be necessary to instead walk up the tree to the first non-CREATE mapping, as being able to
+    //  CREATE on the parent resource is also not id bound. But I'm leaving that use case unfinished right now as it's
+    //  not one that we need.
+    if (!resourceId && restriction == PolicyRestriction.CREATE) {
+      restrictionTree.setParent(null)
+    }
+
+    // We now have the complex Map from above ready to build the params and combine the SQL
+    return restrictionTree.getSql()
   }
 
 
@@ -231,8 +186,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    *
    * @return An {@link EnumSet} containing the valid policy restrictions for access checks.
    */
-  @SuppressWarnings('GrMethodMayBeStatic') // Intellij won't shut up about making this static
-  protected Set<PolicyRestriction> getCanAccessValidPolicyRestrictions() {
+  protected static Set<PolicyRestriction> getCanAccessValidPolicyRestrictions() {
     return EnumSet.of(
       PolicyRestriction.CREATE,
       PolicyRestriction.DELETE,
@@ -257,15 +211,48 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     AccessPolicyEntity.withSession { Session sess ->
       // Handle OWNER logic
 
-      // If there are NO owners, we can use the queryResourceId from the request itself
-      String queryResourceId = resolveRootOwnerId(params.id)
-
       if (!getCanAccessValidPolicyRestrictions().contains(pr)) {
         throw new PolicyEngineException("Restriction: ${pr.toString()} is not accessible here", PolicyEngineException.INVALID_RESTRICTION)
       }
 
       // We have a valid restriction, lets get the policySql
-      List<AccessControlSql> policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, queryResourceId)
+
+      // For CREATE we need to include the owner id, not the params id, where we are creating a child object
+      String resourceId = params.id
+      if (
+        pr == PolicyRestriction.CREATE &&
+          policyControlledManager.hasOwners()
+      ) {
+        JSONObject body = getObjectToBind() as JSONObject
+        String ownerField = policyControlledManager.getOwnerLevelMetadata(0).getOwnerField()
+
+        // Check whether the POST body has an owner
+        if (body.has(ownerField)) {
+          try {
+            def rawOwnerValue = body.get(ownerField)
+
+            // We have historically allowed both "owner": "the-owner-uuid" AND "owner": { "id": "the-owner-uuid" } so allow for either here
+            if (rawOwnerValue instanceof String) {
+              resourceId = rawOwnerValue
+            } else {
+              String ownerIdField = policyControlledManager.getOwnerLevelMetadata(1).getResourceIdField()
+              resourceId = rawOwnerValue.get(ownerIdField)
+            }
+          } catch (JSONException jex) {
+            throw new PolicyEngineException("Error attempting to resolve owner identifier from CREATE body", PolicyEngineException.GENERIC_ERROR, jex)
+          }
+        } else {
+          // TODO In some cases we may have an "orphaned" CREATE. As things stand if a CREATE call comes in with no owner
+          //  we will let it through here, it's not up to this library to prevent something that MUST have an owner not
+          //  having one. However we _do_ have an issue if an orphaned create comes through and there are standalone CREATE
+          //  calls AND mapped parent (say UPDATE) calls. UPDATE will sometimes require an id, and so it is up to the
+          //  library to understand that we are in an "orphaned CREATE" situation and to only perform CREATE type checks
+          //  at the base level. See the sibling comment inside getPolicySql for how we handle null resourceId in the
+          //  CREATE case. If this solution doesn't prove sufficient then this logic may need revisiting.
+        }
+      }
+
+      List<AccessControlSql> policySqlFragments = getPolicySql(pr, AccessPolicyQueryType.SINGLE, resourceId)
 
       // If we have no SQL here, just shortcut to true
       if (policySqlFragments.size() == 0) {
@@ -276,22 +263,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       log.trace("AccessControl generated PolicySql parameters: ${policySqlFragments.collect{ it.parameters.collect { it.toString() } }.join(', ')}")
       log.trace("AccessControl generated PolicySql types: ${policySqlFragments.collect{ it.types.collect { it.toString() } }.join(', ')}")
 
-      // We're going to do this with hibernate criteria builder to match doTheLookup logic
-      String bigSql = policySqlFragments.collect {"(${it.getSqlString()})" }.join(" AND ") // JOIN all sql subqueries together here.
-      NativeQuery accessAllowedQuery = sess.createNativeQuery("SELECT ${bigSql} AS access_allowed".toString())
-
-      // Now bind all parameters for all sql fragments. We ASSUME they're all using ? for bind params.
-      // Track where we're up to with hibernateParamIndex -- hibernate is 1-indexed
-      int hibernateParamIndex = 1
-      policySqlFragments.each { AccessControlSql entry ->
-        entry.getParameters().eachWithIndex { Object param, int paramIndex  ->
-          accessAllowedQuery.setParameter(hibernateParamIndex, param, (Type) typeMapper.getHibernateType((AccessControlSqlType) entry.getTypes()[paramIndex]))
-          hibernateParamIndex++ // Iterate the outer index
-        }
-      }
-
-      boolean result = accessAllowedQuery.list()[0]
-
+      boolean result = performHibernateQuery(buildCanAccessSql(policySqlFragments), null)[0]
       return result
     }
   }
@@ -442,7 +414,6 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   }
 
 
-
   // Comment out to allow quick revert to default index behaviour for development
   /**
    * Overrides the default index method to apply access control policies when listing resources.
@@ -516,7 +487,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
-    respond ([ message: "PolicyRestriction.READ check failed in access control" ], status: 403 )
+    respond ([ message: "PolicyRestriction.READ check failed in access control" ], status: FORBIDDEN )
   }
 
   /**
@@ -531,7 +502,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
-    respond ([ message: "PolicyRestriction.CREATE check failed in access control" ], status: 403 )
+    respond ([ message: "PolicyRestriction.CREATE check failed in access control" ], status: FORBIDDEN )
   }
 
   /**
@@ -548,7 +519,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
       return
     }
 
-    respond ([ message: "PolicyRestriction.UPDATE check failed in access control" ], status: 403 )
+    respond ([ message: "PolicyRestriction.UPDATE check failed in access control" ], status: FORBIDDEN )
   }
 
   /**
@@ -558,14 +529,54 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
    *
    * @return A response indicating successful deletion if access is granted, or an error message if access is denied.
    */
-  @Transactional
   def delete() {
-    if (canUserDelete()) {
-      super.delete()
+    if (!canUserDelete()) {
+      // Overwrite the default behaviour
+      request.withFormat {
+        '*' { respond([message: "PolicyRestriction.DELETE check failed in access control"], status: FORBIDDEN) }
+      }
       return
     }
 
-    respond ([ message: "PolicyRestriction.DELETE check failed in access control" ], status: 403 )
+    AccessPolicyEntity.withTransaction { transactionStatus -> {
+      try {
+        // We also need to get rid of any AccessPolicyEntity objects for this level
+
+        if (policyControlledManager.hasStandalonePolicies(0)) {
+          String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
+
+          List<PolicySubquery> apeSubqueryList = policyEngine.getPolicyEntitySubqueries(grailsHeaders)
+
+          // Getting owner ids with a parameter provider
+          GrailsOwnerLevelParameterProvider parameterProvider = new GrailsOwnerLevelParameterProvider(
+            typeMapper,
+            policyControlledManager,
+            params.id,
+            0,
+            DOMAIN_ACCESS_POLICY_TABLE_ALIAS
+          )
+
+          List<AccessControlSql> accessControlSqlList = apeSubqueryList.collect {it.getSql(parameterProvider.provideParameters(0))}
+          List<AccessPolicyEntity> entityList = performHibernateQuery(buildAccessPolicyEntitySql(accessControlSqlList), AccessPolicyEntity.class)
+
+          entityList.forEach {ape -> {
+            ape.delete()
+          }}
+        }
+
+        // Perform the original delete from super controller if we got to this stage
+        super.delete()
+      } catch (Exception e) {
+        String failureMessage = "Failed to delete entity or associated AccessPolicyEntity objects"
+        log.error(failureMessage, e)
+
+        // Some of the deletes failed, rollback here.
+        transactionStatus.setRollbackOnly()
+        request.withFormat {
+          '*' { respond([message: failureMessage], status: INTERNAL_SERVER_ERROR) }
+        }
+      }
+    }}
   }
 
   /**
@@ -582,41 +593,43 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
   def claim(GrailsClaimBody claimBody) {
     if (claimBody.hasErrors()) {
       // If there are errors, respond with a 400 Bad Request and the errors object
-      respond claimBody.errors, status: 400
+      respond claimBody.errors, status: BAD_REQUEST
       return
     }
 
-    if (policyControlledManager.hasOwners()) {
-      // If there are owners, then don't allow claiming (for now)
-      respond ([ message: 'Claiming is not supported on resources PolicyControlled via an owner' ], status: 400 )
+    if (!policyControlledManager.hasStandalonePolicies() && policyControlledManager.hasOwners()) {
+      // If there are owners and the resource does NOT support standalone policies then don't allow claiming
+      String message = "Claiming is not supported on resource ${resourceClass.toString()}"
+
+      respond ([ message: message ], status: METHOD_NOT_ALLOWED )
       return
     }
 
     // Strategy - Check whether APPLY_POLICIES is allowed on the resource, and if so, then check whether all policies in the request body are valid for CLAIM.
     if (!canUserApplyPolicies()) {
-      respond ([ message: "PolicyRestriction.APPLY_POLICIES check failed in access control" ], status: 403 )
+      respond ([ message: "PolicyRestriction.APPLY_POLICIES check failed in access control" ], status: FORBIDDEN )
       return
     }
 
     // At this point, we know that the user has permission to apply policies
 
-    // Might not need to do this now, since we're cancelling early if there are owners
-    String resourceId = resolveRootOwnerId(params.id)
-    String resourceClass = resolveRootOwnerClass()
+    // Get the identifier from the request params
+    String resourceId = params.id
+
     boolean success = true
     boolean changesMade = true
     String failureMessage = ''
-    int failureCode = 400
+    int failureCode = BAD_REQUEST.value()
     AccessPolicyEntity.withSession { sess ->
       AccessPolicyEntity.withTransaction { transactionStatus ->
         // Fetch the original policies for this resource
-        List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass)
+        List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass.toString())
 
         // Set up the evaluated claim policies object
         EvaluatedClaimPolicies evaluatedClaimPolicies
         try {
           // Attempt to evaluate the claimBody against the existing policies for this resource, returning the policies to add/remove/update
-          evaluatedClaimPolicies = policyEngine.evaluateClaimPolicies(claimBody, accessPoliciesForResource, resourceId, resourceClass)
+          evaluatedClaimPolicies = policyEngine.evaluateClaimPolicies(claimBody, accessPoliciesForResource, resourceId, resourceClass.toString())
         } catch (PolicyEngineException pee) {
           // We can catch the PolicyEngineException here and return a 400 with the message -- we're expecting it in cases where the changed policies are invalid for some reason
           if ([
@@ -651,7 +664,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
         if (!areClaimPoliciesValid(changedPolicies)) {
           success = false
           failureMessage = "PolicyRestriction.CLAIM not valid for one or more changed policies in claims"
-          failureCode = 403
+          failureCode = FORBIDDEN.value()
           log.error(failureMessage)
           return // Kick out to the post-transaction success check
         }
@@ -696,14 +709,14 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
               type: policy.type,
               description: policy.description,
               resourceId: resourceId,
-              resourceClass: resourceClass
+              resourceClass: resourceClass.getName()
             ).save(flush: true, failOnError: true)
           }
         } catch(Exception e) {
           // Something went wrong with the DB changes -- Rollback and return 500
           success = false
           failureMessage = "Something went wrong saving access policies to the database"
-          failureCode = 500
+          failureCode = INTERNAL_SERVER_ERROR.value()
           log.error("${failureMessage}: ${e.getMessage()}", e)
 
           transactionStatus.setRollbackOnly()
@@ -719,37 +732,117 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     }
 
     if (!changesMade) {
-      respond ([ message: "No changes to the access policies for this resource" ], status: 200 )
+      respond ([ message: "No changes to the access policies for this resource" ], status: OK )
       return
     }
 
-    respond ([ message: "Access policies updated for this resource" ], status: 201 )
+    respond ([ message: "Access policies updated for this resource" ], status: CREATED )
   }
 
   @Transactional
   def policies() {
-    String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
-    AccessPolicyEntity.withSession {
-      Set<AccessPolicyType> enabledEngines = policyEngine.getEnabledEngineSet()
+    AccessPolicyEntity.withSession { Session sess ->
+      String[] grailsHeaders = convertGrailsHeadersToStringArray(request)
 
-      // Fetch the ENABLED access policy entities for the resource at hand
-      List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.executeQuery(
-        """
-          SELECT ape FROM AccessPolicyEntity ape
-          WHERE
-            resourceId = :resId AND
-            type IN :enabledEngines
-        """.toString(),
-        [
-          resId: resolveRootOwnerId(params.id),
-          enabledEngines: enabledEngines
-        ]
+      List<PolicySubquery> apeSubqueryList = policyEngine.getPolicyEntitySubqueries(grailsHeaders)
+
+      // Getting owner ids with a parameter provider
+      GrailsOwnerLevelParameterProvider parameterProvider = new GrailsOwnerLevelParameterProvider(
+        typeMapper,
+        policyControlledManager,
+        params.id,
+        0,
+        DOMAIN_ACCESS_POLICY_TABLE_ALIAS
       )
 
-      List<PolicyLink> policyLinks = policyEngine.getPolicyLinksFromAccessPolicyList(grailsHeaders, accessPoliciesForResource)
+      List<OwnerPolicyLinkList> ownerPolicyLinks = new ArrayList<>()
+
+      // We're going to build this map.
+      Map<String, List<AccessPolicyEntity>> policyEntityMap = new HashMap<>()
+      // For each owner level, get all relevant policies.
+      policyControlledManager.ownershipChain.stream().forEach { PolicyControlledMetadata metadata -> {
+        String ownerId = parameterProvider.ownerIdProvider(metadata.ownerLevel)
+
+        OwnerPolicyLinkList ownerPolicyLinkList = OwnerPolicyLinkList.builder()
+          .resourceClass(metadata.getResourceClassName())
+          .ownerLevel(metadata.getOwnerLevel())
+          .ownerId(ownerId)
+          .build()
+
+        // Check if we have any policies at this level
+        if (policyControlledManager.hasStandalonePolicies(metadata.ownerLevel)) {
+          ownerPolicyLinkList.hasStandalonePolicies(true)
+          PolicySubqueryParameters params = parameterProvider.provideParameters(metadata.ownerLevel)
+
+          // Set up list of AccessControlSql
+          List<AccessControlSql> accessControlSqlList = apeSubqueryList.collect {it.getSql(params)}
+
+
+          List<AccessPolicyEntity> entityList = performHibernateQuery(buildAccessPolicyEntitySql(accessControlSqlList), AccessPolicyEntity.class)
+
+          policyEntityMap.put(ownerId, entityList)
+        }
+
+        ownerPolicyLinks.add(ownerPolicyLinkList)
+      }}
+
+      // We have a Map from id -> List<AccessPolicyEntities>. We want to enrich these into PolicyLinks to render out,
+      // but don't want to make multiple calls to the policyEngine. So instead we'll flatten to a single list, then map
+      // back onto the proper shape after enrichment
+      Set<AccessPolicyEntity> flattenedAccessPolicyEntities = policyEntityMap.values().flatten().toSet() as Set<AccessPolicyEntity>
+      List<PolicyLink> enrichedPolicyLinks = policyEngine.getPolicyLinksFromAccessPolicyList(grailsHeaders, flattenedAccessPolicyEntities)
+
+
+      ownerPolicyLinks.forEach { ownerPolicyLinkList -> {
+        List<PolicyLink> relevantPolicyLinks = policyEntityMap.get(ownerPolicyLinkList.getOwnerId()).collect(ape -> enrichedPolicyLinks.find(epl -> epl.getId() === ape.getId()))
+        ownerPolicyLinkList.setPolicies(relevantPolicyLinks)
+      }}
 
       // Grails gets confused with the Policy extensions, so instead lets render it out with Jackson
-      render text: Json.toJson(policyLinks), contentType: 'application/json'
+      render text: Json.toJson(ownerPolicyLinks), contentType: 'application/json'
+    }
+  }
+
+  /* **************** SQL HELPERS **************** */
+  protected static AccessControlSql buildAccessPolicyEntitySql(Collection<AccessControlSql> subqueries) {
+    AccessControlSql combinedSubqueries = AccessControlSql.combineSqlSubqueries(subqueries, " OR ")
+
+    String sqlString = "SELECT * FROM ${AccessPolicyEntity.TABLE_NAME} AS ${DOMAIN_ACCESS_POLICY_TABLE_ALIAS} WHERE ${combinedSubqueries.getSqlString()}"
+
+    return AccessControlSql.builder()
+      .sqlString(sqlString)
+      .parameters(combinedSubqueries.getParameters())
+      .types(combinedSubqueries.getTypes())
+      .build()
+  }
+
+  protected static AccessControlSql buildCanAccessSql(Collection<AccessControlSql> subqueries) {
+    AccessControlSql combinedSubqueries = AccessControlSql.combineSqlSubqueries(subqueries, " AND ")
+
+    String sqlString = "SELECT ${combinedSubqueries.getSqlString()} AS access_allowed"
+
+    return AccessControlSql.builder()
+      .sqlString(sqlString)
+      .parameters(combinedSubqueries.getParameters())
+      .types(combinedSubqueries.getTypes())
+      .build()
+  }
+
+  protected <S> List<S> performHibernateQuery(AccessControlSql theSql, Class<S> clazz) {
+    // We know this class exists, so use it to get a hold of the session.
+    AccessPolicyEntity.withSession { Session sess ->
+      NativeQuery nativeQuery = sess.createNativeQuery(theSql.getSqlString())
+
+      if (clazz != null) {
+        nativeQuery.addEntity(clazz) // Ensure we get back the right class
+      }
+
+      // Set all the parameters and types on the request
+      theSql.getParameters().eachWithIndex{ Object param, int i ->
+        nativeQuery.setParameter(i + 1, param, (Type) typeMapper.getHibernateType((AccessControlSqlType) theSql.getTypes()[i]))
+      }
+
+      return nativeQuery.list()
     }
   }
 }

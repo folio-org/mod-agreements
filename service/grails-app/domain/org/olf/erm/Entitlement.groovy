@@ -1,5 +1,6 @@
 package org.olf.erm
 
+import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.core.policycontrolled.PolicyControlled
 
 import java.time.LocalDate
@@ -22,7 +23,6 @@ import grails.databinding.BindInitializer
 import grails.gorm.MultiTenant
 import groovy.util.logging.Slf4j
 
-
 /**
  * Entitlement (A description of a right to access a specific digital resource, which can be an
  * title on a platform (But not listed in a package), a title named in a package, a full package of resources
@@ -31,12 +31,17 @@ import groovy.util.logging.Slf4j
  * without perhaps knowing which agreement controls that right.
  *
  */
-@Slf4j
 @PolicyControlled(
   ownerColumn = 'ent_owner_fk',
   ownerField = 'owner',
-  ownerClass = SubscriptionAgreement.class
+  ownerClass = SubscriptionAgreement.class,
+  resourceTableName = 'entitlement',
+  resourceIdColumn = "ent_id", // For grails modules we use SQL Column name for resourceId
+  resourceIdField = "id",
+  createRestrictionMapping = PolicyRestriction.UPDATE,
+  deleteRestrictionMapping = PolicyRestriction.UPDATE
 )
+@Slf4j
 public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitlement> {
   public static final Class<? extends ErmResource>[] ALLOWED_RESOURCES = [Pkg, PackageContentItem, PlatformTitleInstance] as Class[]
 
