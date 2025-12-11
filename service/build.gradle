@@ -164,6 +164,8 @@ dependencies {
 
   implementation 'com.opencsv:opencsv:5.7.1'
   implementation 'commons-io:commons-io:2.14.0'
+  // security upgrade for commons-fileupload CVE-2025-48976 https://github.com/advisories/GHSA-vv7r-c36w-3prj
+  implementation 'commons-fileupload:commons-fileupload:1.6.0'
   // Grails 5 and up no longer supports groovy files for logback config
   implementation('io.github.virtualdogbert:logback-groovy-config:1.14.1')
   compileOnly 'ch.qos.logback:logback-classic:1.4.7'
