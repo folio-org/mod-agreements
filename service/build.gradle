@@ -11,7 +11,7 @@ configurations {
 
 buildscript {
   repositories {
-		//mavenLocal()
+		mavenLocal()
 		mavenCentral()
     maven { url "https://plugins.gradle.org/m2/" }
 		maven { url "https://repo.grails.org/grails/core" }
@@ -26,17 +26,17 @@ buildscript {
 }
 
 final String version_regex = /^(((\d+)\.\d+)\.\d+)(-([a-zA-Z]+(\.\d+)?))?$/
-Map<String, String> env = System.getenv();
-String calculated_version = null;
+Map<String, String> env = System.getenv()
+String calculated_version = null
 
 
 // If we are building in a Jenkins environment append the build number onto the snapshot tag
 if ( ( appVersion.contains('SNAPSHOT') ) && ( env.BUILD_NUMBER != null ) ) {
-  println("Detected snapshot version and build number - appending");
+  println("Detected snapshot version and build number - appending")
   calculated_version = "${appVersion}.${env.BUILD_NUMBER}".toString()
 }
 else {
-  println("Release version");
+  println("Release version")
   calculated_version = "${appVersion}".toString()
 }
 
@@ -67,7 +67,7 @@ bootJar {
 }
 
 repositories {
-//  mavenLocal()
+  mavenLocal()
 	maven { url "https://repo.grails.org/grails/core" }
 	maven { url "https://repo.grails.org/grails/plugins" }
 	maven { url "https://jitpack.io" }
@@ -199,24 +199,25 @@ dependencies {
 
 
   /* FIXME Temporary imports for accesscontrol work -- SHOULD BE EXTERNAL LIBRARY */
-  compileOnly('com.github.spotbugs:spotbugs-annotations:4.9.8') // This is tied to the javax -> jakarta migration
-  lombokDelombok 'org.projectlombok:lombok:1.18.38'
+  implementation('com.k_int:access-control:1.0.0-SNAPSHOT')
+//  compileOnly('com.github.spotbugs:spotbugs-annotations:4.9.8') // This is tied to the javax -> jakarta migration
+//  lombokDelombok 'org.projectlombok:lombok:1.18.38'
   compileOnly("org.projectlombok:lombok:1.18.38")
   annotationProcessor("org.projectlombok:lombok:1.18.38")
-  implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.6.0' // For Java 8 date/time support in Jackson
-
-  // JUNIT Nonsense just to be able to use parameterized tests... this will hopefully be better when we move
-  // this lib away from a grails project
-  testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.0' // Enforce newer versions for junit, as params relies on it -- this may get better outside of grails
-  testImplementation 'org.junit.jupiter:junit-jupiter-params:5.14.0'
-  testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.14.0'
-
-  testImplementation 'org.junit.platform:junit-platform-commons:1.10.2' // Corresponds to JUnit 5.10.x
-  testImplementation 'org.junit.platform:junit-platform-engine:1.10.2'
-
-  testImplementation 'org.junit.platform:junit-platform-commons:1.14.0'
-  testImplementation 'org.junit.platform:junit-platform-engine:1.14.0'
-  testImplementation 'org.junit.platform:junit-platform-launcher:1.14.0'
+//  implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.6.0' // For Java 8 date/time support in Jackson
+//
+//  // JUNIT Nonsense just to be able to use parameterized tests... this will hopefully be better when we move
+//  // this lib away from a grails project
+//  testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.0' // Enforce newer versions for junit, as params relies on it -- this may get better outside of grails
+//  testImplementation 'org.junit.jupiter:junit-jupiter-params:5.14.0'
+//  testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.14.0'
+//
+//  testImplementation 'org.junit.platform:junit-platform-commons:1.10.2' // Corresponds to JUnit 5.10.x
+//  testImplementation 'org.junit.platform:junit-platform-engine:1.10.2'
+//
+//  testImplementation 'org.junit.platform:junit-platform-commons:1.14.0'
+//  testImplementation 'org.junit.platform:junit-platform-engine:1.14.0'
+//  testImplementation 'org.junit.platform:junit-platform-launcher:1.14.0'
 
 	/* ---- Custom non profile deps ---- */
 	implementation 'org.apache.kafka:kafka-clients:3.7.2'
@@ -263,7 +264,7 @@ integrationTest {
 
 // NOTE: We now use ReplaceTokens instead of expand, as expand is restricted to a 64K source file
 // otherwise it blows up, now that the descriptor file is being auto generated it is more than 64K
-import org.apache.tools.ant.filters.ReplaceTokens;
+import org.apache.tools.ant.filters.ReplaceTokens
 
 project.gradle.projectsEvaluated {
   task generateDescriptors(type: Copy) {
@@ -355,7 +356,7 @@ tasks.withType(GroovyCompile) {
 }
 
 // Set up delomboking task for javadoc generation
-task delombok(type: JavaExec) {
+/*task delombok(type: JavaExec) {
   // This task implicitly depends on the resolution of 'configurations.lombokDelombok'
   // when we access its 'resolve()' method.
 
@@ -385,26 +386,26 @@ task delombok(type: JavaExec) {
 
   // Store the output directory for later use by the javadoc task
   ext.outputDir = delombokOutputDir
-}
+}*/
 
 
 
 task generateJavadocs(type: Javadoc) {
   options.addStringOption("Xmaxwarns", "1000")
   options.addStringOption("Xmaxerrs", "1000")
-  dependsOn delombok
-  source = delombok.ext.outputDir
+//  dependsOn delombok
+//  source = delombok.ext.outputDir
 }
 
-tasks.withType(Javadoc).configureEach {
-  classpath += sourceSets.main.compileClasspath
-  classpath += configurations.annotationProcessor
-}
-
-tasks.withType(JavaExec).configureEach {
-  classpath += sourceSets.main.compileClasspath
-  classpath += configurations.annotationProcessor
-}
+//tasks.withType(Javadoc).configureEach {
+//  classpath += sourceSets.main.compileClasspath
+//  classpath += configurations.annotationProcessor
+//}
+//
+//tasks.withType(JavaExec).configureEach {
+//  classpath += sourceSets.main.compileClasspath
+//  classpath += configurations.annotationProcessor
+//}
 
 
 tasks.named('bootJarMainClassName') { it.mustRunAfter(tasks.named('compileGsonViews')) }
