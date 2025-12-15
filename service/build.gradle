@@ -1,9 +1,8 @@
-/* configurations.all {
+ configurations.all {
 
   // Check for updates every build
-  resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+  //resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
 }
-*/
 
 configurations {
   lombokDelombok
@@ -172,8 +171,8 @@ dependencies {
   // security upgrade for commons-fileupload CVE-2025-48976 https://github.com/advisories/GHSA-vv7r-c36w-3prj
   implementation 'commons-fileupload:commons-fileupload:1.6.0'
   // Grails 5 and up no longer supports groovy files for logback config
-  implementation('io.github.virtualdogbert:logback-groovy-config:1.14.1')
-  compileOnly 'ch.qos.logback:logback-classic:1.4.7'
+  implementation('io.github.virtualdogbert:logback-groovy-config:1.14.5')
+  compileOnly 'ch.qos.logback:logback-classic:1.5.2'
   // Is on runtime classpath via spring-boot-starter
   runtimeOnly 'ch.qos.logback:logback-classic:1.2.13'
 
