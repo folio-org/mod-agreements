@@ -199,10 +199,8 @@ dependencies {
   testImplementation("org.awaitility:awaitility:4.2.0")
 
 
-  /* FIXME Temporary imports for accesscontrol work -- SHOULD BE EXTERNAL LIBRARY */
-  implementation('com.k_int:access-control:1.0.0-SNAPSHOT')
-  compileOnly("org.projectlombok:lombok:1.18.38")
-  annotationProcessor("org.projectlombok:lombok:1.18.38")
+  /* FIXME Temporary imports for accesscontrol work -- SHOULD NOT BE SNAPSHOT */
+  implementation('com.k_int.accesscontrol:access-control-grails:1.0.0-SNAPSHOT')
 
 	/* ---- Custom non profile deps ---- */
 	implementation 'org.apache.kafka:kafka-clients:3.7.2'
