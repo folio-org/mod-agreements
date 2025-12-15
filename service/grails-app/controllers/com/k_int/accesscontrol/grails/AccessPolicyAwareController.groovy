@@ -599,7 +599,7 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
 
     if (!policyControlledManager.hasStandalonePolicies() && policyControlledManager.hasOwners()) {
       // If there are owners and the resource does NOT support standalone policies then don't allow claiming
-      String message = "Claiming is not supported on resource ${resourceClass.toString()}"
+      String message = "Claiming is not supported on resource ${resourceClass.getName()}"
 
       respond ([ message: message ], status: METHOD_NOT_ALLOWED )
       return
@@ -623,13 +623,13 @@ class AccessPolicyAwareController<T> extends PolicyEngineController<T> {
     AccessPolicyEntity.withSession { sess ->
       AccessPolicyEntity.withTransaction { transactionStatus ->
         // Fetch the original policies for this resource
-        List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass.toString())
+        List<AccessPolicyEntity> accessPoliciesForResource = AccessPolicyEntity.findAllByResourceIdAndResourceClass(resourceId, resourceClass.getName())
 
         // Set up the evaluated claim policies object
         EvaluatedClaimPolicies evaluatedClaimPolicies
         try {
           // Attempt to evaluate the claimBody against the existing policies for this resource, returning the policies to add/remove/update
-          evaluatedClaimPolicies = policyEngine.evaluateClaimPolicies(claimBody, accessPoliciesForResource, resourceId, resourceClass.toString())
+          evaluatedClaimPolicies = policyEngine.evaluateClaimPolicies(claimBody, accessPoliciesForResource, resourceId, resourceClass.getName())
         } catch (PolicyEngineException pee) {
           // We can catch the PolicyEngineException here and return a 400 with the message -- we're expecting it in cases where the changed policies are invalid for some reason
           if ([
