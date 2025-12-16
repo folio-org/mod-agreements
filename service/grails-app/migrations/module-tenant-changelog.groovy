@@ -38,6 +38,5 @@ databaseChangeLog = {
   include file: 'add-missing-primary-keys-for-trillium.groovy'
   include file: 'add-missing-refdata-values-for-trillium.groovy'
   include file: 'update-mod-agreements-7-3.groovy'
-  // TODO This probably ought to be moved out to web toolkit along with domain/controller stuff
-  include file: 'rbac-access-policy-wtk.groovy'
+  include file: 'rbac/access-policy-domain.groovy'
 }

@@ -137,6 +137,8 @@ dependencies {
 	implementation('com.k_int.okapi:grails-okapi:8.0.2') {
     exclude group: 'com.vaadin.external.google', module: 'android-json'
   }
+  /* FIXME Temporary imports for accesscontrol work -- SHOULD NOT BE SNAPSHOT */
+  implementation('com.k_int.accesscontrol:access-control-grails:1.0.0-SNAPSHOT')
 
   implementation 'io.github.http-builder-ng:http-builder-ng-core:1.0.4'
   implementation("io.micronaut:micronaut-http-client")
@@ -197,10 +199,6 @@ dependencies {
 	implementation "org.seleniumhq.selenium:selenium-chrome-driver:3.14.0"
 	implementation "org.seleniumhq.selenium:selenium-firefox-driver:3.14.0"
   testImplementation("org.awaitility:awaitility:4.2.0")
-
-
-  /* FIXME Temporary imports for accesscontrol work -- SHOULD NOT BE SNAPSHOT */
-  implementation('com.k_int.accesscontrol:access-control-grails:1.0.0-SNAPSHOT')
 
 	/* ---- Custom non profile deps ---- */
 	implementation 'org.apache.kafka:kafka-clients:3.7.2'
