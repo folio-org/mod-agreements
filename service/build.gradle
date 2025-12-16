@@ -105,8 +105,10 @@ dependencies {
     exclude group: 'org.springframework.security', module: 'spring-security-core'
   }  */
   // 5.8.9 affected by https://security.snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORKSECURITY-6457293
-  implementation("org.springframework.security:spring-security-core:5.8.11")
-  
+  // 5.8.15 of spring-security-core and spring-security-web are affected by https://spring.io/security/cve-2024-38827
+  implementation("org.springframework.security:spring-security-core:5.8.16")
+  implementation("org.springframework.security:spring-security-web:5.8.16")
+
   implementation("org.grails.plugins:views-json")
   implementation("org.grails.plugins:views-json-templates")
   implementation("org.hibernate:hibernate-core:5.6.15.Final")
@@ -123,11 +125,10 @@ dependencies {
 
   //testImplementation("org.grails:views-json-testing-support")
   //testImplementation("org.spockframework:spock-core")
-  //testImplementation("io.micronaut:micronaut-http-client")
 
   /*  ---- Manually installed dependencies ---- */
-	implementation 'com.k_int.grails:web-toolkit-ce:10.1.0'
-	implementation('com.k_int.okapi:grails-okapi:7.4.0') {
+	implementation 'com.k_int.grails:web-toolkit-ce:10.4.0'
+	implementation('com.k_int.okapi:grails-okapi:8.0.2') {
     exclude group: 'com.vaadin.external.google', module: 'android-json'
   }
 
@@ -144,7 +145,7 @@ dependencies {
 
 
   implementation 'com.opencsv:opencsv:5.7.1'
-  implementation 'commons-io:commons-io:2.7'
+  implementation 'commons-io:commons-io:2.14.0'
   // Grails 5 and up no longer supports groovy files for logback config
   implementation('io.github.virtualdogbert:logback-groovy-config:1.14.1')
   compileOnly 'ch.qos.logback:logback-classic:1.4.7'
@@ -158,8 +159,8 @@ dependencies {
   implementation 'org.z3950.zing:cql-java:1.13'
 
   // Minio for file storage to S3
-  implementation "io.minio:minio:8.5.1"
-  implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+  implementation "io.minio:minio:8.5.17"
+  implementation 'com.squareup.okhttp3:okhttp:4.12.0'
   implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.10'
 
 	/*  ---- Manually installed testing dependencies ---- */
@@ -173,7 +174,7 @@ dependencies {
 	implementation "org.seleniumhq.selenium:selenium-firefox-driver:3.14.0"
 
 	/* ---- Custom non profile deps ---- */
-	implementation 'org.apache.kafka:kafka-clients:3.7.0'
+	implementation 'org.apache.kafka:kafka-clients:3.7.2'
 	implementation 'com.github.everit-org.json-schema:org.everit.json.schema:1.14.4'
 	// Better test reports.
 	testImplementation( 'com.athaydes:spock-reports:2.3.2-groovy-3.0' ) {
@@ -213,6 +214,10 @@ integrationTest {
   )
 }
 
+// NOTE: We now use ReplaceTokens instead of expand, as expand is restricted to a 64K source file
+// otherwise it blows up, now that the descriptor file is being auto generated it is more than 64K
+import org.apache.tools.ant.filters.ReplaceTokens;
+
 project.gradle.projectsEvaluated {
   task generateDescriptors(type: Copy) {
 
@@ -220,26 +225,22 @@ project.gradle.projectsEvaluated {
 
     File grailsBuildInfoFile = buildProperties.outputs.files.files.find { it.name == 'grails.build.info' }
 
-    final def props = [:]
 
     if(!(grailsBuildInfoFile)) return // No need to continue if the file is not there
+    final Properties props = new Properties()
 
     doFirst {
 
       // Place the loading within a do first as the info file from the buildProperties
-      // task will not be present until it is executed. This owuld cause a file not found
+      // task will not be present until it is executed. This would cause a file not found
       // during task configureation otherwise.
       Properties properties = new Properties()
 
       // Read properties from the file
       grailsBuildInfoFile.withInputStream {
-        properties.load(it)
+        props.load(it)
       }
 
-      // Need to parse multi-dimensional keys.
-      ConfigSlurper cs = new ConfigSlurper()
-      //println("LOGDEBUG CS: ${cs.parse(properties)}")
-      props.putAll(cs.parse(properties))
     }
 
     from ('./src/main/okapi') {
@@ -247,7 +248,7 @@ project.gradle.projectsEvaluated {
     }
     into './build/resources/main/okapi'
     filteringCharset = 'UTF-8'
-    expand(props)
+    filter(ReplaceTokens, tokens: props, beginToken : '${', endToken : '}')
     rename { String fileName ->
       fileName.replace('-template', '')
     }
