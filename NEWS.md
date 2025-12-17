@@ -1,3 +1,8 @@
+## 7.1.7 2025-12-17
+  * ERM-3857 Upgrade minio version to 8.6.0 or upwards for mod-agreements and mod-licenses
+  * ERM-3851 Long standing connection issues bug
+  * ERM-3292 Stack traces should not be included in API responses
+
 ## 7.1.6 2025-04-03
   * ERM-3666 Prevent instability of grails modules during updates: Ramsons
 
@@ -35,6 +40,8 @@
   * Fix and automatically validate module descriptor (Eureka)
   * Tweaked how code reads from grailsApplication (getProperty(\*) instead of config.\*)
   * Separate out interface and version number
+
+
 
 ## 7.0.9 2024-10-18
   * Fixed problem with concurrentJobsGlobal not actually reading from environment variable
