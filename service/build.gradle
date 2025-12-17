@@ -137,7 +137,7 @@ dependencies {
 	implementation('com.k_int.okapi:grails-okapi:8.0.2') {
     exclude group: 'com.vaadin.external.google', module: 'android-json'
   }
-  /* FIXME Temporary imports for accesscontrol work -- SHOULD NOT BE SNAPSHOT */
+  /* TODO Temporary imports for accesscontrol work -- RELEASE SHOULD NOT BE SNAPSHOT */
   implementation('com.k_int.accesscontrol:access-control-grails:1.0.0-SNAPSHOT')
 
   implementation 'io.github.http-builder-ng:http-builder-ng-core:1.0.4'
