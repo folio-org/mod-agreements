@@ -1037,9 +1037,72 @@
           "methods": [
             "GET"
           ],
-          "pathPattern": "/erm/admin/*",
+          "pathPattern": "/erm/admin/loadPackage",
           "permissionsRequired": [
-            "erm.admin.action.execute"
+            "erm.admin.action.loadPackage.execute"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/admin/triggerCacheUpdate",
+          "permissionsRequired": [
+            "erm.admin.action.triggerCacheUpdate.execute"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/admin/triggerSync",
+          "permissionsRequired": [
+            "erm.admin.action.triggerSync.execute"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/admin/pullPackage",
+          "permissionsRequired": [
+            "erm.admin.action.pullPackage.execute"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/admin/triggerActivationUpdate",
+          "permissionsRequired": [
+            "erm.admin.action.triggerActivationUpdate.execute"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/admin/triggerHousekeeping",
+          "permissionsRequired": [
+            "erm.admin.action.triggerHousekeeping.execute"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/admin/triggerEntitlementLogUpdate",
+          "permissionsRequired": [
+            "erm.admin.action.triggerEntitlementLogUpdate.execute"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/admin/triggerDocMigration",
+          "permissionsRequired": [
+            "erm.admin.action.triggerDocMigration.execute"
           ]
         },
         {
@@ -2250,11 +2313,71 @@
       ]
     },
     {
-      "permissionName": "erm.admin.action.execute",
-      "displayName": "Admin endpoint perform action",
-      "description": "Performs action from admin endpoint",
+      "permissionName": "erm.admin.action.loadPackage.execute",
+      "displayName": "Agreements: Admin endpoint perform loadPackage action",
+      "description": "Allows performing of loadPackage action from admin endpoint",
+      "visible": true
+    },
+    {
+      "permissionName": "erm.admin.action.triggerCacheUpdate.execute",
+      "displayName": "Agreements: Admin endpoint perform triggerCacheUpdate action",
+      "description": "Allows performing of triggerCacheUpdate action from admin endpoint",
+      "visible": true
+    },
+    {
+      "permissionName": "erm.admin.action.triggerSync.execute",
+      "displayName": "Agreements: Admin endpoint perform triggerSync action",
+      "description": "Allows performing of triggerSync action from admin endpoint",
+      "visible": true
+    },
+    {
+      "permissionName": "erm.admin.action.pullPackage.execute",
+      "displayName": "Agreements: Admin endpoint perform pullPackage action",
+      "description": "Allows performing of pullPackage action from admin endpoint",
+      "visible": true
+    },
+    {
+      "permissionName": "erm.admin.action.triggerActivationUpdate.execute",
+      "displayName": "Agreements: Admin endpoint perform triggerActivationUpdate action",
+      "description": "Allows performing of triggerActivationUpdate action from admin endpoint",
+      "visible": true
+    },
+    {
+      "permissionName": "erm.admin.action.triggerHousekeeping.execute",
+      "displayName": "Agreements: Admin endpoint perform triggerHousekeeping action",
+      "description": "Allows performing of triggerHousekeeping action from admin endpoint",
+      "visible": true
+    },
+    {
+      "permissionName": "erm.admin.action.triggerEntitlementLogUpdate.execute",
+      "displayName": "Agreements: Admin endpoint perform triggerEntitlementLogUpdate action",
+      "description": "Allows performing of triggerEntitlementLogUpdate action from admin endpoint",
+      "visible": true
+    },
+    {
+      "permissionName": "erm.admin.action.triggerDocMigration.execute",
+      "displayName": "Agreements: Admin endpoint perform triggerDocMigration action",
+      "description": "Allows performing of triggerDocMigration action from admin endpoint",
+      "visible": true
+    },
+    {
+      "permissionName": "erm.admin.action.all.execute",
+      "displayName": "Agreements: Admin endpoint perform all actions",
+      "description": "Allows performing of all actions from admin endpoint",
       "replaces": [
-        "erm.admin.action"
+        "erm.admin.action",
+        "erm.admin.action.execute"
+      ],
+      "visible": true,
+      "subPermissions": [
+        "erm.admin.action.loadPackage.execute",
+        "erm.admin.action.triggerCacheUpdate.execute",
+        "erm.admin.action.triggerSync.execute",
+        "erm.admin.action.pullPackage.execute",
+        "erm.admin.action.triggerActivationUpdate.execute",
+        "erm.admin.action.triggerHousekeeping.execute",
+        "erm.admin.action.triggerEntitlementLogUpdate.execute",
+        "erm.admin.action.triggerDocMigration.execute"
       ]
     },
     {
@@ -2350,8 +2473,8 @@
     },
     {
       "permissionName": "erm.pushkb.view",
-      "displayName": "PushKB view",
-      "description": "View pushKB objects and configurations",
+      "displayName": "Agreements: PushKB view",
+      "description": "View pushKB objects and configurations in the Agreements module",
       "visible": true,
       "subPermissions": [
         "erm.pushkb.get"
@@ -2359,8 +2482,8 @@
     },
     {
       "permissionName": "erm.pushkb.manage",
-      "displayName": "PushKB manage",
-      "description": "Post to pushKB endpoints, and view pushKB objects and configurations",
+      "displayName": "Agreements: PushKB manage",
+      "description": "Post to pushKB endpoints, and view pushKB objects and configurations in the Agreements module",
       "visible": true,
       "subPermissions": [
         "erm.pushkb.view",
