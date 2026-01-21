@@ -2473,8 +2473,8 @@
     },
     {
       "permissionName": "erm.pushkb.view",
-      "displayName": "PushKB view",
-      "description": "View pushKB objects and configurations",
+      "displayName": "Agreements: PushKB view",
+      "description": "View pushKB objects and configurations in the Agreements module",
       "visible": true,
       "subPermissions": [
         "erm.pushkb.get"
@@ -2482,8 +2482,8 @@
     },
     {
       "permissionName": "erm.pushkb.manage",
-      "displayName": "PushKB manage",
-      "description": "Post to pushKB endpoints, and view pushKB objects and configurations",
+      "displayName": "Agreements: PushKB manage",
+      "description": "Post to pushKB endpoints, and view pushKB objects and configurations in the Agreements module",
       "visible": true,
       "subPermissions": [
         "erm.pushkb.view",
