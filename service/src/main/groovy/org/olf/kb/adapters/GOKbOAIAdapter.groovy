@@ -41,6 +41,10 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
   protected static final String PATH_PACKAGES = '/packages'
   protected static final String PATH_TITLES = '/titles'
 
+  GOKbOAIAdapter() {
+    super(new GoKbClient()) // Use the GoKbClient implementation of the AdapterClient interface.
+  }
+
   @CompileStatic(SKIP)
   public void freshenPackageData(final String source_name,
                                  final String base_url,
@@ -80,11 +84,12 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       log.info("OAI/HTTP GET url=${packagesUrl} params=${query_params} elapsed=${System.currentTimeMillis()-package_sync_start_time}")
 
       // Built in parser for XML returns GPathResult
-      Object sync_result = getSync(packagesUrl, query_params) {
-        response.failure { FromServer fromServer ->
-          log.error "HTTP/OAI Request failed with status ${fromServer.statusCode}"
-          found_records = false
-        }
+      Object sync_result
+      try {
+        sync_result = getSync(packagesUrl, query_params)
+      } catch (AdapterClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
+        found_records = false
       }
 
       if ( (found_records) && ( sync_result instanceof GPathResult ) ) {
@@ -166,13 +171,13 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
       log.debug("** GET ${titlesUrl} ${query_params}")
 
       // Built in parser for XML returns GPathResult
-      xml = (GPathResult) getSync(titlesUrl, query_params) {
-
-        response.failure { FromServer fromServer ->
-          log.error "Request failed with status ${fromServer.statusCode}"
-          found_records = false
-        }
+      try {
+        xml = (GPathResult) getSync(titlesUrl, query_params)
+      } catch (AdapterClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
+        found_records = false
       }
+
 
       if (found_records) {
 
@@ -647,12 +652,12 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
 
       log.debug("GOKbOAIAdapter::getTitleInstance - fetching from URI: ${titlesUrl}")
       boolean valid = true
-      GPathResult xml = (GPathResult) getSync(titlesUrl, query_params) {
-
-        response.failure { FromServer fromServer ->
-          log.error "Request failed with status ${fromServer.statusCode}"
-          valid = false
-        }
+      GPathResult xml
+      try {
+        xml = (GPathResult) getSync(titlesUrl, query_params)
+      } catch (AdapterClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
+        valid = false
       }
 
       if (valid) {

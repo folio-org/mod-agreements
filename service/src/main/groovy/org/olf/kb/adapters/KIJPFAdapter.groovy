@@ -16,6 +16,10 @@ import groovyx.net.http.FromServer
 public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, DataBinder {
 
 
+  KIJPFAdapter() {
+    super(new KIJPFClient())
+  }
+
   public void freshenPackageData(final String source_name,
                                  final String base_url,
                                  final String current_cursor,
@@ -44,12 +48,12 @@ public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, Da
 
       spin_protection++
       boolean valid = true
-      Map<String, ?> jsonMap = (Map)getSync(base_url, query_params) {
-        
-        response.failure { FromServer fromServer ->
-          log.debug "Request failed with status ${fromServer.statusCode}"
-          valid = false
-        }
+      Map<String, ?> jsonMap
+      try {
+        jsonMap = (Map)  getSync(base_url, query_params)
+      } catch (AdapterClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
+        valid = false
       }
  
       if (valid) {
@@ -106,11 +110,12 @@ public class KIJPFAdapter extends WebSourceAdapter implements KBCacheUpdater, Da
     log.debug ("processPackage(${url},${source_name}) -- fetching");
     try {
       boolean valid = true
-      Map<String, ?> jsonMap = (Map) getSync(url) {
-        response.failure { FromServer fromServer ->
-          log.debug "Request failed with status ${fromServer.statusCode}"
-          valid = false
-        }
+      Map<String, ?> jsonMap
+      try {
+        jsonMap = (Map) getSync(url)
+      } catch (AdapterClientException exception) {
+        log.error "Request failed with message: ${exception.message} and status code: ${exception.responseStatusCode}"
+        valid = false
       }
       
       if (valid) {
