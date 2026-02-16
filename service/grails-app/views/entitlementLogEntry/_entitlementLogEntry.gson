@@ -27,6 +27,7 @@ def resource_identifiers = []
 def resource_title = null;
 def license_details = null;
 def pti_url = null;
+def package_ids = []
 
 def the_suppress_value = false;
 
@@ -105,6 +106,10 @@ if ( res instanceof PackageContentItem ) {
   ) {
     the_suppress_value = true
   }
+
+  if (pci.pkg?.id) {
+    package_ids.add(pci.pkg.id)
+  }
 }
 
 /**
@@ -129,4 +134,5 @@ json {
                           'licenseId' controlling_license?.remoteId
                           'eventType' entitlementLogEntry.eventType
                                 'url' pti_url
+                         'packageIds' package_ids
 }
