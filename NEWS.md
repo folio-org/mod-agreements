@@ -1,3 +1,6 @@
+## 7.2.4 2026-02-23
+  * ERM-3888 commons-fileupload 1.6.0 fixing multipart headers DoS CVE-2025-48976
+
 ## 7.2.3 2025-11-28
   * ERM-3857 Upgrade minio version to 8.6.0 or upwards for mod-agreements and mod-licenses
   * ERM-3851 Long standing connection issues bug
