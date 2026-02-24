@@ -107,8 +107,18 @@ if ( res instanceof PackageContentItem ) {
     the_suppress_value = true
   }
 
-  if (pci.pkg?.id) {
-    package_ids.add(pci.pkg.id)
+  if(pci.pkg?.id) {
+    package_ids.add([
+      type: "package_uuid",
+      value: pci.pkg.id
+    ])
+  }
+
+  pci.pkg.approvedIdentifierOccurrences.each { id ->
+    package_ids.add([
+      type: id.identifier.ns.value,
+      value: id.identifier.value
+    ])
   }
 }
 
