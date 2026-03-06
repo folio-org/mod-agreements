@@ -13,6 +13,12 @@
       "packageProvider": {
         "name": "DIKU"
       },
+      "identifiers": [
+        {"value": "test_package_1_id",
+        "namespace": "diku_id"},
+        {"value": "test_package_2_id",
+        "namespace": "diku_id_2"}
+      ],
       "availabilityScope": "Global",
       "lifecycleStatus": "Current",
       "sourceDataCreated": "2022-01-01",
