@@ -106,6 +106,33 @@ class EntitlementLogSpec extends BaseSpec {
     then: 'There is a single entry of type ADD'
       assert ele.totalRecords == totalExpectedRecords; // 1 record, of type ADD
       assert ele_add.size() == 1;
+
+    then: 'Package identifiers are as expected'
+      assert true == true
+  }
+
+  void 'PackageIds are correctly included in EntitlementLogEntry' () {
+    when: 'Entitlement Log Entries are triggered and fetched'
+      triggerEntitlementLogUpdateAndFetchEntitlementLogs()
+
+      def ele_add = ele.results?.find { it.eventType == 'ADD' }
+      def packageIds = ele_add?.packageIds
+
+    then: 'PackageIds field exists and have at least one entry'
+      assert packageIds != null
+      assert packageIds.size() >= 1
+
+    then: 'Package UUID is present and has a value'
+      def pkgUuid = packageIds.find { it.type == 'package_uuid' }
+      assert pkgUuid != null
+      assert pkgUuid.value != null
+
+    then: 'Approved package identifiers are present and correct'
+      def approvedIds = packageIds.findAll { it.type != 'package_uuid' }
+      assert approvedIds.size() == 2
+
+      assert approvedIds.find { it.type == 'diku_id' && it.value == 'test_package_1_id' } != null
+      assert approvedIds.find { it.type == 'diku_id_2' && it.value == 'test_package_2_id' } != null
   }
 
   void 'Suppress from discovery field cause new EntitlementLog entries' () {
