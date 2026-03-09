@@ -92,9 +92,10 @@ dataSource:
   schemaHandler: com.k_int.okapi.OkapiSchemaHandler
 
   properties:
-    jmxEnabled: ${db.jmxEnabled:false}
+    jmxEnabled: ${db.jmxEnabled}
     maximumPoolSize: ${db.maxpoolsize:10}
     transactionIsolation: ${db.transactionIsolation:TRANSACTION_READ_COMMITTED}
+    registerMbeans: ${db.jmxExport}
 
 grails:
   mime:
