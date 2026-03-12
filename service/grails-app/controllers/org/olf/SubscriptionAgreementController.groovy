@@ -1,6 +1,8 @@
 package org.olf
 
+import com.k_int.accesscontrol.core.PolicyRestriction
 import com.k_int.accesscontrol.grails.AccessPolicyAwareController
+
 import java.time.LocalDate
 import org.grails.web.json.JSONObject
 import org.hibernate.sql.JoinType
@@ -748,45 +750,62 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
   
   @Transactional
   def doClone () {
-    final Set<String> props = []
-    final String subscriptionAgreementId = params.get("subscriptionAgreementId")
-    if (subscriptionAgreementId) {
-      
-      // Grab the JSON body.
-      JSONObject body = request.JSON
-      
-      // Create a set of propertyNames to clone.
-      
-      // Build up a list of properties from the incoming json object.
-      for (Map.Entry<String, Boolean> entry : body.entrySet()) {
-        
-        if (entry.value == true) {
-        
-          final String fieldOrGroup = entry.key
-          if (CLONE_GROUPING.containsKey(fieldOrGroup)) {
-            // Add the group instead.
-            props.addAll( CLONE_GROUPING[fieldOrGroup] )
-          } else {
-            // Assume single field.
-            props << fieldOrGroup
+    // The plugin relies on "id" here
+    params.setProperty('id', params.get('subscriptionAgreementId'))
+    def cloneAccess = canAccess(EnumSet.of(PolicyRestriction.READ, PolicyRestriction.CREATE))
+
+    if (cloneAccess.values().every()) {
+      final Set<String> props = []
+      final String subscriptionAgreementId = params.get("subscriptionAgreementId")
+      if (subscriptionAgreementId) {
+
+        // Grab the JSON body.
+        JSONObject body = request.JSON
+
+        // Create a set of propertyNames to clone.
+
+        // Build up a list of properties from the incoming json object.
+        for (Map.Entry<String, Boolean> entry : body.entrySet()) {
+
+          if (entry.value == true) {
+
+            final String fieldOrGroup = entry.key
+            if (CLONE_GROUPING.containsKey(fieldOrGroup)) {
+              // Add the group instead.
+              props.addAll( CLONE_GROUPING[fieldOrGroup] )
+            } else {
+              // Assume single field.
+              props << fieldOrGroup
+            }
           }
         }
-      }
-      
-      log.debug "Attempting to clone agreement ${subscriptionAgreementId} using props ${props}"
-      SubscriptionAgreement instance = queryForResource(subscriptionAgreementId).clone(props)
-      
-      instance.save()
-      if (instance.hasErrors()) {
-        transactionStatus.setRollbackOnly()
-        respond instance.errors, view:'edit' // STATUS CODE 422 automatically when errors rendered.
+
+        log.debug "Attempting to clone agreement ${subscriptionAgreementId} using props ${props}"
+        SubscriptionAgreement instance = queryForResource(subscriptionAgreementId).clone(props)
+
+        instance.save()
+        if (instance.hasErrors()) {
+          transactionStatus.setRollbackOnly()
+          respond instance.errors, view:'edit' // STATUS CODE 422 automatically when errors rendered.
+          return
+        }
+        respond instance, [status: OK]
         return
       }
-      respond instance, [status: OK]
-      return
+
+      respond ([statusCode: 404])
     }
-    
-    respond ([statusCode: 404])
+
+    // Neaten up error response
+    List<PolicyRestriction> failedChecks = cloneAccess
+      .entrySet()
+      .stream()
+      .filter (entry -> !entry.getValue())
+      .map(Map.Entry::getKey)
+      .toList() as List<PolicyRestriction>
+
+    String message = "${failedChecks.collect{"PolicyRestriction.${it.toString()}" }.join(', ')} check(s) failed in access control"
+    respond ([ message: message ], status: 403 )
   }
   
   @Transactional(readOnly=true)
