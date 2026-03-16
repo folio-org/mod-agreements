@@ -123,13 +123,14 @@ if ( res instanceof PackageContentItem ) {
   }
 
   if (pci.pti?.templatedUrls) {
-  pci.pti.templatedUrls.each { tu ->
-    templated_ids.add([
-      type: tu?.name,
-      value: tu?.url
-    ])
+    pci.pti.templatedUrls.each { tu ->
+      templated_ids.add([
+        id: tu?.id,
+        name: tu?.name,
+        url: tu?.url
+      ])
+    }
   }
-}
 }
 
 /**

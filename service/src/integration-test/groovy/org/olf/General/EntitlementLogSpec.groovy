@@ -148,19 +148,14 @@ class EntitlementLogSpec extends BaseSpec {
 
     then: 'templatedIds contains at least one entry if PTI has templated URLs'
       if (templatedIds.size() > 0) {
-          // Check each templatedId has an id and a url
+          // Check each templatedId has an id, name and a url
           templatedIds.each { tu ->
               assert tu.id != null
+              assert tu.name != null
               assert tu.url != null
           }
       }
-
-    then: 'Example check: one templatedId matches a known test URL'
-      def knownTu = templatedIds.find { it.url?.contains('example') }
-      if (knownTu) {
-          assert knownTu.id != null
-      }
-}
+  } 
 
   void 'Suppress from discovery field cause new EntitlementLog entries' () {
     when: 'Before we update suppress from discovery field'
