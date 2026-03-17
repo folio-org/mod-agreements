@@ -140,16 +140,16 @@ class EntitlementLogSpec extends BaseSpec {
       triggerEntitlementLogUpdateAndFetchEntitlementLogs()
 
       def ele_add = ele.results?.find { it.eventType == 'ADD' }
-      def templatedIds = ele_add?.templatedIds
+      def templatedUrls = ele_add?.templatedUrls
 
-    then: 'templatedIds field exists'
-      assert templatedIds != null
-      assert templatedIds instanceof List
+    then: 'templatedUrls field exists'
+      assert templatedUrls != null
+      assert templatedUrls instanceof List
 
-    then: 'templatedIds contains at least one entry if PTI has templated URLs'
-      if (templatedIds.size() > 0) {
+    then: 'templatedUrls contains at least one entry if PTI has templated URLs'
+      if (templatedUrls.size() > 0) {
           // Check each templatedId has an id, name and a url
-          templatedIds.each { tu ->
+          templatedUrls.each { tu ->
               assert tu.id != null
               assert tu.name != null
               assert tu.url != null
