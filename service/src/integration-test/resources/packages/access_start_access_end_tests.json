@@ -19,6 +19,16 @@
         {"value": "test_package_2_id",
         "namespace": "diku_id_2"}
       ],
+      "templatedUrls": [
+      {
+        "name": "proxy1",
+        "url": "example-templated-url"
+      },
+      {
+        "name": "defaultUrl",
+        "url": "http://aom.org/amle/"
+      }
+      ],
       "availabilityScope": "Global",
       "lifecycleStatus": "Current",
       "sourceDataCreated": "2022-01-01",

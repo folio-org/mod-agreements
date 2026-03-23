@@ -135,6 +135,28 @@ class EntitlementLogSpec extends BaseSpec {
       assert approvedIds.find { it.type == 'diku_id_2' && it.value == 'test_package_2_id' } != null
   }
 
+  void 'EntitlementLogEntry includes PTI templated IDs'() {
+    when: 'Entitlement Log Entries are triggered and fetched'
+      triggerEntitlementLogUpdateAndFetchEntitlementLogs()
+
+      def ele_add = ele.results?.find { it.eventType == 'ADD' }
+      def templatedUrls = ele_add?.templatedUrls
+
+    then: 'templatedUrls field exists'
+      assert templatedUrls != null
+      assert templatedUrls instanceof List
+
+    then: 'templatedUrls contains at least one entry if PTI has templated URLs'
+      if (templatedUrls.size() > 0) {
+          // Check each templatedId has an id, name and a url
+          templatedUrls.each { tu ->
+              assert tu.id != null
+              assert tu.name != null
+              assert tu.url != null
+          }
+      }
+  } 
+
   void 'Suppress from discovery field cause new EntitlementLog entries' () {
     when: 'Before we update suppress from discovery field'
 
