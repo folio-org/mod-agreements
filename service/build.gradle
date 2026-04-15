@@ -10,7 +10,7 @@ configurations {
 
 buildscript {
   repositories {
-		//mavenLocal()
+		mavenLocal()
 		mavenCentral()
     maven { url "https://plugins.gradle.org/m2/" }
 		maven { url "https://repo.grails.org/grails/core" }
@@ -66,7 +66,7 @@ bootJar {
 }
 
 repositories {
-  //mavenLocal()
+  mavenLocal()
 	maven { url "https://repo.grails.org/grails/core" }
 	maven { url "https://repo.grails.org/grails/plugins" }
 	maven { url "https://jitpack.io" }
@@ -137,8 +137,7 @@ dependencies {
 	implementation('com.k_int.okapi:grails-okapi:8.0.2') {
     exclude group: 'com.vaadin.external.google', module: 'android-json'
   }
-  /* TODO Temporary imports for accesscontrol work -- RELEASE SHOULD NOT BE SNAPSHOT */
-  implementation('com.k_int.accesscontrol:access-control-grails:1.0.0-SNAPSHOT')
+  implementation('com.k_int.accesscontrol:access-control-grails:1.0.0')
 
   implementation 'io.github.http-builder-ng:http-builder-ng-core:1.0.4'
   implementation("io.micronaut:micronaut-http-client")
