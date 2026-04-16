@@ -1,4 +1,46 @@
-## 7.3.0 IN PROGRESS
+## 7.3.0 2025-04-16
+  * ERM-3959: It should not be possible to clone an agreement that you cannot view due to access control
+  * ERM-3951: Upgrade undertow-core to 2.2.39
+  * ERM-3927: Add templated URLs to entitlement log entries
+  * ERM-3926: Add package IDs to entitlement log entries
+  * ERM-3919: Separate permissions needed for separate housekeeping/admin tasks in Agreeements
+  * ERM-3907: Access control library snapshot not being found by mod-agreements
+  * ERM-3904: Switch to using separate access control library for resource based access in agreements
+  * ERM-3889: Acquisition units for an agreement not correctly assigned/updated/removed
+  * ERM-3862: Resource access policies on agreements do not correctly interact with agreement lines
+  * ERM-3857: Upgrade minio version to 8.6.0 or upwards for mod-agreements and mod-licenses
+  * ERM-3852: Change ExternalEntitlementSyncJob schedule
+  * ERM-3851: Long standing connection issues bug
+  * ERM-3823: Agreements: Ensure "missingRefData" categories are only created where needed
+  * ERM-3812: Do not allow addition OR removal of acq units with `claim` (create) restriction unless the user is a member of that acq unit
+  * ERM-3809: On a Claim API POST, only changed policies should be evaluated
+  * ERM-3801: Update permissions for pushKB
+  * ERM-3800: Implement access control permissions in Agreements
+  * ERM-3796: Remove PKs from tag tables
+  * ERM-3795: BE: Add job to process external entitlements with GOKb authority
+  * ERM-3794: BE: Add support for external entitlements with GOKb authorities
+  * ERM-3791: Implement ability to add resources from GOKb search to an Agreement
+  * ERM-3783: Add Acquisition Units filter to Agreement search
+  * ERM-3769: Package Deletion: Package not being deleted in a single transaction
+  * ERM-3768: Fixes to resource deletion job creation and view
+  * ERM-3765: Agreements allows deletion of reference data values that are in use
+  * ERM-3764: Revert PK on FK columns
+  * ERM-3763: Package markForDelete can give incorrect outcome when specifying multiple packages
+  * ERM-3757: Package Deletion: Add Query Parameter for ids in delete response
+  * ERM-3749: Add missing primary keys to database tables in agreements
+  * ERM-3744: Implement Package content deletion API
+  * ERM-3738: API endpoint for searching identifiers in the local KB
+  * ERM-3734: sourceTitleCount in package schema header does not update
+  * ERM-3728: mod-agreements: spring-security-core/-web 5.8.16, spring-expression 5.3.39
+  * ERM-3726: Fix publicLookup API behaviour for access & active from/to dates for PCI based agreement lines
+  * ERM-3722: Setup a GOKb configuration / type to be able to construct the search options and results display
+  * ERM-3720: Error on attempting to retrieve e-resources for an agreement
+  * ERM-3718: Resource based access (RBAC) in Grails modules planning and initial implementation
+  * ERM-3717: Set up ModuleDescriptor with separate permissions for each action endpoint
+  * ERM-3710: Add app settings for each Agreements configuration
+  * ERM-3708: ERM: Workflow to delete resources
+  * ERM-3306: Dependency upgrades
+  * ERM-3292: Stack traces should not be included in API responses
 
 ## 7.2.3 2025-11-28
   * ERM-3857 Upgrade minio version to 8.6.0 or upwards for mod-agreements and mod-licenses
