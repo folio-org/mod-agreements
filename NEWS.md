@@ -1,3 +1,7 @@
+## 7.2.5 2026-04-27
+  * ERM-3951 Upgrade undertow-core to 2.2.29 fixing OOM CVE-2024-4027  
+  * ERM-3733 Backport version bumps to Sunflower: mod-agreements,mod-licenses: spring-web 5.3.39, spring-webmvc 5.3.39 fixing vulns
+
 ## 7.2.4 2026-02-23
   * ERM-3888 commons-fileupload 1.6.0 fixing multipart headers DoS CVE-2025-48976
 
