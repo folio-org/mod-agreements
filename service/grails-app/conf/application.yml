@@ -266,8 +266,8 @@ environments:
   development:
     logging:
       config: classpath:logback-development.xml
-      level:
-        web: DEBUG
+      # NOTE: do NOT add logging.level.* here — Spring Boot applies these AFTER logback
+      # loads its config, overriding the levels in logback-development.xml.
     kiwt:
       # Filestore values from the minio config defined in the docker-compose file at ../tools/testing
       filestore:
