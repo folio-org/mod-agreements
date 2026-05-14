@@ -1,7 +1,7 @@
 ## 7.3.1 2026-06-02
-  * ERM-3984: Increase webToolkitVersion to 10.6.2
+  * ERM-3984: Support S3 access with implicit AWS role authorization in Grails modules
   * ERM-3619: Sensitive data in logs cleanup
-  * Bump access-control grails-plugin version to 1.0.1
+  * ERM-4022: Bumped internal dependencies (jakarta.el security fix)
   * Bump grails-okapi version to 8.1.0
 
 ## 7.3.0 2025-04-16
