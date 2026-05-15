@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+    <suppress>
+        <notes>These are JSON View plugins for modern Grails, not Grails Framework 3.2.3</notes>
+        <packageUrl regex="true">^pkg:maven/org\.grails(\.plugins)?/views-(json|core|templates)@.*$</packageUrl>
+        <cpe>cpe:/a:grails:grails</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>These are Async plugins versioned 5.0.2, the tool thinks it is Grails 5.0.2 Framework</notes>
+        <packageUrl regex="true">^pkg:maven/org\.grails(\.plugins)?/(async|events|grails-async|grails-events).*@.*$</packageUrl>
+        <cpe>cpe:/a:grails:grails</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>Custom FOLIO plugin versioned 1.0.0, incorrectly flagged as Grails 1.0.0</notes>
+        <packageUrl regex="true">^pkg:maven/com\.k_int\.accesscontrol/access-control-grails@.*$</packageUrl>
+        <cpe>cpe:/a:grails:grails:1.0.0</cpe>
+    </suppress>
+
+</suppressions>

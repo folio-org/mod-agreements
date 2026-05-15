@@ -36,7 +36,7 @@ buildscript {
     classpath "org.grails.plugins:hibernate5:$gormVersion"
     classpath "org.grails.plugins:views-gradle:$viewsGradleVersion"
     classpath "com.bmuschko:gradle-docker-plugin:$dockerPluginVersion"
-    //classpath "org.owasp:dependency-check-gradle:$dependencyCheckVersion"
+    classpath "org.owasp:dependency-check-gradle:$dependencyCheckVersion"
   }
 }
 
@@ -66,7 +66,7 @@ apply plugin:"idea"
 apply plugin:"org.grails.grails-web"
 apply plugin:"org.grails.plugins.views-json"
 apply plugin: 'com.bmuschko.docker-remote-api'
-//apply plugin: 'org.owasp.dependencycheck'
+apply plugin: 'org.owasp.dependencycheck'
 
 sourceSets {
 	main {
@@ -92,7 +92,7 @@ repositories {
 	mavenCentral()
 }
 
-ext['jackson.version'] = '2.18.3'
+ext['jackson.version'] = '2.18.7'
 
 dependencies {
   /* Grails 6 */
@@ -257,6 +257,18 @@ integrationTest {
     '-Xmx1592m',
     '-XX:ReservedCodeCacheSize=256m'
   )
+}
+
+dependencyCheck {
+  suppressionFile = 'dependency-check-suppressions.xml'
+  failBuildOnCVSS = 7.0
+  showSummary = true
+
+  nvd {
+    def nvdApiKey = System.getenv('NVD_API_KEY')
+    apiKey = nvdApiKey
+    delay = 16000
+  }
 }
 
 // NOTE: We now use ReplaceTokens instead of expand, as expand is restricted to a 64K source file
