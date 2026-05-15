@@ -1,7 +1,22 @@
  configurations.all {
+   resolutionStrategy {
+     force 'org.glassfish:jakarta.el:3.0.4'
 
-  // Check for updates every build
-  //resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+     // Check for updates every build -- Useful for developing the plugins
+     cacheChangingModulesFor 0, 'seconds'
+
+     eachDependency { DependencyResolveDetails details ->
+       if (details.requested.group == 'org.glassfish' && details.requested.name == 'javax.el') {
+         details.useTarget('org.glassfish:jakarta.el:3.0.4')
+         details.because('Security fix for ERM-4022')
+       }
+
+       if (details.requested.group == 'javax.el' && details.requested.name == 'javax.el-api') {
+         details.useTarget('jakarta.el:jakarta.el-api:3.0.3')
+         details.because('Security fix for ERM-4022')
+       }
+     }
+   }
 }
 
 configurations {
@@ -19,8 +34,9 @@ buildscript {
   dependencies {
     classpath "org.grails:grails-gradle-plugin:$grailsVersion"
     classpath "org.grails.plugins:hibernate5:$gormVersion"
-    classpath "org.grails.plugins:views-gradle:3.1.2"
-    classpath 'com.bmuschko:gradle-docker-plugin:6.6.1'
+    classpath "org.grails.plugins:views-gradle:$viewsGradleVersion"
+    classpath "com.bmuschko:gradle-docker-plugin:$dockerPluginVersion"
+    //classpath "org.owasp:dependency-check-gradle:$dependencyCheckVersion"
   }
 }
 
@@ -50,6 +66,7 @@ apply plugin:"idea"
 apply plugin:"org.grails.grails-web"
 apply plugin:"org.grails.plugins.views-json"
 apply plugin: 'com.bmuschko.docker-remote-api'
+//apply plugin: 'org.owasp.dependencycheck'
 
 sourceSets {
 	main {
@@ -133,8 +150,8 @@ dependencies {
   //testImplementation("org.spockframework:spock-core")
 
   /*  ---- Manually installed dependencies ---- */
-	implementation 'com.k_int.grails:web-toolkit-ce:10.4.0'
-	implementation('com.k_int.okapi:grails-okapi:8.0.2') {
+	implementation 'com.k_int.grails:web-toolkit-ce:10.5.0'
+	implementation('com.k_int.okapi:grails-okapi:8.1.0') {
     exclude group: 'com.vaadin.external.google', module: 'android-json'
   }
   implementation('com.k_int.accesscontrol:access-control-grails:1.0.0')
