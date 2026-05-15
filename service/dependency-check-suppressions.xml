@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!-- SUPPRESSING due to incorrect CPE mapping -->
+    <suppress>
+        <notes> JSON View plugins are versioned independently. They are not Grails Framework 3.2.3.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.grails(\.plugins)?/views-(json|core|json-templates)@.*$</packageUrl>
+        <cpe>cpe:/a:grails:grails</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>Async/Events plugins are not Grails 5.0.2 Framework.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.grails(\.plugins)?/(async|events|grails-async|grails-events|database-migration).*@.*$</packageUrl>
+        <cpe>cpe:/a:grails:grails</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>The converters plugin version 5.0.0 is misidentified as the Grails 5.0.0 framework.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.grails\.plugins/converters@.*$</packageUrl>
+        <cpe>cpe:/a:grails:grails:5.0.0</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>Grails Profiles use separate versioning. Project is actually Grails 6.2.3.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.grails\.profiles/(rest-api|base)@.*$</packageUrl>
+        <cpe regex="true">cpe:/a:grails:grails:.*</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>Custom FOLIO plugin versioned 1.0.0, incorrectly flagged as Grails 1.0.0.</notes>
+        <packageUrl regex="true">^pkg:maven/com\.k_int\.accesscontrol/access-control-grails@.*$</packageUrl>
+        <cpe regex="true">cpe:/a:grails:grails:.*</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Suppressing the incorrect spring-security framework CPE mapping for standalone subpackages.
+            This ensures we are still alerted if a native vulnerability is found in the subpackage itself.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring-security-(.*)@.*$</packageUrl>
+        <cpe regex="true">cpe:/a:(pivotal_software|vmware):spring_security:.*</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Suppressing the incorrect Spring Boot CPE mapping for starter packages.
+            This ensures we are alerted if a native vulnerability is found in the package itself.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring-boot-(.*)?@.*$</packageUrl>
+        <cpe regex="true">cpe:/a:(vmware|springboot_project):spring_boot:.*</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Suppressing the incorrect Spring Framework CPE mapping for subpackages.
+            This ensures we are alerted if a native vulnerability is found in the package itself.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring-(.*)@.*$</packageUrl>
+        <cpe regex="true">cpe:/a:(vmware|springsource|pivotal_software):spring_framework:.*</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Suppressing the incorrect Netty framework CPE mapping for individual subpackages.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/io\.netty/netty-(codec(-(http(2)?|socks))?||buffer|common|handler(-proxy)?|resolver|transport(-native-unix-common)?)@.*$</packageUrl>
+        <cpe regex="true">cpe:/a:netty:netty:.*</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Suppressing the incorrect Undertow framework CPE mapping for subpackages.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/io\.undertow/undertow-.*@.*$</packageUrl>
+        <cpe regex="true">cpe:/a:(redhat|undertow):undertow:.*</cpe>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Suppressing the incorrect Kafka CPE mapping for subpackages.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.kafka/kafka-clients.*@.*$</packageUrl>
+        <cpe regex="true">cpe:/a:apache:kafka:.*</cpe>
+    </suppress>
+
+    <!-- SUPPRESSING because not valid -->
+
+    <suppress>
+        <notes>
+            Grails 6 uses Spring 5.3.x. This RMI vulnerability is a known ghost hit for Spring 5.
+            We suppress this specifically because we are not using HTTP Invoker.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring-web@.*$</packageUrl>
+        <vulnerabilityName>CVE-2016-1000027</vulnerabilityName>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Grails uses Spring under the hood, but Grails itself is not vulnerable to CVE-2016-1000027
+            as it does not expose or utilize the vulnerable Spring HTTP Invoker RMI endpoint.
+        </notes>
+        <vulnerabilityName>CVE-2016-1000027</vulnerabilityName>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Global suppression for CVE-2026-22740. Grails 6 runs on Spring MVC / standard Servlets;
+            it does not utilize Spring WebFlux for handling requests or multipart file uploads.
+        </notes>
+        <vulnerabilityName>CVE-2026-22740</vulnerabilityName>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Global suppression for CVE-2024-38816. The vulnerable Spring Framework behavior is mitigated/safeguarded
+            indirectly by the Grails security plugin infrastructure using Spring's HTTP firewall.
+        </notes>
+        <vulnerabilityName>CVE-2024-38816</vulnerabilityName>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Suppressing CVE-2025-41249, CVE-2026-22747 and CVE-2026-22732. These Spring Security vulnerabilities
+            concern explicit endpoint authorization bypasses via raw Spring routing configurations.
+            this application delegates inbound request validation and token checks up-stack to the
+            FOLIO gateway layer, rendering local routing bypasses non-viable.
+        </notes>
+        <vulnerabilityName regex="true">CVE-((2026-227(47|32))|2025-41249)</vulnerabilityName>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Suppressing Spring Core/Framework foundational class CVEs (CVE-2025-41242, CVE-2026-22737).
+            These represent framework-level internal mechanisms that cannot be isolated or exploited via
+            the standard Grails MVC controllers or FOLIO module layout.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring-.*@5\.3\.39$</packageUrl>
+        <vulnerabilityName regex="true">CVE-(2025-41242|2026-22737)</vulnerabilityName>
+    </suppress>
+
+    <!-- SUPPRESSING WITH WARNING. Notes to developers and dev ops. We SHOULDN'T be vulnerable to these,
+        but might be via bad decisions, so these are ones to be aware of  -->
+
+    <suppress>
+        <notes>
+            CRITICAL WARNING: Suppressing CVE-2026-40975.
+            We COULD become vulnerable if we decide to autogenerate random secrets with ${random.value},
+            but we should NEVER do this in production anyway.
+        </notes>
+        <vulnerabilityName>CVE-2026-40975</vulnerabilityName>
+    </suppress>
+
+    <suppress>
+        <notes>
+            CRITICAL WARNING: Suppressing CVE-2026-40973 because we currently do NOT use persistent sessions.
+            DO NOT SET `server.servlet.session.persistent=true` IN APPLICATION.YML!
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/.*@2\.7\.18$</packageUrl>
+        <vulnerabilityName>CVE-2026-40973</vulnerabilityName>
+    </suppress>
+
+    <suppress>
+        <notes>
+            CRITICAL WARNING: Suppressing CVE-2026-40977 because we currently do NOT use ApplicationPidFileWriter.
+            DO NOT make use of ApplicationPidFileWriter in code that can make it to production systems.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/.*@2\.7\.18$</packageUrl>
+        <vulnerabilityName>CVE-2026-40977</vulnerabilityName>
+    </suppress>
+
+    <suppress>
+        <notes>
+            Suppressing CVE-2026-40974 because we do not use Cassandra NoSQL database.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/.*@2\.7\.18$</packageUrl>
+        <vulnerabilityName>CVE-2026-40974</vulnerabilityName>
+    </suppress>
+
+    <suppress>
+        <notes>
+            CRITICAL WARNING: Suppressing CVE-2026-22733 because we do not use CloudFoundry actuator endpoints.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/.*@2\.7\.18$</packageUrl>
+        <vulnerabilityName>CVE-2026-22733</vulnerabilityName>
+    </suppress>
+
+    <suppress>
+        <notes>
+            CRITICAL WARNING: Suppressing CVE-2026-0603 because we do not use InlineIdsOrClauseBuilder.
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.hibernate/hibernate-core@5\.6\.15\.Final$</packageUrl>
+        <vulnerabilityName>CVE-2026-0603</vulnerabilityName>
+    </suppress>
+</suppressions>

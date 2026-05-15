@@ -1,25 +1,30 @@
-configurations.all {
-  resolutionStrategy {
-    force "org.glassfish:jakarta.el:$glassfishJakartaElVersion"
+configurations {
+  all {
+    resolutionStrategy {
+      // Check for updates every build -- Useful for developing the plugins
+      // cacheChangingModulesFor 0, 'seconds'
 
-    // Check for updates every build -- Useful for developing the plugins
-    // cacheChangingModulesFor 0, 'seconds'
+      forcedModules = [
+        "org.glassfish:jakarta.el:$glassfishJakartaElVersion",
+        "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion",
+        "org.codehaus.plexus:plexus-utils:${plexusVersion}",
+        "commons-beanutils:commons-beanutils:${beanutilsVersion}"
+      ]
 
-    eachDependency { DependencyResolveDetails details ->
-      if (details.requested.group == 'org.glassfish' && details.requested.name == 'javax.el') {
-        details.useTarget("org.glassfish:jakarta.el:$glassfishJakartaElVersion")
-        details.because('Security fix for ERM-4022')
-      }
+      eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'org.glassfish' && details.requested.name == 'javax.el') {
+          details.useTarget("org.glassfish:jakarta.el:$glassfishJakartaElVersion")
+          details.because('Security fix for ERM-4022')
+        }
 
-      if (details.requested.group == 'javax.el' && details.requested.name == 'javax.el-api') {
-        details.useTarget("jakarta.el:jakarta.el-api:$glassfishJakartaElApiVersion")
-        details.because('Security fix for ERM-4022')
+        if (details.requested.group == 'javax.el' && details.requested.name == 'javax.el-api') {
+          details.useTarget("jakarta.el:jakarta.el-api:$glassfishJakartaElApiVersion")
+          details.because('Security fix for ERM-4022')
+        }
       }
     }
   }
-}
 
-configurations {
   lombokDelombok
 }
 
@@ -36,7 +41,7 @@ buildscript {
     classpath "org.grails.plugins:hibernate5:$gormVersion"
     classpath "org.grails.plugins:views-gradle:$viewsGradleVersion"
     classpath "com.bmuschko:gradle-docker-plugin:$dockerPluginVersion"
-    //classpath "org.owasp:dependency-check-gradle:$dependencyCheckVersion"
+    classpath "org.owasp:dependency-check-gradle:$dependencyCheckVersion"
   }
 }
 
@@ -66,7 +71,7 @@ apply plugin:"idea"
 apply plugin:"org.grails.grails-web"
 apply plugin:"org.grails.plugins.views-json"
 apply plugin: 'com.bmuschko.docker-remote-api'
-//apply plugin: 'org.owasp.dependencycheck'
+apply plugin: 'org.owasp.dependencycheck'
 
 sourceSets {
 	main {
@@ -92,9 +97,14 @@ repositories {
 	mavenCentral()
 }
 
-ext['jackson.version'] = '2.18.3'
+ext['jackson.version'] = jacksonVersion
+ext['netty.version'] = nettyBOMVersion
+ext['spring-security.version'] = springSecurityVersion
+ext['undertow.version'] = undertowVersion
 
 dependencies {
+  implementation enforcedPlatform("io.micronaut:micronaut-bom:${micronautBOMVersion}")
+
   /* Grails 6 */
   compileOnly("io.micronaut:micronaut-inject-groovy")
   console("org.grails:grails-console")
@@ -124,13 +134,7 @@ dependencies {
 	implementation("org.grails.plugins:async")
   implementation("org.grails.plugins:events")
   implementation("org.grails.plugins:hibernate5")
-  implementation("org.grails.plugins:spring-security-core:6.1.2") /* { // NOT IN LINE WITH GRAILS PATCH VERSION
-    exclude group: 'org.springframework.security', module: 'spring-security-core'
-  }  */
-  // 5.8.9 affected by https://security.snyk.io/vuln/SNYK-JAVA-ORGSPRINGFRAMEWORKSECURITY-6457293
-  // 5.8.15 of spring-security-core and spring-security-web are affected by https://spring.io/security/cve-2024-38827
-  implementation("org.springframework.security:spring-security-core:5.8.16")
-  implementation("org.springframework.security:spring-security-web:5.8.16")
+  implementation("org.grails.plugins:spring-security-core:$grailsSpringSecurityVersion") // NOT IN LINE WITH GRAILS PATCH VERSION
 
   implementation("org.grails.plugins:views-json")
   implementation("org.grails.plugins:views-json-templates")
@@ -162,46 +166,42 @@ dependencies {
   implementation 'org.codehaus.janino:janino:3.1.9'
 
   implementation "org.springframework.boot:spring-boot-starter-undertow" // Replaces spring-boot-starter-tomcat
-  // security upgrade for undertow, using same exclusions as
-  // https://repo1.maven.org/maven2/org/springframework/boot/spring-boot-starter-undertow/2.7.18/spring-boot-starter-undertow-2.7.18.pom
-  implementation("io.undertow:undertow-core:2.2.39.Final")
-  implementation("io.undertow:undertow-servlet:2.2.37.Final") {
-    exclude group: "org.jboss.spec.javax.servlet", module: "jboss-servlet-api_4.0_spec"
-    exclude group: "org.jboss.spec.javax.annotation", module: "jboss-annotations-api_1.3_spec"
-  }
-  implementation("io.undertow:undertow-websockets-jsr:2.2.37.Final") {
-    exclude group: "org.jboss.spec.javax.websocket", module: "jboss-websocket-api_1.1_spec"
-    exclude group: "org.jboss.spec.javax.servlet", module: "jboss-servlet-api_4.0_spec"
-    exclude group: "org.jboss.spec.javax.annotation", module: "jboss-annotations-api_1.3_spec"
-  }
 
   implementation "org.hibernate:hibernate-java8"
-  runtimeOnly "com.zaxxer:HikariCP:5.1.0"                             // Replaces Tomcat JDBC pool
-  runtimeOnly "org.postgresql:postgresql:42.7.3"
-  implementation ('org.grails.plugins:database-migration:4.2.1') {
-      exclude group: 'org.liquibase', module: 'liquibase-core'
-  }
-  implementation 'org.liquibase:liquibase-core:4.19.0'
+  runtimeOnly "com.zaxxer:HikariCP:${hikariVersion}"                             // Replaces Tomcat JDBC pool
+  runtimeOnly "org.postgresql:postgresql:${postgresVersion}"
 
+  // The ext approach used for other deps above causes us all kinds of problems for liquibase
+  implementation ("org.grails.plugins:database-migration:${grailsMigrationPluginVersion}") {
+    exclude group: 'org.liquibase', module: 'liquibase-core'
+    exclude group: 'org.liquibase.ext', module: 'liquibase-hibernate5'
+  }
+  implementation "org.liquibase:liquibase-core:${liquibaseVersion}"
+  runtimeOnly "org.liquibase.ext:liquibase-hibernate5:${liquibaseVersion}"
 
   implementation 'com.opencsv:opencsv:5.7.1'
   implementation 'commons-io:commons-io:2.14.0'
   // security upgrade for commons-fileupload CVE-2025-48976 https://github.com/advisories/GHSA-vv7r-c36w-3prj
   implementation 'commons-fileupload:commons-fileupload:1.6.0'
-  // Grails 5 and up no longer supports groovy files for logback config
-  implementation('io.github.virtualdogbert:logback-groovy-config:1.14.5')
-  compileOnly 'ch.qos.logback:logback-classic:1.5.2'
+
+  // LOGBACK -- ensure we control classic and core versions
+  compileOnly "ch.qos.logback:logback-classic:${logbackCompileVersion}"
+  compileOnly "ch.qos.logback:logback-core:${logbackCompileVersion}"
+
   // Is on runtime classpath via spring-boot-starter
-  runtimeOnly 'ch.qos.logback:logback-classic:1.2.13'
+  runtimeOnly("ch.qos.logback:logback-classic:${logbackRuntimeVersion}")
+  runtimeOnly "ch.qos.logback:logback-core:${logbackRuntimeVersion}"
+
 
   implementation 'uk.co.cacoethes:groovy-handlebars-engine:0.2'
-  implementation 'com.github.jknack:handlebars-helpers:4.3.1'
+  implementation 'com.github.jknack:handlebars-helpers:4.5.1'
 
   implementation 'com.github.zafarkhaja:java-semver:0.9.0'
   implementation 'org.z3950.zing:cql-java:1.13'
 
   // Minio for file storage to S3
-  implementation "io.minio:minio:8.6.0"
+  implementation "io.minio:minio:${minioVersion}"
+
   implementation 'com.squareup.okhttp3:okhttp:4.12.0'
   implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.10'
 
@@ -212,12 +212,12 @@ dependencies {
 	testImplementation "org.seleniumhq.selenium:selenium-remote-driver:3.14.0"
 	testImplementation "org.seleniumhq.selenium:selenium-api:3.14.0"
 	testImplementation "org.seleniumhq.selenium:selenium-support:3.14.0"
-	implementation "org.seleniumhq.selenium:selenium-chrome-driver:3.14.0"
-	implementation "org.seleniumhq.selenium:selenium-firefox-driver:3.14.0"
+	testImplementation "org.seleniumhq.selenium:selenium-chrome-driver:3.14.0"
+	testImplementation "org.seleniumhq.selenium:selenium-firefox-driver:3.14.0"
   testImplementation("org.awaitility:awaitility:4.2.0")
 
 	/* ---- Custom non profile deps ---- */
-	implementation 'org.apache.kafka:kafka-clients:3.7.2'
+	implementation "org.apache.kafka:kafka-clients:${kafkaVersion}"
 	implementation 'com.github.everit-org.json-schema:org.everit.json.schema:1.14.4'
 	// Better test reports.
 	testImplementation( 'com.athaydes:spock-reports:2.3.2-groovy-3.0' ) {
@@ -257,6 +257,30 @@ integrationTest {
     '-Xmx1592m',
     '-XX:ReservedCodeCacheSize=256m'
   )
+}
+
+dependencyCheck {
+  suppressionFile = 'dependency-check-suppressions.xml'
+  failBuildOnCVSS = 7.0
+  showSummary = true
+  formats = ['HTML', 'XML']
+
+  scanConfigurations = ['compileClasspath', 'runtimeClasspath', 'productionRuntimeClasspath']
+
+  nvd {
+    if (project.hasProperty('nvdApiKey')) {
+      apiKey = project.nvdApiKey
+    }
+    delay = 16000
+  }
+
+  analyzers{
+    ossIndex {
+      if (project.hasProperty('ossIndexKey')) {
+        password = project.ossIndexKey
+      }
+    }
+  }
 }
 
 // NOTE: We now use ReplaceTokens instead of expand, as expand is restricted to a 64K source file
