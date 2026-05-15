@@ -1,9 +1,9 @@
 configurations.all {
   resolutionStrategy {
-    force "org.glassfish:jakarta.el:$glassfishJakartaElVersion"
-
     // Check for updates every build -- Useful for developing the plugins
     // cacheChangingModulesFor 0, 'seconds'
+    force "org.glassfish:jakarta.el:$glassfishJakartaElVersion"
+
 
     eachDependency { DependencyResolveDetails details ->
       if (details.requested.group == 'org.glassfish' && details.requested.name == 'javax.el') {
@@ -195,7 +195,7 @@ dependencies {
   runtimeOnly 'ch.qos.logback:logback-classic:1.2.13'
 
   implementation 'uk.co.cacoethes:groovy-handlebars-engine:0.2'
-  implementation 'com.github.jknack:handlebars-helpers:4.3.1'
+  implementation 'com.github.jknack:handlebars-helpers:4.5.1'
 
   implementation 'com.github.zafarkhaja:java-semver:0.9.0'
   implementation 'org.z3950.zing:cql-java:1.13'
@@ -212,8 +212,8 @@ dependencies {
 	testImplementation "org.seleniumhq.selenium:selenium-remote-driver:3.14.0"
 	testImplementation "org.seleniumhq.selenium:selenium-api:3.14.0"
 	testImplementation "org.seleniumhq.selenium:selenium-support:3.14.0"
-	implementation "org.seleniumhq.selenium:selenium-chrome-driver:3.14.0"
-	implementation "org.seleniumhq.selenium:selenium-firefox-driver:3.14.0"
+	testImplementation "org.seleniumhq.selenium:selenium-chrome-driver:3.14.0"
+	testImplementation "org.seleniumhq.selenium:selenium-firefox-driver:3.14.0"
   testImplementation("org.awaitility:awaitility:4.2.0")
 
 	/* ---- Custom non profile deps ---- */
