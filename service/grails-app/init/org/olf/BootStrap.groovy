@@ -35,8 +35,6 @@ class BootStrap {
     log.info("       default_aws_url -> ${grailsApplication.config.getProperty('kiwt.filestore.aws_url')}");
     log.info("    default_aws_bucket -> ${grailsApplication.config.getProperty('kiwt.filestore.aws_bucket')}");
 
-    // NOTE: Full environment variable dump removed to prevent leaking secrets (passwords, tokens, API keys) into logs (ERM-3619)
-
     // Debugging for filter chains -- turn on to inspect the security chain
 //    if (springSecurityFilterChain instanceof FilterChainProxy) {
 //      println "== Spring Security Filter Chains =="

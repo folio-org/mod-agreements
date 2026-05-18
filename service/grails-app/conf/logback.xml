@@ -12,13 +12,12 @@
   </appender>
 
   <!-- ACCESS CONTROL -->
-  <!-- Silenced to WARN to prevent sensitive data (tokens, auth headers) leaking into logs (ERM-3619) -->
   <logger name="com.k_int.folio">
-    <level value="WARN" />
+    <level value="INFO" />
   </logger>
 
   <logger name="com.k_int.accesscontrol">
-    <level value="WARN" />
+    <level value="INFO" />
   </logger>
   <!-- /ACCESS CONTROL -->
 
