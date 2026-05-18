@@ -265,9 +265,18 @@ dependencyCheck {
   showSummary = true
 
   nvd {
-    def nvdApiKey = System.getenv('NVD_API_KEY')
-    apiKey = nvdApiKey
+    if (project.hasProperty('nvdApiKey')) {
+      apiKey = project.nvdApiKey
+    }
     delay = 16000
+  }
+
+  analyzers{
+    ossIndex {
+      if (project.hasProperty('ossIndexKey')) {
+        password = project.ossIndexKey
+      }
+    }
   }
 }
 
