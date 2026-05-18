@@ -46,7 +46,6 @@ where ( exists ( select pci.id
     log.debug("KnowledgeBaseCacheService::runSync(${remotekb_id})")
     RemoteKB rkb = RemoteKB.read(remotekb_id) 
     if ( rkb ) {
-      // NOTE: rkb.uri logged for diagnostics; uri should not contain embedded credentials (ERM-3619)
       log.debug("Run remote kb sync:: ${rkb.id}/${rkb.name}/${rkb.uri}")
       Class cls = Class.forName(rkb.type)
       KBCacheUpdater cache_updater = cls.newInstance()

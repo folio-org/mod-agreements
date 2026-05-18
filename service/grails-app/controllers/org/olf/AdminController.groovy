@@ -82,7 +82,6 @@ class AdminController implements DataBinder{
     RemoteKB rkb = RemoteKB.findByName(params.kb)
 
     if ( rkb ) {
-      // NOTE: rkb.toString() includes uri but NOT principal/credentials - safe to log (ERM-3619)
       log.debug("Located KB record -- name=${rkb.name} type=${rkb.type}");
       try {
         def import_params = [:]
@@ -91,7 +90,6 @@ class AdminController implements DataBinder{
         import_params.credentials = rkb.credentials
         Class cls = Class.forName(rkb.type)
         KBCacheUpdater cache_updater = cls.newInstance();
-        // NOTE: import_params contains principal and credentials — log only safe fields (ERM-3619)
         log.debug("Import package: kb=${import_params.kb} vendorid=${import_params.vendorid} packageid=${import_params.packageid} [principal and credentials redacted]");
         result = cache_updater.importPackage(import_params, knowledgeBaseCacheService);
       }
