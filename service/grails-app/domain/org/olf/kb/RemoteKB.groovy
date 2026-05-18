@@ -91,6 +91,8 @@ public class RemoteKB implements MultiTenant<RemoteKB> {
 
 
   public String toString() {
+    // NOTE: principal and credentials intentionally excluded from toString to prevent leakage into logs (ERM-3619)
+    // uri is included but should never contain embedded credentials (user:pass@host) — use separate principal/credentials fields
     return "RemoteKB ${name} - ${type}/${uri}${cursor ? '/' + cursor : ''}".toString()
   }
 

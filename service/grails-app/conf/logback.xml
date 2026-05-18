@@ -12,13 +12,13 @@
   </appender>
 
   <!-- ACCESS CONTROL -->
-  <!-- TODO Decisions should be made about the levels for these -->
+  <!-- Silenced to WARN to prevent sensitive data (tokens, auth headers) leaking into logs (ERM-3619) -->
   <logger name="com.k_int.folio">
-    <level value="TRACE" />
+    <level value="WARN" />
   </logger>
 
   <logger name="com.k_int.accesscontrol">
-    <level value="TRACE" />
+    <level value="WARN" />
   </logger>
   <!-- /ACCESS CONTROL -->
 
@@ -67,6 +67,25 @@
 
   <logger name="org.springframework.jdbc.support" >
     <level value="ERROR" />
+  </logger>
+
+  <!-- Suppress HikariCP config logging to prevent JDBC URL and credentials appearing in logs (ERM-3619) -->
+  <logger name="com.zaxxer.hikari.HikariConfig">
+    <level value="WARN" />
+  </logger>
+
+  <logger name="com.zaxxer.hikari.pool.HikariPool">
+    <level value="WARN" />
+  </logger>
+
+  <!-- Suppress http-builder-ng HTTP client logger — at DEBUG it dumps full request/response including Authorization headers (ERM-3619) -->
+  <logger name="groovyx.net.http">
+    <level value="WARN" />
+  </logger>
+
+  <!-- Suppress Micronaut HTTP client logger — at DEBUG it dumps request/response headers including x-okapi-token (ERM-3619) -->
+  <logger name="io.micronaut.http.client">
+    <level value="WARN" />
   </logger>
 
 
@@ -225,10 +244,10 @@ if (devEnv || Environment.currentEnvironment == Environment.TEST) {
   logger 'grails.app.domains', DEBUG
   logger 'grails.app.jobs', DEBUG
   logger 'grails.app.services', DEBUG
-  logger 'com.zaxxer.hikari.HikariConfig', DEBUG
+  logger 'com.zaxxer.hikari.HikariConfig', WARN  // ERM-3619: kept at WARN - DEBUG leaks JDBC URL/credentials
   logger 'com.zaxxer.hikari.pool.HikariPool', WARN
   
-  logger 'services.k_int', TRACE
+  logger 'services.k_int', WARN  // ERM-3619: kept at WARN - TRACE may expose auth tokens/session data
   logger 'com.k_int', DEBUG
   logger 'com.k_int.web.toolkit', DEBUG
   logger 'org.olf', DEBUG

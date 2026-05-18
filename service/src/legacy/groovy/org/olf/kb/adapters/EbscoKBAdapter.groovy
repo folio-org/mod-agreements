@@ -85,7 +85,8 @@ public class EbscoKBAdapter extends WebSourceAdapter implements KBCacheUpdater, 
    */
   private InternalPackageImplWithPackageContents buildErmPackage(final String vendorid, final String packageid, final String principal, final String credentials, final String package_reference) {
 
-    log.debug("buildErmPackage(${vendorid},${packageid},${principal},${credentials})");
+    // NOTE: credentials (x-api-key) intentionally excluded from log to prevent secret leakage (ERM-3619)
+    log.debug("buildErmPackage(${vendorid},${packageid},${principal},[credentials redacted])");
 
     def result = null;
 

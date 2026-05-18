@@ -31,15 +31,12 @@ class BootStrap {
     log.info("          build commit -> ${grailsApplication.metadata['build.git.commit']}");
     log.info("            build time -> ${grailsApplication.metadata['build.time']}");
     log.info("            build host -> ${grailsApplication.metadata['build.host']}");
-    log.info("         Base JDBC URL -> ${grailsApplication.config.getProperty('dataSource.url')} / ${grailsApplication.config.getProperty('dataSource.username')}");
+    // NOTE: dataSource.url and dataSource.username are intentionally omitted to avoid leaking credentials/connection info (ERM-3619)
     log.info("    default_aws_region -> ${grailsApplication.config.getProperty('kiwt.filestore.aws_region')}");
     log.info("       default_aws_url -> ${grailsApplication.config.getProperty('kiwt.filestore.aws_url')}");
     log.info("    default_aws_bucket -> ${grailsApplication.config.getProperty('kiwt.filestore.aws_bucket')}");
 
-    Map<String, String> env = System.getenv();
-    env.each { name,value ->
-      log.info("    ENV: ${name}=\"${value}\"");
-    }
+    // NOTE: Full environment variable dump removed to prevent leaking secrets (passwords, tokens, API keys) into logs (ERM-3619)
 
     // Debugging for filter chains -- turn on to inspect the security chain
 //    if (springSecurityFilterChain instanceof FilterChainProxy) {
