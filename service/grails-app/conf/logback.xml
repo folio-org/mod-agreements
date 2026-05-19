@@ -77,12 +77,12 @@
     <level value="WARN" />
   </logger>
 
-  <!-- Suppress http-builder-ng HTTP client logger — at DEBUG it dumps full request/response including Authorization headers (ERM-3619) -->
+  <!-- ERM-3619: Suppress http-builder-ng HTTP client logger — at DEBUG it dumps full request/response including Authorization headers -->
   <logger name="groovyx.net.http">
     <level value="WARN" />
   </logger>
 
-  <!-- Suppress Micronaut HTTP client logger — at DEBUG it dumps request/response headers including x-okapi-token (ERM-3619) -->
+  <!-- ERM-3619: Suppress Micronaut HTTP client logger — at DEBUG it dumps request/response headers including x-okapi-token -->
   <logger name="io.micronaut.http.client">
     <level value="WARN" />
   </logger>
