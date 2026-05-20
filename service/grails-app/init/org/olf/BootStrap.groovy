@@ -31,14 +31,24 @@ class BootStrap {
     log.info("          build commit -> ${grailsApplication.metadata['build.git.commit']}");
     log.info("            build time -> ${grailsApplication.metadata['build.time']}");
     log.info("            build host -> ${grailsApplication.metadata['build.host']}");
-    log.info("         Base JDBC URL -> ${grailsApplication.config.getProperty('dataSource.url')} / ${grailsApplication.config.getProperty('dataSource.username')}");
     log.info("    default_aws_region -> ${grailsApplication.config.getProperty('kiwt.filestore.aws_region')}");
     log.info("       default_aws_url -> ${grailsApplication.config.getProperty('kiwt.filestore.aws_url')}");
     log.info("    default_aws_bucket -> ${grailsApplication.config.getProperty('kiwt.filestore.aws_bucket')}");
 
+    // ERM-3619: Print known safe env vars only; sensitive vars (passwords, secrets, keys) are redacted
+    final Set<String> SENSITIVE_ENV_VARS = [
+      'DB_PASSWORD', 'DB_USERNAME',
+      'GLOBAL_S3_SECRET_KEY', 'AWS_SECRET_ACCESS_KEY', 'AWS_ACCESS_KEY_ID',
+      'OKAPI_TOKEN', 'SPRING_DATASOURCE_PASSWORD'
+    ] as Set
     Map<String, String> env = System.getenv();
-    env.each { name,value ->
-      log.info("    ENV: ${name}=\"${value}\"");
+    env.each { name, value ->
+      if (SENSITIVE_ENV_VARS.contains(name) || name.toLowerCase().contains('secret')
+        || name.toLowerCase().contains('password') || name.toLowerCase().contains('token')) {
+        log.info("    ENV: ${name}=[REDACTED]");
+      } else {
+        log.info("    ENV: ${name}=\"${value}\"");
+      }
     }
 
     // Debugging for filter chains -- turn on to inspect the security chain
