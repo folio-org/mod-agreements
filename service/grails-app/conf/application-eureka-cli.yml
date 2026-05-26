@@ -1,0 +1,42 @@
+##
+# This config file connects to the postgres install from a eureka cli instance.
+# Use the flag '-Dgrails.env=eureka-cli' when running
+##
+    
+dataSource:
+  dbCreate: none
+  url: "jdbc:postgresql://${db.host:localhost}:${db.port:5432}/${db.database:folio}" # Port 5432 forwarded so as not to clash.
+  username: folio_rw
+  password: supersecret
+  driverClassName: org.postgresql.Driver
+  dialect: com.k_int.hibernate.dialects.postgres.KIPostgres94Dialect
+  schemaHandler: com.k_int.okapi.OkapiSchemaHandler
+  logSql: false
+  properties:
+    jmxEnabled: ${db.jmxEnabled}
+    maximumPoolSize: ${db.maxpoolsize}
+    transactionIsolation: ${db.transactionIsolation}
+
+  hibernate:
+    enable_lazy_load_no_trans: true
+
+okapi:
+  service:
+    host: localhost
+    port: 8000
+logging:
+  config: classpath:logback-development.xml
+
+db:
+  maxpoolsize: 15
+  transactionIsolation: TRANSACTION_READ_COMMITTED
+  jmxEnabled: true
+  jmxExport: true
+
+concurrentJobsGlobal: "${CONCURRENT_JOBS_GLOBAL:3}"
+
+endpoints:
+  include-stack-trace: true # This being true for dev builds allows us to see stacktraces in the responses
+
+server:
+  port: 36005
