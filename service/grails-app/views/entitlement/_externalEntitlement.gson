@@ -64,9 +64,7 @@ json {
   'note' entitlement.note
   'docs'  g.render(entitlement.docs)
 
-  if (entitlement.getAuthority()?.toLowerCase() == Entitlement.GOKB_RESOURCE_AUTHORITY.toLowerCase()) {
   'resourceName' entitlement.getResourceName()
-  }
   
   if (renderOwnerSnippet) {
     'owner' g.render(entitlement.owner, [includes: ['id', 'name']])
