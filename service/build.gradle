@@ -137,7 +137,7 @@ dependencies {
 	implementation('com.k_int.okapi:grails-okapi:8.0.2') {
     exclude group: 'com.vaadin.external.google', module: 'android-json'
   }
-  implementation('com.k_int.accesscontrol:access-control-grails:1.0.0')
+  implementation("com.k_int.accesscontrol:access-control-grails:${accessControlVersion}")
 
   implementation 'io.github.http-builder-ng:http-builder-ng-core:1.0.4'
   implementation("io.micronaut:micronaut-http-client")

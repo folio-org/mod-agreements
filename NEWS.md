@@ -1,3 +1,8 @@
+## 7.3.1 2026-06-02
+  * ERM-3984: Increase webToolkitVersion to 10.6.2
+  * ERM-3619: Sensitive data in logs cleanup
+  * Bump access-control grails-plugin version to 1.0.1
+
 ## 7.3.0 2025-04-16
   * ERM-3959: It should not be possible to clone an agreement that you cannot view due to access control
   * ERM-3951: Upgrade undertow-core to 2.2.39
