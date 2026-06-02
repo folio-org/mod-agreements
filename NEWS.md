@@ -1,3 +1,9 @@
+## 7.3.1 2026-06-02
+  * ERM-3984: Support S3 access with implicit AWS role authorization in Grails modules
+  * ERM-3619: Sensitive data in logs cleanup
+  * ERM-4022: Bumped internal dependencies (jakarta.el security fix)
+  * Bump grails-okapi version to 8.1.0
+
 ## 7.3.0 2025-04-16
   * ERM-3959: It should not be possible to clone an agreement that you cannot view due to access control
   * ERM-3951: Upgrade undertow-core to 2.2.39
