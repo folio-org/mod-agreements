@@ -1,3 +1,6 @@
+## 7.3.2 2026-06-04
+  * ERM-4087: Agreements: Bump access-control-grails version to handle jackson vulnerability
+
 ## 7.3.1 2026-06-02
   * ERM-3984: Support S3 access with implicit AWS role authorization in Grails modules
   * ERM-3619: Sensitive data in logs cleanup
