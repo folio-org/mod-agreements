@@ -19,11 +19,6 @@ configurations.all {
   }
 }
 
-configurations {
-  lombokDelombok
-}
-
-
 buildscript {
   repositories {
 		//mavenLocal()
