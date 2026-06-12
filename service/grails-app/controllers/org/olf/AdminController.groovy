@@ -6,15 +6,11 @@ import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import grails.converters.JSON
 
-import com.k_int.web.toolkit.refdata.RefdataValue
-
 import org.olf.kb.RemoteKB
 import org.springframework.validation.BindingResult
 import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.kb.KBCacheUpdater
-import org.olf.general.jobs.PersistentJob
 import grails.gorm.transactions.Transactional
-import java.time.Instant
 
 @Slf4j
 @CurrentTenant
@@ -122,6 +118,14 @@ class AdminController implements DataBinder{
 
     entitlementLogService.triggerUpdate()
 
+    result.status = 'OK'
+    render result as JSON
+  }
+
+  public triggerEntitlementEholdings() {
+    def result = [:]
+    log.info("AdminController::triggerEntitlementEholdings")
+    kbManagementService.triggerEntitlementEholdingsJob()
     result.status = 'OK'
     render result as JSON
   }

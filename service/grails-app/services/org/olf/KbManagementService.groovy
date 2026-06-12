@@ -4,10 +4,9 @@ import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.web.toolkit.refdata.RefdataValue
 import org.olf.dataimport.internal.KBManagementBean
 import org.olf.erm.Entitlement
+import org.olf.general.jobs.ExternalEntitlementEholdingsSyncJob
 import org.olf.general.jobs.ExternalEntitlementSyncJob
-import org.olf.general.jobs.PackageIngestJob
 import org.olf.general.jobs.PersistentJob
-import org.olf.general.jobs.TitleIngestJob
 import org.olf.kb.metadata.ResourceIngressType
 
 import java.time.Instant
@@ -29,6 +28,7 @@ class KbManagementService {
   KBManagementBean kbManagementBean
   OkapiTenantAdminService okapiTenantAdminService
   EntitlementService entitlementService
+  EholdingsService eholdingsService
 
   // Runs every half hour, starting one minute after app startup
   @Scheduled(fixedDelay = 1800000L, initialDelay = 60000L)
@@ -67,5 +67,30 @@ class KbManagementService {
         log.error("Unexpected error in triggerEntitlementJob for tenant ${tenant_schema_id}", e);
       }
     }
+  }
+
+  @CompileStatic(SKIP)
+  void triggerEntitlementEholdingsJob() {
+    List<Entitlement> entitlements = eholdingsService.findEholdingsEntitlementsWithoutResourceName()
+    if (!entitlements) {
+      return
+    }
+
+    RefdataValue inProgress = PersistentJob.lookupStatus('in_progress')
+    RefdataValue queued = PersistentJob.lookupStatus('queued')
+    ExternalEntitlementEholdingsSyncJob runningOrQueued = ExternalEntitlementEholdingsSyncJob.findByStatusInList([
+      inProgress,
+      queued
+    ])
+
+    if (runningOrQueued) {
+      log.info("Not creating ExternalEntitlementEholdingsSyncJob as one is already running or queued")
+      return
+    }
+
+    log.info("Queuing ExternalEntitlementEholdingsSyncJob with ${entitlements.size()} entitlements to process")
+    ExternalEntitlementEholdingsSyncJob job = new ExternalEntitlementEholdingsSyncJob(['name': "ExternalEntitlementEholdingsSyncJob: ${Instant.now()}"])
+    job.setStatusFromString('Queued')
+    job.save(failOnError: true, flush: true)
   }
 }

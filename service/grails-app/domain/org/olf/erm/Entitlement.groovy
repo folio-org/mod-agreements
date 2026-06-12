@@ -90,6 +90,8 @@ public class Entitlement implements MultiTenant<Entitlement>, Clonable<Entitleme
 
   // This isn't used in okapiLookup, and we don't have statica et for EKB-PACKAGE or EKB-TITLE which we probably should
   static final String GOKB_RESOURCE_AUTHORITY = "GOKB-RESOURCE"
+  static final String EKB_PACKAGE_AUTHORITY = "EKB-PACKAGE"
+  static final String EKB_TITLE_AUTHORITY = "EKB-TITLE"
 
   boolean suppressFromDiscovery = false
 
