@@ -2,7 +2,6 @@ name: SBOM Generation
 
 on:
   push:
-  pull_request:
   workflow_dispatch:
 
 # Eventually we don't want this running on every push

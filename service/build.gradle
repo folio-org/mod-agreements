@@ -1,7 +1,6 @@
 configurations {
   all {
     resolutionStrategy {
-      activateDependencyLocking()
       // Check for updates every build -- Useful for developing the plugins
       // cacheChangingModulesFor 0, 'seconds'
 
@@ -9,7 +8,8 @@ configurations {
         "org.glassfish:jakarta.el:$glassfishJakartaElVersion",
         "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion",
         "org.codehaus.plexus:plexus-utils:${plexusVersion}",
-        "commons-beanutils:commons-beanutils:${beanutilsVersion}"
+        "commons-beanutils:commons-beanutils:${beanutilsVersion}",
+        "io.micronaut:micronaut-json-core:$micronautJsonCoreVersion"
       ]
 
       eachDependency { DependencyResolveDetails details ->
@@ -164,7 +164,8 @@ dependencies {
 
   implementation 'org.codehaus.janino:janino:3.1.9'
 
-  implementation "org.springframework.boot:spring-boot-starter-undertow" // Replaces spring-boot-starter-tomcat
+  // Replaces spring-boot-starter-tomcat
+  implementation ("org.springframework.boot:spring-boot-starter-undertow")
 
   implementation "org.hibernate:hibernate-java8"
   runtimeOnly "com.zaxxer:HikariCP:${hikariVersion}"                             // Replaces Tomcat JDBC pool
