@@ -73,6 +73,7 @@ class KbManagementService {
   void triggerEntitlementEholdingsJob() {
     List<Entitlement> entitlements = eholdingsService.findEholdingsEntitlementsWithoutResourceName()
     if (!entitlements) {
+      log.info("No eHoldings entitlements need resourceName backfill; skipping ExternalEntitlementEholdingsSyncJob creation")
       return
     }
 

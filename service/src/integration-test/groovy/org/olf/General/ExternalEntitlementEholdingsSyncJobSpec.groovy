@@ -13,6 +13,7 @@ import org.olf.general.jobs.PersistentJob
 import org.olf.general.jobs.TitleIngestJob
 import spock.lang.Ignore
 import spock.lang.Stepwise
+import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -192,6 +193,32 @@ class ExternalEntitlementEholdingsSyncJobSpec extends BaseSpec {
     then:
       await().atMost(5, TimeUnit.SECONDS).untilAsserted {
         assertEquals(1, withTenant { ExternalEntitlementEholdingsSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        ExternalEntitlementEholdingsSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "Queued ExternalEntitlementEholdingsSyncJob runs to completion without wiring errors" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_runs", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    expect: 'Job is picked up by the runner and reaches Ended without an unhandled exception'
+      def conditions = new PollingConditions(timeout: 90)
+      conditions.eventually {
+        ExternalEntitlementEholdingsSyncJob job = withTenant {
+          ExternalEntitlementEholdingsSyncJob.findAll([sort: 'dateCreated', order: 'desc']).find()
+        }
+        assert job != null
+        assert job.status?.value == 'ended'
+        assert job.result?.value in ['success', 'partial_success']
       }
 
     cleanup:
