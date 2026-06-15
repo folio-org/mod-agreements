@@ -1,6 +1,7 @@
 package org.olf
 
 import com.k_int.okapi.OkapiClient
+import groovyx.net.http.HttpException
 
 import org.olf.erm.Entitlement
 
@@ -74,16 +75,9 @@ class EholdingsService {
     }
 
     entitlements.collate(BULK_CHUNK_SIZE).each { List<Entitlement> chunk ->
-      List<String> references = chunk*.reference
-
-      def response
-      try {
-        response = okapiClient.post(bulkUri, [(requestKey): references])
-      } catch (Exception e) {
-        chunk.each { Entitlement ent ->
-          log.error("Update failed on ${ent.id} for ${resourceType}:${ent.reference}. Error: ${e.message}")
-        }
-        return
+      def response = fetchBulkFromKbEbsco(chunk, bulkUri, requestKey, resourceType)
+      if (response == null) {
+        return // skip to next chunk; errors already logged
       }
 
       Map<String, String> nameByReference = (response?.included ?: [])
@@ -112,6 +106,22 @@ class EholdingsService {
           log.info("resourceName for ${resourceType} with EKB ID: ${ent.reference} not updated")
         }
       }
+    }
+  }
+
+  @CompileStatic(SKIP)
+  private def fetchBulkFromKbEbsco(List<Entitlement> chunk, String bulkUri, String requestKey, String resourceType) {
+    List<String> references = chunk*.reference
+    try {
+      return okapiClient.post(bulkUri, [(requestKey): references])
+    } catch (Exception e) {
+      String detail = (e instanceof HttpException)
+        ? "Status: ${e.fromServer?.statusCode}, Body: ${e.body?.toString()}, Error: ${e.message}"
+        : "Error: ${e.message}"
+      chunk.each { Entitlement ent ->
+        log.error("Update failed on ${ent.id} for ${resourceType}:${ent.reference}. ${detail}")
+      }
+      return null
     }
   }
 }
