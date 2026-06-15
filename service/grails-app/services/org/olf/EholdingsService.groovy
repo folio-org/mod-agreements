@@ -18,6 +18,9 @@ class EholdingsService {
   // mod-kb-ebsco bulk endpoints cap at 20 ids per request.
   private static final int BULK_CHUNK_SIZE = 20
 
+  // mod-kb-ebsco enforces JSON:API spec
+  private static final String JSON_API_CONTENT_TYPE = 'application/vnd.api+json'
+
   private static final String BULK_URI_PACKAGES = '/eholdings/packages/bulk/fetch'
   private static final String BULK_URI_RESOURCES = '/eholdings/resources/bulk/fetch'
 
@@ -113,7 +116,9 @@ class EholdingsService {
   private def fetchBulkFromKbEbsco(List<Entitlement> chunk, String bulkUri, String requestKey, String resourceType) {
     List<String> references = chunk*.reference
     try {
-      return okapiClient.post(bulkUri, [(requestKey): references])
+      return okapiClient.post(bulkUri, [(requestKey): references], null) {
+        request.headers['Content-Type'] = JSON_API_CONTENT_TYPE
+      }
     } catch (Exception e) {
       String detail = (e instanceof HttpException)
         ? "Status: ${e.fromServer?.statusCode}, Body: ${e.body?.toString()}, Error: ${e.message}"
