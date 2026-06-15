@@ -21,6 +21,9 @@ class EholdingsService {
   // mod-kb-ebsco enforces JSON:API spec
   private static final String JSON_API_CONTENT_TYPE = 'application/vnd.api+json'
 
+  // mod-kb-ebsco-java's RequestHeadersUtil.userIdFuture requires X-Okapi-User-Id to be present
+  private static final String SYNTHETIC_USER_ID = '00000000-0000-0000-0000-000000000001'
+
   private static final String BULK_URI_PACKAGES = '/eholdings/packages/bulk/fetch'
   private static final String BULK_URI_RESOURCES = '/eholdings/resources/bulk/fetch'
 
@@ -118,6 +121,7 @@ class EholdingsService {
     try {
       return okapiClient.post(bulkUri, [(requestKey): references], null) {
         request.headers['Content-Type'] = JSON_API_CONTENT_TYPE
+        request.headers['X-Okapi-User-Id'] = SYNTHETIC_USER_ID
       }
     } catch (Exception e) {
       String detail = (e instanceof HttpException)
