@@ -1,3 +1,6 @@
+## 7.2.8 2026-06-16
+* ERM-4055 Use the latest web-toolkit-ce 10.6.2
+
 ## 7.2.7 2026-06-08
   * ERM-4055 Backport Security fix May 2026 to Sunflower
 
