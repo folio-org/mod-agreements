@@ -30,8 +30,8 @@ class EholdingsService {
   private static final String BULK_REQUEST_KEY_PACKAGES = 'packages'
   private static final String BULK_REQUEST_KEY_RESOURCES = 'resources'
 
-  private static final String RESOURCE_TYPE_PACKAGE = 'package'
-  private static final String RESOURCE_TYPE_TITLE = 'title'
+  // Thrown by the http client when okapi has no module providing the optional eholdings interface.
+  private static final int HTTP_NOT_FOUND = 404
 
   OkapiClient okapiClient
 
@@ -49,7 +49,7 @@ class EholdingsService {
   }
 
   @Transactional
-  void processExternalEntitlementsEholdings() {
+  void processEHoldingsEntitlements() {
     List<Entitlement> entitlements = findEholdingsEntitlementsWithoutResourceName()
 
     if (!entitlements) {
@@ -62,73 +62,87 @@ class EholdingsService {
     processBulkEholdings(
       entitlementsByAuthority[Entitlement.EKB_PACKAGE_AUTHORITY] ?: [],
       BULK_URI_PACKAGES,
-      BULK_REQUEST_KEY_PACKAGES,
-      RESOURCE_TYPE_PACKAGE
+      BULK_REQUEST_KEY_PACKAGES
     )
 
     processBulkEholdings(
       entitlementsByAuthority[Entitlement.EKB_TITLE_AUTHORITY] ?: [],
       BULK_URI_RESOURCES,
-      BULK_REQUEST_KEY_RESOURCES,
-      RESOURCE_TYPE_TITLE
+      BULK_REQUEST_KEY_RESOURCES
     )
   }
 
   @CompileStatic(SKIP)
-  private void processBulkEholdings(List<Entitlement> entitlements, String bulkUri, String requestKey, String resourceType) {
+  private void processBulkEholdings(List<Entitlement> entitlements, String bulkUri, String requestKey) {
     if (!entitlements) {
       return
     }
 
+    // 1. Chunk — mod-kb-ebsco caps the bulk endpoint at BULK_CHUNK_SIZE ids per request.
     entitlements.collate(BULK_CHUNK_SIZE).each { List<Entitlement> chunk ->
-      def response = fetchBulkFromKbEbsco(chunk, bulkUri, requestKey, resourceType)
+      // 2. Fetch metadata for this chunk. null == chunk-level failure (errors already logged).
+      def response = fetchBulkFromKbEbsco(chunk, bulkUri, requestKey)
       if (response == null) {
-        return // skip to next chunk; errors already logged
+        return
       }
 
+      // 3. Index returned names by EKB id (== Entitlement.reference) for O(1) lookup.
       Map<String, String> nameByReference = (response?.included ?: [])
         .findAll { it?.id && it?.attributes?.name }
         .collectEntries { [(it.id): it.attributes.name] }
 
+      // 4. Collect ids that kb explicitly failed on (meta.failed.<requestKey>).
       Set<String> failedSet = (response?.meta?.failed?.getAt(requestKey) ?: [])
         .collect { it.toString() } as Set
 
+      // 5. For each entitlement decide its fate.
       chunk.each { Entitlement ent ->
         String fetchedName = nameByReference[ent.reference]
         if (fetchedName) {
           ent.resourceName = fetchedName
           try {
-            if (ent.save()) {
-              log.info("resourceName for ${resourceType} with EKB ID: ${ent.reference} updated to ${fetchedName}")
+            if (ent.save(flush: true)) {
+              log.info("resourceName for ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}) updated to ${fetchedName}")
             } else {
-              log.error("Update failed on ${ent.id} for ${resourceType}:${ent.reference}. Error: ${ent.errors}")
+              log.error("Update failed on ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}). Error: ${ent.errors}")
             }
           } catch (Exception e) {
-            log.error("Update failed on ${ent.id} for ${resourceType}:${ent.reference}. Error: ${e.message}")
+            log.error("Update failed on ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}). Error: ${e.message}")
           }
         } else if (failedSet.contains(ent.reference)) {
-          log.error("Update failed on ${ent.id} for ${resourceType}:${ent.reference}. Error: returned in meta.failed by /eholdings bulk fetch")
+          // kb explicitly rejected this id.
+          log.error("Update failed on ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}). Error: returned in meta.failed by /eholdings bulk fetch")
         } else {
-          log.info("resourceName for ${resourceType} with EKB ID: ${ent.reference} not updated")
+          // No name and no failure entry — kb stayed silent. Try again next run.
+          log.info("resourceName for ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}) not updated")
         }
       }
     }
   }
 
   @CompileStatic(SKIP)
-  private def fetchBulkFromKbEbsco(List<Entitlement> chunk, String bulkUri, String requestKey, String resourceType) {
+  private def fetchBulkFromKbEbsco(List<Entitlement> chunk, String bulkUri, String requestKey) {
     List<String> references = chunk*.reference
     try {
       return okapiClient.post(bulkUri, [(requestKey): references], null) {
         request.headers['Content-Type'] = JSON_API_CONTENT_TYPE
         request.headers['X-Okapi-User-Id'] = SYNTHETIC_USER_ID
       }
-    } catch (Exception e) {
-      String detail = (e instanceof HttpException)
-        ? "Status: ${e.fromServer?.statusCode}, Body: ${e.body?.toString()}, Error: ${e.message}"
-        : "Error: ${e.message}"
+    } catch (HttpException e) {
+      // The eholdings interface is optional. If no module provides it, every bulk POST 404s.
+      // Log once per chunk at a higher level and skip — no point logging per entitlement.
+      if (e.statusCode == HTTP_NOT_FOUND) {
+        log.error("Skipping ${requestKey} bulk fetch: ${bulkUri} returned 404. eholdings interface is likely not provided by any module.")
+        return null
+      }
+      String detail = "Status: ${e.statusCode}, Body: ${e.body?.toString()}, Error: ${e.message}"
       chunk.each { Entitlement ent ->
-        log.error("Update failed on ${ent.id} for ${resourceType}:${ent.reference}. ${detail}")
+        log.error("Update failed on ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}). ${detail}")
+      }
+      return null
+    } catch (Exception e) {
+      chunk.each { Entitlement ent ->
+        log.error("Update failed on ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}). Error: ${e.message}")
       }
       return null
     }

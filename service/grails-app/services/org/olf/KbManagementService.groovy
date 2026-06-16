@@ -4,7 +4,7 @@ import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.web.toolkit.refdata.RefdataValue
 import org.olf.dataimport.internal.KBManagementBean
 import org.olf.erm.Entitlement
-import org.olf.general.jobs.ExternalEntitlementEholdingsSyncJob
+import org.olf.general.jobs.EHoldingsEntitlementSyncJob
 import org.olf.general.jobs.ExternalEntitlementSyncJob
 import org.olf.general.jobs.PersistentJob
 import org.olf.kb.metadata.ResourceIngressType
@@ -73,24 +73,24 @@ class KbManagementService {
   void triggerEntitlementEholdingsJob() {
     List<Entitlement> entitlements = eholdingsService.findEholdingsEntitlementsWithoutResourceName()
     if (!entitlements) {
-      log.info("No eHoldings entitlements need resourceName backfill; skipping ExternalEntitlementEholdingsSyncJob creation")
+      log.info("No eHoldings entitlements need resourceName backfill; skipping EHoldingsEntitlementSyncJob creation")
       return
     }
 
     RefdataValue inProgress = PersistentJob.lookupStatus('in_progress')
     RefdataValue queued = PersistentJob.lookupStatus('queued')
-    ExternalEntitlementEholdingsSyncJob runningOrQueued = ExternalEntitlementEholdingsSyncJob.findByStatusInList([
+    EHoldingsEntitlementSyncJob runningOrQueued = EHoldingsEntitlementSyncJob.findByStatusInList([
       inProgress,
       queued
     ])
 
     if (runningOrQueued) {
-      log.info("Not creating ExternalEntitlementEholdingsSyncJob as one is already running or queued")
+      log.info("Not creating EHoldingsEntitlementSyncJob as one is already running or queued")
       return
     }
 
-    log.info("Queuing ExternalEntitlementEholdingsSyncJob with ${entitlements.size()} entitlements to process")
-    ExternalEntitlementEholdingsSyncJob job = new ExternalEntitlementEholdingsSyncJob(['name': "ExternalEntitlementEholdingsSyncJob: ${Instant.now()}"])
+    log.info("Queuing EHoldingsEntitlementSyncJob with ${entitlements.size()} entitlements to process")
+    EHoldingsEntitlementSyncJob job = new EHoldingsEntitlementSyncJob(['name': "EHoldingsEntitlementSyncJob: ${Instant.now()}"])
     job.setStatusFromString('Queued')
     job.save(failOnError: true, flush: true)
   }

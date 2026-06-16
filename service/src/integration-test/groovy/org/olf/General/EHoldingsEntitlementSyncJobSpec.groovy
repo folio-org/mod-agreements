@@ -7,7 +7,7 @@ import org.olf.EholdingsService
 import org.olf.KbManagementService
 import org.olf.erm.Entitlement
 import org.olf.erm.SubscriptionAgreement
-import org.olf.general.jobs.ExternalEntitlementEholdingsSyncJob
+import org.olf.general.jobs.EHoldingsEntitlementSyncJob
 import org.olf.general.jobs.PackageIngestJob
 import org.olf.general.jobs.PersistentJob
 import org.olf.general.jobs.TitleIngestJob
@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 
 @Stepwise
 @Integration
-class ExternalEntitlementEholdingsSyncJobSpec extends BaseSpec {
+class EHoldingsEntitlementSyncJobSpec extends BaseSpec {
 
   @Inject
   EholdingsService eholdingsService
@@ -32,7 +32,7 @@ class ExternalEntitlementEholdingsSyncJobSpec extends BaseSpec {
   KbManagementService kbManagementService
 
   def mockDomains = [
-    ExternalEntitlementEholdingsSyncJob,
+    EHoldingsEntitlementSyncJob,
     PackageIngestJob,
     TitleIngestJob,
     PersistentJob
@@ -99,7 +99,7 @@ class ExternalEntitlementEholdingsSyncJobSpec extends BaseSpec {
       }
   }
 
-  void "When no eHoldings entitlements need resourceName, no ExternalEntitlementEholdingsSyncJob is created" () {
+  void "When no eHoldings entitlements need resourceName, no EHoldingsEntitlementSyncJob is created" () {
     setup:
       withTenant {
         // Only entitlements that should be excluded: GOKB and EKB with resourceName already set.
@@ -114,18 +114,18 @@ class ExternalEntitlementEholdingsSyncJobSpec extends BaseSpec {
 
     then:
       await().atMost(5, TimeUnit.SECONDS).untilAsserted {
-        assertEquals(0, withTenant { ExternalEntitlementEholdingsSyncJob.count() })
+        assertEquals(0, withTenant { EHoldingsEntitlementSyncJob.count() })
       }
 
     cleanup:
       withTenant {
-        ExternalEntitlementEholdingsSyncJob.findAll().each { it.delete(flush: true) }
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
         SubscriptionAgreement.findAll().each { it.delete(flush: true) }
         Entitlement.findAll().each { it.delete(flush: true) }
       }
   }
 
-  void "When EKB entitlements need resourceName, ExternalEntitlementEholdingsSyncJob is created" () {
+  void "When EKB entitlements need resourceName, EHoldingsEntitlementSyncJob is created" () {
     setup:
       withTenant {
         postEntitlement("test_ekb_pkg_needs_sync", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
@@ -138,22 +138,22 @@ class ExternalEntitlementEholdingsSyncJobSpec extends BaseSpec {
 
     then:
       await().atMost(5, TimeUnit.SECONDS).untilAsserted {
-        assertEquals(1, withTenant { ExternalEntitlementEholdingsSyncJob.count() })
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
       }
 
     cleanup:
       withTenant {
-        ExternalEntitlementEholdingsSyncJob.findAll().each { it.delete(flush: true) }
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
         SubscriptionAgreement.findAll().each { it.delete(flush: true) }
         Entitlement.findAll().each { it.delete(flush: true) }
       }
   }
 
-  void "When existing queued ExternalEntitlementEholdingsSyncJob exists, no job is created" () {
+  void "When existing queued EHoldingsEntitlementSyncJob exists, no job is created" () {
     setup:
       withTenant {
         postEntitlement("test_ekb_pkg_queued", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
-        ExternalEntitlementEholdingsSyncJob existing = new ExternalEntitlementEholdingsSyncJob(name: "Test ExternalEntitlementEholdingsSyncJob ${Instant.now()}")
+        EHoldingsEntitlementSyncJob existing = new EHoldingsEntitlementSyncJob(name: "Test EHoldingsEntitlementSyncJob ${Instant.now()}")
         existing.setStatusFromString('queued')
         existing.save(failOnError: true, flush: true)
       }
@@ -165,22 +165,22 @@ class ExternalEntitlementEholdingsSyncJobSpec extends BaseSpec {
 
     then:
       await().atMost(5, TimeUnit.SECONDS).untilAsserted {
-        assertEquals(1, withTenant { ExternalEntitlementEholdingsSyncJob.count() })
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
       }
 
     cleanup:
       withTenant {
-        ExternalEntitlementEholdingsSyncJob.findAll().each { it.delete(flush: true) }
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
         SubscriptionAgreement.findAll().each { it.delete(flush: true) }
         Entitlement.findAll().each { it.delete(flush: true) }
       }
   }
 
-  void "When existing in progress ExternalEntitlementEholdingsSyncJob exists, no job is created" () {
+  void "When existing in progress EHoldingsEntitlementSyncJob exists, no job is created" () {
     setup:
       withTenant {
         postEntitlement("test_ekb_pkg_inprogress", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
-        ExternalEntitlementEholdingsSyncJob existing = new ExternalEntitlementEholdingsSyncJob(name: "Test ExternalEntitlementEholdingsSyncJob ${Instant.now()}")
+        EHoldingsEntitlementSyncJob existing = new EHoldingsEntitlementSyncJob(name: "Test EHoldingsEntitlementSyncJob ${Instant.now()}")
         existing.setStatusFromString('In progress')
         existing.save(failOnError: true, flush: true)
       }
@@ -192,18 +192,18 @@ class ExternalEntitlementEholdingsSyncJobSpec extends BaseSpec {
 
     then:
       await().atMost(5, TimeUnit.SECONDS).untilAsserted {
-        assertEquals(1, withTenant { ExternalEntitlementEholdingsSyncJob.count() })
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
       }
 
     cleanup:
       withTenant {
-        ExternalEntitlementEholdingsSyncJob.findAll().each { it.delete(flush: true) }
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
         SubscriptionAgreement.findAll().each { it.delete(flush: true) }
         Entitlement.findAll().each { it.delete(flush: true) }
       }
   }
 
-  void "Queued ExternalEntitlementEholdingsSyncJob runs to completion without wiring errors" () {
+  void "Queued EHoldingsEntitlementSyncJob runs to completion without wiring errors" () {
     setup:
       withTenant {
         postEntitlement("test_ekb_pkg_runs", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
@@ -213,8 +213,8 @@ class ExternalEntitlementEholdingsSyncJobSpec extends BaseSpec {
     expect: 'Job is picked up by the runner and reaches Ended without an unhandled exception'
       def conditions = new PollingConditions(timeout: 90)
       conditions.eventually {
-        ExternalEntitlementEholdingsSyncJob job = withTenant {
-          ExternalEntitlementEholdingsSyncJob.findAll([sort: 'dateCreated', order: 'desc']).find()
+        EHoldingsEntitlementSyncJob job = withTenant {
+          EHoldingsEntitlementSyncJob.findAll([sort: 'dateCreated', order: 'desc']).find()
         }
         assert job != null
         assert job.status?.value == 'ended'
@@ -223,17 +223,17 @@ class ExternalEntitlementEholdingsSyncJobSpec extends BaseSpec {
 
     cleanup:
       withTenant {
-        ExternalEntitlementEholdingsSyncJob.findAll().each { it.delete(flush: true) }
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
         SubscriptionAgreement.findAll().each { it.delete(flush: true) }
         Entitlement.findAll().each { it.delete(flush: true) }
       }
   }
 
-  void "Trigger creates a new job alongside an already-ended one (no interval guard - cadence is governed by the _timer interface)" () {
+  void "Trigger creates a new job alongside an already-ended one (cadence is governed by the _timer interface)" () {
     setup:
       withTenant {
         postEntitlement("test_ekb_pkg_after_ended", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
-        ExternalEntitlementEholdingsSyncJob completed = new ExternalEntitlementEholdingsSyncJob(name: "Previously ended ${Instant.now()}")
+        EHoldingsEntitlementSyncJob completed = new EHoldingsEntitlementSyncJob(name: "Previously ended ${Instant.now()}")
         completed.setStatusFromString('Ended')
         completed.ended = Instant.now()
         completed.save(failOnError: true, flush: true)
@@ -247,12 +247,12 @@ class ExternalEntitlementEholdingsSyncJobSpec extends BaseSpec {
     then:
       // Trigger only checks for queued/in-progress; an Ended job does not block, so we expect 2 records.
       await().atMost(5, TimeUnit.SECONDS).untilAsserted {
-        assertEquals(2, withTenant { ExternalEntitlementEholdingsSyncJob.count() })
+        assertEquals(2, withTenant { EHoldingsEntitlementSyncJob.count() })
       }
 
     cleanup:
       withTenant {
-        ExternalEntitlementEholdingsSyncJob.findAll().each { it.delete(flush: true) }
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
         SubscriptionAgreement.findAll().each { it.delete(flush: true) }
         Entitlement.findAll().each { it.delete(flush: true) }
       }
