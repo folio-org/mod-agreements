@@ -104,7 +104,7 @@ class EholdingsService {
           ent.resourceName = fetchedName
           try {
             if (ent.save(flush: true)) {
-              log.info("resourceName for ${type} entitlement ${ent.id} with EKB ID: ${ent.reference} updated to ${fetchedName}")
+              log.info("ResourceName for ${type} entitlement ${ent.id} with EKB ID: ${ent.reference} updated to ${fetchedName}")
             } else {
               log.error("Update failed on ${type} entitlement ${ent.id} with EKB ID: ${ent.reference}. Error: ${ent.errors}")
             }
@@ -116,7 +116,7 @@ class EholdingsService {
           log.error("Update failed on ${type} entitlement ${ent.id} with EKB ID: ${ent.reference}. Error: returned in meta.failed by /eholdings bulk fetch")
         } else {
           // No name and no failure entry — kb stayed silent. Try again next run.
-          log.info("resourceName for ${type} entitlement ${ent.id} with EKB ID: ${ent.reference} not updated")
+          log.info("ResourceName for ${type} entitlement ${ent.id} with EKB ID: ${ent.reference} not updated")
         }
       }
     }
