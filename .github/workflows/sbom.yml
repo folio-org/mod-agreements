@@ -1,17 +1,17 @@
 name: SBOM Generation
 
+# SBOM generation workflow for Release branches
+# -------------------------------
+# 1. Select the appropriate 'release/*' branch in the 'Run workflow' dropdown.
+# 2. This will generate the SBOM and commit it directly to the selected branch.
+# 3. Once the workflow completes, you can proceed to create your manual tag.
+# 4. The generated SBOM will be captured in the tag's commit history.
+
 on:
   push:
+    branches:
+      - master
   workflow_dispatch:
-
-# Eventually we don't want this running on every push
-#on:
-#  push:
-#    branches:
-#      - main
-#    tags:
-#      - '*'
-#  workflow_dispatch:
 
 jobs:
   generate-sbom:
