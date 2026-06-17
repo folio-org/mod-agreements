@@ -17,6 +17,7 @@ jobs:
   generate-sbom:
     permissions:
       contents: write
+      pull-requests: write
     uses: k-int/github-actions/.github/workflows/sbom-gradle.yml@main
     with:
       gradle_project_path: 'service'
