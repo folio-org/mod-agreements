@@ -78,6 +78,8 @@ class EholdingsService {
       return
     }
 
+    String type = resourceLabel(requestKey)
+
     // 1. Chunk — mod-kb-ebsco caps the bulk endpoint at BULK_CHUNK_SIZE ids per request.
     entitlements.collate(BULK_CHUNK_SIZE).each { List<Entitlement> chunk ->
       // 2. Fetch metadata for this chunk. null == chunk-level failure (errors already logged).
@@ -102,19 +104,19 @@ class EholdingsService {
           ent.resourceName = fetchedName
           try {
             if (ent.save(flush: true)) {
-              log.info("resourceName for ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}) updated to ${fetchedName}")
+              log.info("resourceName for ${type} entitlement ${ent.id} with EKB ID: ${ent.reference} updated to ${fetchedName}")
             } else {
-              log.error("Update failed on ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}). Error: ${ent.errors}")
+              log.error("Update failed on ${type} entitlement ${ent.id} with EKB ID: ${ent.reference}. Error: ${ent.errors}")
             }
           } catch (Exception e) {
-            log.error("Update failed on ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}). Error: ${e.message}")
+            log.error("Update failed on ${type} entitlement ${ent.id} with EKB ID: ${ent.reference}. Error: ${e.message}")
           }
         } else if (failedSet.contains(ent.reference)) {
           // kb explicitly rejected this id.
-          log.error("Update failed on ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}). Error: returned in meta.failed by /eholdings bulk fetch")
+          log.error("Update failed on ${type} entitlement ${ent.id} with EKB ID: ${ent.reference}. Error: returned in meta.failed by /eholdings bulk fetch")
         } else {
           // No name and no failure entry — kb stayed silent. Try again next run.
-          log.info("resourceName for ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}) not updated")
+          log.info("resourceName for ${type} entitlement ${ent.id} with EKB ID: ${ent.reference} not updated")
         }
       }
     }
@@ -122,6 +124,7 @@ class EholdingsService {
 
   @CompileStatic(SKIP)
   private def fetchBulkFromKbEbsco(List<Entitlement> chunk, String bulkUri, String requestKey) {
+    String type = resourceLabel(requestKey)
     List<String> references = chunk*.reference
     try {
       return okapiClient.post(bulkUri, [(requestKey): references], null) {
@@ -137,14 +140,18 @@ class EholdingsService {
       }
       String detail = "Status: ${e.statusCode}, Body: ${e.body?.toString()}, Error: ${e.message}"
       chunk.each { Entitlement ent ->
-        log.error("Update failed on ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}). ${detail}")
+        log.error("Update failed on ${type} entitlement ${ent.id} with EKB ID: ${ent.reference}. ${detail}")
       }
       return null
     } catch (Exception e) {
       chunk.each { Entitlement ent ->
-        log.error("Update failed on ${requestKey} entitlement ${ent.id} (EKB ID: ${ent.reference}). Error: ${e.message}")
+        log.error("Update failed on ${type} entitlement ${ent.id} with EKB ID: ${ent.reference}. Error: ${e.message}")
       }
       return null
     }
+  }
+
+  private static String resourceLabel(String requestKey) {
+    return requestKey == BULK_REQUEST_KEY_PACKAGES ? 'package' : 'title'
   }
 }
