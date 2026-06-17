@@ -1318,7 +1318,7 @@
             "GET"
           ],
           "pathPattern": "/erm/admin/triggerEntitlementEholdings",
-          "unit": "hour",
+          "unit": "day",
           "delay": "1"
         }
       ]
