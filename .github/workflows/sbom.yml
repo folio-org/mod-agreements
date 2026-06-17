@@ -11,13 +11,14 @@ on:
   push:
     branches:
       - master
+      - ci/test-merge-queue
   workflow_dispatch:
 
 jobs:
   generate-sbom:
     permissions:
       contents: write
-    uses: k-int/github-actions/.github/workflows/sbom-gradle.yml@main
+    uses: k-int/github-actions/.github/workflows/sbom-gradle.yml@test
     with:
       gradle_project_path: 'service'
     secrets:
