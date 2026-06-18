@@ -8,6 +8,8 @@ import java.time.temporal.ChronoUnit
 import org.olf.dataimport.internal.KBManagementBean
 import org.olf.kb.metadata.ResourceIngressType
 
+import org.olf.general.Constants
+import org.olf.general.EnvUtils
 import org.olf.general.jobs.PackageIngestJob
 import org.olf.general.jobs.TitleIngestJob
 import org.olf.kb.RemoteKB
@@ -21,8 +23,6 @@ import grails.gorm.multitenancy.Tenants
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 
-import java.util.regex.Matcher
-
 
 /**
  * See http://guides.grails.org/grails-scheduled/guide/index.html for info on this way of
@@ -32,24 +32,8 @@ import java.util.regex.Matcher
 @CompileStatic
 class KbHarvestService {
 
-  private static final Long ONE_HOUR = new Long(1*60*60*1000)
-  private static final Long ZERO = new Long(0)
-
   private Long getBufferDelay() {
-    String buffer = System.getenv("KB_HARVEST_BUFFER");
-
-    if (buffer) {
-      switch (buffer) {
-        case ~/([0-9]+)/:
-          return "${Matcher.lastMatcher.group(1)}".toLong()
-        case 'ZERO':
-          return ZERO
-        default:
-          return ONE_HOUR
-      }
-    }
-
-    return ONE_HOUR;
+    EnvUtils.readBufferMs(EnvUtils.KB_HARVEST_BUFFER, Constants.Time.ONE_HOUR_MS)
   }
 
   // Without this, the service will be lazy initialised, and the tasks won't be scheduled until an external

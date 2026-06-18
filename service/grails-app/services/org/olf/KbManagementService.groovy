@@ -4,6 +4,8 @@ import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.web.toolkit.refdata.RefdataValue
 import org.olf.dataimport.internal.KBManagementBean
 import org.olf.erm.Entitlement
+import org.olf.general.Constants
+import org.olf.general.EnvUtils
 import org.olf.general.jobs.EHoldingsEntitlementSyncJob
 import org.olf.general.jobs.ExternalEntitlementSyncJob
 import org.olf.general.jobs.PersistentJob
@@ -79,13 +81,14 @@ class KbManagementService {
 
     RefdataValue inProgress = PersistentJob.lookupStatus('in_progress')
     RefdataValue queued = PersistentJob.lookupStatus('queued')
-    EHoldingsEntitlementSyncJob runningOrQueued = EHoldingsEntitlementSyncJob.findByStatusInList([
-      inProgress,
-      queued
-    ])
+    Instant cutoff = Instant.now().minusMillis(EnvUtils.readBufferMs(EnvUtils.EHOLDINGS_SYNC_BUFFER, Constants.Time.ONE_DAY_MS))
+    EHoldingsEntitlementSyncJob existing = EHoldingsEntitlementSyncJob.findByStatusInListOrDateCreatedGreaterThan(
+      [inProgress, queued],
+      cutoff
+    )
 
-    if (runningOrQueued) {
-      log.info("Not creating EHoldingsEntitlementSyncJob as one is already running or queued")
+    if (existing) {
+      log.info("Not creating EHoldingsEntitlementSyncJob; an existing job is running, queued, or was created within the configured buffer window (cutoff ${cutoff})")
       return
     }
 

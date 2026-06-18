@@ -203,6 +203,100 @@ class EHoldingsEntitlementSyncJobSpec extends BaseSpec {
       }
   }
 
+  void "Trigger does not create a new job when a recently-ended one is within the buffer window" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_recent_ended", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob completed = new EHoldingsEntitlementSyncJob(name: "Recently ended ${Instant.now()}")
+        completed.setStatusFromString('Ended')
+        completed.ended = Instant.now()
+        completed.save(failOnError: true, flush: true)
+      }
+
+    when:
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    then:
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "Trigger does not create a new job when a queued job is older than the buffer window (status branch isolated)" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_old_queued", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob existing = new EHoldingsEntitlementSyncJob(name: "Old queued ${Instant.now()}")
+        existing.setStatusFromString('queued')
+        existing.save(failOnError: true, flush: true)
+        // Backdate dateCreated past the default 1-day buffer so the date branch of the OR cannot match;
+        // only the status branch should keep the trigger from creating another job.
+        EHoldingsEntitlementSyncJob.executeUpdate(
+          "update EHoldingsEntitlementSyncJob set dateCreated = :dc where id = :id",
+          [dc: Instant.now().minusSeconds(2L * 24L * 60L * 60L), id: existing.id]
+        )
+      }
+
+    when:
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    then:
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "Trigger creates a new job when the last ended job is older than the buffer window" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_old_ended", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob completed = new EHoldingsEntitlementSyncJob(name: "Old ended ${Instant.now()}")
+        completed.setStatusFromString('Ended')
+        completed.ended = Instant.now()
+        completed.save(failOnError: true, flush: true)
+        // dateCreated is auto-populated by GORM, so push it past the default 1-day buffer.
+        EHoldingsEntitlementSyncJob.executeUpdate(
+          "update EHoldingsEntitlementSyncJob set dateCreated = :dc where id = :id",
+          [dc: Instant.now().minusSeconds(2L * 24L * 60L * 60L), id: completed.id]
+        )
+      }
+
+    when:
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    then:
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(2, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
   void "Queued EHoldingsEntitlementSyncJob runs to completion without wiring errors" () {
     setup:
       withTenant {
@@ -219,35 +313,6 @@ class EHoldingsEntitlementSyncJobSpec extends BaseSpec {
         assert job != null
         assert job.status?.value == 'ended'
         assert job.result?.value in ['success', 'partial_success']
-      }
-
-    cleanup:
-      withTenant {
-        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
-        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
-        Entitlement.findAll().each { it.delete(flush: true) }
-      }
-  }
-
-  void "Trigger creates a new job alongside an already-ended one (cadence is governed by the _timer interface)" () {
-    setup:
-      withTenant {
-        postEntitlement("test_ekb_pkg_after_ended", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
-        EHoldingsEntitlementSyncJob completed = new EHoldingsEntitlementSyncJob(name: "Previously ended ${Instant.now()}")
-        completed.setStatusFromString('Ended')
-        completed.ended = Instant.now()
-        completed.save(failOnError: true, flush: true)
-      }
-
-    when:
-      withTenant {
-        kbManagementService.triggerEntitlementEholdingsJob()
-      }
-
-    then:
-      // Trigger only checks for queued/in-progress; an Ended job does not block, so we expect 2 records.
-      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
-        assertEquals(2, withTenant { EHoldingsEntitlementSyncJob.count() })
       }
 
     cleanup:
