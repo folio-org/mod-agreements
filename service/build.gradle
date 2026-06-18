@@ -9,7 +9,8 @@ configurations {
         "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion",
         "org.codehaus.plexus:plexus-utils:${plexusVersion}",
         "commons-beanutils:commons-beanutils:${beanutilsVersion}",
-        "io.micronaut:micronaut-json-core:$micronautJsonCoreVersion"
+        "io.micronaut:micronaut-json-core:$micronautJsonCoreVersion",
+        "commons-fileupload:commons-fileupload:$commonsFileUploadVersion"
       ]
 
       eachDependency { DependencyResolveDetails details ->
@@ -137,20 +138,15 @@ dependencies {
 
   implementation("org.grails.plugins:views-json")
   implementation("org.grails.plugins:views-json-templates")
-  implementation("org.hibernate:hibernate-core:5.6.15.Final")
+  implementation("org.hibernate:hibernate-core:$hibernateCoreVersion")
 
-  //runtimeOnly("com.h2database:h2")
-  runtimeOnly("javax.xml.bind:jaxb-api:2.3.1")
-  //runtimeOnly("org.apache.tomcat:tomcat-jdbc")
-  //runtimeOnly("org.glassfish.web:el-impl:2.2.1-b05")
+  runtimeOnly("javax.xml.bind:jaxb-api:$javaBindVersion")
 
   testImplementation("io.micronaut:micronaut-inject-groovy")
   testImplementation("org.grails:grails-gorm-testing-support")
   testImplementation("org.mockito:mockito-core")
 	testImplementation "org.grails:grails-web-testing-support"
 
-  //testImplementation("org.grails:views-json-testing-support")
-  //testImplementation("org.spockframework:spock-core")
 
   /*  ---- Manually installed dependencies ---- */
 	implementation "com.k_int.grails:web-toolkit-ce:$webToolkitVersion"
@@ -159,10 +155,9 @@ dependencies {
   }
   implementation("com.k_int.accesscontrol:access-control-grails:${accessControlVersion}")
 
-  implementation 'io.github.http-builder-ng:http-builder-ng-core:1.0.4'
-  implementation("io.micronaut:micronaut-http-client")
-
-  implementation 'org.codehaus.janino:janino:3.1.9'
+  implementation "io.github.http-builder-ng:http-builder-ng-core:$httpBuilderVersion"
+  implementation "org.codehaus.janino:janino:$janinoVersion"
+  implementation "io.micronaut:micronaut-http-client"
 
   // Replaces spring-boot-starter-tomcat
   implementation ("org.springframework.boot:spring-boot-starter-undertow")
@@ -179,10 +174,8 @@ dependencies {
   implementation "org.liquibase:liquibase-core:${liquibaseVersion}"
   runtimeOnly "org.liquibase.ext:liquibase-hibernate5:${liquibaseVersion}"
 
-  implementation 'com.opencsv:opencsv:5.7.1'
-  implementation 'commons-io:commons-io:2.14.0'
-  // security upgrade for commons-fileupload CVE-2025-48976 https://github.com/advisories/GHSA-vv7r-c36w-3prj
-  implementation 'commons-fileupload:commons-fileupload:1.6.0'
+  implementation "com.opencsv:opencsv:$openCSVVersion"
+  implementation "commons-io:commons-io:$commonsIOVersion"
 
   // LOGBACK -- ensure we control classic and core versions
   compileOnly "ch.qos.logback:logback-classic:${logbackCompileVersion}"
@@ -193,36 +186,34 @@ dependencies {
   runtimeOnly "ch.qos.logback:logback-core:${logbackRuntimeVersion}"
 
 
-  implementation 'uk.co.cacoethes:groovy-handlebars-engine:0.2'
-  implementation 'com.github.jknack:handlebars-helpers:4.5.1'
+  implementation "uk.co.cacoethes:groovy-handlebars-engine:$handlebarsEngineVersion"
+  implementation "com.github.jknack:handlebars-helpers:$handlebarsHelpersVersion"
 
-  implementation 'com.github.zafarkhaja:java-semver:0.9.0'
-  implementation 'org.z3950.zing:cql-java:1.13'
+  implementation "com.github.zafarkhaja:java-semver:$javaSemverVersion"
+  implementation "org.z3950.zing:cql-java:$z3950Version"
 
-  // Minio for file storage to S3
+  // Minio for file storage to S3 (reflects mod-agreements)
   implementation "io.minio:minio:${minioVersion}"
-
-  implementation 'com.squareup.okhttp3:okhttp:4.12.0'
-  implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.10'
+  implementation "com.squareup.okhttp3:okhttp:${okHttpVersion}"
+  implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinStdLibVersion"
 
 	/*  ---- Manually installed testing dependencies ---- */
-	//implementation "org.grails:grails-gorm-testing-support:2.6.1"
-	//implementation "org.grails:grails-web-testing-support:2.6.1"
 	testImplementation "org.grails.plugins:geb"
-	testImplementation "org.seleniumhq.selenium:selenium-remote-driver:3.14.0"
-	testImplementation "org.seleniumhq.selenium:selenium-api:3.14.0"
-	testImplementation "org.seleniumhq.selenium:selenium-support:3.14.0"
-	testImplementation "org.seleniumhq.selenium:selenium-chrome-driver:3.14.0"
-	testImplementation "org.seleniumhq.selenium:selenium-firefox-driver:3.14.0"
-  testImplementation("org.awaitility:awaitility:4.2.0")
+  testImplementation "org.seleniumhq.selenium:selenium-remote-driver:$seleniumVersion"
+  testImplementation "org.seleniumhq.selenium:selenium-api:$seleniumVersion"
+  testImplementation "org.seleniumhq.selenium:selenium-support:$seleniumVersion"
+  testImplementation "org.seleniumhq.selenium:selenium-chrome-driver:$seleniumVersion"
+  testImplementation "org.seleniumhq.selenium:selenium-firefox-driver:$seleniumVersion"
+  testImplementation("org.awaitility:awaitility:$awaitilityVersion")
 
-	/* ---- Custom non profile deps ---- */
-	implementation "org.apache.kafka:kafka-clients:${kafkaVersion}"
-	implementation 'com.github.everit-org.json-schema:org.everit.json.schema:1.14.4'
-	// Better test reports.
-	testImplementation( 'com.athaydes:spock-reports:2.3.2-groovy-3.0' ) {
-		transitive = false // this avoids affecting your version of Groovy/Spock
-	}
+  /* ---- Custom non profile deps ---- */
+  implementation "org.apache.kafka:kafka-clients:$kafkaVersion"
+  implementation "com.github.everit-org.json-schema:org.everit.json.schema:$jsonSchemaVersion"
+
+  // Better test reports.
+  testImplementation( "com.athaydes:spock-reports:$spockReportsVersion" ) {
+    transitive = false // this avoids affecting your version of Groovy/Spock
+  }
 }
 /* 
 application {
