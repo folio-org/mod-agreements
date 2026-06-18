@@ -297,6 +297,61 @@ class EHoldingsEntitlementSyncJobSpec extends BaseSpec {
       }
   }
 
+  void "Force=true bypasses the buffer window and creates a new job even when a recently-ended one exists" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_force_buffer", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob completed = new EHoldingsEntitlementSyncJob(name: "Recently ended ${Instant.now()}")
+        completed.setStatusFromString('Ended')
+        completed.ended = Instant.now()
+        completed.save(failOnError: true, flush: true)
+      }
+
+    when: 'Admin invokes the trigger with force=true'
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob(true)
+      }
+
+    then: 'Buffer is ignored, a new job is queued alongside the recently-ended one'
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(2, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "Force=true still does not create a new job when one is already queued or in progress" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_force_queued", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob existing = new EHoldingsEntitlementSyncJob(name: "Active queued ${Instant.now()}")
+        existing.setStatusFromString('queued')
+        existing.save(failOnError: true, flush: true)
+      }
+
+    when: 'Admin invokes the trigger with force=true while a queued job already exists'
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob(true)
+      }
+
+    then: 'No duplicate is queued; force does not override the active-job guard'
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
   void "Queued EHoldingsEntitlementSyncJob runs to completion without wiring errors" () {
     setup:
       withTenant {

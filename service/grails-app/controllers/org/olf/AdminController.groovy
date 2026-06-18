@@ -124,8 +124,11 @@ class AdminController implements DataBinder{
 
   public triggerEntitlementEholdings() {
     def result = [:]
-    log.info("AdminController::triggerEntitlementEholdings")
-    kbManagementService.triggerEntitlementEholdingsJob()
+    // Allow operators to bypass the buffer window with ?force=true; the _timer never passes
+    // this flag, so its hourly invocations continue to honour EHOLDINGS_SYNC_BUFFER.
+    boolean force = params.boolean('force') ?: false
+    log.info("AdminController::triggerEntitlementEholdings (force=${force})")
+    kbManagementService.triggerEntitlementEholdingsJob(force)
     result.status = 'OK'
     render result as JSON
   }

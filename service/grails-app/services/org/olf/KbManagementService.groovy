@@ -72,7 +72,7 @@ class KbManagementService {
   }
 
   @CompileStatic(SKIP)
-  void triggerEntitlementEholdingsJob() {
+  void triggerEntitlementEholdingsJob(boolean force = false) {
     List<Entitlement> entitlements = eholdingsService.findEholdingsEntitlementsWithoutResourceName()
     if (!entitlements) {
       log.info("No eHoldings entitlements need resourceName backfill; skipping EHoldingsEntitlementSyncJob creation")
@@ -81,14 +81,20 @@ class KbManagementService {
 
     RefdataValue inProgress = PersistentJob.lookupStatus('in_progress')
     RefdataValue queued = PersistentJob.lookupStatus('queued')
-    Instant cutoff = Instant.now().minusMillis(EnvUtils.readBufferMs(EnvUtils.EHOLDINGS_SYNC_BUFFER, Constants.Time.ONE_DAY_MS))
-    EHoldingsEntitlementSyncJob existing = EHoldingsEntitlementSyncJob.findByStatusInListOrDateCreatedGreaterThan(
-      [inProgress, queued],
-      cutoff
-    )
+    EHoldingsEntitlementSyncJob existing
+    if (force) {
+      // Admin-initiated run, the buffer window is intentionally ignored.
+      existing = EHoldingsEntitlementSyncJob.findByStatusInList([inProgress, queued])
+    } else {
+      Instant cutoff = Instant.now().minusMillis(EnvUtils.readBufferMs(EnvUtils.EHOLDINGS_SYNC_BUFFER, Constants.Time.ONE_DAY_MS))
+      existing = EHoldingsEntitlementSyncJob.findByStatusInListOrDateCreatedGreaterThan(
+        [inProgress, queued],
+        cutoff
+      )
+    }
 
     if (existing) {
-      log.info("Not creating EHoldingsEntitlementSyncJob; an existing job is running, queued, or was created within the configured buffer window (cutoff ${cutoff})")
+      log.info("Not creating EHoldingsEntitlementSyncJob; an existing job is running, queued${force ? '' : ', or was created within the configured buffer window'}")
       return
     }
 
