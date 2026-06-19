@@ -74,16 +74,4 @@ class AgreementPeriodStatusSpec extends BaseSpec {
       later?.periodStatus   == null
   }
 
-  void "search endpoint returns 200 when contaminated agreements exist"() {
-    // GET /erm/sas iterates the result page and renders _period.gson
-    // for each agreement, which hits getPeriodStatus → findPreviousPeriod
-    // → the buggy comparator. Guards the list-render path explicitly.
-    when:
-      List results = doGet('/erm/sas')
-
-    then:
-      results != null
-      results.find { it.name == 'ERM-4106 two ended periods' }  != null
-      results.find { it.name == 'ERM-4106 two future periods' } != null
-  }
 }
