@@ -1,0 +1,380 @@
+package org.olf.General
+
+import grails.testing.mixin.integration.Integration
+import jakarta.inject.Inject
+import org.olf.BaseSpec
+import org.olf.EholdingsService
+import org.olf.KbManagementService
+import org.olf.erm.Entitlement
+import org.olf.erm.SubscriptionAgreement
+import org.olf.general.jobs.EHoldingsEntitlementSyncJob
+import org.olf.general.jobs.PackageIngestJob
+import org.olf.general.jobs.PersistentJob
+import org.olf.general.jobs.TitleIngestJob
+import spock.lang.Ignore
+import spock.lang.Stepwise
+import spock.util.concurrent.PollingConditions
+
+import java.time.Instant
+import java.util.concurrent.TimeUnit
+
+import static org.awaitility.Awaitility.await
+import static org.junit.jupiter.api.Assertions.assertEquals
+
+@Stepwise
+@Integration
+class EHoldingsEntitlementSyncJobSpec extends BaseSpec {
+
+  @Inject
+  EholdingsService eholdingsService
+
+  @Inject
+  KbManagementService kbManagementService
+
+  def mockDomains = [
+    EHoldingsEntitlementSyncJob,
+    PackageIngestJob,
+    TitleIngestJob,
+    PersistentJob
+  ]
+
+  static final String EKB_PACKAGE_AUTHORITY = "EKB-PACKAGE"
+  static final String EKB_TITLE_AUTHORITY = "EKB-TITLE"
+  static final String EKB_PACKAGE_REFERENCE = "19-1615"
+  static final String EKB_TITLE_REFERENCE = "32498-16793-19948731"
+  static final String EXAMPLE_GOKB_REFERENCE = "26929514-237c-11ed-861d-0242ac120002:26929514-237c-11ed-861d-0242ac120001"
+
+  @Ignore
+  Map postEntitlement(String agreementName, String authority, String reference, String resourceName) {
+    def payload = [
+      items: [
+        [
+          'type'         : 'external',
+          'reference'    : reference,
+          'authority'    : authority,
+          'resourceName' : resourceName,
+          'description'  : "eHoldings sync test entitlement"
+        ]
+      ],
+      periods: [
+        [ startDate: '2025-08-20' ]
+      ],
+      name: agreementName,
+      agreementStatus: "active"
+    ]
+
+    return doPost("/erm/sas", payload) as Map
+  }
+
+  void "findEholdingsEntitlementsWithoutResourceName returns only EKB entitlements with null resourceName" () {
+    setup:
+      withTenant {
+        // Should be returned: EKB-PACKAGE with null resourceName
+        postEntitlement("test_ekb_pkg_null", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        // Should be returned: EKB-TITLE with null resourceName
+        postEntitlement("test_ekb_title_null", EKB_TITLE_AUTHORITY, EKB_TITLE_REFERENCE, null)
+        // Should NOT be returned: EKB-PACKAGE that already has resourceName
+        postEntitlement("test_ekb_pkg_named", EKB_PACKAGE_AUTHORITY, "${EKB_PACKAGE_REFERENCE}-named", "Already Named Package")
+        // Should NOT be returned: GOKB-RESOURCE (different authority)
+        postEntitlement("test_gokb", Entitlement.GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, "gokb resource")
+      }
+
+    when:
+      List<Entitlement> found
+      withTenant {
+        found = eholdingsService.findEholdingsEntitlementsWithoutResourceName()
+      }
+
+    then:
+      assert found != null
+      assert found.size() == 2
+      assert found.every { it.authority in [EKB_PACKAGE_AUTHORITY, EKB_TITLE_AUTHORITY] }
+      assert found.every { it.resourceName == null }
+      assert found.every { it.reference != null }
+
+    cleanup:
+      withTenant {
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "When no eHoldings entitlements need resourceName, no EHoldingsEntitlementSyncJob is created" () {
+    setup:
+      withTenant {
+        // Only entitlements that should be excluded: GOKB and EKB with resourceName already set.
+        postEntitlement("test_gokb_only", Entitlement.GOKB_RESOURCE_AUTHORITY, EXAMPLE_GOKB_REFERENCE, "gokb resource")
+        postEntitlement("test_ekb_named", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, "Already Named")
+      }
+
+    when:
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    then:
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(0, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "When EKB entitlements need resourceName, EHoldingsEntitlementSyncJob is created" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_needs_sync", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+      }
+
+    when:
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    then:
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "When existing queued EHoldingsEntitlementSyncJob exists, no job is created" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_queued", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob existing = new EHoldingsEntitlementSyncJob(name: "Test EHoldingsEntitlementSyncJob ${Instant.now()}")
+        existing.setStatusFromString('queued')
+        existing.save(failOnError: true, flush: true)
+      }
+
+    when:
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    then:
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "When existing in progress EHoldingsEntitlementSyncJob exists, no job is created" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_inprogress", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob existing = new EHoldingsEntitlementSyncJob(name: "Test EHoldingsEntitlementSyncJob ${Instant.now()}")
+        existing.setStatusFromString('In progress')
+        existing.save(failOnError: true, flush: true)
+      }
+
+    when:
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    then:
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "Trigger does not create a new job when a recently-ended one is within the buffer window" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_recent_ended", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob completed = new EHoldingsEntitlementSyncJob(name: "Recently ended ${Instant.now()}")
+        completed.setStatusFromString('Ended')
+        completed.ended = Instant.now()
+        completed.save(failOnError: true, flush: true)
+      }
+
+    when:
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    then:
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "Trigger does not create a new job when a queued job is older than the buffer window (status branch isolated)" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_old_queued", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob existing = new EHoldingsEntitlementSyncJob(name: "Old queued ${Instant.now()}")
+        existing.setStatusFromString('queued')
+        existing.save(failOnError: true, flush: true)
+        // Backdate dateCreated past the default 1-day buffer so the date branch of the OR cannot match;
+        // only the status branch should keep the trigger from creating another job.
+        EHoldingsEntitlementSyncJob.executeUpdate(
+          "update EHoldingsEntitlementSyncJob set dateCreated = :dc where id = :id",
+          [dc: Instant.now().minusSeconds(2L * 24L * 60L * 60L), id: existing.id]
+        )
+      }
+
+    when:
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    then:
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "Trigger creates a new job when the last ended job is older than the buffer window" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_old_ended", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob completed = new EHoldingsEntitlementSyncJob(name: "Old ended ${Instant.now()}")
+        completed.setStatusFromString('Ended')
+        completed.ended = Instant.now()
+        completed.save(failOnError: true, flush: true)
+        // dateCreated is auto-populated by GORM, so push it past the default 1-day buffer.
+        EHoldingsEntitlementSyncJob.executeUpdate(
+          "update EHoldingsEntitlementSyncJob set dateCreated = :dc where id = :id",
+          [dc: Instant.now().minusSeconds(2L * 24L * 60L * 60L), id: completed.id]
+        )
+      }
+
+    when:
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    then:
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(2, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "Force=true bypasses the buffer window and creates a new job even when a recently-ended one exists" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_force_buffer", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob completed = new EHoldingsEntitlementSyncJob(name: "Recently ended ${Instant.now()}")
+        completed.setStatusFromString('Ended')
+        completed.ended = Instant.now()
+        completed.save(failOnError: true, flush: true)
+      }
+
+    when: 'Admin invokes the trigger with force=true'
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob(true)
+      }
+
+    then: 'Buffer is ignored, a new job is queued alongside the recently-ended one'
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(2, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "Force=true still does not create a new job when one is already queued or in progress" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_force_queued", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        EHoldingsEntitlementSyncJob existing = new EHoldingsEntitlementSyncJob(name: "Active queued ${Instant.now()}")
+        existing.setStatusFromString('queued')
+        existing.save(failOnError: true, flush: true)
+      }
+
+    when: 'Admin invokes the trigger with force=true while a queued job already exists'
+      withTenant {
+        kbManagementService.triggerEntitlementEholdingsJob(true)
+      }
+
+    then: 'No duplicate is queued; force does not override the active-job guard'
+      await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+        assertEquals(1, withTenant { EHoldingsEntitlementSyncJob.count() })
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+
+  void "Queued EHoldingsEntitlementSyncJob runs to completion without wiring errors" () {
+    setup:
+      withTenant {
+        postEntitlement("test_ekb_pkg_runs", EKB_PACKAGE_AUTHORITY, EKB_PACKAGE_REFERENCE, null)
+        kbManagementService.triggerEntitlementEholdingsJob()
+      }
+
+    expect: 'Job is picked up by the runner and reaches Ended without an unhandled exception'
+      def conditions = new PollingConditions(timeout: 90)
+      conditions.eventually {
+        EHoldingsEntitlementSyncJob job = withTenant {
+          EHoldingsEntitlementSyncJob.findAll([sort: 'dateCreated', order: 'desc']).find()
+        }
+        assert job != null
+        assert job.status?.value == 'ended'
+        assert job.result?.value in ['success', 'partial_success']
+      }
+
+    cleanup:
+      withTenant {
+        EHoldingsEntitlementSyncJob.findAll().each { it.delete(flush: true) }
+        SubscriptionAgreement.findAll().each { it.delete(flush: true) }
+        Entitlement.findAll().each { it.delete(flush: true) }
+      }
+  }
+}

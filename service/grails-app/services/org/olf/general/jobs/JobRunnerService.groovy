@@ -4,37 +4,27 @@ import org.olf.EntitlementService
 import org.olf.ErmResourceService
 import services.k_int.core.SystemDataService
 
-import static org.springframework.transaction.annotation.Propagation.MANDATORY
-import static org.springframework.transaction.annotation.Propagation.REQUIRED
 import static org.springframework.transaction.annotation.Propagation.REQUIRES_NEW
 
 import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 
 import javax.annotation.PostConstruct
-import org.grails.datastore.gorm.GormEnhancer
 import org.hibernate.SessionFactory
 import org.olf.ComparisonService
 import org.olf.CoverageService
 import org.olf.DocumentAttachmentService
+import org.olf.EholdingsService
 import org.olf.ImportService
 import org.olf.IdentifierService
 import org.olf.KbHarvestService
 import org.olf.KbManagementService
 import org.olf.PackageSyncService
 import org.olf.general.jobs.PersistentJob.Type
-import org.springframework.jdbc.support.JdbcUtils
-import org.springframework.transaction.PlatformTransactionManager
-import org.springframework.transaction.TransactionDefinition
-import org.springframework.transaction.support.DefaultTransactionDefinition
 
 import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.okapi.OkapiTenantResolver
@@ -43,16 +33,11 @@ import com.k_int.web.toolkit.utils.GormUtils
 
 import grails.events.EventPublisher
 import grails.events.annotation.Subscriber
-import grails.gorm.multitenancy.CurrentTenant
 import grails.gorm.multitenancy.Tenants
 import grails.gorm.multitenancy.Tenant
-import grails.gorm.transactions.GrailsTransactionTemplate
 import grails.gorm.transactions.Transactional
-import grails.util.Holders
-import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import services.k_int.core.AppFederationService
-import services.k_int.core.FederationLockDataService
 import services.k_int.core.FolioLockService
 
 import com.k_int.web.toolkit.async.WithPromises
@@ -77,6 +62,7 @@ class JobRunnerService implements EventPublisher {
   PackageSyncService packageSyncService
   ErmResourceService ermResourceService
   EntitlementService entitlementService
+  EholdingsService eholdingsService
   GrailsApplication grailsApplication
 
   // Access to the inputStream of FileObjects is now via this service instead of directly
