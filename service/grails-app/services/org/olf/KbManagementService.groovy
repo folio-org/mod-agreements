@@ -71,6 +71,9 @@ class KbManagementService {
     }
   }
 
+  // Driven by the _timer interface (see ModuleDescriptor-template.json) rather than @Scheduled. The eHoldings
+  // bulk endpoints require an X-Okapi-Token, which the timer provides per-tenant. The timer also iterates tenants and handles parallel-run
+  // synchronisation (Quartz in Eureka), removing bookkeeping from this service.
   @CompileStatic(SKIP)
   void triggerEntitlementEholdingsJob(boolean force = false) {
     List<Entitlement> entitlements = eholdingsService.findEholdingsEntitlementsWithoutResourceName()
