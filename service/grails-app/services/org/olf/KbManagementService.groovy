@@ -4,10 +4,11 @@ import com.k_int.okapi.OkapiTenantAdminService
 import com.k_int.web.toolkit.refdata.RefdataValue
 import org.olf.dataimport.internal.KBManagementBean
 import org.olf.erm.Entitlement
+import org.olf.general.Constants
+import org.olf.general.EnvUtils
+import org.olf.general.jobs.EHoldingsEntitlementSyncJob
 import org.olf.general.jobs.ExternalEntitlementSyncJob
-import org.olf.general.jobs.PackageIngestJob
 import org.olf.general.jobs.PersistentJob
-import org.olf.general.jobs.TitleIngestJob
 import org.olf.kb.metadata.ResourceIngressType
 
 import java.time.Instant
@@ -29,6 +30,7 @@ class KbManagementService {
   KBManagementBean kbManagementBean
   OkapiTenantAdminService okapiTenantAdminService
   EntitlementService entitlementService
+  EholdingsService eholdingsService
 
   // Runs every half hour, starting one minute after app startup
   @Scheduled(fixedDelay = 1800000L, initialDelay = 60000L)
@@ -67,5 +69,41 @@ class KbManagementService {
         log.error("Unexpected error in triggerEntitlementJob for tenant ${tenant_schema_id}", e);
       }
     }
+  }
+
+  // Driven by the _timer interface (see ModuleDescriptor-template.json) rather than @Scheduled. The eHoldings
+  // bulk endpoints require an X-Okapi-Token, which the timer provides per-tenant. The timer also iterates tenants and handles parallel-run
+  // synchronisation (Quartz in Eureka), removing bookkeeping from this service.
+  @CompileStatic(SKIP)
+  void triggerEntitlementEholdingsJob(boolean force = false) {
+    List<Entitlement> entitlements = eholdingsService.findEholdingsEntitlementsWithoutResourceName()
+    if (!entitlements) {
+      log.info("No eHoldings entitlements need resourceName backfill; skipping EHoldingsEntitlementSyncJob creation")
+      return
+    }
+
+    RefdataValue inProgress = PersistentJob.lookupStatus('in_progress')
+    RefdataValue queued = PersistentJob.lookupStatus('queued')
+    EHoldingsEntitlementSyncJob existing
+    if (force) {
+      // Admin-initiated run, the buffer window is intentionally ignored.
+      existing = EHoldingsEntitlementSyncJob.findByStatusInList([inProgress, queued])
+    } else {
+      Instant cutoff = Instant.now().minusMillis(EnvUtils.readBufferMs(EnvUtils.EHOLDINGS_SYNC_BUFFER, Constants.Time.ONE_DAY_MS))
+      existing = EHoldingsEntitlementSyncJob.findByStatusInListOrDateCreatedGreaterThan(
+        [inProgress, queued],
+        cutoff
+      )
+    }
+
+    if (existing) {
+      log.info("Not creating EHoldingsEntitlementSyncJob; an existing job is running, queued${force ? '' : ', or was created within the configured buffer window'}")
+      return
+    }
+
+    log.info("Queuing EHoldingsEntitlementSyncJob with ${entitlements.size()} entitlements to process")
+    EHoldingsEntitlementSyncJob job = new EHoldingsEntitlementSyncJob(['name': "EHoldingsEntitlementSyncJob: ${Instant.now()}"])
+    job.setStatusFromString('Queued')
+    job.save(failOnError: true, flush: true)
   }
 }

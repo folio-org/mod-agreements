@@ -6,15 +6,11 @@ import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import grails.converters.JSON
 
-import com.k_int.web.toolkit.refdata.RefdataValue
-
 import org.olf.kb.RemoteKB
 import org.springframework.validation.BindingResult
 import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
 import org.olf.kb.KBCacheUpdater
-import org.olf.general.jobs.PersistentJob
 import grails.gorm.transactions.Transactional
-import java.time.Instant
 
 @Slf4j
 @CurrentTenant
@@ -122,6 +118,17 @@ class AdminController implements DataBinder{
 
     entitlementLogService.triggerUpdate()
 
+    result.status = 'OK'
+    render result as JSON
+  }
+
+  public triggerEntitlementEholdings() {
+    def result = [:]
+    // Allow operators to bypass the buffer window with ?force=true; the _timer never passes
+    // this flag, so its hourly invocations continue to honour EHOLDINGS_SYNC_BUFFER.
+    boolean force = params.boolean('force') ?: false
+    log.info("AdminController::triggerEntitlementEholdings (force=${force})")
+    kbManagementService.triggerEntitlementEholdingsJob(force)
     result.status = 'OK'
     render result as JSON
   }

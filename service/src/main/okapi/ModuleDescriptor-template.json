@@ -1109,6 +1109,15 @@
           "methods": [
             "GET"
           ],
+          "pathPattern": "/erm/admin/triggerEntitlementEholdings",
+          "permissionsRequired": [
+            "erm.admin.action.triggerEntitlementEholdingsJob.execute"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
           "pathPattern": "/erm/statistics/*",
           "permissionsRequired": [
             "erm.statistics.get"
@@ -1298,6 +1307,19 @@
           "pathPattern": "/erm/admin/triggerHousekeeping",
           "unit": "hour",
           "delay": "24"
+        },
+        {
+          "permissionsRequired": [],
+          "modulePermissions": [
+            "kb-ebsco.packages-bulk.collection.get",
+            "kb-ebsco.resources-bulk.collection.get"
+          ],
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm/admin/triggerEntitlementEholdings",
+          "unit": "hour",
+          "delay": "1"
         }
       ]
     }
@@ -2361,6 +2383,12 @@
       "visible": true
     },
     {
+      "permissionName": "erm.admin.action.triggerEntitlementEholdingsJob.execute",
+      "displayName": "Agreements: Admin endpoint perform triggerEntitlementEholdingsJob action",
+      "description": "Allows performing of triggerEntitlementEholdingsJob action from admin endpoint",
+      "visible": true
+    },
+    {
       "permissionName": "erm.admin.action.all.execute",
       "displayName": "Agreements: Admin endpoint perform all actions",
       "description": "Allows performing of all actions from admin endpoint",
@@ -2377,7 +2405,8 @@
         "erm.admin.action.triggerActivationUpdate.execute",
         "erm.admin.action.triggerHousekeeping.execute",
         "erm.admin.action.triggerEntitlementLogUpdate.execute",
-        "erm.admin.action.triggerDocMigration.execute"
+        "erm.admin.action.triggerDocMigration.execute",
+        "erm.admin.action.triggerEntitlementEholdingsJob.execute"
       ]
     },
     {

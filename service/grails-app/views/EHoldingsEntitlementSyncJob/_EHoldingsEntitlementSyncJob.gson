@@ -1,0 +1,8 @@
+import org.olf.general.jobs.EHoldingsEntitlementSyncJob
+
+import groovy.transform.Field
+
+@Field
+EHoldingsEntitlementSyncJob EHoldingsEntitlementSyncJob
+
+json tmpl."/persistentJob/persistentJob" (persistentJob: EHoldingsEntitlementSyncJob)
