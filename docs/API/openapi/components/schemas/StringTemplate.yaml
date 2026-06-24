@@ -1,0 +1,23 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  dateCreated:
+    type: integer
+  rule:
+    type: string
+  context:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  lastUpdated:
+    type: string
+    format: date
+  name:
+    type: string
+  idScopes:
+    type: array
+    items:
+      type: string
+      format: uuid

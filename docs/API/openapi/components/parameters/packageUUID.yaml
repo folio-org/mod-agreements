@@ -1,0 +1,7 @@
+in: path
+name: packageUUID
+description: UUID for a Package
+required: true
+schema:
+  type: string
+  format: uuid

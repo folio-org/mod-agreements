@@ -1,0 +1,35 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/x-okapi-token.yaml
+  - in: path
+    name: domain
+    required: true
+    schema:
+      type: string
+  - in: path
+    name: property
+    required: true
+    schema:
+      type: string
+get:
+  summary: Returns list of reference data values for specified domain/property
+  operationId: getRefdatabyCategory
+  security:
+    - api_key: []
+  parameters:
+    - $ref: ../components/parameters/filters.yaml
+    - $ref: ../components/parameters/match.yaml
+    - $ref: ../components/parameters/term.yaml
+    - $ref: ../components/parameters/sort.yaml
+    - $ref: ../components/parameters/stats.yaml
+    - $ref: ../components/parameters/perPage.yaml
+    - $ref: ../components/parameters/offset.yaml
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/Results.yaml
+              - $ref: ../components/schemas/ResultsArray.yaml

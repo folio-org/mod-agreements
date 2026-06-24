@@ -1,0 +1,9 @@
+type: object
+properties:
+  ns:
+    type: object
+    properties:
+      value:
+        type: string
+  value:
+    type: string

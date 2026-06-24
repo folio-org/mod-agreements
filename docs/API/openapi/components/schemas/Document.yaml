@@ -1,0 +1,29 @@
+type: object
+required:
+  - id
+  - name
+properties:
+  id:
+    type: string
+    format: uuid
+  name:
+    type: string
+  dateCreated:
+    type: string
+    format: date-time
+  lastUpdated:
+    type: string
+    format: date-time
+  location:
+    type: string
+  url:
+    type: string
+    format: url
+  note:
+    type: string
+  atType:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  fileUpload:
+    $ref: ./File.yaml

@@ -1,0 +1,39 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  activeFrom:
+    type: string
+    format: date
+  activeTo:
+    type: string
+    format: date
+  customCoverage:
+    type: boolean
+  coverage:
+    type: array
+    items:
+      $ref: ./CoverageStatement.yaml
+  explanation:
+    type: string
+  haveAccess:
+    type: boolean
+  note:
+    type: string
+  description:
+    type: string
+  owner:
+    $ref: ./Agreement.yaml
+  poLines:
+    type: array
+    items:
+      $ref: ./PurchaseOrderLine.yaml
+  resource:
+    $ref: ./EntitlementOption.yaml
+  suppressFromDiscovery:
+    type: boolean
+  tags:
+    type: array
+    items:
+      $ref: ./Tag.yaml

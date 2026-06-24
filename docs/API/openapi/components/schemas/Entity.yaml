@@ -1,0 +1,16 @@
+oneOf:
+  - $ref: ./Agreement.yaml
+  - $ref: ./CustomProperty.yaml
+  - $ref: ./Entitlement.yaml
+  - $ref: ./EntitlementOption.yaml
+  - $ref: ./ErmResource.yaml
+  - $ref: ./InternalContact.yaml
+  - $ref: ./Job.yaml
+  - $ref: ./Kb.yaml
+  - $ref: ./LogEntry.yaml
+  - $ref: ./Organisation.yaml
+  - $ref: ./Package.yaml
+  - $ref: ./PackageContentItem.yaml
+  - $ref: ./RefData.yaml
+  - $ref: ./RefDataCategory.yaml
+  - $ref: ./StringTemplate.yaml

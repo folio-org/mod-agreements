@@ -1,0 +1,96 @@
+type: object
+required:
+  - id
+  - name
+  - status
+  - periods
+properties:
+  id:
+    type: string
+    format: uuid
+  name:
+    type: string
+    maxLength: 255
+    minLength: 1
+  description:
+    type: string
+  status:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  isPerpetual:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  reasonForClosure:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  renewalPriority:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  alternateNames:
+    type: array
+    items:
+      type: string
+  periods:
+    type: array
+    items:
+      type: object
+      required:
+        - startDate
+      properties:
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        cancellationDeadline:
+          type: string
+          format: date
+        periodStatus:
+          type: string
+        note:
+          type: string
+        id:
+          type: string
+          format: uuid
+  startDate:
+      type: string
+      format: date
+  endDate:
+      type: string
+      format: date
+  cancellationDeadline:
+      type: string
+      format: date
+  contacts:
+    type: array
+    items:
+      $ref: ./InternalContact.yaml
+  orgs:
+    type: array
+    items:
+      $ref: ./Organisation.yaml
+  externalLicenseDocs:
+    type: array
+    items:
+      $ref: ./Document.yaml
+  supplementaryDocs:
+    type: array
+    items:
+      $ref: ./Document.yaml
+  linkedLicenses:
+    type: array
+    items:
+      $ref: ./LinkedLicense.yaml
+  usageDataProviders:
+    type: array
+    items:
+      $ref: ./UsageDataProvider.yaml
+  tags:
+    type: array
+    items:
+      $ref: ./Tag.yaml

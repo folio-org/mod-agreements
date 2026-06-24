@@ -1,0 +1,12 @@
+type: object
+properties:
+  title:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+  identifier:
+    $ref: ./Identifier.yaml
+  status:
+    $ref: ./RefData.yaml

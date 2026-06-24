@@ -1,0 +1,19 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/x-okapi-token.yaml
+  - $ref: ../components/parameters/agreementUUID.yaml
+get:
+  summary: >-
+    Export the specified agreement as JSON including all resources in the
+    internal KB associated with specified agreement actively part of the
+    agreement on the current date
+  operationId: exportAgreementCurrentResources
+  security:
+    - api_key: []
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Agreement.yaml

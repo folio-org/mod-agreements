@@ -1,0 +1,18 @@
+type: object
+required:
+  - name
+  - source
+  - reference
+allOf:
+  - $ref: ./ErmResource.yaml
+  - properties:
+      nominalPlatform:
+        $ref: ./Platform.yaml
+      reference:
+        type: string
+      remoteKb:
+        $ref: ./Kb.yaml
+      source:
+        type: string
+      vendor:
+        $ref: ./Organisation.yaml

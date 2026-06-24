@@ -1,0 +1,39 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  class:
+    type: string
+  coverage:
+    type: array
+    items:
+      $ref: ./CoverageStatement.yaml
+  customCoverage:
+    type: boolean
+  dateCreated:
+    type: string
+    format: date-time
+  lastUpdate:
+    type: string
+    format: date-time
+  name:
+    type: string
+  publicationType:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  suppressFromDiscovery:
+    type: boolean
+  subType:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  tags:
+    type: array
+    items:
+      $ref: ./Tag.yaml
+  type:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml

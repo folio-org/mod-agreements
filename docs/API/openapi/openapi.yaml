@@ -1,0 +1,78 @@
+openapi: 3.0.0
+info:
+  version: 0.0.4
+  title: Folio ERM Agreements
+  description: API for the Folio library services platform mod-agreements app
+servers:
+  - url: 'https://folio-snapshot-okapi.dev.folio.org'
+  - url: 'https://folio-snapshot-2-okapi.dev.folio.org'
+paths:
+  /erm/{entityType}:
+    $ref: paths/erm@{entityType}.yaml
+  /erm/{entityType}/{entityUUID}:
+    $ref: paths/erm@{entityType}@{entityUUID}.yaml
+  /erm/admin/triggerHousekeeping:
+    $ref: paths/erm@admin@triggerHousekeeping.yaml
+  /erm/files:
+    $ref: paths/erm@files.yaml
+  /erm/files/{fileUUID}:
+    $ref: paths/erm@files@{fileUUID}.yaml
+  /erm/files/{fileUUID}/raw:
+    $ref: paths/erm@files@{fileUUID}@raw.yaml
+  /erm/jobs/{jobType}:
+    $ref: paths/erm@jobs@{jobType}.yaml
+  /erm/jobs/type/{jobType}:
+    $ref: paths/erm@jobs@type@{jobType}.yaml
+  /erm/jobs/{jobUUID}/{logType}:
+    $ref: paths/erm@jobs@{jobUUID}@{logType}.yaml
+  /erm/jobs/{jobUUID}/downloadFileObject:
+    $ref: paths/erm@jobs@{jobUUID}@downloadFileObject.yaml
+  /erm/packages/{packageUUID}/content/all:
+    $ref: paths/erm@packages@{packageUUID}@content@all.yaml
+  /erm/packages/{packageUUID}/content/current:
+    $ref: paths/erm@packages@{packageUUID}@content@current.yaml
+  /erm/packages/{packageUUID}/content/future:
+    $ref: paths/erm@packages@{packageUUID}@content@future.yaml
+  /erm/packages/{packageUUID}/content/dropped:
+    $ref: paths/erm@packages@{packageUUID}@content@dropped.yaml
+  /erm/refdata/{domain}/{property}:
+    $ref: paths/erm@refdata@{domain}@{property}.yaml
+  /erm/resource/electronic:
+    $ref: paths/erm@resource@electronic.yaml
+  /erm/resource/{resourceUUID}/entitlements:
+    $ref: paths/erm@resource@{resourceUUID}@entitlements.yaml
+  /erm/resource/{resourceUUID}/entitlements/related:
+    $ref: paths/erm@resource@{resourceUUID}@entitlements@related.yaml
+  /erm/resource/{resourceUUID}/entitlementOptions:
+    $ref: paths/erm@resource@{resourceUUID}@entitlementOptions.yaml
+  /erm/sas/{agreementUUID}/clone:
+    $ref: paths/erm@sas@{agreementUUID}@clone.yaml
+  /erm/sas/{agreementUUID}/export:
+    $ref: paths/erm@sas@{agreementUUID}@export.yaml
+  /erm/sas/{agreementUUID}/export/current:
+    $ref: paths/erm@sas@{agreementUUID}@export@current.yaml
+  /erm/sas/{agreementUUID}/resources/all:
+    $ref: paths/erm@sas@{agreementUUID}@resources@all.yaml
+  /erm/sas/{agreementUUID}/resources/current:
+    $ref: paths/erm@sas@{agreementUUID}@resources@current.yaml
+  /erm/sas/{agreementUUID}/resources/future:
+    $ref: paths/erm@sas@{agreementUUID}@resources@future.yaml
+  /erm/sas/{agreementUUID}/resources/dropped:
+    $ref: paths/erm@sas@{agreementUUID}@resources@dropped.yaml
+  /erm/sas/{agreementUUID}/resources/export:
+    $ref: paths/erm@sas@{agreementUUID}@resources@export.yaml
+  /erm/sas/{agreementUUID}/resources/export/current:
+    $ref: paths/erm@sas@{agreementUUID}@resources@export@current.yaml
+  /erm/sas/{agreementUUID}/resources/export/{downloadFormat}:
+    $ref: paths/erm@sas@{agreementUUID}@resources@export@{downloadFormat}.yaml
+  /erm/sas/{agreementUUID}/resources/export/current/{downloadFormat}:
+    $ref: >-
+      paths/erm@sas@{agreementUUID}@resources@export@current@{downloadFormat}.yaml
+  /erm/validate/subscriptionAgreement/name:
+    $ref: paths/erm@validate@subscriptionAgreement@name.yaml
+components:
+  securitySchemes:
+    api_key:
+        type: apiKey
+        in: header
+        name: x-okapi-token

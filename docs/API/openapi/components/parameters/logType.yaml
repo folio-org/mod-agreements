@@ -1,0 +1,10 @@
+in: path
+name: logType
+description: The type of log
+required: true
+schema:
+  type: string
+  enum:
+    - infoLog
+    - errorLog
+    - fullLog

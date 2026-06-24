@@ -1,0 +1,35 @@
+type: object
+properties:
+  activationEnabled:
+    type: boolean
+  active:
+    type: boolean
+  cursor:
+    type: string
+    format: date-time
+  fullPrefix:
+    type: string
+  id:
+    type: string
+    format: uuid
+  lastCheck:
+    type: integer
+  name:
+    type: string
+  readonly:
+    type: boolean
+  rectype:
+    type: integer
+  supportsHarvesting:
+    type: boolean
+  syncStatus:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  trustedSourceTI:
+    type: boolean
+  type:
+    type: string
+  uri:
+    type: string
+    format: uri

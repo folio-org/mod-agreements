@@ -1,0 +1,21 @@
+type: object
+properties:
+  defaultInternal:
+    type: boolean
+  description:
+    type: string
+  id:
+    type: string
+    format: uuid
+  label:
+    type: string
+  name:
+    type: string
+  primary:
+    type: boolean
+  type:
+    type: string
+  weight:
+    type: integer
+  category:
+    $ref: ./RefDataCategory.yaml

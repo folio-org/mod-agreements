@@ -1,0 +1,21 @@
+type: object
+properties:
+  amendments:
+    type: array
+    items:
+      $ref: ./LinkedAmendment.yaml
+  id:
+    type: string
+    format: uuid
+  owner:
+    type: string
+    format: uuid
+  remoteId:
+    type: string
+    format: uuid
+  remoteId_object:
+    type: object
+  status:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml

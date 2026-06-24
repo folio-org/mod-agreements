@@ -1,0 +1,12 @@
+in: path
+name: jobType
+required: true
+schema:
+  type: string
+  enum:
+    - comparison
+    - coverageRegeneration
+    - packageImport
+    - kbartImport
+    - packageIngest
+    - supplementaryDocumentsCleaning

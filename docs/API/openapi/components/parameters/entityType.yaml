@@ -1,0 +1,22 @@
+in: path
+name: entityType
+required: true
+schema:
+  type: string
+  enum:
+    - contacts
+    - custprops
+    - entitlements
+    - entitlementLogEntry
+    - jobs
+    - kbs
+    - org
+    - packages
+    - pci
+    - pti
+    - platforms
+    - refdata
+    - resource
+    - sas
+    - sts
+    - titles
