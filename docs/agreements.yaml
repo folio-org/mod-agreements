@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   version: 0.0.4
   title: Folio ERM Agreements
-  description: API for the Folio library services platform mod-agreements app
+  description: OpenAPI documentation for the Folio library services platform mod-agreements app
 servers:
   - url: https://folio-snapshot-okapi.dev.folio.org
   - url: https://folio-snapshot-2-okapi.dev.folio.org
