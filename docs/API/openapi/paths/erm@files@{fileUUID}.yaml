@@ -1,0 +1,16 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/x-okapi-token.yaml
+  - $ref: ../components/parameters/fileUUID.yaml
+get:
+  summary: Get file description
+  operationId: getFileDescription
+  security:
+    - api_key: []
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/File.yaml

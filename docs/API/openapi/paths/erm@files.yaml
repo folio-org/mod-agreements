@@ -1,0 +1,26 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/x-okapi-token.yaml
+post:
+  summary: Upload file
+  operationId: uploadFile
+  security:
+    - api_key: []
+  requestBody:
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+            filename:
+              type: string
+              format: binary
+  responses:
+    '201':
+      description: File uploaded successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/File.yaml      

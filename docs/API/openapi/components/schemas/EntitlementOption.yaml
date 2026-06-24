@@ -1,0 +1,14 @@
+allOf:
+  - oneOf:
+      - $ref: ./PackageContentItem.yaml
+      - $ref: ./Package.yaml
+  - type: object
+    properties:
+      _object:
+        oneOf:
+          - $ref: ./TitleInstance.yaml
+          - $ref: ./PlatformTitleInstance.yaml
+          - $ref: ./PackageContentItem.yaml
+          - $ref: ./Package.yaml
+        discriminator:
+          propertyName: class

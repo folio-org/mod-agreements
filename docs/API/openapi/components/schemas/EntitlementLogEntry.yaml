@@ -1,0 +1,36 @@
+type: object
+properties:
+  seqid:
+    type: string
+  resource_name:
+    type: string
+  title:
+    type: string
+  defaultCoverage:
+    type: array
+    items:
+      $ref: ./CoverageStatement.yaml
+  coverage:
+    type: array
+    items:
+      $ref: ./CoverageStatement.yaml
+  customCoverage:
+    type: boolean
+  identifiers:
+    type: array
+    items:
+      $ref: ./IdentifierOccurrence.yaml
+  suppress:
+    type: boolean
+  type:
+    type: string
+  license:
+    type: string
+  licenseId:
+    type: string
+    format: uuid
+  eventType:
+    type: string
+  url:
+    type: string
+    format: url

@@ -1,0 +1,18 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  owner:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+  role:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  user:
+    type: string
+    format: uuid

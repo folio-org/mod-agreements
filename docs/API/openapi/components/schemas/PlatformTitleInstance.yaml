@@ -1,0 +1,16 @@
+type: object
+required:
+  - platform
+  - titleInstance
+allOf:
+  - $ref: ./ErmResource.yaml
+  - properties:
+      longName:
+        type: string
+      platform:
+        $ref: ./Platform.yaml
+      titleInstance:
+        $ref: ./TitleInstance.yaml
+      url:
+        type: string
+        format: url

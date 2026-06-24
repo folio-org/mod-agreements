@@ -1,0 +1,14 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  contentType:
+    type: string
+  modified:
+    type: string
+    format: date-time
+  name:
+    type: string
+  size:
+    type: integer

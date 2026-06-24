@@ -1,0 +1,14 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  owner:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+  poLineId:
+    type: string
+    format: uuid

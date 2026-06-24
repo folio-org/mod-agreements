@@ -1,0 +1,27 @@
+type: object
+properties:
+  agreementLine:
+    $ref: ./Entitlement.yaml
+  coverage:
+    type: array
+    items:
+      $ref: ./CoverageStatement.yaml
+  customCoverage:
+    type: boolean
+  depth:
+    type: string
+  package:
+    $ref: ./Package.yaml
+  platform:
+    $ref: ./Platform.yaml
+  suppressFromDiscovery:
+    type: boolean
+  tags:
+    type: array
+    items:
+      $ref: ./Tag.yaml
+  title:
+    $ref: ./TitleInstance.yaml
+  url:
+    type: string
+    format: url

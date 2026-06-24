@@ -1,0 +1,33 @@
+type: object
+required:
+  - name
+allOf:
+  - $ref: ./ErmResource.yaml
+  - properties:
+      dateMonographPublished:
+        type: string
+        pattern: '^\d{4}(-((0[0-9])|(1[0-2]))(-(([0-2][0-9])|3[0-1]))?)?\$'
+      firstAuthor:
+        type: string
+      firstEditor:
+        type: string
+      identifiers:
+        type: array
+        items:
+          $ref: ./IdentifierOccurrence.yaml
+      longName:
+        type: string
+      monographEdition:
+        type: string
+      monographVolume:
+        type: string
+      work:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+      relatedTitles:
+        type: array
+        items:
+          $ref: ./TitleInstance.yaml

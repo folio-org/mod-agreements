@@ -1,0 +1,21 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  startDate:
+    type: string
+    format: date
+  endDate:
+    type: string
+    format: date
+  summary:
+    type: string
+  startVolume:
+    type: string
+  startIssue:
+    type: string
+  endVolume:
+    type: string
+  endIssue:
+    type: string

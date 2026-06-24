@@ -109,7 +109,7 @@ The recommendation for the versions containing the fix is to run with a minimum 
 
 ### /erm/sas resource - SubscriptionAgreements
 
-The /erm/sas resource allows module clients to Create, Retrieve, Update and Delete SubscriptionAgreement entities, and to search for SAs. [See the documentation](./doc/subscription_agreement_resource.md)
+The /erm/sas resource allows module clients to Create, Retrieve, Update and Delete SubscriptionAgreement entities, and to search for SAs. [See the documentation](docs/subscription_agreement_resource.md)
 
 ### /erm/refdataValues
 

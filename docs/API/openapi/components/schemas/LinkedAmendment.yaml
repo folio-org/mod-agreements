@@ -1,0 +1,15 @@
+type: object
+properties:
+  amendmentId:
+    type: string
+    format: uuid
+  id:
+    type: string
+    format: uuid
+  owner:
+    type: string
+    format: uuid
+  status:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml

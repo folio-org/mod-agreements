@@ -1,0 +1,25 @@
+type: object
+required:
+  - name
+properties:
+  id:
+    type: string
+    format: uuid
+  name:
+    type: string
+  dateCreated:
+    type: string
+    format: date
+  lastUpdated:
+    type: string
+    format: date
+  locators:
+    type: array
+    items:
+      type: object
+      properties:
+        domainName:
+          type: string
+        id:
+          type: string
+          format: uuid

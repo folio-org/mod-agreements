@@ -1,0 +1,27 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/x-okapi-token.yaml
+  - $ref: ../components/parameters/agreementUUID.yaml
+post:
+  summary: Clones (makes a duplicate) of the specified agreement
+  operationId: cloneAgreement
+  security:
+    - api_key: []
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/Agreement.yaml
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Agreement.yaml
+    '422':
+      description: Unprocessable entity
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ApplicationError.yaml

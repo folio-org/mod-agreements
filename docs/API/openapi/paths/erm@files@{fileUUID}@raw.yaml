@@ -1,0 +1,12 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/x-okapi-token.yaml
+  - $ref: ../components/parameters/fileUUID.yaml
+get:
+  summary: Download file
+  operationId: downloadFile
+  security:
+    - api_key: []
+  responses:
+    '200':
+      description: Success

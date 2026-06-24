@@ -1,0 +1,31 @@
+type: object
+properties:
+  class:
+    type: string
+  comparisonPoints:
+    type: array
+    maxItems: 2
+    minItems: 2
+    items:
+      $ref: ./ComparisonPoint.yaml
+  dateCreated:
+    type: integer
+  errorLogCount:
+    type: integer
+  fileUpload:
+    $ref: ./File.yaml
+  fullLogCount:
+    type: integer
+  id:
+    type: string
+    format: uuid
+  infoLogCount:
+    type: integer
+  name:
+    type: string
+  started:
+    type: integer
+  status:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml

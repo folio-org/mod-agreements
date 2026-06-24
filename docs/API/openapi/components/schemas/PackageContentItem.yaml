@@ -1,0 +1,19 @@
+type: object
+allOf:
+  - $ref: ./ErmResource.yaml
+  - properties:
+      accessStart:
+        type: string
+        format: date
+      addedTimestamp:
+        type: integer
+      depth:
+        type: string
+      lastSeenTimestamp:
+        type: integer
+      longName:
+        type: string
+      pkg:
+        $ref: ./Package.yaml
+      pti:
+        $ref: ./PlatformTitleInstance.yaml

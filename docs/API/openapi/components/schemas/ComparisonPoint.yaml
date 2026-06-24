@@ -1,0 +1,8 @@
+type: object
+properties:
+  titleList:
+    type: string
+    format: uuid
+  date:
+    type: string
+    format: date-time
