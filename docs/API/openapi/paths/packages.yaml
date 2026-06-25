@@ -1,0 +1,23 @@
+description:  Supports search of packages in the Agreements local knowledgebase
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+get:
+  summary: Get a set of package records.
+  operationId: getPackages
+  parameters: 
+    $ref: ../components/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/PackageResults.yaml
+              - $ref: ../components/schemas/PackageResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

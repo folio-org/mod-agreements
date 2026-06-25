@@ -1,0 +1,12 @@
+type: object
+required:
+  - id
+  - body
+properties:
+  id:
+    type: string
+    format: uuid
+  body:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml

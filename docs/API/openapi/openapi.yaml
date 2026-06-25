@@ -66,12 +66,12 @@ paths:
      $ref: paths/entitlementLogEntry_{entitlementLogEntryId}.yaml
 
 #   # ===== Packages paths =====
-#   /erm/packages:
-#     $ref: paths/packages.yaml
-#   /erm/packages/{packageId}:
-#     $ref: paths/packages_{packageId}.yaml
-#   /erm/packages/{packageId}/content:
-#     $ref: paths/packages_{packageId}_content.yaml
+   /erm/packages:
+     $ref: paths/packages.yaml
+   /erm/packages/{packageId}:
+     $ref: paths/packages_{packageId}.yaml
+   /erm/packages/{packageId}/content:
+     $ref: paths/packages_{packageId}_content.yaml
 #   # package export. subset can be all, current, future, dropped
 #   /erm/packages/{packageId}/content/{subset}:
 #     $ref: paths/packages_{packageId}_content_{subset}.yaml

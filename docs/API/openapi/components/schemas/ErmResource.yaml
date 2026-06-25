@@ -14,10 +14,14 @@ properties:
   dateCreated:
     type: string
     format: date-time
-  lastUpdate:
+  lastUpdated:
     type: string
     format: date-time
   name:
+    type: string
+  normalizedName:
+    type: string
+  description:
     type: string
   publicationType:
     oneOf:
@@ -37,3 +41,11 @@ properties:
     oneOf:
       - type: string
       - $ref: ./RefData.yaml
+  alternateResourceNames:
+    type: array
+    items: 
+      $ref: ./AlternateResourceName.yaml
+  identifiers:
+    type: array
+    items:
+      $ref: ./IdentifierOccurrence.yaml
