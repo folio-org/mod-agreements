@@ -24,4 +24,4 @@ properties:
     $ref: ./TitleInstance.yaml
   url:
     type: string
-    format: url
+    format: uri

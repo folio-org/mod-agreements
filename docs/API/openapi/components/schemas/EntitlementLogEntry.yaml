@@ -42,7 +42,7 @@ properties:
     enum: [ADD, UPDATE, REMOVE]
   url:
     type: string
-    format: url
+    format: uri
   packageIds:
     type: array
     items:

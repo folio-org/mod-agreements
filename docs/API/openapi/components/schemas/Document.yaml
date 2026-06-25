@@ -18,7 +18,7 @@ properties:
     type: string
   url:
     type: string
-    format: url
+    format: uri
   note:
     type: string
   atType:
