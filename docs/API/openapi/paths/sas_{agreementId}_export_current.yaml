@@ -1,0 +1,26 @@
+get:
+  summary: Retuns JSON for an Agreement including a list of resources currently available via the agreement
+  operationId: exportAgreementCurrent
+  parameters:
+    - $ref: ../components/parameters/agreementId.yaml
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../components/schemas/Agreement.yaml
+              - $ref: ../components/schemas/resourcesInAgreementExport.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error

@@ -1,0 +1,27 @@
+get:
+  summary: Retrieves the licenses and amendments for a specified agreement from the licenses module
+  operationId: getAgreementLinkedLicenses
+  parameters:
+    - $ref: ../components/parameters/agreementId.yaml
+    - $ref: ../components/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/LinkedLicensesResults.yaml
+              - $ref: ../components/schemas/LinkedLicensesResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error

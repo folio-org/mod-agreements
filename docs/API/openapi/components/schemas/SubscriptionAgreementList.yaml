@@ -1,0 +1,33 @@
+type: object
+required:
+  - id
+  - name
+  - startDate
+properties:
+  id:
+    type: string
+    format: uuid
+  name:
+    type: string
+    maxLength: 255
+    minLength: 1
+  startDate:
+      type: string
+      format: date
+      readOnly: true
+  endDate:
+      type: string
+      format: date
+      readOnly: true
+  isPerpetual:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  agreementStatus:
+    oneOf:
+      - type: string
+      - $ref: ./RefData.yaml
+  linkedLicenses:
+    type: array
+    items:
+      $ref: ./LinkedLicense.yaml

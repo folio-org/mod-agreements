@@ -2,19 +2,25 @@ type: object
 required:
   - id
   - name
-  - status
+  - agreementStatus
   - periods
 properties:
   id:
     type: string
     format: uuid
+  dateCreated:
+    type: string
+    format: date-time
+  lastUpdated:
+    type: string
+    format: date-time
   name:
     type: string
     maxLength: 255
     minLength: 1
   description:
     type: string
-  status:
+  agreementStatus:
     oneOf:
       - type: string
       - $ref: ./RefData.yaml
@@ -60,9 +66,11 @@ properties:
   startDate:
       type: string
       format: date
+      readOnly: true
   endDate:
       type: string
       format: date
+      readOnly: true
   cancellationDeadline:
       type: string
       format: date

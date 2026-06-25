@@ -1,0 +1,7 @@
+in: path
+name: agreementId
+description: UUID for an Agreement
+required: true
+schema:
+  type: string
+  format: uuid

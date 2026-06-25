@@ -1,0 +1,45 @@
+description:  Supports search and creation of Entitlements.  Note that internally the API uses 'Entitlement', but externally the app uses 'Agreement line' to describe these objects
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+get:
+  summary: Get a set of entitlement aka agreement line records.
+  operationId: getEntitlements
+  parameters: 
+    $ref: ../components/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/EntitlementResults.yaml
+              - $ref: ../components/schemas/EntitlementResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+post:
+  summary: Create entitlement aka agreement line record.
+  operationId: postEntitlement
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/Entitlement.yaml
+    required: true
+  responses:
+    '201':
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Entitlement.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
