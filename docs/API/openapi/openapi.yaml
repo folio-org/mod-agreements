@@ -36,19 +36,8 @@ paths:
      $ref: paths/sas_{agreementId}_resources_static_dropped.yaml
    /erm/sas/{agreementId}/resources/static/future:
      $ref: paths/sas_{agreementId}_resources_static_future.yaml
-#   /erm/sas/{agreementId}/resources/export:
-#     $ref: paths/sas_{agreementId}_resources_export.yaml
-#   # Agreement resources export. Defaults to JSON, only `format` option supported is `kbart`
-#   /erm/sas/{agreementId}/resources/export/{format}:
-#     $ref: paths/sas_{agreementId}_resources_export_{format}.yaml
-#   # Agreement resources export — can be all, current. Future & dropped not supported
-#   /erm/sas/{agreementId}/resources/export/{subset}:
-#     $ref: paths/sas_{agreementId}_resources_export_{subset}.yaml
-#   # Agreement resources export by format — subset can be all, current. Format is `kbart`
    /erm/sas/{agreementId}/resources/export/{subset}/{format}:
      $ref: paths/sas_{agreementId}_resources_export_{subset}_{format}.yaml
-#   /erm/sas/{agreementId}/export:
-#     $ref: paths/sas_{agreementId}_export.yaml
    /erm/sas/{agreementId}/export/current:
      $ref: paths/sas_{agreementId}_export_current.yaml
    /erm/sas/{agreementId}/clone:
@@ -63,22 +52,18 @@ paths:
      $ref: paths/sas_linkedLicenses.yaml
    /erm/sas/usageDataProviders:
      $ref: paths/sas_usageDataProviders.yaml
-#   /erm/sas/validate/{prop}:
-#     $ref: paths/sas_validate_{prop}.yaml
 
    # ===== Entitlements aka Agreement Lines paths =====
    /erm/entitlements:
      $ref: paths/entitlements.yaml
    /erm/entitlements/{entitlementId}:
      $ref: paths/entitlements_{entitlementId}.yaml
-#   /erm/entitlements/external:
-#     $ref: paths/entitlements_external.yaml
 
 #   # ===== Entitlement Log Entries paths =====
-#   /erm/entitlementLogEntry:
-#     $ref: paths/entitlementLogEntry.yaml
-#   /erm/entitlementLogEntry/{entitlementLogEntryId}:
-#     $ref: paths/entitlementLogEntry_{entitlementLogEntryId}.yaml
+   /erm/entitlementLogEntry:
+     $ref: paths/entitlementLogEntry.yaml
+   /erm/entitlementLogEntry/{entitlementLogEntryId}:
+     $ref: paths/entitlementLogEntry_{entitlementLogEntryId}.yaml
 
 #   # ===== Packages paths =====
 #   /erm/packages:
@@ -348,6 +333,37 @@ paths:
 #   # ===== Dashboard =====
 #   /dashboard/definitions:
 #     $ref: paths/dashboard_definitions.yaml
+
+#   # ===== Left undocumented =====
+#   The following Agreement export paths are left undocumented as they replicate the 
+#.  more general path /erm/sas/{agreementId}/resources/export/{subset}/{format} which
+#.  is already documented above. The implicit assumptions in the paths here are challenging
+#.  for OpenAPI documentation
+#   For example erm/sas/{agreementId}/resources/export/{format} (subset implicit)
+#.  and /erm/sas/{agreementId}/resources/export/{subset} (format implicit) 
+#.  are duplicate paths from an OpenAPI perspective 
+#   /erm/sas/{agreementId}/resources/export:
+#     $ref: paths/sas_{agreementId}_resources_export.yaml
+#   # Agreement resources export. Defaults to JSON, only `format` option supported is `kbart`
+#   /erm/sas/{agreementId}/resources/export/{format}:
+#     $ref: paths/sas_{agreementId}_resources_export_{format}.yaml
+#   # Agreement resources export — can be all, current. Future & dropped not supported
+#   /erm/sas/{agreementId}/resources/export/{subset}:
+#     $ref: paths/sas_{agreementId}_resources_export_{subset}.yaml
+#   /erm/sas/{agreementId}/export:
+#     $ref: paths/sas_{agreementId}_export.yaml
+
+#   Althogh property validation is supported and this path is defined in URL mapping
+#   it does not seem to be active currently
+#   /erm/sas/validate/{prop}:
+#     $ref: paths/sas_validate_{prop}.yaml
+
+#   Althogh the following path is defined in URL mapping
+#   it does not seem to be active currently
+#   /erm/entitlements/external:
+#     $ref: paths/entitlements_external.yaml
+
+
 components:
   securitySchemes:
       okapiToken:

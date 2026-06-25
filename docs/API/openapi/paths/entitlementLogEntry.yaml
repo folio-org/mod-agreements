@@ -1,0 +1,23 @@
+description:  Supports search of the entitlement log which is a feed of resources added or removed from a libraries collection based on their agreements and entitlements
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+get:
+  summary: Get a set of entitlement log entries.
+  operationId: getEntitlementlogEntries
+  parameters: 
+    $ref: ../components/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/EntitlementLogEntryResults.yaml
+              - $ref: ../components/schemas/EntitlementLogEntryResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
