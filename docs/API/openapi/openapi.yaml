@@ -72,12 +72,11 @@ paths:
      $ref: paths/packages_{packageId}.yaml
    /erm/packages/{packageId}/content:
      $ref: paths/packages_{packageId}_content.yaml
-   # package export. subset can be all, current, future, dropped
    /erm/packages/{packageId}/content/{packageSubset}:
      $ref: paths/packages_{packageId}_content_{packageSubset}.yaml
-#   # Package metadata
-#   /erm/packages/{packageId}/metadata:
-#     $ref: paths/packages_{packageId}_metadata.yaml
+   # Package metadata
+   /erm/packages/{packageId}/metadata:
+     $ref: paths/packages_{packageId}_metadata.yaml
 #   # Package collection-level operations
 #   /erm/packages/import:
 #     $ref: paths/packages_import.yaml
