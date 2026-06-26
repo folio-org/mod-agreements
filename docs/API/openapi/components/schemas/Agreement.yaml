@@ -8,12 +8,15 @@ properties:
   id:
     type: string
     format: uuid
+    readOnly: true
   dateCreated:
     type: string
     format: date-time
+    readOnly: true
   lastUpdated:
     type: string
     format: date-time
+    readOnly: true
   name:
     type: string
     maxLength: 255
@@ -39,7 +42,15 @@ properties:
   alternateNames:
     type: array
     items:
-      type: string
+      $ref: ./AlternateName.yaml
+  localReference:
+    type: string
+  vendorReference:
+    type: string
+  agreementContentTypes:
+    type: array
+    items:
+      $ref: ./AgreementContentType.yaml
   periods:
     type: array
     items:
@@ -74,22 +85,24 @@ properties:
   cancellationDeadline:
       type: string
       format: date
+      readOnly: true
   contacts:
     type: array
     items:
       $ref: ./InternalContact.yaml
   orgs:
     type: array
+    description: Organisations associated with the agreement
     items:
-      $ref: ./Organisation.yaml
+      $ref: ./AgreementOrg.yaml
   externalLicenseDocs:
     type: array
     items:
-      $ref: ./Document.yaml
+      $ref: ./DocumentAttachment.yaml
   supplementaryDocs:
     type: array
     items:
-      $ref: ./Document.yaml
+      $ref: ./DocumentAttachment.yaml
   linkedLicenses:
     type: array
     items:
@@ -98,7 +111,22 @@ properties:
     type: array
     items:
       $ref: ./UsageDataProvider.yaml
+  inwardRelationships:
+    type: array
+    items:
+      $ref: ./AgreementRelationship.yaml
+  outwardRelationships:
+    type: array
+    items:
+      $ref: ./AgreementRelationship.yaml
   tags:
     type: array
     items:
       $ref: ./Tag.yaml
+  customProperties:
+    type: object
+    description: Custom properties (agreement supplementary properties) — keys are property names, values are arrays of property value instances
+    additionalProperties:
+      type: array
+      items:
+        $ref: ./CustomPropertyValue.yaml

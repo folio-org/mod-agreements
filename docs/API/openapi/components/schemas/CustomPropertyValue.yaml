@@ -1,0 +1,18 @@
+type: object
+properties:
+  id:
+    type: integer
+    readOnly: true
+  internal:
+    type: boolean
+  note:
+    type: string
+  publicNote:
+    type: string
+  value:
+    oneOf:
+      - type: string
+      - type: integer
+      - $ref: ./RefData.yaml
+  type:
+    $ref: ./CustomPropertyDefinition.yaml

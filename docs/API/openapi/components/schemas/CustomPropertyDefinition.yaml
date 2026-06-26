@@ -1,0 +1,23 @@
+type: object
+properties:
+  id:
+    type: string
+  name:
+    type: string
+  label:
+    type: string
+  description:
+    type: string
+  primary:
+    type: boolean
+  defaultInternal:
+    type: boolean
+  retired:
+    type: boolean
+  weight:
+    type: integer
+  type:
+    type: string
+    description: Java class name indicating the property type (e.g. CustomPropertyInteger, CustomPropertyText, CustomPropertyRefdata)
+  category:
+    $ref: ./RefDataCategory.yaml

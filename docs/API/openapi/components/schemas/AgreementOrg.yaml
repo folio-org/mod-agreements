@@ -1,0 +1,46 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+    readOnly: true
+  owner:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+    readOnly: true
+    description: Agreement that owns the organisation
+  org:
+    $ref: ./Organisation.yaml
+  primaryOrg:
+    type: boolean
+    description: Whether this is the primary organisation for the agreement
+    default: false
+  note:
+    type: string
+    description: A note about this organisation's relationship to the agreement
+  roles:
+    type: array
+    description: The roles this organisation plays in relation to the agreement
+    items:
+      type: object
+      required:
+        - id
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        owner:
+          $ref: ./AgreementOrg.yaml
+          readOnly: true
+        role:
+          description: The role (e.g. Content provider)
+          oneOf:
+            - type: string
+            - $ref: ./RefData.yaml
+        note:
+          type: string

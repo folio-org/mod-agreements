@@ -33,7 +33,7 @@ properties:
   docs:
     type: array
     items:
-      $ref: ./Document.yaml
+      $ref: ./DocumentAttachment.yaml
   endDate:
     type: string
     format: date
