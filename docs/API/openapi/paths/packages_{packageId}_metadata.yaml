@@ -1,0 +1,20 @@
+description:  Supports retrieval of ingress metadata for specified package
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/packageId.yaml
+get:
+  summary: Get ingress metadata for package
+  operationId: getPackageIngressMetadata
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PackageIngressMetadata.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

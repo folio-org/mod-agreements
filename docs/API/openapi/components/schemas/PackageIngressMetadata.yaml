@@ -1,0 +1,46 @@
+type: object
+required:
+  - resource
+properties:
+  id:
+    type: string
+    format: uuid
+  resource:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+    description: Package which the ingress metadata applies to
+  ingressType:
+    type: string
+    enum:
+      - PUSHKB
+      - HARVEST
+      - JSON_IMPORT
+      - KBART_IMPORT
+  ingressId:
+    type: string
+    format: uuid
+    description: Package-level ingress identifier (e.g. PushKB task ID, RemoteKB ID)
+  ingressUrl:
+    type: string
+    format: uri
+    description: Package-level ingress URL (e.g. PushKB source URL; null for harvest/import)
+  contentIngressId:
+    type: string
+    format: uuid
+    description: Content-level ingress identifier (e.g. PushKB TIPP task ID; null for harvest/import)
+  contentIngressUrl:
+    type: string
+    format: uri
+    description: Content-level ingress URL (e.g. PushKB TIPP source URL; null for harvest/import)
+  dateCreated:
+    type: string
+    format: date-time
+    readOnly: true
+  lastUpdated:
+    type: string
+    format: date-time
+    readOnly: true
+    

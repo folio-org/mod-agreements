@@ -1,0 +1,10 @@
+in: path
+name: packageSubset
+required: true
+schema:
+  type: string
+  enum:
+    - current
+    - dropped
+    - future
+    - all
