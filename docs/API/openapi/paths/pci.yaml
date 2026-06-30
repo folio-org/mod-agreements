@@ -1,0 +1,23 @@
+description: Supports search of package content items in the Agreements local knowledgebase
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+get:
+  summary: Get a set of package content item records
+  operationId: getPcis
+  parameters:
+    $ref: ../components/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/PackageContentItemResults.yaml
+              - $ref: ../components/schemas/PackageContentItemResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

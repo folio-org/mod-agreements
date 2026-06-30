@@ -90,36 +90,33 @@ paths:
    /erm/packages/metadata/{metadataId}:
      $ref: paths/packages_metadata_{metadataId}.yaml
 
-#   # ===== Package Content Items (pci) =====
-#   # CRUD: GET (list), POST (create), GET/PUT (individual) — no DELETE
-#   /erm/pci:
-#     $ref: paths/pci.yaml
-#   /erm/pci/{pciId}:
-#     $ref: paths/pci_{pciId}.yaml
+  # ===== Package Content Items (pci) =====
+   /erm/pci:
+     $ref: paths/pci.yaml
+   /erm/pci/{pciId}:
+     $ref: paths/pci_{pciId}.yaml
 
-#   # ===== Platforms =====
-#   # Full CRUD
-#   /erm/platforms:
-#     $ref: paths/platforms.yaml
-#   /erm/platforms/{platformId}:
-#     $ref: paths/platforms_{platformId}.yaml
+  # ===== Platforms =====
+   /erm/platforms:
+     $ref: paths/platforms.yaml
+   /erm/platforms/{platformId}:
+     $ref: paths/platforms_{platformId}.yaml
 
-#   # ===== Platform Title Instances (pti) =====
-#   # GET only
-#   /erm/pti:
-#     $ref: paths/pti.yaml
-#   /erm/pti/{ptiId}:
-#     $ref: paths/pti_{ptiId}.yaml
+  # ===== Platform Title Instances (pti) =====
+   /erm/pti:
+     $ref: paths/pti.yaml
+   /erm/pti/{ptiId}:
+     $ref: paths/pti_{ptiId}.yaml
 
-#   # ===== Titles =====
-  /erm/titles:
-    $ref: paths/titles.yaml
-  /erm/titles/{titleId}:
-    $ref: paths/titles_{titleId}.yaml
-  /erm/titles/entitled:
-    $ref: paths/titles_entitled.yaml
-  /erm/titles/electronic:
-    $ref: paths/titles_electronic.yaml
+  # ===== Titles =====
+   /erm/titles:
+     $ref: paths/titles.yaml
+   /erm/titles/{titleId}:
+     $ref: paths/titles_{titleId}.yaml
+   /erm/titles/entitled:
+     $ref: paths/titles_entitled.yaml
+   /erm/titles/electronic:
+     $ref: paths/titles_electronic.yaml
 
 #   # ===== ERM Resources =====
 #   # GET only (list and individual)
