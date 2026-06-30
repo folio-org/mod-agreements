@@ -1,0 +1,23 @@
+description:  Supports retrieval of a deduplicated list of distinct, non-null source values from all Pkg (Package) records
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+get:
+  summary: Get a list of deduplicated list of distinct, non-null source values from all Pkg (Package) records
+  operationId: packageSources
+  parameters: 
+      - $ref: ../components/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              type: string
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

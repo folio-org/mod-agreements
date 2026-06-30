@@ -81,10 +81,10 @@ paths:
      $ref: paths/packages_import.yaml
    /erm/packages/tsvParse:
      $ref: paths/packages_tsvParse.yaml
-#   /erm/packages/sources:
-#     $ref: paths/packages_sources.yaml
-#   /erm/packages/controlSync:
-#     $ref: paths/packages_controlSync.yaml
+   /erm/packages/sources:
+     $ref: paths/packages_sources.yaml
+   /erm/packages/controlSync:
+     $ref: paths/packages_controlSync.yaml
 #   # Package ingress metadata (collection-level, GET only)
 #   /erm/packages/metadata:
 #     $ref: paths/packages_metadata.yaml
