@@ -1,0 +1,9 @@
+type: object
+required:
+  - namespace
+  - value
+properties:
+  namespace:
+    type: string
+  value:
+    type: string

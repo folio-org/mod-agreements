@@ -1,0 +1,93 @@
+type: object
+required:
+  - source
+  - reference
+  - name
+  - contentItems
+properties:
+  source:
+    type: string
+  reference:
+    type: string
+  name:
+    type: string
+  description:
+    type: string
+  syncContentsFromSource:
+    type: boolean
+  trustedSourceTI:
+    type: boolean
+  sourceDataCreated:
+    type: string
+    format: date-time
+  sourceDataUpdated:
+    type: string
+    format: date-time
+  sourceTitleCount:
+    type: integer
+  availabilityScope:
+    type: string
+  lifecycleStatus:
+    type: string
+  packageProvider:
+    type: object
+    properties:
+      name:
+        type: string
+      reference:
+        type: string
+  identifiers:
+    type: array
+    items:
+      $ref: ./ImportIdentifier.yaml
+  contentTypes:
+    type: array
+    items:
+      type: object
+      required: 
+        - contentType
+      properties:
+        contentType:
+          type: string
+  alternateResourceNames:
+    type: array
+    items:
+      type: object
+      required: 
+        - name
+      properties:
+        name:
+          type: string
+  alternateSlugs:
+    type: array
+    items:
+      type: object
+      required: 
+        - slug
+      properties:
+        slug:
+          type: string
+  availabilityConstraints:
+    type: array
+    items:
+      type: object
+      required: 
+        - body
+      properties:
+        body:
+          type: string
+  packageDescriptionUrls:
+    type: array
+    items:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          format: uri
+  contentItems:
+    type: array
+    minItems: 1
+    items:
+      $ref: ./ImportContentItem.yaml

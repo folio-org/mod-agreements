@@ -1,0 +1,22 @@
+post:
+  summary: Import a package from the POSTed JSON which must conform to the mod-agreements-package schema
+  operationId: postPackageimport
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ImportPackageRecords.yaml
+    required: true
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ImportPackageSuccess.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

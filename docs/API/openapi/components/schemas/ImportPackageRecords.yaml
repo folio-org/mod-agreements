@@ -1,0 +1,10 @@
+type: object
+description: Envelope for importing one or more packages using the mod-agreements-package schema v2
+required:
+  - records
+properties:
+  records:
+    type: array
+    minItems: 1
+    items:
+      $ref: ./ImportPackage.yaml

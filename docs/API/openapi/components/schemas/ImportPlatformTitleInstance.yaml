@@ -1,0 +1,16 @@
+type: object
+description: >
+  Either platform or platformUrl must be provided.
+required:
+  - titleInstance
+properties:
+  platform:
+    type: string
+  platformUrl:
+    type: string
+    format: uri
+  url:
+    type: string
+    format: uri
+  titleInstance:
+    $ref: ./ImportTitleInstance.yaml
