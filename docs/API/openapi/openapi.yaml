@@ -112,15 +112,14 @@ paths:
 #     $ref: paths/pti_{ptiId}.yaml
 
 #   # ===== Titles =====
-#   # GET only
-#   /erm/titles:
-#     $ref: paths/titles.yaml
-#   /erm/titles/{titleId}:
-#     $ref: paths/titles_{titleId}.yaml
-#   /erm/titles/entitled:
-#     $ref: paths/titles_entitled.yaml
-#   /erm/titles/electronic:
-#     $ref: paths/titles_electronic.yaml
+  /erm/titles:
+    $ref: paths/titles.yaml
+  /erm/titles/{titleId}:
+    $ref: paths/titles_{titleId}.yaml
+  /erm/titles/entitled:
+    $ref: paths/titles_entitled.yaml
+  /erm/titles/electronic:
+    $ref: paths/titles_electronic.yaml
 
 #   # ===== ERM Resources =====
 #   # GET only (list and individual)

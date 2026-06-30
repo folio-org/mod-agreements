@@ -1,0 +1,23 @@
+description: Supports search of title instances in the Agreements local knowledgebase
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+get:
+  summary: Get a set of title instance records
+  operationId: getTitles
+  parameters:
+    $ref: ../components/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/TitleInstanceResults.yaml
+              - $ref: ../components/schemas/TitleInstanceResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

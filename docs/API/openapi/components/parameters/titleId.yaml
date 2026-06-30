@@ -1,0 +1,7 @@
+in: path
+name: titleId
+description: UUID for a TitleInstance
+required: true
+schema:
+  type: string
+  format: uuid

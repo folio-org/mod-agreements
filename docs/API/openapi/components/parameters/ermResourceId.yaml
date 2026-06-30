@@ -1,0 +1,7 @@
+in: path
+name: ermResourceId
+description: UUID for an ERM resource
+required: true
+schema:
+  type: string
+  format: uuid

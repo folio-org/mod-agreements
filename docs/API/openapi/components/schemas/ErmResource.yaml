@@ -21,6 +21,7 @@ properties:
     type: string
   normalizedName:
     type: string
+    readOnly: true
   description:
     type: string
   publicationType:

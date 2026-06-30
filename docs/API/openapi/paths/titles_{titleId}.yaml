@@ -1,0 +1,52 @@
+get:
+  summary: Get a specified title instance record
+  operationId: getTitle
+  parameters:
+    - $ref: ../components/parameters/titleId.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/TitleInstance.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error
+put:
+  summary: Update a title instance record
+  operationId: putTitle
+  parameters:
+    - $ref: ../components/parameters/titleId.yaml
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/TitleInstance.yaml
+    required: true
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/TitleInstance.yaml
+    '400':
+      description: Bad request error
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error
