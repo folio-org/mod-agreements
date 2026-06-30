@@ -79,8 +79,8 @@ paths:
 #   # Package collection-level operations
    /erm/packages/import:
      $ref: paths/packages_import.yaml
-#   /erm/packages/tsvParse:
-#     $ref: paths/packages_tsvParse.yaml
+   /erm/packages/tsvParse:
+     $ref: paths/packages_tsvParse.yaml
 #   /erm/packages/sources:
 #     $ref: paths/packages_sources.yaml
 #   /erm/packages/controlSync:

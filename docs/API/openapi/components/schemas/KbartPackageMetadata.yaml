@@ -1,0 +1,16 @@
+type: object
+required:
+  - packageName
+  - packageSource
+  - packageReference
+properties:
+  packageName:
+    type: string
+  packageSource:
+    type: string
+  packageReference:
+    type: string
+  packageProvider:
+    type: string
+  trustedSourceTI:
+    type: boolean
