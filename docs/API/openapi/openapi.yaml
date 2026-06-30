@@ -85,11 +85,10 @@ paths:
      $ref: paths/packages_sources.yaml
    /erm/packages/controlSync:
      $ref: paths/packages_controlSync.yaml
-#   # Package ingress metadata (collection-level, GET only)
-#   /erm/packages/metadata:
-#     $ref: paths/packages_metadata.yaml
-#   /erm/packages/metadata/{metadataId}:
-#     $ref: paths/packages_metadata_{metadataId}.yaml
+   /erm/packages/metadata:
+     $ref: paths/packages_metadata.yaml
+   /erm/packages/metadata/{metadataId}:
+     $ref: paths/packages_metadata_{metadataId}.yaml
 
 #   # ===== Package Content Items (pci) =====
 #   # CRUD: GET (list), POST (create), GET/PUT (individual) — no DELETE

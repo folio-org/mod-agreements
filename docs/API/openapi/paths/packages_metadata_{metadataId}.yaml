@@ -1,0 +1,24 @@
+get:
+  summary: Get a specified package ingress metadata record
+  operationId: getPackageMetadata
+  parameters:
+    - $ref: ../components/parameters/metadataId.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PackageIngressMetadata.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error
