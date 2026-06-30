@@ -4,8 +4,6 @@ parameters:
 get:
   summary: Get a list of deduplicated list of distinct, non-null source values from all Pkg (Package) records
   operationId: packageSources
-  parameters: 
-      - $ref: ../components/parameters/queryParameters.yaml
   responses:
     '200':
       description: OK
