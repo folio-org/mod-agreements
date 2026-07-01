@@ -558,7 +558,14 @@ paths:
       summary: Retrieves the licenses and amendments for a specified agreement from the licenses module
       operationId: getAgreementLinkedLicenses
       parameters:
-        - $ref: '#/components/parameters/queryParameters'
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Success
@@ -590,7 +597,14 @@ paths:
       summary: Retrieves the usage data providers for a specified agreement
       operationId: getAgreementUsageDataProviders
       parameters:
-        - $ref: '#/components/parameters/queryParameters'
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Success
@@ -616,15 +630,22 @@ paths:
     description: Supports retrieval of agreement details including license terms based on a resource ID, specifically used for display of license terms for a resource in public facing discovery systems
     parameters:
       - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/referenceId'
+      - $ref: '#/components/parameters/resourceId'
     get:
       tags:
         - Agreements
       summary: Get a list of agreements including license terms for a resource or set of resources.
       operationId: publicLookup
       parameters:
-        - $ref: '#/components/parameters/queryParameters'
-        - $ref: '#/components/parameters/referenceId'
-        - $ref: '#/components/parameters/resourceId'
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: OK
@@ -647,7 +668,14 @@ paths:
       summary: Retrieves the licenses and amendments for a set of agreements that fulfil the query parameters
       operationId: getLinkedLicenses
       parameters:
-        - $ref: '#/components/parameters/queryParameters'
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Success
@@ -678,7 +706,14 @@ paths:
       summary: Retrieves the usage data providers for a set of agreements that fulfil the query parameters
       operationId: getUsageDataProviders
       parameters:
-        - $ref: '#/components/parameters/queryParameters'
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: Success
@@ -993,7 +1028,14 @@ paths:
       summary: Get content items for a specified package
       operationId: getPackageContent
       parameters:
-        - $ref: '#/components/parameters/queryParameters'
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: OK
@@ -1026,7 +1068,14 @@ paths:
       summary: Get content items for a specified package
       operationId: getPackageContentSubset
       parameters:
-        - $ref: '#/components/parameters/queryParameters'
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
       responses:
         '200':
           description: OK
@@ -1777,15 +1826,6 @@ components:
         enum:
           - json
           - kbart
-    queryParameters:
-      - $ref: '#/components/parameters/filters'
-      - $ref: '#/components/parameters/match'
-      - $ref: '#/components/parameters/term'
-      - $ref: '#/components/parameters/sort'
-      - $ref: '#/components/parameters/stats'
-      - $ref: '#/components/parameters/perPage'
-      - $ref: '#/components/parameters/offset'
-      - $ref: '#/components/parameters/page'
     referenceId:
       in: query
       name: referenceId
