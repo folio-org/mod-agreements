@@ -1,4 +1,5 @@
 name: OpenAPI Pipeline
+
 on:
   push:
     branches: [ main, master ]
@@ -11,8 +12,9 @@ jobs:
       contents: write
       pull-requests: write
     with:
-      redocly-dir: docs/API
-      spec-path: docs/agreements.yaml
+      redocly-dir: docs/API/config
+      spec-dir: docs/API/yamls
+      openapi-filename: agreements.yaml
     secrets:
       S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
       S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
