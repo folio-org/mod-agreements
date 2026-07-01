@@ -8,7 +8,7 @@ get:
   summary: Get content items for a specified package
   operationId: getPackageContentSubset
   parameters:
-    - $ref: ../components/parameters/queryParameters.yaml
+    $ref: ../components/parameters/queryParameters.yaml
   responses:
     '200':
       description: OK

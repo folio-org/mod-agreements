@@ -10,4 +10,4 @@ properties:
   values:
     type: array
     items:
-      $ref: ./RefData.yaml
+      $ref: ./Refdata.yaml

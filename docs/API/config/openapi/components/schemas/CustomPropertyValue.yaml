@@ -13,6 +13,6 @@ properties:
     oneOf:
       - type: string
       - type: integer
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   type:
     $ref: ./CustomPropertyDefinition.yaml

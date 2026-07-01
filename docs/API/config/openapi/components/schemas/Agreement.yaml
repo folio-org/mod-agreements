@@ -26,19 +26,19 @@ properties:
   agreementStatus:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   isPerpetual:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   reasonForClosure:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   renewalPriority:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   alternateNames:
     type: array
     items:

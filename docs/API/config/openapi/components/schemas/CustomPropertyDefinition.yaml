@@ -20,4 +20,4 @@ properties:
     type: string
     description: Java class name indicating the property type (e.g. CustomPropertyInteger, CustomPropertyText, CustomPropertyRefdata)
   category:
-    $ref: ./RefDataCategory.yaml
+    $ref: ./RefdataCategory.yaml

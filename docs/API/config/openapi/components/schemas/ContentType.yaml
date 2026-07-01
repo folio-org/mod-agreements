@@ -9,4 +9,4 @@ properties:
   contentType:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml

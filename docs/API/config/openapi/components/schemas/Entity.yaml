@@ -11,6 +11,6 @@ oneOf:
   - $ref: ./Organisation.yaml
   - $ref: ./Package.yaml
   - $ref: ./PackageContentItem.yaml
-  - $ref: ./RefData.yaml
-  - $ref: ./RefDataCategory.yaml
+  - $ref: ./Refdata.yaml
+  - $ref: ./RefdataCategory.yaml
   - $ref: ./StringTemplate.yaml

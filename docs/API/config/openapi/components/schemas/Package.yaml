@@ -27,11 +27,11 @@ allOf:
       lifecycleStatus:
         oneOf:
         - type: string
-        - $ref: ./RefData.yaml
+        - $ref: ./Refdata.yaml
       availabilityScope:
         oneOf:
         - type: string
-        - $ref: ./RefData.yaml
+        - $ref: ./Refdata.yaml
       packageDescriptionUrls:
         type: array
         items:

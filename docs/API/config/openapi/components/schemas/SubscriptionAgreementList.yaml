@@ -22,11 +22,11 @@ properties:
   isPerpetual:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   agreementStatus:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   linkedLicenses:
     type: array
     items:

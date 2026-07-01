@@ -6,7 +6,7 @@ get:
   summary: Retrieves the licenses and amendments for a set of agreements that fulfil the query parameters
   operationId: getLinkedLicenses
   parameters:
-    - $ref: ../components/parameters/queryParameters.yaml
+    $ref: ../components/parameters/queryParameters.yaml
   responses:
     '200':
       description: Success

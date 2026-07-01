@@ -5,4 +5,4 @@ properties:
     format: uuid
     readOnly: true
   contentType:
-    $ref: ./RefData.yaml
+    $ref: ./Refdata.yaml

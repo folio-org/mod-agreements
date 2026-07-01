@@ -24,6 +24,6 @@ properties:
   atType:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   fileUpload:
     $ref: ./File.yaml

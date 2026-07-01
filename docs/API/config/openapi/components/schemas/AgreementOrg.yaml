@@ -41,6 +41,6 @@ properties:
           description: The role (e.g. Content provider)
           oneOf:
             - type: string
-            - $ref: ./RefData.yaml
+            - $ref: ./Refdata.yaml
         note:
           type: string

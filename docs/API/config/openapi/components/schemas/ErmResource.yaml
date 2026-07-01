@@ -27,13 +27,13 @@ properties:
   publicationType:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   suppressFromDiscovery:
     type: boolean
   subType:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   tags:
     type: array
     items:
@@ -41,7 +41,7 @@ properties:
   type:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   alternateResourceNames:
     type: array
     items: 

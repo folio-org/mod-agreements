@@ -6,7 +6,7 @@ get:
   summary: Retrieves the usage data providers for a set of agreements that fulfil the query parameters
   operationId: getUsageDataProviders
   parameters:
-    - $ref: ../components/parameters/queryParameters.yaml
+    $ref: ../components/parameters/queryParameters.yaml
   responses:
     '200':
       description: Success

@@ -1,15 +1,15 @@
-description:  Supports retrieval of agreement details including license terms based on a resource ID, specifically used for display of license terms for a resource in public facing discovery systems
+description: Supports retrieval of agreement details including license terms based on a resource ID, specifically used for display of license terms for a resource in public facing discovery systems
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/referenceId.yaml
+  - $ref: ../components/parameters/resourceId.yaml
 get:
   tags:
     - Agreements
   summary: Get a list of agreements including license terms for a resource or set of resources.
   operationId: publicLookup
-  parameters: 
-      - $ref: ../components/parameters/queryParameters.yaml
-      - $ref: ../components/parameters/referenceId.yaml
-      - $ref: ../components/parameters/resourceId.yaml
+  parameters:
+    $ref: ../components/parameters/queryParameters.yaml
   responses:
     '200':
       description: OK
