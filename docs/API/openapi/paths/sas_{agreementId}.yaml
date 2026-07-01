@@ -1,12 +1,11 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/agreementId.yaml
 get:
   tags:
     - Agreements
   summary: Get a specified agreement record
   operationId: getAgreement
-  parameters:
-    - $ref: ../components/parameters/agreementId.yaml
   responses:
     '200':
       description: OK
@@ -31,8 +30,6 @@ put:
     - Agreements
   summary: Update agreement record
   operationId: putAgreement
-  parameters:
-    - $ref: ../components/parameters/agreementId.yaml
   requestBody:
     content:
       application/json:
@@ -61,8 +58,6 @@ delete:
     - Agreements
   summary: Delete a specified agreement record
   operationId: deleteAgreement
-  parameters:
-    - $ref: ../components/parameters/agreementId.yaml
   responses:
     '204':
       description: No content

@@ -1,12 +1,11 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/titleId.yaml
 get:
   tags:
     - Titles
   summary: Get a specified title instance record
   operationId: getTitle
-  parameters:
-    - $ref: ../components/parameters/titleId.yaml
   responses:
     '200':
       description: OK
@@ -31,8 +30,6 @@ put:
     - Titles
   summary: Update a title instance record
   operationId: putTitle
-  parameters:
-    - $ref: ../components/parameters/titleId.yaml
   requestBody:
     content:
       application/json:
