@@ -1,14 +1,14 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/packageId.yaml
+  - $ref: ../components/parameters/packageSubset.yaml
 get:
   tags:
   - Packages
   summary: Get content items for a specified package
   operationId: getPackageContentSubset
   parameters:
-    - $ref: ../components/parameters/packageId.yaml
     - $ref: ../components/parameters/queryParameters.yaml
-    - $ref: ../components/parameters/packageSubset.yaml
   responses:
     '200':
       description: OK

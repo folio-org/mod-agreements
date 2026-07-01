@@ -1,12 +1,11 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/pciId.yaml
 get:
   tags:
   - PCIs
   summary: Get a specified package content item record
   operationId: getPci
-  parameters:
-    - $ref: ../components/parameters/pciId.yaml
   responses:
     '200':
       description: OK
@@ -31,8 +30,6 @@ put:
   - PCIs
   summary: Update a package content item record
   operationId: putPci
-  parameters:
-    - $ref: ../components/parameters/pciId.yaml
   requestBody:
     content:
       application/json:

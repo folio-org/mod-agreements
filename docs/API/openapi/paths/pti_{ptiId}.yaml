@@ -1,12 +1,11 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/ptiId.yaml
 get:
   tags:
     - PTIs
   summary: Get a specified platform title instance record
   operationId: getPti
-  parameters:
-    - $ref: ../components/parameters/ptiId.yaml
   responses:
     '200':
       description: OK
@@ -31,8 +30,6 @@ put:
     - PTIs
   summary: Update a platform title instance record
   operationId: putPti
-  parameters:
-    - $ref: ../components/parameters/ptiId.yaml
   requestBody:
     content:
       application/json:

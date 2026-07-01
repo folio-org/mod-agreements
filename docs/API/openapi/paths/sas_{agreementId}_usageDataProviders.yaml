@@ -1,12 +1,12 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/agreementId.yaml
 get:
   tags:
     - Agreements
   summary: Retrieves the usage data providers for a specified agreement
   operationId: getAgreementUsageDataProviders
   parameters:
-    - $ref: ../components/parameters/agreementId.yaml
     - $ref: ../components/parameters/queryParameters.yaml
   responses:
     '200':

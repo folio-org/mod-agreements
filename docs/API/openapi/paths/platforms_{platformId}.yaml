@@ -1,12 +1,11 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/platformId.yaml
 get:
   tags:
   - Platforms
   summary: Get a specified platform record
   operationId: getPlatform
-  parameters:
-    - $ref: ../components/parameters/platformId.yaml
   responses:
     '200':
       description: OK
@@ -31,8 +30,6 @@ put:
   - Platforms
   summary: Update a platform record
   operationId: putPlatform
-  parameters:
-    - $ref: ../components/parameters/platformId.yaml
   requestBody:
     content:
       application/json:

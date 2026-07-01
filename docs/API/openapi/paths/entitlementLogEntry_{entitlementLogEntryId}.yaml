@@ -1,12 +1,11 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/entitlementLogEntryId.yaml
 get:
   tags:
   - Entitlement Log
   summary: Get a specified entitlement log entry record
   operationId: getEntitlementLogEntry
-  parameters:
-    - $ref: ../components/parameters/entitlementLogEntryId.yaml
   responses:
     '200':
       description: OK

@@ -1,12 +1,11 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/packageId.yaml
 get:
   tags:
   - Packages
   summary: Get a specified package record
   operationId: getPackage
-  parameters:
-    - $ref: ../components/parameters/packageId.yaml
   responses:
     '200':
       description: OK
@@ -31,8 +30,6 @@ put:
   - Packages
   summary: Update package record
   operationId: putPackage
-  parameters:
-    - $ref: ../components/parameters/packageId.yaml
   requestBody:
     content:
       application/json:

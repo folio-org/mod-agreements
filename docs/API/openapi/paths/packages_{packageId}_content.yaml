@@ -1,12 +1,12 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/packageId.yaml
 get:
   tags:
   - Packages
   summary: Get content items for a specified package
   operationId: getPackageContent
   parameters:
-    - $ref: ../components/parameters/packageId.yaml
     - $ref: ../components/parameters/queryParameters.yaml
   responses:
     '200':

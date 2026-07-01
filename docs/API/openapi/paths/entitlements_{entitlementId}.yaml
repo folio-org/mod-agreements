@@ -1,12 +1,11 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/entitlementId.yaml
 get:
   tags:
   - Entitlements
   summary: Get a specified entitlement record
   operationId: getEntitlement
-  parameters:
-    - $ref: ../components/parameters/entitlementId.yaml
   responses:
     '200':
       description: OK
@@ -31,8 +30,6 @@ put:
   - Entitlements
   summary: Update entitlement record
   operationId: putEntitlement
-  parameters:
-    - $ref: ../components/parameters/entitlementId.yaml
   requestBody:
     content:
       application/json:
@@ -61,8 +58,6 @@ delete:
   - Entitlements
   summary: Delete a specified entitlement record
   operationId: deleteEntitlement
-  parameters:
-    - $ref: ../components/parameters/entitlementId.yaml
   responses:
     '204':
       description: No content

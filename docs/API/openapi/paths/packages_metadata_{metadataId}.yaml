@@ -1,12 +1,11 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/metadataId.yaml
 get:
   tags:
   - Packages
   summary: Get a specified package ingress metadata record
   operationId: getPackageMetadata
-  parameters:
-    - $ref: ../components/parameters/metadataId.yaml
   responses:
     '200':
       description: OK

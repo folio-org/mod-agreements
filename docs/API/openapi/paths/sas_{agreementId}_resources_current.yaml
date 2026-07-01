@@ -1,12 +1,11 @@
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/agreementId.yaml
 get:
   tags:
     - Agreements
   summary: Returns resources in the internal KB associated with specified agreement actively part of the agreement on the current date
   operationId: getAgreementResourcesCurrent
-  parameters:
-    - $ref: ../components/parameters/agreementId.yaml
   responses:
     '200':
       description: Success
