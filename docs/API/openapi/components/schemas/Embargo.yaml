@@ -1,0 +1,9 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  movingWallStart:
+    $ref: ./EmbargoStatement.yaml
+  movingWallEnd:
+    $ref: ./EmbargoStatement.yaml

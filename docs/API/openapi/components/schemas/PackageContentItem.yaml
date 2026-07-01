@@ -5,6 +5,9 @@ allOf:
       accessStart:
         type: string
         format: date
+      accessEnd:
+        type: string
+        format: date
       addedTimestamp:
         type: integer
       depth:
@@ -13,6 +16,12 @@ allOf:
         type: integer
       longName:
         type: string
+      note:
+        type: string
+      removedTimestamp:
+        type: integer
+      embargo:
+        $ref: ./Embargo.yaml
       pkg:
         $ref: ./Package.yaml
       pti:

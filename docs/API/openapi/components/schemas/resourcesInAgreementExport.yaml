@@ -1,6 +1,6 @@
 type: object
 properties: 
-  resourceList:
+  resources:
     type: array
     items:
       $ref: ./resourceInAgreementExport.yaml
