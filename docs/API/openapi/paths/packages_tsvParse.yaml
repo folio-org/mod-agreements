@@ -4,7 +4,7 @@ post:
   tags:
   - Packages
   summary: Synchronously import a package from a KBART TSV file
-  operationId: postKPackagesTsvParse
+  operationId: postPackagesTsvParse
   requestBody:
     required: true
     content:

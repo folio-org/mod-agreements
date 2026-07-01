@@ -5,7 +5,7 @@ get:
   tags:
   - Packages
   summary: Get a list of deduplicated list of distinct, non-null source values from all Pkg (Package) records
-  operationId: packageSources
+  operationId: getPackageSources
   responses:
     '200':
       description: OK
