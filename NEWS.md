@@ -1,3 +1,6 @@
+## 7.2.9 2026-07-01
+  * ERM-4109: Security fixes for Grails modules in Sunflower
+
 ## 7.2.8 2026-06-16
 * ERM-4055 Use the latest web-toolkit-ce 10.6.2
 
