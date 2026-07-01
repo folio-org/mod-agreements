@@ -12,8 +12,8 @@ jobs:
       contents: write
       pull-requests: write
     with:
-      redocly-dir: docs/API
-      spec-dir: docs
+      redocly-dir: docs/API/config
+      spec-dir: docs/API/yamls
       openapi-filename: agreements.yaml
       # TEMPORARY: Allow deployment from specific test branch
       allowed-deploy-branch: "ci/openapi-tweak"
