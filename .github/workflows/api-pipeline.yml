@@ -15,8 +15,6 @@ jobs:
       redocly-dir: docs/API/config
       spec-dir: docs/API/yamls
       openapi-filename: agreements.yaml
-      # TEMPORARY: Allow deployment from specific test branch
-      allowed-deploy-branch: "ci/openapi-tweak"
     secrets:
       S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
       S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
