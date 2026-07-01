@@ -1,7 +1,8 @@
 name: OpenAPI Pipeline
+
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, ci/openapi-tweak ]
   pull_request:
 
 jobs:
@@ -12,7 +13,10 @@ jobs:
       pull-requests: write
     with:
       redocly-dir: docs/API
-      spec-path: docs/agreements.yaml
+      spec-dir: docs
+      openapi-filename: agreements.yaml
+      # TEMPORARY: Allow deployment from specific test branch
+      allowed-deploy-branch: "ci/openapi-tweak"
     secrets:
       S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
       S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
