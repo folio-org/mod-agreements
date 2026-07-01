@@ -6,7 +6,7 @@ on:
 
 jobs:
   run-openapi-pipeline:
-    uses: k-int/github-actions/.github/workflows/folio-api-build.yml@fix/redocly-pipeline-commit-fix
+    uses: k-int/github-actions/.github/workflows/folio-api-build.yml@test
     permissions:
       contents: write
       pull-requests: write
