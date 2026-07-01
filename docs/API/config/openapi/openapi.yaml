@@ -17,7 +17,7 @@ paths:
    /erm/sas/{agreementId}:
      $ref: paths/sas_{agreementId}.yaml
    /erm/sas/{agreementId}/resources:
-     $ref: paths/sas_{agreementId}_resources_all.yaml
+     $ref: paths/sas_{agreementId}_resources_default.yaml
    /erm/sas/{agreementId}/resources/all:
      $ref: paths/sas_{agreementId}_resources_all.yaml
    /erm/sas/{agreementId}/resources/current:
@@ -27,7 +27,7 @@ paths:
    /erm/sas/{agreementId}/resources/future:
      $ref: paths/sas_{agreementId}_resources_future.yaml
    /erm/sas/{agreementId}/resources/static:
-     $ref: paths/sas_{agreementId}_resources_static_all.yaml
+     $ref: paths/sas_{agreementId}_resources_static_default.yaml
    /erm/sas/{agreementId}/resources/static/all:
      $ref: paths/sas_{agreementId}_resources_static_all.yaml
    /erm/sas/{agreementId}/resources/static/current:
