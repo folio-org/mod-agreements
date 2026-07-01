@@ -1,0 +1,14 @@
+properties:
+  id:
+    type: string
+    format: uuid
+  name:
+    type: string
+  agreementStatus:
+    $ref: ./Refdata.yaml
+  startDate:
+    type: string
+    format: date
+  endDate:
+    type: string
+    format: date

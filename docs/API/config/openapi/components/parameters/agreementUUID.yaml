@@ -1,7 +1,0 @@
-in: path
-name: agreementUUID
-description: UUID for an Agreement
-required: true
-schema:
-  type: string
-  format: uuid

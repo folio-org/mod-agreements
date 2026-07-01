@@ -1,0 +1,10 @@
+type: object
+properties:
+  unit:
+    type: string
+    enum:
+      - days
+      - months
+      - years
+  length:
+    type: integer

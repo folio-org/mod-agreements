@@ -1,0 +1,32 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+post:
+  tags:
+  - Packages
+  summary: Synchronously import a package from a KBART TSV file
+  operationId: postPackagesTsvParse
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          allOf:
+            - $ref: ../components/schemas/KbartPackageMetadata.yaml
+            - type: object
+              required:
+                - upload
+              properties:
+                upload:
+                  type: string
+                  format: binary
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

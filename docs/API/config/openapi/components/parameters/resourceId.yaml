@@ -1,0 +1,5 @@
+in: query
+name: resourceId
+required: false
+schema:
+  type: string

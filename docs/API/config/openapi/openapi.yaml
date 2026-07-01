@@ -1,78 +1,372 @@
-openapi: 3.0.0
+openapi: 3.1.0
 info:
-  version: 0.0.4
+  version: 7.3.0
   title: Folio ERM Agreements
-  description: OpenAPI documentation for the Folio library services platform mod-agreements app
+  description: API for the Folio library services platform mod-agreements app
+  contact: 
+    name: Knowledge Integration
+    url: https://www.k-int.com
 servers:
   - url: 'https://folio-snapshot-okapi.dev.folio.org'
   - url: 'https://folio-snapshot-2-okapi.dev.folio.org'
+  - url: 'https://folio-etesting-snapshot-kong.ci.folio.org'
 paths:
-  /erm/{entityType}:
-    $ref: paths/erm@{entityType}.yaml
-  /erm/{entityType}/{entityUUID}:
-    $ref: paths/erm@{entityType}@{entityUUID}.yaml
-  /erm/admin/triggerHousekeeping:
-    $ref: paths/erm@admin@triggerHousekeeping.yaml
-  /erm/files:
-    $ref: paths/erm@files.yaml
-  /erm/files/{fileUUID}:
-    $ref: paths/erm@files@{fileUUID}.yaml
-  /erm/files/{fileUUID}/raw:
-    $ref: paths/erm@files@{fileUUID}@raw.yaml
-  /erm/jobs/{jobType}:
-    $ref: paths/erm@jobs@{jobType}.yaml
-  /erm/jobs/type/{jobType}:
-    $ref: paths/erm@jobs@type@{jobType}.yaml
-  /erm/jobs/{jobUUID}/{logType}:
-    $ref: paths/erm@jobs@{jobUUID}@{logType}.yaml
-  /erm/jobs/{jobUUID}/downloadFileObject:
-    $ref: paths/erm@jobs@{jobUUID}@downloadFileObject.yaml
-  /erm/packages/{packageUUID}/content/all:
-    $ref: paths/erm@packages@{packageUUID}@content@all.yaml
-  /erm/packages/{packageUUID}/content/current:
-    $ref: paths/erm@packages@{packageUUID}@content@current.yaml
-  /erm/packages/{packageUUID}/content/future:
-    $ref: paths/erm@packages@{packageUUID}@content@future.yaml
-  /erm/packages/{packageUUID}/content/dropped:
-    $ref: paths/erm@packages@{packageUUID}@content@dropped.yaml
-  /erm/refdata/{domain}/{property}:
-    $ref: paths/erm@refdata@{domain}@{property}.yaml
-  /erm/resource/electronic:
-    $ref: paths/erm@resource@electronic.yaml
-  /erm/resource/{resourceUUID}/entitlements:
-    $ref: paths/erm@resource@{resourceUUID}@entitlements.yaml
-  /erm/resource/{resourceUUID}/entitlements/related:
-    $ref: paths/erm@resource@{resourceUUID}@entitlements@related.yaml
-  /erm/resource/{resourceUUID}/entitlementOptions:
-    $ref: paths/erm@resource@{resourceUUID}@entitlementOptions.yaml
-  /erm/sas/{agreementUUID}/clone:
-    $ref: paths/erm@sas@{agreementUUID}@clone.yaml
-  /erm/sas/{agreementUUID}/export:
-    $ref: paths/erm@sas@{agreementUUID}@export.yaml
-  /erm/sas/{agreementUUID}/export/current:
-    $ref: paths/erm@sas@{agreementUUID}@export@current.yaml
-  /erm/sas/{agreementUUID}/resources/all:
-    $ref: paths/erm@sas@{agreementUUID}@resources@all.yaml
-  /erm/sas/{agreementUUID}/resources/current:
-    $ref: paths/erm@sas@{agreementUUID}@resources@current.yaml
-  /erm/sas/{agreementUUID}/resources/future:
-    $ref: paths/erm@sas@{agreementUUID}@resources@future.yaml
-  /erm/sas/{agreementUUID}/resources/dropped:
-    $ref: paths/erm@sas@{agreementUUID}@resources@dropped.yaml
-  /erm/sas/{agreementUUID}/resources/export:
-    $ref: paths/erm@sas@{agreementUUID}@resources@export.yaml
-  /erm/sas/{agreementUUID}/resources/export/current:
-    $ref: paths/erm@sas@{agreementUUID}@resources@export@current.yaml
-  /erm/sas/{agreementUUID}/resources/export/{downloadFormat}:
-    $ref: paths/erm@sas@{agreementUUID}@resources@export@{downloadFormat}.yaml
-  /erm/sas/{agreementUUID}/resources/export/current/{downloadFormat}:
-    $ref: >-
-      paths/erm@sas@{agreementUUID}@resources@export@current@{downloadFormat}.yaml
-  /erm/validate/subscriptionAgreement/name:
-    $ref: paths/erm@validate@subscriptionAgreement@name.yaml
+  # ===== Subscription Agreements (sas) paths =====
+   /erm/sas:
+     $ref: paths/sas.yaml
+   /erm/sas/{agreementId}:
+     $ref: paths/sas_{agreementId}.yaml
+   /erm/sas/{agreementId}/resources:
+     $ref: paths/sas_{agreementId}_resources_default.yaml
+   /erm/sas/{agreementId}/resources/all:
+     $ref: paths/sas_{agreementId}_resources_all.yaml
+   /erm/sas/{agreementId}/resources/current:
+     $ref: paths/sas_{agreementId}_resources_current.yaml
+   /erm/sas/{agreementId}/resources/dropped:
+     $ref: paths/sas_{agreementId}_resources_dropped.yaml
+   /erm/sas/{agreementId}/resources/future:
+     $ref: paths/sas_{agreementId}_resources_future.yaml
+   /erm/sas/{agreementId}/resources/static:
+     $ref: paths/sas_{agreementId}_resources_static_default.yaml
+   /erm/sas/{agreementId}/resources/static/all:
+     $ref: paths/sas_{agreementId}_resources_static_all.yaml
+   /erm/sas/{agreementId}/resources/static/current:
+     $ref: paths/sas_{agreementId}_resources_static_current.yaml
+   /erm/sas/{agreementId}/resources/static/dropped:
+     $ref: paths/sas_{agreementId}_resources_static_dropped.yaml
+   /erm/sas/{agreementId}/resources/static/future:
+     $ref: paths/sas_{agreementId}_resources_static_future.yaml
+   /erm/sas/{agreementId}/resources/export/{subset}/{format}:
+     $ref: paths/sas_{agreementId}_resources_export_{subset}_{format}.yaml
+   /erm/sas/{agreementId}/export/current:
+     $ref: paths/sas_{agreementId}_export_current.yaml
+   /erm/sas/{agreementId}/clone:
+     $ref: paths/sas_{agreementId}_clone.yaml
+   /erm/sas/{agreementId}/linkedLicenses:
+     $ref: paths/sas_{agreementId}_linkedLicenses.yaml
+   /erm/sas/{agreementId}/usageDataProviders:
+     $ref: paths/sas_{agreementId}_usageDataProviders.yaml
+   /erm/sas/publicLookup:
+     $ref: paths/sas_publicLookup.yaml
+   /erm/sas/linkedLicenses:
+     $ref: paths/sas_linkedLicenses.yaml
+   /erm/sas/usageDataProviders:
+     $ref: paths/sas_usageDataProviders.yaml
+
+   # ===== Entitlements aka Agreement Lines paths =====
+   /erm/entitlements:
+     $ref: paths/entitlements.yaml
+   /erm/entitlements/{entitlementId}:
+     $ref: paths/entitlements_{entitlementId}.yaml
+
+#   # ===== Entitlement Log Entries paths =====
+   /erm/entitlementLogEntry:
+     $ref: paths/entitlementLogEntry.yaml
+   /erm/entitlementLogEntry/{entitlementLogEntryId}:
+     $ref: paths/entitlementLogEntry_{entitlementLogEntryId}.yaml
+
+#   # ===== Packages paths =====
+   /erm/packages:
+     $ref: paths/packages.yaml
+   /erm/packages/{packageId}:
+     $ref: paths/packages_{packageId}.yaml
+   /erm/packages/{packageId}/content:
+     $ref: paths/packages_{packageId}_content.yaml
+   /erm/packages/{packageId}/content/{packageSubset}:
+     $ref: paths/packages_{packageId}_content_{packageSubset}.yaml
+   /erm/packages/{packageId}/metadata:
+     $ref: paths/packages_{packageId}_metadata.yaml
+#   # Package collection-level operations
+   /erm/packages/import:
+     $ref: paths/packages_import.yaml
+   /erm/packages/tsvParse:
+     $ref: paths/packages_tsvParse.yaml
+   /erm/packages/sources:
+     $ref: paths/packages_sources.yaml
+   /erm/packages/controlSync:
+     $ref: paths/packages_controlSync.yaml
+   /erm/packages/metadata:
+     $ref: paths/packages_metadata.yaml
+   /erm/packages/metadata/{metadataId}:
+     $ref: paths/packages_metadata_{metadataId}.yaml
+
+  # ===== Package Content Items (pci) =====
+   /erm/pci:
+     $ref: paths/pci.yaml
+   /erm/pci/{pciId}:
+     $ref: paths/pci_{pciId}.yaml
+
+  # ===== Platforms =====
+   /erm/platforms:
+     $ref: paths/platforms.yaml
+   /erm/platforms/{platformId}:
+     $ref: paths/platforms_{platformId}.yaml
+
+  # ===== Platform Title Instances (pti) =====
+   /erm/pti:
+     $ref: paths/pti.yaml
+   /erm/pti/{ptiId}:
+     $ref: paths/pti_{ptiId}.yaml
+
+  # ===== Titles =====
+   /erm/titles:
+     $ref: paths/titles.yaml
+   /erm/titles/{titleId}:
+     $ref: paths/titles_{titleId}.yaml
+   /erm/titles/entitled:
+     $ref: paths/titles_entitled.yaml
+   /erm/titles/electronic:
+     $ref: paths/titles_electronic.yaml
+
+#   # ===== ERM Resources =====
+#   # GET only (list and individual)
+#   /erm/resource:
+#     $ref: paths/resource.yaml
+#   /erm/resource/{resourceId}:
+#     $ref: paths/resource_{resourceId}.yaml
+#   /erm/resource/electronic:
+#     $ref: paths/resource_electronic.yaml
+#   /erm/resource/{resourceId}/entitlementOptions:
+#     $ref: paths/resource_{resourceId}_entitlementOptions.yaml
+#   /erm/resource/{resourceId}/static/entitlementOptions:
+#     $ref: paths/resource_{resourceId}_static_entitlementOptions.yaml
+#   /erm/resource/{resourceId}/entitlements:
+#     $ref: paths/resource_{resourceId}_entitlements.yaml
+#   /erm/resource/{resourceId}/entitlements/related:
+#     $ref: paths/resource_{resourceId}_entitlements_related.yaml
+#   # Resource deletion operations
+#   /erm/resource/markForDelete/pkg:
+#     $ref: paths/resource_markForDelete_pkg.yaml
+#   /erm/resource/markForDelete/pci:
+#     $ref: paths/resource_markForDelete_pci.yaml
+#   /erm/resource/markForDelete/pti:
+#     $ref: paths/resource_markForDelete_pti.yaml
+#   /erm/resource/markForDelete/ti:
+#     $ref: paths/resource_markForDelete_ti.yaml
+#   /erm/resource/delete/pkg:
+#     $ref: paths/resource_delete_pkg.yaml
+#   /erm/resource/delete/pci:
+#     $ref: paths/resource_delete_pci.yaml
+#   /erm/resource/delete/pti:
+#     $ref: paths/resource_delete_pti.yaml
+#   /erm/resource/delete/ti:
+#     $ref: paths/resource_delete_ti.yaml
+
+#   # ===== Remote Knowledge Bases (kbs) =====
+#   # Full CRUD
+#   /erm/kbs:
+#     $ref: paths/kbs.yaml
+#   /erm/kbs/{kbId}:
+#     $ref: paths/kbs_{kbId}.yaml
+
+#   # ===== Organisations =====
+#   # Full CRUD
+#   /erm/org:
+#     $ref: paths/org.yaml
+#   /erm/org/{orgId}:
+#     $ref: paths/org_{orgId}.yaml
+#   /erm/org/find/{id}:
+#     $ref: paths/org_find_{id}.yaml
+
+#   # ===== Internal Contacts =====
+#   # GET only
+#   /erm/contacts:
+#     $ref: paths/contacts.yaml
+#   /erm/contacts/{contactId}:
+#     $ref: paths/contacts_{contactId}.yaml
+
+#   # ===== Reference Data =====
+#   # Full CRUD
+#   /erm/refdata:
+#     $ref: paths/refdata.yaml
+#   /erm/refdata/{refdataId}:
+#     $ref: paths/refdata_{refdataId}.yaml
+#   /erm/refdata/{domain}/{property}:
+#     $ref: paths/refdata_{domain}_{property}.yaml
+
+#   # ===== Custom Property Definitions =====
+#   # Full CRUD
+#   /erm/custprops:
+#     $ref: paths/custprops.yaml
+#   /erm/custprops/{custpropId}:
+#     $ref: paths/custprops_{custpropId}.yaml
+#   /erm/custprops/contexts:
+#     $ref: paths/custprops_contexts.yaml
+
+#   # ===== String Templates =====
+#   # Full CRUD
+#   /erm/sts:
+#     $ref: paths/sts.yaml
+#   /erm/sts/{stringTemplateId}:
+#     $ref: paths/sts_{stringTemplateId}.yaml
+#   /erm/sts/template:
+#     $ref: paths/sts_template.yaml
+#   /erm/sts/template/{id}:
+#     $ref: paths/sts_template_{id}.yaml
+
+#   # ===== Jobs =====
+#   # GET (list), DELETE (individual) — create via /erm/jobs/{jobType}
+#   /erm/jobs:
+#     $ref: paths/jobs.yaml
+#   /erm/jobs/{jobId}:
+#     $ref: paths/jobs_{jobId}.yaml
+#   /erm/jobs/{jobType}:
+#     $ref: paths/jobs_{jobType}.yaml
+#   /erm/jobs/type/{jobType}:
+#     $ref: paths/jobs_type_{jobType}.yaml
+#   # Job log endpoints
+#   /erm/jobs/{jobId}/fullLog:
+#     $ref: paths/jobs_{jobId}_fullLog.yaml
+#   /erm/jobs/{jobId}/fullLogStream:
+#     $ref: paths/jobs_{jobId}_fullLogStream.yaml
+#   /erm/jobs/{jobId}/errorLog:
+#     $ref: paths/jobs_{jobId}_errorLog.yaml
+#   /erm/jobs/{jobId}/errorLogStream:
+#     $ref: paths/jobs_{jobId}_errorLogStream.yaml
+#   /erm/jobs/{jobId}/infoLog:
+#     $ref: paths/jobs_{jobId}_infoLog.yaml
+#   /erm/jobs/{jobId}/infoLogStream:
+#     $ref: paths/jobs_{jobId}_infoLogStream.yaml
+#   /erm/jobs/{jobId}/downloadFileObject:
+#     $ref: paths/jobs_{jobId}_downloadFileObject.yaml
+
+#   # ===== Files =====
+#   # GET (list), POST (upload), GET/DELETE (individual) — no PUT/PATCH
+#   /erm/files:
+#     $ref: paths/files.yaml
+#   /erm/files/{fileId}:
+#     $ref: paths/files_{fileId}.yaml
+#   /erm/files/{fileId}/raw:
+#     $ref: paths/files_{fileId}_raw.yaml
+
+#   # ===== Identifiers =====
+#   # GET only
+#   /erm/identifiers:
+#     $ref: paths/identifiers.yaml
+#   /erm/identifiers/{identifierId}:
+#     $ref: paths/identifiers_{identifierId}.yaml
+#   /erm/identifiers/namespaces:
+#     $ref: paths/identifiers_namespaces.yaml
+
+#   # ===== Comparison =====
+#   /erm/compare:
+#     $ref: paths/compare.yaml
+
+#   # ===== Validation =====
+#   /erm/validate/{domain}/{prop}:
+#     $ref: paths/validate_{domain}_{prop}.yaml
+
+#   # ===== Settings =====
+#   # Full CRUD
+#   /erm/settings/appSettings:
+#     $ref: paths/settings_appSettings.yaml
+#   /erm/settings/appSettings/{settingId}:
+#     $ref: paths/settings_appSettings_{settingId}.yaml
+
+#   # ===== Admin =====
+#   /erm/admin/{action}:
+#     $ref: paths/admin_{action}.yaml
+
+#   # ===== Statistics =====
+#   /erm/statistics/kbCount:
+#     $ref: paths/statistics_kbCount.yaml
+#   /erm/statistics/sasCount:
+#     $ref: paths/statistics_sasCount.yaml
+
+#   # ===== PushKB =====
+#   /erm/pushKB/pkg:
+#     $ref: paths/pushKB_pkg.yaml
+#   /erm/pushKB/pci:
+#     $ref: paths/pushKB_pci.yaml
+#   # PushKB sessions (GET only)
+#   /erm/pushKB/sessions:
+#     $ref: paths/pushKB_sessions.yaml
+#   /erm/pushKB/sessions/{sessionId}:
+#     $ref: paths/pushKB_sessions_{sessionId}.yaml
+#   # PushKB chunks (GET only, with log sub-endpoints)
+#   /erm/pushKB/chunks:
+#     $ref: paths/pushKB_chunks.yaml
+#   /erm/pushKB/chunks/{chunkId}:
+#     $ref: paths/pushKB_chunks_{chunkId}.yaml
+#   /erm/pushKB/chunks/{chunkId}/fullLog:
+#     $ref: paths/pushKB_chunks_{chunkId}_fullLog.yaml
+#   /erm/pushKB/chunks/{chunkId}/fullLogStream:
+#     $ref: paths/pushKB_chunks_{chunkId}_fullLogStream.yaml
+#   /erm/pushKB/chunks/{chunkId}/errorLog:
+#     $ref: paths/pushKB_chunks_{chunkId}_errorLog.yaml
+#   /erm/pushKB/chunks/{chunkId}/errorLogStream:
+#     $ref: paths/pushKB_chunks_{chunkId}_errorLogStream.yaml
+#   /erm/pushKB/chunks/{chunkId}/infoLog:
+#     $ref: paths/pushKB_chunks_{chunkId}_infoLog.yaml
+#   /erm/pushKB/chunks/{chunkId}/infoLogStream:
+#     $ref: paths/pushKB_chunks_{chunkId}_infoLogStream.yaml
+
+#   # ===== Subscribed Content =====
+#   /erm/content:
+#     $ref: paths/content.yaml
+#   /erm/content/{action}:
+#     $ref: paths/content_{action}.yaml
+
+#   # ===== Codex =====
+#   /codex-instances:
+#     $ref: paths/codex-instances.yaml
+#   /codex-instances/{id}:
+#     $ref: paths/codex-instances_{id}.yaml
+
+#   # ===== Top-level Export =====
+#   /export:
+#     $ref: paths/export.yaml
+#   /export/{format}:
+#     $ref: paths/export_{format}.yaml
+#   /export/current:
+#     $ref: paths/export_current.yaml
+#   /export/current/{format}:
+#     $ref: paths/export_current_{format}.yaml
+
+#   # ===== Dashboard =====
+#   /dashboard/definitions:
+#     $ref: paths/dashboard_definitions.yaml
+
+#   # ===== Left undocumented =====
+#   The following Agreement export paths are left undocumented as they replicate the 
+#.  more general path /erm/sas/{agreementId}/resources/export/{subset}/{format} which
+#.  is already documented above. The implicit assumptions in the paths here are challenging
+#.  for OpenAPI documentation
+#   For example erm/sas/{agreementId}/resources/export/{format} (subset implicit)
+#.  and /erm/sas/{agreementId}/resources/export/{subset} (format implicit) 
+#.  are duplicate paths from an OpenAPI perspective 
+#   /erm/sas/{agreementId}/resources/export:
+#     $ref: paths/sas_{agreementId}_resources_export.yaml
+#   # Agreement resources export. Defaults to JSON, only `format` option supported is `kbart`
+#   /erm/sas/{agreementId}/resources/export/{format}:
+#     $ref: paths/sas_{agreementId}_resources_export_{format}.yaml
+#   # Agreement resources export — can be all, current. Future & dropped not supported
+#   /erm/sas/{agreementId}/resources/export/{subset}:
+#     $ref: paths/sas_{agreementId}_resources_export_{subset}.yaml
+#   /erm/sas/{agreementId}/export:
+#     $ref: paths/sas_{agreementId}_export.yaml
+
+#   Althogh property validation is supported and this path is defined in URL mapping
+#   it does not seem to be active currently
+#   /erm/sas/validate/{prop}:
+#     $ref: paths/sas_validate_{prop}.yaml
+
+#   Althogh the following path is defined in URL mapping
+#   it does not seem to be active currently
+#   /erm/entitlements/external:
+#     $ref: paths/entitlements_external.yaml
+
+
 components:
   securitySchemes:
-    api_key:
+      okapiToken:
         type: apiKey
         in: header
         name: x-okapi-token
+      accessToken:
+        type: apiKey
+        in: cookie
+        name: folioAccessToken
+security:
+  - accessToken: []
+  - okapiToken: []

@@ -1,0 +1,75 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/entitlementId.yaml
+get:
+  tags:
+  - Entitlements
+  summary: Get a specified entitlement record
+  operationId: getEntitlement
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Entitlement.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error
+put:
+  tags:
+  - Entitlements
+  summary: Update entitlement record
+  operationId: putEntitlement
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/Entitlement.yaml
+    required: true
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Entitlement.yaml
+    '400':
+      description: Bad request error
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error  
+delete:
+  tags:
+  - Entitlements
+  summary: Delete a specified entitlement record
+  operationId: deleteEntitlement
+  responses:
+    '204':
+      description: No content
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error

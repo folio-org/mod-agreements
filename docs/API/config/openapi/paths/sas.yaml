@@ -1,0 +1,49 @@
+description:  Supports search and creation of Subscription Agreements. Note that internally the API uses 'SA' or 'Subscription Agreement', but externally the app uses 'Agreement' to describe these objects, and it is not required that they represent subscriptions
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+get:
+  tags:
+    - Agreements
+  summary: Get a set of subscription agreement (SA) aka Agreement records.
+  operationId: getAgreements
+  parameters: 
+    $ref: ../components/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/AgreementResults.yaml
+              - $ref: ../components/schemas/AgreementResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+post:
+  tags:
+    - Agreements
+  summary: Create subscription agreement (SA) aka Agreement record
+  operationId: postSA
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/Agreement.yaml
+    required: true
+  responses:
+    '201':
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Agreement.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

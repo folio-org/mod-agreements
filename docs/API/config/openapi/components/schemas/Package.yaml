@@ -6,13 +6,43 @@ required:
 allOf:
   - $ref: ./ErmResource.yaml
   - properties:
-      nominalPlatform:
-        $ref: ./Platform.yaml
-      reference:
-        type: string
-      remoteKb:
-        $ref: ./Kb.yaml
       source:
         type: string
+      sourceDataCreated:
+        type: string
+        format: date-time
+      sourceDataUpdated:
+        type: string
+        format: date-time
+      sourceTitleCount:
+        type: integer
+      syncContentsFromSource:
+        type: boolean
+      reference:
+        type: string
+      nominalPlatform:
+        $ref: ./Platform.yaml
       vendor:
         $ref: ./Organisation.yaml
+      lifecycleStatus:
+        oneOf:
+        - type: string
+        - $ref: ./Refdata.yaml
+      availabilityScope:
+        oneOf:
+        - type: string
+        - $ref: ./Refdata.yaml
+      packageDescriptionUrls:
+        type: array
+        items:
+          $ref: ./PackageDescriptionUrl.yaml
+      contentTypes:
+        type: array
+        items:
+          $ref: ./ContentType.yaml
+      availabilityConstraints:
+        type: array
+        items:
+          $ref: ./AvailabilityConstraint.yaml
+      resourceCount:
+        type: integer

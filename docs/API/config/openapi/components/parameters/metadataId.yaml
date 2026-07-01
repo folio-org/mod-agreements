@@ -1,0 +1,7 @@
+in: path
+name: metadataId
+description: UUID for a PackageIngressMetadata record
+required: true
+schema:
+  type: string
+  format: uuid

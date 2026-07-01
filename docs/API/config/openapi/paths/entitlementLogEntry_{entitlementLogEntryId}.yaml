@@ -1,0 +1,27 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/entitlementLogEntryId.yaml
+get:
+  tags:
+  - Entitlement Log
+  summary: Get a specified entitlement log entry record
+  operationId: getEntitlementLogEntry
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/EntitlementLogEntry.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error

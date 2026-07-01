@@ -3,18 +3,42 @@ properties:
   id:
     type: string
     format: uuid
+  dateCreated:
+    type: string
+    format: date-time
+  lastUpdated:
+    type: string
+    format: date-time
   activeFrom:
     type: string
     format: date
   activeTo:
     type: string
     format: date
+  authority:
+    type: string
+    enum:
+     - GOKB-RESOURCE
+     - EKB-PACKAGE
+     - EKB-TITLE
+  contentUpdated:
+    type: string
+    format: date-time
   customCoverage:
     type: boolean
   coverage:
     type: array
     items:
       $ref: ./CoverageStatement.yaml
+  docs:
+    type: array
+    items:
+      $ref: ./DocumentAttachment.yaml
+  endDate:
+    type: string
+    format: date
+    readOnly: true
+    description: Duplicates activeTo date
   explanation:
     type: string
   haveAccess:
@@ -25,15 +49,31 @@ properties:
     type: string
   owner:
     $ref: ./Agreement.yaml
+    readOnly: true
   poLines:
     type: array
     items:
       $ref: ./PurchaseOrderLine.yaml
   resource:
     $ref: ./EntitlementOption.yaml
+  reference:
+    type: string
+  reference_object:
+    type: object
+  startDate:
+    type: string
+    format: date
+    readOnly: true
+    description: Duplicates activeFrom date 
   suppressFromDiscovery:
     type: boolean
   tags:
     type: array
     items:
       $ref: ./Tag.yaml
+  type:
+    type: string
+    enum:
+     - detached
+     - external
+     - internal

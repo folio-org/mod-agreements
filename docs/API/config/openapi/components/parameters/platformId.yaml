@@ -1,0 +1,7 @@
+in: path
+name: platformId
+description: UUID for a Platform
+required: true
+schema:
+  type: string
+  format: uuid

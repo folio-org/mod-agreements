@@ -17,6 +17,7 @@ allOf:
           $ref: ./IdentifierOccurrence.yaml
       longName:
         type: string
+        readOnly: true
       monographEdition:
         type: string
       monographVolume:
@@ -29,5 +30,6 @@ allOf:
             format: uuid
       relatedTitles:
         type: array
+        readOnly: true
         items:
           $ref: ./TitleInstance.yaml

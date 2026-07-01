@@ -2,7 +2,15 @@ type: object
 properties:
   seqid:
     type: string
+  entitlement_id:
+    type: string
+    format: uuid
   resource_name:
+    type: string
+  resource_id:
+    type: string
+    format: uuid
+  activeEntitlementCountForResource:
     type: string
   title:
     type: string
@@ -31,6 +39,20 @@ properties:
     format: uuid
   eventType:
     type: string
+    enum: [ADD, UPDATE, REMOVE]
   url:
     type: string
-    format: url
+    format: uri
+  packageIds:
+    type: array
+    items:
+      type: object
+      properties:
+        type:
+          type: string
+        value:
+          type: string
+  templatedUrls:
+    type: array
+    items:
+      $ref: ./TemplatedUrl.yaml

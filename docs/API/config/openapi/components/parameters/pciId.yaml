@@ -1,0 +1,7 @@
+in: path
+name: pciId
+description: UUID for a PackageContentItem
+required: true
+schema:
+  type: string
+  format: uuid

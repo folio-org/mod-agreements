@@ -1,0 +1,19 @@
+type: object
+required:
+  - header
+  - records
+properties:
+      header:
+        type: object
+        required:
+            - name
+            - version
+        properties:
+          name:
+            type: string
+          version:
+            type: number
+      records:
+        type: array
+        items:
+          $ref: ./SubscriptionAgreementList.yaml

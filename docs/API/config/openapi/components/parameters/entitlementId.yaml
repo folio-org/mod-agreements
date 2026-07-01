@@ -1,0 +1,7 @@
+in: path
+name: entitlementId
+description: UUID for an Entitlement (Agreement line)
+required: true
+schema:
+  type: string
+  format: uuid

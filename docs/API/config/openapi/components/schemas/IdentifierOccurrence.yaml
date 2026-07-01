@@ -9,4 +9,4 @@ properties:
   identifier:
     $ref: ./Identifier.yaml
   status:
-    $ref: ./RefData.yaml
+    $ref: ./Refdata.yaml

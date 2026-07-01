@@ -1,0 +1,24 @@
+type: object
+properties:
+  name:
+    type: string
+  type:
+    type: string
+  subType:
+    type: string
+  publicationType:
+    type: string
+  dateMonographPublished:
+    type: string
+  firstAuthor:
+    type: string
+  firstEditor:
+    type: string
+  monographEdition:
+    type: string
+  monographVolume:
+    type: string
+  identifiers:
+    type: array
+    items:
+      $ref: ./ImportIdentifier.yaml

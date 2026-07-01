@@ -1,0 +1,47 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+post:
+  tags:
+  - Packages
+  summary: Change the synchronisation status of a package
+  operationId: postPackagecontrolSync
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - syncState
+            - packageIds
+          properties:
+            syncState:
+              type: string
+              enum:
+                - PAUSED
+                - SYNCHRONIZING
+            packageIds:
+              type: array
+              minItems: 1
+              items:
+                type: string
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              packagesUpdated:
+                type: integer
+              packagesSkipped:
+                type: integer
+              success:
+                type: boolean
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

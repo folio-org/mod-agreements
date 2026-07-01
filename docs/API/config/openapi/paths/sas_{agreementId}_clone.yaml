@@ -1,0 +1,38 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/agreementId.yaml
+post:
+  tags:
+    - Agreements
+  summary: Clones (makes a duplicate) of the specified agreement
+  operationId: cloneAgreement
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/Agreement.yaml
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Agreement.yaml
+    '422':
+      description: Unprocessable entity
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ApplicationError.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error

@@ -1,1 +1,12 @@
 type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  owner:
+    $ref: ./Agreement.yaml
+  remoteId:
+    type: string
+    format: uuid
+  remoteId_object:
+    type: object

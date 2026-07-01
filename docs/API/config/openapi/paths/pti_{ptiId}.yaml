@@ -1,0 +1,55 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/ptiId.yaml
+get:
+  tags:
+    - PTIs
+  summary: Get a specified platform title instance record
+  operationId: getPti
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PlatformTitleInstance.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error
+put:
+  tags:
+    - PTIs
+  summary: Update a platform title instance record
+  operationId: putPti
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/PlatformTitleInstance.yaml
+    required: true
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PlatformTitleInstance.yaml
+    '400':
+      description: Bad request error
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error

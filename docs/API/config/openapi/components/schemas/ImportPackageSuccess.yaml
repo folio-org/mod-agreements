@@ -1,0 +1,5 @@
+type: object
+properties:
+  packageId:
+    type: string
+    format: uuid

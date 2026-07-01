@@ -1,0 +1,32 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/packageId.yaml
+  - $ref: ../components/parameters/packageSubset.yaml
+get:
+  tags:
+  - Packages
+  summary: Get content items for a specified package
+  operationId: getPackageContentSubset
+  parameters:
+    $ref: ../components/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/PackageContentItemResults.yaml
+              - $ref: ../components/schemas/PackageContentItemResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error

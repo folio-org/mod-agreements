@@ -10,6 +10,10 @@ properties:
     type: boolean
   depth:
     type: string
+  embargo:
+    $ref: ./Embargo.yaml
+  note:
+    type: string
   package:
     $ref: ./Package.yaml
   platform:
@@ -20,8 +24,16 @@ properties:
     type: array
     items:
       $ref: ./Tag.yaml
+  templatedUrls:
+    type: array
+    items:
+      $ref: ./TemplatedUrl.yaml
   title:
     $ref: ./TitleInstance.yaml
+  relatedTitles:
+    type: array
+    items:
+      $ref: ./TitleInstance.yaml
   url:
     type: string
-    format: url
+    format: uri

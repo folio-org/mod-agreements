@@ -1,0 +1,48 @@
+type: object
+required:
+  - sourceIdentifier
+  - sourceIdentifierNamespace
+  - platformTitleInstance
+properties:
+  sourceIdentifier:
+    type: string
+  sourceIdentifierNamespace:
+    type: string
+  note:
+    type: string
+  depth:
+    type: string
+  accessStart:
+    type: string
+    format: date
+  accessEnd:
+    type: string
+    format: date
+  embargo:
+    type: string
+  removedTimestamp:
+    type: integer
+    format: int64
+  coverage:
+    type: array
+    items:
+      type: object
+      required:
+        - startDate
+      properties:
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        startVolume:
+          type: string
+        startIssue:
+          type: string
+        endVolume:
+          type: string
+        endIssue:
+          type: string
+  platformTitleInstance:
+    $ref: ./ImportPlatformTitleInstance.yaml

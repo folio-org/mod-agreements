@@ -1,0 +1,35 @@
+type: object
+required:
+  - resource
+properties:
+  id:
+    type: string
+    format: uuid
+  resource:
+    $ref: ./ErmResource.yaml
+  ingressType:
+    type: string
+    enum:
+      - PUSHKB
+      - HARVEST
+      - JSON_IMPORT
+      - KBART_IMPORT
+  ingressId:
+    type: string
+  ingressUrl:
+    type: string
+    format: uri
+  contentIngressId:
+    type: string
+  contentIngressUrl:
+    type: string
+    format: uri
+  dateCreated:
+    type: string
+    format: date-time
+    readOnly: true
+  lastUpdated:
+    type: string
+    format: date-time
+    readOnly: true
+    

@@ -1,0 +1,12 @@
+type: object
+required:
+  - id
+properties:
+  id:
+    type: string
+    format: uuid
+  name:
+    type: string
+  url:
+    type: string
+    format: uri

@@ -1,0 +1,25 @@
+description: Supports search of platform title instance records in the Agreements local knowledgebase
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+get:
+  tags:
+    - PTIs
+  summary: Get a set of platform title instance records
+  operationId: getPtis
+  parameters:
+    $ref: ../components/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/PlatformTitleInstanceResults.yaml
+              - $ref: ../components/schemas/PlatformTitleInstanceResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

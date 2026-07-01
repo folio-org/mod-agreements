@@ -10,7 +10,7 @@ properties:
   context:
     oneOf:
       - type: string
-      - $ref: ./RefData.yaml
+      - $ref: ./Refdata.yaml
   lastUpdated:
     type: string
     format: date

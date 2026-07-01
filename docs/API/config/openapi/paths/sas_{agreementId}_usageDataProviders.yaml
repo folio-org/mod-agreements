@@ -1,0 +1,31 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/agreementId.yaml
+get:
+  tags:
+    - Agreements
+  summary: Retrieves the usage data providers for a specified agreement
+  operationId: getAgreementUsageDataProviders
+  parameters:
+    $ref: ../components/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/UsageDataProvidersResults.yaml
+              - $ref: ../components/schemas/UsageDataProvidersResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error

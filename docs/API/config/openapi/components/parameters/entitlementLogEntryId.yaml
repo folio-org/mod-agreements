@@ -1,0 +1,7 @@
+in: path
+name: entitlementLogEntryId
+description: UUID for an entitlement log entry
+required: true
+schema:
+  type: string
+  format: uuid

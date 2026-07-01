@@ -1,0 +1,18 @@
+type: object
+required:
+  - name
+properties:
+  id:
+    type: string
+    format: uuid
+    readOnly: true
+  name:
+    type: string
+  owner:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+    readOnly: true
+    description: Agreements that owns the alternate name

@@ -1,0 +1,29 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/agreementId.yaml
+get:
+  tags:
+    - Agreements
+  summary: Returns resources in the internal KB associated with specified agreement actively part of the agreement on the current date
+  operationId: getAgreementResourcesCurrent
+  responses:
+    '200':
+      description: Success
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/ErmResourceResults.yaml
+              - $ref: ../components/schemas/ErmResourceResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HttpError.yaml
+    '500':
+      description: Internal server error

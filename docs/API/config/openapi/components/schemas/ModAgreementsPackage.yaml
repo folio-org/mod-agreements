@@ -1,0 +1,25 @@
+type: object
+required:
+  - header
+  - records
+properties:
+  header:
+    type: object
+    required:
+      - dataSchema
+    properties:
+      dataSchema:
+        type: object
+      required:
+        - name
+        - version
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+  records:
+    type: array
+    items:
+      $ref: ./ImportPackageRecords.yaml
+    
