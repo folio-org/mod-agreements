@@ -2,7 +2,7 @@ name: OpenAPI Pipeline
 
 on:
   push:
-    branches: [ main, master, ci/openapi-tweak ]
+    branches: [ main, master ]
   pull_request:
 
 jobs:
