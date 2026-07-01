@@ -155,7 +155,7 @@ paths:
       tags:
         - Agreements
       summary: Returns all resources in the internal KB associated with specified agreement
-      operationId: getAgreementResourcesAll
+      operationId: getAgreementResourcesDefault
       responses:
         '200':
           description: Success
@@ -305,7 +305,7 @@ paths:
       tags:
         - Agreements
       summary: Returns all resources in the internal KB associated with specified agreement based on direct HQL query
-      operationId: getAgreementResourcesStaticAll
+      operationId: getAgreementResourcesStaticDefault
       responses:
         '200':
           description: Success
