@@ -2,6 +2,8 @@ description:  Supports search and creation of Entitlements.  Note that internall
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+  - Entitlements
   summary: Get a set of entitlement aka agreement line records.
   operationId: getEntitlements
   parameters: 
@@ -22,6 +24,8 @@ get:
     '500':
       description: Internal server error
 post:
+  tags:
+  - Entitlements
   summary: Create entitlement aka agreement line record.
   operationId: postEntitlement
   requestBody:

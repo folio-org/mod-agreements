@@ -2,6 +2,8 @@ description: Supports search and creation of package ingress metadata records
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+  - Packages
   summary: Get a set of package ingress metadata records
   operationId: getPackagesMetadata
   parameters:

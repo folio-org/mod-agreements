@@ -2,6 +2,8 @@ description: Supports search of title instances in the Agreements local knowledg
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+    - Titles
   summary: Get a set of title instance records
   operationId: getTitles
   parameters:

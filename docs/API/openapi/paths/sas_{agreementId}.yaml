@@ -1,4 +1,8 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+    - Agreements
   summary: Get a specified agreement record
   operationId: getAgreement
   parameters:
@@ -23,6 +27,8 @@ get:
     '500':
       description: Internal server error
 put:
+  tags:
+    - Agreements
   summary: Update agreement record
   operationId: putAgreement
   parameters:
@@ -51,6 +57,8 @@ put:
     '500':
       description: Internal server error  
 delete:
+  tags:
+    - Agreements
   summary: Delete a specified agreement record
   operationId: deleteAgreement
   parameters:

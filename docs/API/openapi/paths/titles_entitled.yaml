@@ -2,6 +2,8 @@ description: Supports retrieval of title instances that are entitled via at leas
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+    - Titles
   summary: Get a set of entitled title instance records
   operationId: getEntitledTitles
   parameters:

@@ -1,4 +1,8 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+    - Agreements
   summary: Retrieves the licenses and amendments for a set of agreements that fulfil the query parameters
   operationId: getLinkedLicenses
   parameters:

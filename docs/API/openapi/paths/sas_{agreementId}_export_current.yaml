@@ -1,4 +1,8 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+    - Agreements
   summary: Retuns JSON for an Agreement including a list of resources currently available via the agreement
   operationId: exportAgreementCurrent
   parameters:

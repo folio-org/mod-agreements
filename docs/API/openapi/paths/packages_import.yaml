@@ -1,4 +1,8 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
 post:
+  tags:
+  - Packages
   summary: Import a package from the POSTed JSON which must conform to the mod-agreements-package schema
   operationId: postPackageimport
   requestBody:

@@ -2,6 +2,8 @@ description: Supports search of platform title instance records in the Agreement
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+    - PTIs
   summary: Get a set of platform title instance records
   operationId: getPtis
   parameters:

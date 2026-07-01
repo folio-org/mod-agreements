@@ -2,6 +2,8 @@ description:  Supports search of the entitlement log which is a feed of resource
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+  - Entitlement Log
   summary: Get a set of entitlement log entries.
   operationId: getEntitlementlogEntries
   parameters: 

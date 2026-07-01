@@ -1,4 +1,8 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+    - Agreements
   summary: Returns all resources in the internal KB associated with specified agreement based on direct HQL query
   operationId: getAgreementResourcesStaticAll
   parameters:

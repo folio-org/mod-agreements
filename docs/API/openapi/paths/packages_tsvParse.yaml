@@ -1,4 +1,8 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
 post:
+  tags:
+  - Packages
   summary: Synchronously import a package from a KBART TSV file
   operationId: postKPackagesTsvParse
   requestBody:

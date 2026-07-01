@@ -1,4 +1,8 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+    - PTIs
   summary: Get a specified platform title instance record
   operationId: getPti
   parameters:
@@ -23,6 +27,8 @@ get:
     '500':
       description: Internal server error
 put:
+  tags:
+    - PTIs
   summary: Update a platform title instance record
   operationId: putPti
   parameters:

@@ -1,4 +1,8 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+  - Platforms
   summary: Get a specified platform record
   operationId: getPlatform
   parameters:
@@ -23,6 +27,8 @@ get:
     '500':
       description: Internal server error
 put:
+  tags:
+  - Platforms
   summary: Update a platform record
   operationId: putPlatform
   parameters:

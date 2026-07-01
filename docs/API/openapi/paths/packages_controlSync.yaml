@@ -1,4 +1,8 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
 post:
+  tags:
+  - Packages
   summary: Change the synchronisation status of a package
   operationId: postPackagecontrolSync
   requestBody:

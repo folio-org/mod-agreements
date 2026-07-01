@@ -2,6 +2,8 @@ description: Supports search of package content items in the Agreements local kn
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+  - PCIs
   summary: Get a set of package content item records
   operationId: getPcis
   parameters:

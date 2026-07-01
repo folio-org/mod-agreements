@@ -1,4 +1,8 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+    - Titles
   summary: Get a specified title instance record
   operationId: getTitle
   parameters:
@@ -23,6 +27,8 @@ get:
     '500':
       description: Internal server error
 put:
+  tags:
+    - Titles
   summary: Update a title instance record
   operationId: putTitle
   parameters:

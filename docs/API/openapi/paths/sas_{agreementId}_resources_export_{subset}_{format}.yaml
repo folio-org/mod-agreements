@@ -1,4 +1,8 @@
+parameters:
+  - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+    - Agreements
   summary: Returns a list of either current or all resources in the internal KB associated with specified agreement using the specified format
   operationId: exportAgreementResourcesSubsetFormat
   parameters:

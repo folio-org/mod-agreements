@@ -2,6 +2,8 @@ description: Supports search of platform records in the Agreements local knowled
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+  - Platforms
   summary: Get a set of platform records
   operationId: getPlatforms
   parameters:

@@ -2,6 +2,8 @@ description:  Supports search and creation of Subscription Agreements. Note that
 parameters:
   - $ref: ../components/parameters/x-okapi-tenant.yaml
 get:
+  tags:
+    - Agreements
   summary: Get a set of subscription agreement (SA) aka Agreement records.
   operationId: getAgreements
   parameters: 
@@ -22,6 +24,8 @@ get:
     '500':
       description: Internal server error
 post:
+  tags:
+    - Agreements
   summary: Create subscription agreement (SA) aka Agreement record
   operationId: postSA
   requestBody:
