@@ -1,7 +1,7 @@
 parameters:
   - $ref: ../common/parameters/x-okapi-tenant.yaml
   - $ref: ../components/parameters/agreementId.yaml
-  - $ref: ../common/parameters/subset.yaml
+  - $ref: ../parameters/subset.yaml
   - $ref: ../components/parameters/format.yaml
 get:
   tags:
