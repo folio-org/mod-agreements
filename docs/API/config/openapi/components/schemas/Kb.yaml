@@ -25,7 +25,7 @@ properties:
   syncStatus:
     oneOf:
       - type: string
-      - $ref: ./Refdata.yaml
+      - $ref: ../../common/schemas/Refdata.yaml
   trustedSourceTI:
     type: boolean
   type:

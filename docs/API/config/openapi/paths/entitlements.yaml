@@ -1,13 +1,13 @@
 description:  Supports search and creation of Entitlements.  Note that internally the API uses 'Entitlement', but externally the app uses 'Agreement line' to describe these objects
 parameters:
-  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
 get:
   tags:
   - Entitlements
   summary: Get a set of entitlement aka agreement line records.
   operationId: getEntitlements
   parameters: 
-    $ref: ../components/parameters/queryParameters.yaml
+    $ref: ../common/parameters/queryParameters.yaml
   responses:
     '200':
       description: OK

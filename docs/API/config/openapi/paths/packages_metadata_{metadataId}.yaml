@@ -1,5 +1,5 @@
 parameters:
-  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
   - $ref: ../components/parameters/metadataId.yaml
 get:
   tags:
@@ -22,6 +22,6 @@ get:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/HttpError.yaml
+            $ref: ../common/schemas/HttpError.yaml
     '500':
       description: Internal server error

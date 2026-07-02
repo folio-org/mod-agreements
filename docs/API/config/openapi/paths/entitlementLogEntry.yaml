@@ -1,13 +1,13 @@
 description:  Supports search of the entitlement log which is a feed of resources added or removed from a libraries collection based on their agreements and entitlements
 parameters:
-  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
 get:
   tags:
   - Entitlement Log
   summary: Get a set of entitlement log entries.
   operationId: getEntitlementlogEntries
   parameters: 
-    $ref: ../components/parameters/queryParameters.yaml
+    $ref: ../common/parameters/queryParameters.yaml
   responses:
     '200':
       description: OK

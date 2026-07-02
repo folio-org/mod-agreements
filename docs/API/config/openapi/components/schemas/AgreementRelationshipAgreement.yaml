@@ -5,7 +5,7 @@ properties:
   name:
     type: string
   agreementStatus:
-    $ref: ./Refdata.yaml
+    $ref: ../../common/schemas/Refdata.yaml
   startDate:
     type: string
     format: date
