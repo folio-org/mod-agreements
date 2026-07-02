@@ -193,6 +193,11 @@
     <appender-ref ref="JOB" />
   </logger>
 
+  <logger name="org.olf.EntitlementService">
+    <level value="DEBUG" />
+    <appender-ref ref="JOB" />
+  </logger>
+
   <logger name="org.olf.KbHarvestService">
     <level value="DEBUG" />
     <appender-ref ref="JOB" />
