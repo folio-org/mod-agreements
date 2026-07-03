@@ -16,3 +16,5 @@ tools/testing/zk-single-kafka-single
 
 **/.idea/*
 **/.idea
+
+cdx-bom.json
