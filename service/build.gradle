@@ -1,35 +1,3 @@
-configurations {
-  all {
-    resolutionStrategy {
-      // Check for updates every build -- Useful for developing the plugins
-      // cacheChangingModulesFor 0, 'seconds'
-
-      forcedModules = [
-        "org.glassfish:jakarta.el:$glassfishJakartaElVersion",
-        "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion",
-        "org.codehaus.plexus:plexus-utils:${plexusVersion}",
-        "commons-beanutils:commons-beanutils:${beanutilsVersion}",
-        "io.micronaut:micronaut-json-core:$micronautJsonCoreVersion",
-        "commons-fileupload:commons-fileupload:$commonsFileUploadVersion"
-      ]
-
-      eachDependency { DependencyResolveDetails details ->
-        if (details.requested.group == 'org.glassfish' && details.requested.name == 'javax.el') {
-          details.useTarget("org.glassfish:jakarta.el:$glassfishJakartaElVersion")
-          details.because('Security fix for ERM-4022')
-        }
-
-        if (details.requested.group == 'javax.el' && details.requested.name == 'javax.el-api') {
-          details.useTarget("jakarta.el:jakarta.el-api:$glassfishJakartaElApiVersion")
-          details.because('Security fix for ERM-4022')
-        }
-      }
-    }
-  }
-
-  lombokDelombok
-}
-
 buildscript {
   repositories {
 		mavenLocal()
@@ -87,12 +55,48 @@ bootJar {
 	duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
 }
 
+configurations {
+  all {
+    resolutionStrategy {
+      // Check for updates every build -- Useful for developing the plugins
+      // cacheChangingModulesFor 0, 'seconds'
+
+      forcedModules = [
+        "org.glassfish:jakarta.el:$glassfishJakartaElVersion",
+        "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion",
+        "org.codehaus.plexus:plexus-utils:${plexusVersion}",
+        "commons-beanutils:commons-beanutils:${beanutilsVersion}",
+        "io.micronaut:micronaut-json-core:$micronautJsonCoreVersion",
+        "commons-fileupload:commons-fileupload:$commonsFileUploadVersion"
+      ]
+
+      eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'com.fasterxml.jackson.core' && details.requested.name == 'jackson-annotations') {
+          details.useVersion(jacksonVersion.tokenize('.')[0..1].join('.'))
+          details.because("FasterXML dropped 3-digit patch versions for annotations in 2.20+")
+        }
+
+        if (details.requested.group == 'org.glassfish' && details.requested.name == 'javax.el') {
+          details.useTarget("org.glassfish:jakarta.el:$glassfishJakartaElVersion")
+          details.because('Security fix for ERM-4022')
+        }
+
+        if (details.requested.group == 'javax.el' && details.requested.name == 'javax.el-api') {
+          details.useTarget("jakarta.el:jakarta.el-api:$glassfishJakartaElApiVersion")
+          details.because('Security fix for ERM-4022')
+        }
+      }
+    }
+  }
+
+  lombokDelombok
+}
+
 repositories {
   mavenLocal()
 	maven { url "https://repo.grails.org/grails/core" }
 	maven { url "https://repo.grails.org/grails/plugins" }
 	maven { url "https://jitpack.io" }
-	maven { url 'https://maven.indexdata.com/' }
 	maven { url "https://maven.k-int.com/repository/releases" }
 	mavenCentral()
 }
