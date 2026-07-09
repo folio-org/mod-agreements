@@ -304,7 +304,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
   public String findPreviousPeriod() {
     log.debug "Find previous period"
     LocalDate ld = getLocalDate()
-    String ppId = this.periods.findAll(p -> (p.endDate != null && p.endDate < ld)).max({a,b -> a.startDate - b.startDate})?.id;
+    String ppId = this.periods.findAll(p -> (p.endDate != null && p.endDate < ld)).max({a,b -> a.startDate <=> b.startDate})?.id;
 
     ppId
   }
@@ -313,7 +313,7 @@ public class SubscriptionAgreement extends ErmTitleList implements CustomPropert
   public String findNextPeriod() {
     log.debug "Find next period"
     LocalDate ld = getLocalDate()
-    String npId = this.periods.findAll(p -> p.startDate > ld).min({a,b -> a.startDate - b.startDate})?.id;
+    String npId = this.periods.findAll(p -> p.startDate > ld).min({a,b -> a.startDate <=> b.startDate})?.id;
 
     npId
   }

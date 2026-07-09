@@ -1,3 +1,6 @@
+## 7.2.10 2026-07-09
+  * ERM-4130: Backport agreement start/end date calculation fix to Sunflower
+
 ## 7.2.9 2026-07-01
   * ERM-4109: Security fixes for Grails modules in Sunflower
 
