@@ -1,3 +1,6 @@
+## 7.3.4 2026-07-09
+  * ERM-4129: Backport agreement start/end date calculation fix to Trillium
+
 ## 7.3.3 2026-06-29
   * ERM-4108: Security fixes for Grails modules in Trillium
 
