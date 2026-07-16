@@ -175,14 +175,14 @@ paths:
 #   /erm/contacts/{contactId}:
 #     $ref: paths/contacts_{contactId}.yaml
 
-#   # ===== Reference Data =====
-#   # Full CRUD
-#   /erm/refdata:
-#     $ref: paths/refdata.yaml
-#   /erm/refdata/{refdataId}:
-#     $ref: paths/refdata_{refdataId}.yaml
-#   /erm/refdata/{domain}/{property}:
-#     $ref: paths/refdata_{domain}_{property}.yaml
+  # ===== Reference Data =====
+  # Full CRUD
+   /erm/refdata:
+     $ref: paths/refdata.yaml
+   /erm/refdata/{refdataId}:
+     $ref: paths/refdata_{refdataId}.yaml
+   /erm/refdata/{domain}/{property}:
+     $ref: paths/refdata_{domain}_{property}.yaml
 
 #   # ===== Custom Property Definitions =====
 #   # Full CRUD
@@ -256,12 +256,12 @@ paths:
 #   /erm/validate/{domain}/{prop}:
 #     $ref: paths/validate_{domain}_{prop}.yaml
 
-#   # ===== Settings =====
-#   # Full CRUD
-#   /erm/settings/appSettings:
-#     $ref: paths/settings_appSettings.yaml
-#   /erm/settings/appSettings/{settingId}:
-#     $ref: paths/settings_appSettings_{settingId}.yaml
+  # ===== Settings =====
+  # Full CRUD
+   /erm/settings/appSettings:
+     $ref: paths/settings_appSettings.yaml
+   /erm/settings/appSettings/{settingId}:
+     $ref: paths/settings_appSettings_{settingId}.yaml
 
 #   # ===== Admin =====
 #   /erm/admin/{action}:
