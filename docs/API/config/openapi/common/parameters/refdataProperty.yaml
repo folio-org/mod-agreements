@@ -1,0 +1,6 @@
+in: path
+name: property
+description: Name of the refdata-backed property on the domain class, e.g. `agreementStatus` (on `SubscriptionAgreement`)
+required: true
+schema:
+  type: string
