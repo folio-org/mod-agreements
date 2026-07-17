@@ -10,10 +10,10 @@ properties:
     type: string
     format: date-time
   activeFrom:
-    type: string
+    type: [string, "null"]
     format: date
   activeTo:
-    type: string
+    type: [string, "null"]
     format: date
   authority:
     type: string
@@ -22,7 +22,7 @@ properties:
      - EKB-PACKAGE
      - EKB-TITLE
   contentUpdated:
-    type: string
+    type: [string, "null"]
     format: date-time
   customCoverage:
     type: boolean
@@ -35,7 +35,7 @@ properties:
     items:
       $ref: ./DocumentAttachment.yaml
   endDate:
-    type: string
+    type: [string, "null"]
     format: date
     readOnly: true
     description: Duplicates activeTo date
@@ -61,10 +61,10 @@ properties:
   reference_object:
     type: object
   startDate:
-    type: string
+    type: [string, "null"]
     format: date
     readOnly: true
-    description: Duplicates activeFrom date 
+    description: Duplicates activeFrom date
   suppressFromDiscovery:
     type: boolean
   tags:

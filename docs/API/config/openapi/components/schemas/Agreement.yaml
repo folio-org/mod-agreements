@@ -79,13 +79,15 @@ properties:
       format: date
       readOnly: true
   endDate:
-      type: string
+      type: [string, "null"]
       format: date
       readOnly: true
+      description: Null if any period on the agreement is open-ended (has no end date)
   cancellationDeadline:
-      type: string
+      type: [string, "null"]
       format: date
       readOnly: true
+      description: Null if no period on the agreement has a cancellation deadline set
   contacts:
     type: array
     items:
