@@ -24,9 +24,5 @@ get:
       description: Forbidden
     '404':
       description: Not found error -- resource does not exist, or is not a package content item or platform title instance
-      content:
-        application/json:
-          schema:
-            $ref: ../common/schemas/HttpError.yaml
     '500':
       description: Internal server error
