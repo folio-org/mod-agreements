@@ -1,0 +1,7 @@
+in: path
+name: fileId
+description: UUID for a file
+required: true
+schema:
+  type: string
+  format: uuid

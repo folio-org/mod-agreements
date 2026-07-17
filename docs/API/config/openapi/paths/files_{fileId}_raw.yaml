@@ -1,0 +1,35 @@
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/fileId.yaml
+get:
+  tags:
+    - Files
+  summary: Download the raw contents of a specified File record
+  operationId: getFileRaw
+  description: >-
+    Streams the stored file bytes back with the content type recorded
+    against the File record (rather than a fixed content type).
+  responses:
+    '200':
+      description: OK
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/HttpError.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml
