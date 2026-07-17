@@ -242,22 +242,21 @@ paths:
    /erm/jobs/{jobId}/downloadFileObject:
      $ref: paths/jobs_{jobId}_downloadFileObject.yaml
 
-#   # ===== Files =====
-#   /erm/files:
-#     $ref: paths/files.yaml
-#   /erm/files/{fileId}:
-#     $ref: paths/files_{fileId}.yaml
-#   /erm/files/{fileId}/raw:
-#     $ref: paths/files_{fileId}_raw.yaml
+   # ===== Files =====
+   /erm/files:
+     $ref: paths/files.yaml
+   /erm/files/{fileId}:
+     $ref: paths/files_{fileId}.yaml
+   /erm/files/{fileId}/raw:
+     $ref: paths/files_{fileId}_raw.yaml
 
-#   # ===== Identifiers =====
-#   # GET only
-#   /erm/identifiers:
-#     $ref: paths/identifiers.yaml
-#   /erm/identifiers/{identifierId}:
-#     $ref: paths/identifiers_{identifierId}.yaml
-#   /erm/identifiers/namespaces:
-#     $ref: paths/identifiers_namespaces.yaml
+   # ===== Identifiers =====
+   /erm/identifiers:
+     $ref: paths/identifiers.yaml
+   /erm/identifiers/{identifierId}:
+     $ref: paths/identifiers_{identifierId}.yaml
+   /erm/identifiers/namespaces:
+     $ref: paths/identifiers_namespaces.yaml
 
 #   # ===== Comparison =====
 #   /erm/compare:
