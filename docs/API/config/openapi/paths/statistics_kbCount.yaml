@@ -1,0 +1,41 @@
+get:
+  tags:
+    - Statistics
+  summary: Get record counts for knowledge base resource types
+  operationId: getKbCountStatistics
+  description: >-
+    Counts every row in each of the listed tables -- not scoped to any
+    particular agreement or package.
+  parameters:
+    - $ref: ../common/parameters/x-okapi-tenant.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            description: Total record count per resource type.
+            properties:
+              ErmResource:
+                type: integer
+              Pkg:
+                type: integer
+              PackageContentItem:
+                type: integer
+              PlatformTitleInstance:
+                type: integer
+              TitleInstance:
+                type: integer
+              Work:
+                type: integer
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml
