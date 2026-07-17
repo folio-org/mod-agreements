@@ -134,23 +134,23 @@ paths:
      $ref: paths/resource_{ermResourceId}_entitlements.yaml
    /erm/resource/{ermResourceId}/entitlements/related:
      $ref: paths/resource_{ermResourceId}_entitlements_related.yaml
-#   # Resource deletion operations
-#   /erm/resource/markForDelete/pkg:
-#     $ref: paths/resource_markForDelete_pkg.yaml
-#   /erm/resource/markForDelete/pci:
-#     $ref: paths/resource_markForDelete_pci.yaml
-#   /erm/resource/markForDelete/pti:
-#     $ref: paths/resource_markForDelete_pti.yaml
-#   /erm/resource/markForDelete/ti:
-#     $ref: paths/resource_markForDelete_ti.yaml
-#   /erm/resource/delete/pkg:
-#     $ref: paths/resource_delete_pkg.yaml
-#   /erm/resource/delete/pci:
-#     $ref: paths/resource_delete_pci.yaml
-#   /erm/resource/delete/pti:
-#     $ref: paths/resource_delete_pti.yaml
-#   /erm/resource/delete/ti:
-#     $ref: paths/resource_delete_ti.yaml
+  # Resource deletion operations
+   /erm/resource/markForDelete/pkg:
+     $ref: paths/resource_markForDelete_pkg.yaml
+   /erm/resource/markForDelete/pci:
+     $ref: paths/resource_markForDelete_pci.yaml
+   /erm/resource/markForDelete/pti:
+     $ref: paths/resource_markForDelete_pti.yaml
+   /erm/resource/markForDelete/ti:
+     $ref: paths/resource_markForDelete_ti.yaml
+   /erm/resource/delete/pkg:
+     $ref: paths/resource_delete_pkg.yaml
+   /erm/resource/delete/pci:
+     $ref: paths/resource_delete_pci.yaml
+   /erm/resource/delete/pti:
+     $ref: paths/resource_delete_pti.yaml
+   /erm/resource/delete/ti:
+     $ref: paths/resource_delete_ti.yaml
 
 #   # ===== Remote Knowledge Bases (kbs) =====
 #   # Full CRUD
@@ -301,18 +301,6 @@ paths:
 #   /erm/pushKB/chunks/{chunkId}/infoLogStream:
 #     $ref: paths/pushKB_chunks_{chunkId}_infoLogStream.yaml
 
-#   # ===== Subscribed Content =====
-#   /erm/content:
-#     $ref: paths/content.yaml
-#   /erm/content/{action}:
-#     $ref: paths/content_{action}.yaml
-
-#   # ===== Codex =====
-#   /codex-instances:
-#     $ref: paths/codex-instances.yaml
-#   /codex-instances/{id}:
-#     $ref: paths/codex-instances_{id}.yaml
-
 #   # ===== Top-level Export =====
 #   /export:
 #     $ref: paths/export.yaml
@@ -355,6 +343,18 @@ paths:
 #   it does not seem to be active currently
 #   /erm/entitlements/external:
 #     $ref: paths/entitlements_external.yaml
+
+#   # ===== Subscribed Content =====
+#   /erm/content:
+#     $ref: paths/content.yaml
+#   /erm/content/{action}:
+#     $ref: paths/content_{action}.yaml
+
+#   # ===== Codex =====
+#   /codex-instances:
+#     $ref: paths/codex-instances.yaml
+#   /codex-instances/{id}:
+#     $ref: paths/codex-instances_{id}.yaml
 
 
 components:

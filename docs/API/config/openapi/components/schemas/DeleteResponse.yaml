@@ -1,0 +1,6 @@
+type: object
+properties:
+  markedForDeletion:
+    $ref: ./MarkForDeleteResponse.yaml
+  deleted:
+    $ref: ./MarkForDeleteResponse.yaml

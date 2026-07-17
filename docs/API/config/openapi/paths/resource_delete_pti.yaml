@@ -1,0 +1,46 @@
+description: Marks the specified platform title instances for deletion and immediately deletes them, cascading to title instances and works that become orphaned as a result. A resource is only deleted if it has no active entitlements
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/includeIds.yaml
+post:
+  tags:
+    - Resources
+  summary: Delete platform title instances
+  operationId: deletePtis
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/DeleteBody.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/DeleteResponse.yaml
+    '400':
+      description: Bad request error -- missing or empty request body
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              statusCode:
+                type: integer
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              statusCode:
+                type: integer

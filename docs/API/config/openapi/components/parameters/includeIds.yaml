@@ -1,0 +1,7 @@
+in: query
+name: includeIds
+description: Whether to include the ids of affected resources in the response. Defaults to false
+required: false
+schema:
+  type: boolean
+  default: false

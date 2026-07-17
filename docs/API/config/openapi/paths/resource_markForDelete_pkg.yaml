@@ -1,0 +1,46 @@
+description: Marks the package content items belonging to the specified packages for deletion, cascading to platform title instances, title instances, and works that would become orphaned as a result. A resource is only marked for deletion if it has no active entitlements. This is a dry-run/staging step -- see /erm/resource/delete/pkg to actually perform the deletion
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/includeIds.yaml
+post:
+  tags:
+    - Resources
+  summary: Mark the resources belonging to a set of packages for deletion
+  operationId: markPackageResourcesForDelete
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/DeleteBody.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/MarkForDeleteResponse.yaml
+    '400':
+      description: Bad request error -- missing or empty request body
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              statusCode:
+                type: integer
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              statusCode:
+                type: integer

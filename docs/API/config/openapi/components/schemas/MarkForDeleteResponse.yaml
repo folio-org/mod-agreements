@@ -1,0 +1,9 @@
+type: object
+properties:
+  resourceIds:
+    description: Omitted (null) unless the `includeIds` query parameter is set to true
+    oneOf:
+      - $ref: ./MarkForDeleteMap.yaml
+      - type: "null"
+  statistics:
+    $ref: ./DeletionCounts.yaml

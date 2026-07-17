@@ -1,0 +1,47 @@
+description: An asynchronous job tracking a package deletion. Deletion is queued and processed in the background; poll this resource's id via the persistent job endpoints to check progress
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  class:
+    type: string
+  name:
+    type: string
+  dateCreated:
+    type: string
+    format: date-time
+  started:
+    description: Null until the job begins running
+    type: [string, "null"]
+    format: date-time
+  ended:
+    description: Null until the job finishes
+    type: [string, "null"]
+    format: date-time
+  status:
+    oneOf:
+      - type: string
+      - $ref: ../../common/schemas/Refdata.yaml
+  result:
+    description: Null until the job finishes
+    oneOf:
+      - type: string
+      - $ref: ../../common/schemas/Refdata.yaml
+      - type: "null"
+  fileUpload:
+    $ref: ./File.yaml
+  fullLogCount:
+    type: integer
+  errorLogCount:
+    type: integer
+  infoLogCount:
+    type: integer
+  deletionJobType:
+    type: string
+    enum:
+      - PackageDeletionJob
+      - PciDeletionJob
+  resourceInputs:
+    description: JSON-encoded list of the resource ids submitted for deletion
+    type: string

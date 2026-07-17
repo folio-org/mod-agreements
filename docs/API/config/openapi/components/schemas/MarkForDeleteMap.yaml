@@ -1,0 +1,22 @@
+type: object
+properties:
+  pci:
+    type: array
+    items:
+      type: string
+      format: uuid
+  pti:
+    type: array
+    items:
+      type: string
+      format: uuid
+  ti:
+    type: array
+    items:
+      type: string
+      format: uuid
+  work:
+    type: array
+    items:
+      type: string
+      format: uuid
