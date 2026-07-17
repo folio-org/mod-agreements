@@ -162,21 +162,19 @@ paths:
    /erm/kbs/{kbId}:
      $ref: paths/kbs_{kbId}.yaml
 
-#   # ===== Organisations =====
-#   # Full CRUD
-#   /erm/org:
-#     $ref: paths/org.yaml
-#   /erm/org/{orgId}:
-#     $ref: paths/org_{orgId}.yaml
-#   /erm/org/find/{id}:
-#     $ref: paths/org_find_{id}.yaml
+  # ===== Organisations =====
+  # GET only
+   /erm/org:
+     $ref: paths/org.yaml
+   /erm/org/{orgId}:
+     $ref: paths/org_{orgId}.yaml
 
-#   # ===== Internal Contacts =====
-#   # GET only
-#   /erm/contacts:
-#     $ref: paths/contacts.yaml
-#   /erm/contacts/{contactId}:
-#     $ref: paths/contacts_{contactId}.yaml
+  # ===== Internal Contacts =====
+  # GET only
+   /erm/contacts:
+     $ref: paths/contacts.yaml
+   /erm/contacts/{contactId}:
+     $ref: paths/contacts_{contactId}.yaml
 
   # ===== Reference Data =====
   # Full CRUD
