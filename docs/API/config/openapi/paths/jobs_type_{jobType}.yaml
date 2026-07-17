@@ -1,0 +1,31 @@
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/jobType.yaml
+get:
+  tags:
+    - Jobs
+  summary: Get a set of persistent job records of the specified type
+  operationId: getJobsByType
+  parameters:
+    $ref: ../common/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/PersistentJobResults.yaml
+              - $ref: ../components/schemas/PersistentJobResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error -- jobType is not a recognised job type
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

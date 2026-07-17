@@ -1,5 +1,6 @@
 in: path
-name: jobUUID
+name: jobId
+description: UUID for a persistent job
 required: true
 schema:
   type: string

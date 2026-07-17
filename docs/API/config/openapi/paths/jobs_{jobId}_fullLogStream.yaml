@@ -1,0 +1,33 @@
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/jobId.yaml
+get:
+  tags:
+    - Jobs
+  summary: Stream the full (info and error) log for a specified job
+  operationId: getJobFullLogStream
+  description: >-
+    Streams results in batches rather than paginating, so the response is a
+    plain array with no pagination metadata
+  parameters:
+    - $ref: ../common/parameters/term.yaml
+    - $ref: ../common/parameters/filters.yaml
+    - $ref: ../common/parameters/match.yaml
+    - $ref: ../common/parameters/sort.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/LogEntryResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml
