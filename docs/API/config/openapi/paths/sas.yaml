@@ -41,6 +41,12 @@ post:
         application/json:
           schema:
             $ref: ../components/schemas/Agreement.yaml
+    '422':
+      description: Unprocessable entity -- validation error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ApplicationError.yaml
     '400':
       description: Bad request error
     '403':

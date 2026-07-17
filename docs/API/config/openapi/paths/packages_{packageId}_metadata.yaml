@@ -18,5 +18,11 @@ get:
       description: Bad request error
     '403':
       description: Forbidden
+    '404':
+      description: Not found error -- no ingress metadata exists for the specified package
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/HttpError.yaml
     '500':
       description: Internal server error
