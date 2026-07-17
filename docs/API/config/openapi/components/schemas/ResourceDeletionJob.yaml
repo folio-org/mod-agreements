@@ -6,11 +6,12 @@ properties:
     format: uuid
   class:
     type: string
+    enum:
+      - org.olf.general.jobs.ResourceDeletionJob
   name:
     type: string
   dateCreated:
-    type: string
-    format: date-time
+    type: integer
   started:
     description: Null until the job begins running
     type: [string, "null"]

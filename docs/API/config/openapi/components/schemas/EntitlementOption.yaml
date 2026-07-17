@@ -12,3 +12,8 @@ allOf:
           - $ref: ./Package.yaml
         discriminator:
           propertyName: class
+          mapping:
+            org.olf.kb.TitleInstance: ./TitleInstance.yaml
+            org.olf.kb.PlatformTitleInstance: ./PlatformTitleInstance.yaml
+            org.olf.kb.PackageContentItem: ./PackageContentItem.yaml
+            org.olf.kb.Pkg: ./Package.yaml
