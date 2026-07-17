@@ -185,14 +185,14 @@ paths:
    /erm/refdata/{domain}/{property}:
      $ref: paths/refdata_{domain}_{property}.yaml
 
-#   # ===== Custom Property Definitions =====
-#   # Full CRUD
-#   /erm/custprops:
-#     $ref: paths/custprops.yaml
-#   /erm/custprops/{custpropId}:
-#     $ref: paths/custprops_{custpropId}.yaml
-#   /erm/custprops/contexts:
-#     $ref: paths/custprops_contexts.yaml
+  # ===== Custom Property Definitions =====
+  # Full CRUD
+   /erm/custprops:
+     $ref: paths/custprops.yaml
+   /erm/custprops/{custpropId}:
+     $ref: paths/custprops_{custpropId}.yaml
+   /erm/custprops/contexts:
+     $ref: paths/custprops_contexts.yaml
 
 #   # ===== String Templates =====
 #   # Full CRUD
