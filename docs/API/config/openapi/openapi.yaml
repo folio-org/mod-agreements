@@ -118,22 +118,22 @@ paths:
    /erm/titles/electronic:
      $ref: paths/titles_electronic.yaml
 
-#   # ===== ERM Resources =====
-#   # GET only (list and individual)
-#   /erm/resource:
-#     $ref: paths/resource.yaml
-#   /erm/resource/{resourceId}:
-#     $ref: paths/resource_{resourceId}.yaml
-#   /erm/resource/electronic:
-#     $ref: paths/resource_electronic.yaml
-#   /erm/resource/{resourceId}/entitlementOptions:
-#     $ref: paths/resource_{resourceId}_entitlementOptions.yaml
-#   /erm/resource/{resourceId}/static/entitlementOptions:
-#     $ref: paths/resource_{resourceId}_static_entitlementOptions.yaml
-#   /erm/resource/{resourceId}/entitlements:
-#     $ref: paths/resource_{resourceId}_entitlements.yaml
-#   /erm/resource/{resourceId}/entitlements/related:
-#     $ref: paths/resource_{resourceId}_entitlements_related.yaml
+  # ===== ERM Resources =====
+  # GET only (list and individual)
+   /erm/resource:
+     $ref: paths/resource.yaml
+   /erm/resource/{ermResourceId}:
+     $ref: paths/resource_{ermResourceId}.yaml
+   /erm/resource/electronic:
+     $ref: paths/resource_electronic.yaml
+   /erm/resource/{ermResourceId}/entitlementOptions:
+     $ref: paths/resource_{ermResourceId}_entitlementOptions.yaml
+   /erm/resource/{ermResourceId}/static/entitlementOptions:
+     $ref: paths/resource_{ermResourceId}_static_entitlementOptions.yaml
+   /erm/resource/{ermResourceId}/entitlements:
+     $ref: paths/resource_{ermResourceId}_entitlements.yaml
+   /erm/resource/{ermResourceId}/entitlements/related:
+     $ref: paths/resource_{ermResourceId}_entitlements_related.yaml
 #   # Resource deletion operations
 #   /erm/resource/markForDelete/pkg:
 #     $ref: paths/resource_markForDelete_pkg.yaml

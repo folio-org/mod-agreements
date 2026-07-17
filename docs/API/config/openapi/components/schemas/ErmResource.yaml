@@ -50,3 +50,12 @@ properties:
     type: array
     items:
       $ref: ./IdentifierOccurrence.yaml
+  _object:
+    description: The full, type-specific representation of this resource (fields vary depending on `class`)
+    oneOf:
+      - $ref: ./TitleInstance.yaml
+      - $ref: ./PlatformTitleInstance.yaml
+      - $ref: ./PackageContentItem.yaml
+      - $ref: ./Package.yaml
+    discriminator:
+      propertyName: class
