@@ -2,9 +2,12 @@ type: object
 properties:
   id:
     type: string
-    format: uuid
   owner:
-    $ref: ./Agreement.yaml
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
   remoteId:
     type: string
     format: uuid

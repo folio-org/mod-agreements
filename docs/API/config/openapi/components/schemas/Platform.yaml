@@ -9,10 +9,10 @@ properties:
     type: string
   dateCreated:
     type: string
-    format: date
+    format: date-time
   lastUpdated:
     type: string
-    format: date
+    format: date-time
   locators:
     type: array
     items:

@@ -25,11 +25,9 @@ properties:
     type: string
     format: uri
   dateCreated:
-    type: string
-    format: date-time
+    type: integer
     readOnly: true
   lastUpdated:
-    type: string
-    format: date-time
+    type: integer
     readOnly: true
     
