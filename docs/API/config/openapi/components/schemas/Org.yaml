@@ -1,0 +1,22 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  name:
+    type: string
+  orgsUuid:
+    description: >-
+      UUID of the corresponding record in the FOLIO Organizations app
+      (mod-organizations-storage), if this org has been linked to one
+    type: string
+    format: uuid
+  orgsUuid_object:
+    description: >-
+      The linked Organizations app record, fetched live from
+      mod-organizations-storage at request time. Only present when fetching
+      a single org (not in list results). If the lookup fails, this holds
+      `error`/`message` fields describing the failure instead
+    type: object
+    readOnly: true
+    additionalProperties: true

@@ -1,0 +1,33 @@
+description: >-
+  Supports search of Org records — a local reference to an organisation held
+  in the FOLIO Organizations app. GET only: creation happens implicitly when
+  an org is linked elsewhere (e.g. on a Subscription Agreement), not through
+  this path directly.
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+get:
+  tags:
+    - Organisations
+  summary: Get a set of Org records
+  operationId: getOrgs
+  parameters:
+    $ref: ../common/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/OrgResults.yaml
+              - $ref: ../components/schemas/OrgResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml
