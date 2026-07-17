@@ -262,9 +262,15 @@ paths:
 #   /erm/compare:
 #     $ref: paths/compare.yaml
 
-#   # ===== Validation =====
-#   /erm/validate/{domain}/{prop}:
-#     $ref: paths/validate_{domain}_{prop}.yaml
+   # ===== Validation =====
+   /erm/validate/subscriptionAgreement:
+     $ref: paths/validate_subscriptionAgreement.yaml
+   /erm/validate/subscriptionAgreement/{prop}:
+     $ref: paths/validate_subscriptionAgreement_{prop}.yaml
+   /erm/validate/remoteKB:
+     $ref: paths/validate_remoteKB.yaml
+   /erm/validate/remoteKB/{prop}:
+     $ref: paths/validate_remoteKB_{prop}.yaml
 
   # ===== Settings =====
   # Full CRUD

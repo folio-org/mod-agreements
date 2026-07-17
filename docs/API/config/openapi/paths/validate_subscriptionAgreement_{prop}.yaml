@@ -1,0 +1,41 @@
+description: >-
+  Validates a single named property on a Subscription Agreement record
+  against domain constraints without persisting it. This is what the FOLIO
+  UI actually uses in practice: ui-agreements posts here with `prop=name`
+  on blur, to asynchronously check a proposed agreement name.
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/validateProp.yaml
+post:
+  tags:
+    - Validation
+  summary: Validate a single property on a SubscriptionAgreement record
+  operationId: postValidateSubscriptionAgreementProperty
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          description: >-
+            Should contain at least the property named in the `prop` path
+            parameter, keyed by its field name, e.g. `{ "name": "..." }`.
+  responses:
+    '204':
+      description: No content -- the property is valid.
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ApplicationError.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

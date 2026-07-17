@@ -1,0 +1,35 @@
+description: >-
+  Validates a full Subscription Agreement record against domain constraints
+  without persisting it.
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+post:
+  tags:
+    - Validation
+  summary: Validate a full record against the SubscriptionAgreement domain
+  operationId: postValidateSubscriptionAgreement
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/Agreement.yaml
+  responses:
+    '204':
+      description: No content -- the record is valid.
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ApplicationError.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml
