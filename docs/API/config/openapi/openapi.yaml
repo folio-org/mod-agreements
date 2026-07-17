@@ -155,12 +155,12 @@ paths:
    /erm/resource/delete/ti:
      $ref: paths/resource_delete_ti.yaml
 
-#   # ===== Remote Knowledge Bases (kbs) =====
-#   # Full CRUD
-#   /erm/kbs:
-#     $ref: paths/kbs.yaml
-#   /erm/kbs/{kbId}:
-#     $ref: paths/kbs_{kbId}.yaml
+  # ===== Remote Knowledge Bases (kbs) =====
+  # Full CRUD
+   /erm/kbs:
+     $ref: paths/kbs.yaml
+   /erm/kbs/{kbId}:
+     $ref: paths/kbs_{kbId}.yaml
 
 #   # ===== Organisations =====
 #   # Full CRUD
