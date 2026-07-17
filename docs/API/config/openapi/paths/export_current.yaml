@@ -1,0 +1,41 @@
+description: >-
+  Exports resources currently entitled (directly or via a package) across
+  every agreement in the tenant -- i.e. `coverage`/`accessStart`/`accessEnd`
+  windows that are active today. To scope this to a single agreement
+  instead, use `/erm/sas/{agreementId}/resources/export/current/{format}`.
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - in: query
+    name: subscriptionAgreementId
+    description: >-
+      Undocumented in the module descriptor, but honoured by the
+      implementation -- if supplied, scopes the export to this one
+      agreement, equivalent to using the agreement-scoped export path.
+    required: false
+    schema:
+      type: string
+      format: uuid
+get:
+  tags:
+    - Export
+  summary: Export currently entitled resources as JSON
+  operationId: exportCurrent
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/ExportEntry.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

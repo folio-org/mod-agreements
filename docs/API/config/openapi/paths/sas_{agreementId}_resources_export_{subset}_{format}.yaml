@@ -1,3 +1,9 @@
+description: >-
+  Backed by the same controller/actions as the top-level `/export` family --
+  `subset: all` calls the same code as `/export`, `subset: current` calls
+  the same code as `/export/current`, just pre-scoped to this one agreement.
+  Returns an empty result set (not a 404) if `agreementId` does not match
+  any agreement -- existence of the agreement is not checked.
 parameters:
   - $ref: ../common/parameters/x-okapi-tenant.yaml
   - $ref: ../components/parameters/agreementId.yaml
@@ -7,6 +13,11 @@ get:
   tags:
     - Agreements
   summary: Returns a list of either current or all resources in the internal KB associated with specified agreement using the specified format
+  description: >-
+    `format: kbart` returns a tab-separated KBART file (one row per Package
+    Content Item; Platform Title Instances and directly-entitled Title
+    Instances are silently skipped). Any other `format` value returns a JSON
+    array.
   operationId: exportAgreementResourcesSubsetFormat
   responses:
     '200':
@@ -14,18 +25,18 @@ get:
       content:
         application/json:
           schema:
-            oneOf:
-              - $ref: ../components/schemas/ErmResourceResults.yaml
-              - $ref: ../components/schemas/ErmResourceResultsArray.yaml
+            type: array
+            items:
+              $ref: ../components/schemas/ExportEntry.yaml
+        text/tab-separated-value;charset=UTF-8:
+          schema:
+            type: string
+            description: >-
+              KBART-formatted TSV, with a header row followed by one row per
+              Package Content Item.
     '400':
       description: Bad request error
     '403':
       description: Forbidden
-    '404':
-      description: Not found error
-      content:
-        application/json:
-          schema:
-            $ref: ../common/schemas/HttpError.yaml
     '500':
       description: Internal server error

@@ -1,0 +1,105 @@
+type: object
+description: >-
+  One exported resource, paired with the agreement entitlement (and, if
+  entitled via a package, the package) it was exported for. The same
+  resource can appear more than once if it is entitled through more than one
+  package/agreement, or both directly and via a package.
+required:
+  - agreementLine
+  - title
+  - coverage
+  - customCoverage
+properties:
+  tags:
+    type: array
+    items:
+      $ref: ./Tag.yaml
+  package:
+    type: object
+    description: Present only when this resource was reached via a package entitlement.
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      identifiers:
+        type: array
+        items:
+          $ref: ./IdentifierOccurrence.yaml
+  agreementLine:
+    type: object
+    description: >-
+      The entitlement (agreement line) this row was exported for. Only a
+      minimal subset of the entitlement is included here -- for the full
+      record, look it up via `id` against `/erm/entitlements/{entitlementId}`.
+    properties:
+      id:
+        type: string
+        format: uuid
+      suppressFromDiscovery:
+        type: boolean
+      tags:
+        type: array
+        items:
+          $ref: ./Tag.yaml
+  platform:
+    allOf:
+      - $ref: ./Platform.yaml
+    description: Present when the resource is a Platform Title Instance or Package Content Item.
+  suppressFromDiscovery:
+    type: boolean
+    description: Present when the resource is a Platform Title Instance or Package Content Item.
+  embargo:
+    allOf:
+      - $ref: ./Embargo.yaml
+    description: Present only for Package Content Item resources with an embargo.
+  note:
+    type: string
+    description: Present only for Package Content Item resources with a note.
+  url:
+    type: string
+    description: Present when the resource is a Platform Title Instance or Package Content Item and has a URL.
+  templatedUrls:
+    type: array
+    description: >-
+      URLs generated from String Templates (see `/erm/sts`) applicable to
+      this resource's platform. Present when the resource is a Platform
+      Title Instance or Package Content Item.
+    items:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        url:
+          type: string
+  depth:
+    type: string
+    description: Present only for Package Content Item resources.
+  coverage:
+    type: array
+    description: >-
+      Coverage statements for this resource, or a custom coverage override
+      if one applies (see `customCoverage`). Empty if there is no coverage.
+    items:
+      $ref: ./CoverageStatement.yaml
+  customCoverage:
+    type: boolean
+    description: True if `coverage` is a custom override rather than the resource's own coverage statements.
+  relatedTitles:
+    type: array
+    description: Related title instances, present only if the title has any.
+    items:
+      allOf:
+        - $ref: ./TitleInstance.yaml
+      description: A minimal title representation -- only id, name, type, publicationType, subType, identifiers and longName are populated.
+  title:
+    allOf:
+      - $ref: ./TitleInstance.yaml
+    description: >-
+      The title instance for this resource. The `entitlements`, `coverage`,
+      `work` and `platformInstances` relations are always omitted here, even
+      where the full TitleInstance representation would include them.

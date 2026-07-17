@@ -300,15 +300,15 @@ paths:
    /erm/sts/template/{platformId}:
      $ref: paths/sts_template_{platformId}.yaml
 
-#   # ===== Top-level Export =====
-#   /export:
-#     $ref: paths/export.yaml
-#   /export/{format}:
-#     $ref: paths/export_{format}.yaml
-#   /export/current:
-#     $ref: paths/export_current.yaml
-#   /export/current/{format}:
-#     $ref: paths/export_current_{format}.yaml
+   # ===== Top-level Export =====
+   /export:
+     $ref: paths/export.yaml
+   /export/{format}:
+     $ref: paths/export_{format}.yaml
+   /export/current:
+     $ref: paths/export_current.yaml
+   /export/current/{format}:
+     $ref: paths/export_current_{format}.yaml
 
    # ===== Dashboard =====
    /dashboard/definitions:
