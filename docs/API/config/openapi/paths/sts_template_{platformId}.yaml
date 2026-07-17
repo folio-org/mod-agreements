@@ -1,0 +1,29 @@
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/platformId.yaml
+get:
+  tags:
+    - String Templates
+  summary: Get the string templates applicable to a Platform
+  description: >-
+    Resolves which string templates (both `urlProxier` and `urlCustomiser`
+    context) apply to the given Platform id, based on each template's
+    `idScopes` allowlist/denylist.
+  operationId: getStringTemplatesForPlatform
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/StringTemplatesForPlatform.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

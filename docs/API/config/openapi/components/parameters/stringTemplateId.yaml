@@ -1,0 +1,7 @@
+in: path
+name: stringTemplateId
+description: UUID for a string template
+required: true
+schema:
+  type: string
+  format: uuid

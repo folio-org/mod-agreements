@@ -289,16 +289,16 @@ paths:
    /erm/statistics/sasCount:
      $ref: paths/statistics_sasCount.yaml
 
-#   # ===== String Templates =====
-#   # Full CRUD
-#   /erm/sts:
-#     $ref: paths/sts.yaml
-#   /erm/sts/{stringTemplateId}:
-#     $ref: paths/sts_{stringTemplateId}.yaml
-#   /erm/sts/template:
-#     $ref: paths/sts_template.yaml
-#   /erm/sts/template/{id}:
-#     $ref: paths/sts_template_{id}.yaml
+   # ===== String Templates =====
+   # Full CRUD
+   /erm/sts:
+     $ref: paths/sts.yaml
+   /erm/sts/{stringTemplateId}:
+     $ref: paths/sts_{stringTemplateId}.yaml
+   /erm/sts/template:
+     $ref: paths/sts_template.yaml
+   /erm/sts/template/{platformId}:
+     $ref: paths/sts_template_{platformId}.yaml
 
 #   # ===== Top-level Export =====
 #   /export:
