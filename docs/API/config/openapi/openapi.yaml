@@ -283,10 +283,6 @@ paths:
    /erm/admin/triggerEntitlementEholdings:
      $ref: paths/admin_triggerEntitlementEholdings.yaml
 
-   # ===== Comparison =====
-#   /erm/compare:
-#     $ref: paths/compare.yaml
-
    # ===== Statistics =====
    /erm/statistics/kbCount:
      $ref: paths/statistics_kbCount.yaml
@@ -314,9 +310,9 @@ paths:
 #   /export/current/{format}:
 #     $ref: paths/export_current_{format}.yaml
 
-#   # ===== Dashboard =====
-#   /dashboard/definitions:
-#     $ref: paths/dashboard_definitions.yaml
+   # ===== Dashboard =====
+   /dashboard/definitions:
+     $ref: paths/dashboard_definitions.yaml
 
 #   # ===== Left undocumented =====
 #   The following Agreement export paths are left undocumented as they replicate the 
@@ -363,6 +359,10 @@ paths:
 #  non-functional under any currently active configuration
 # /erm/admin/pullPackage:
   #   $ref: paths/admin_pullPackage.yaml
+
+# ===== Comparison =====
+#   /erm/compare:
+#     $ref: paths/compare.yaml
 
 #   # ===== PushKB =====
 #   /erm/pushKB/pkg:

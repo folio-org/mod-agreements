@@ -1,0 +1,42 @@
+get:
+  tags:
+    - Dashboard
+  summary: List dashboard widget definitions
+  description: >-
+    Returns the dashboard widget definitions bundled with this module,
+    describing the self-service search/list widgets (e.g. simple agreement
+    search) that can be added to a FOLIO dashboard. Definitions are cached in
+    memory after the first request, for the lifetime of the running instance.
+    No specific permission is required beyond a valid tenant/token.
+
+
+    This path is provided under the `dashboard` interface, declared as
+    `interfaceType: multiple` in the module descriptor, because other
+    dashboard-capable modules (e.g. mod-licenses) expose the same path for
+    their own widget definitions. Since more than one module enabled for a
+    tenant can answer this exact path, a plain request is ambiguous — Okapi
+    needs an `X-Okapi-Module-Id` header naming which one to route to.
+    Discover the candidate module ids first with
+    `GET /_/proxy/tenants/{tenant}/modules?provide=dashboard`, then pass one
+    of them back on this request.
+  operationId: getDashboardDefinitions
+  parameters:
+    - $ref: ../common/parameters/x-okapi-tenant.yaml
+    - $ref: ../common/parameters/x-okapi-module-id.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../common/schemas/DashboardWidgetDefinition.yaml
+    '401':
+      description: Unauthorized
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

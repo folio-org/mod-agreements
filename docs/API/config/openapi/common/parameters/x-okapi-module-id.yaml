@@ -1,0 +1,8 @@
+in: header
+name: X-Okapi-Module-Id
+required: true
+description: >-
+  ID of the specific module to route this request to. Required on paths 
+  backed by an `interfaceType: multiple` interface
+schema:
+  type: string
