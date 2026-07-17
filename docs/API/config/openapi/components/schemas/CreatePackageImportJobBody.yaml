@@ -1,0 +1,23 @@
+type: object
+description: >-
+  Used for jobType packageImport. Requires either fileUpload or payload to
+  supply the package file
+properties:
+  name:
+    description: Derived from the uploaded file's name if omitted
+    type: string
+  fileUpload:
+    description: Reference to a file already uploaded via /erm/files
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+  payload:
+    description: >-
+      Raw JSON payload. If provided without fileUpload, it is automatically
+      wrapped into a file server-side
+    type: object
+  fileTitle:
+    description: Optional file name to use when payload is supplied instead of fileUpload
+    type: string

@@ -1,5 +1,9 @@
 in: path
 name: jobType
+description: >-
+  Unlike job creation, listing by type is not restricted to the types
+  postable via /erm/jobs/{jobType} -- any PersistentJob subtype can be
+  filtered on here, including types only ever created internally
 required: true
 schema:
   type: string
@@ -10,3 +14,9 @@ schema:
     - kbartImport
     - packageIngest
     - supplementaryDocumentsCleaning
+    - externalEntitlementSync
+    - packageTriggerResync
+    - titleIngest
+    - resourceDeletion
+    - eHoldingsEntitlementSync
+    - identifierReassignment

@@ -206,30 +206,41 @@ paths:
 #     $ref: paths/sts_template_{id}.yaml
 
 #   # ===== Jobs =====
-#   # GET (list), DELETE (individual) — create via /erm/jobs/{jobType}
-#   /erm/jobs:
-#     $ref: paths/jobs.yaml
-#   /erm/jobs/{jobId}:
-#     $ref: paths/jobs_{jobId}.yaml
-#   /erm/jobs/{jobType}:
-#     $ref: paths/jobs_{jobType}.yaml
-#   /erm/jobs/type/{jobType}:
-#     $ref: paths/jobs_type_{jobType}.yaml
-#   # Job log endpoints
-#   /erm/jobs/{jobId}/fullLog:
-#     $ref: paths/jobs_{jobId}_fullLog.yaml
-#   /erm/jobs/{jobId}/fullLogStream:
-#     $ref: paths/jobs_{jobId}_fullLogStream.yaml
-#   /erm/jobs/{jobId}/errorLog:
-#     $ref: paths/jobs_{jobId}_errorLog.yaml
-#   /erm/jobs/{jobId}/errorLogStream:
-#     $ref: paths/jobs_{jobId}_errorLogStream.yaml
-#   /erm/jobs/{jobId}/infoLog:
-#     $ref: paths/jobs_{jobId}_infoLog.yaml
-#   /erm/jobs/{jobId}/infoLogStream:
-#     $ref: paths/jobs_{jobId}_infoLogStream.yaml
-#   /erm/jobs/{jobId}/downloadFileObject:
-#     $ref: paths/jobs_{jobId}_downloadFileObject.yaml
+#   # GET (list), DELETE (individual) — create via one of the per-type paths below
+   /erm/jobs:
+     $ref: paths/jobs.yaml
+   /erm/jobs/{jobId}:
+     $ref: paths/jobs_{jobId}.yaml
+   /erm/jobs/type/{jobType}:
+     $ref: paths/jobs_type_{jobType}.yaml
+   # Job creation, one path per job type
+   /erm/jobs/comparison:
+     $ref: paths/jobs_comparison.yaml
+   /erm/jobs/coverageRegeneration:
+     $ref: paths/jobs_coverageRegeneration.yaml
+   /erm/jobs/packageImport:
+     $ref: paths/jobs_packageImport.yaml
+   /erm/jobs/kbartImport:
+     $ref: paths/jobs_kbartImport.yaml
+   /erm/jobs/packageIngest:
+     $ref: paths/jobs_packageIngest.yaml
+   /erm/jobs/supplementaryDocumentsCleaning:
+     $ref: paths/jobs_supplementaryDocumentsCleaning.yaml
+   # Job log endpoints
+   /erm/jobs/{jobId}/fullLog:
+     $ref: paths/jobs_{jobId}_fullLog.yaml
+   /erm/jobs/{jobId}/fullLogStream:
+     $ref: paths/jobs_{jobId}_fullLogStream.yaml
+   /erm/jobs/{jobId}/errorLog:
+     $ref: paths/jobs_{jobId}_errorLog.yaml
+   /erm/jobs/{jobId}/errorLogStream:
+     $ref: paths/jobs_{jobId}_errorLogStream.yaml
+   /erm/jobs/{jobId}/infoLog:
+     $ref: paths/jobs_{jobId}_infoLog.yaml
+   /erm/jobs/{jobId}/infoLogStream:
+     $ref: paths/jobs_{jobId}_infoLogStream.yaml
+   /erm/jobs/{jobId}/downloadFileObject:
+     $ref: paths/jobs_{jobId}_downloadFileObject.yaml
 
 #   # ===== Files =====
 #   # GET (list), POST (upload), GET/DELETE (individual) — no PUT/PATCH

@@ -1,5 +1,17 @@
 type: object
 properties:
+  id:
+    type: string
+    format: uuid
+  message:
+    type: string
+  dateCreated:
+    type: integer
+  origin:
+    type: string
+    format: uuid
+  type:
+    type: string
   additionalInfo:
     type: object
     properties:
@@ -10,15 +22,3 @@ properties:
         type: string
       tenantId:
         type: string
-  dateCreated:
-    type: integer
-  id:
-    type: string
-    format: uuid
-  message:
-    type: string
-  origin:
-    type: string
-    format: uuid
-  type:
-    type: string

@@ -1,0 +1,10 @@
+type: object
+description: >-
+  Used for jobType values coverageRegeneration, packageIngest, and
+  supplementaryDocumentsCleaning -- these job types take no extra input beyond
+  a name
+required:
+  - name
+properties:
+  name:
+    type: string
