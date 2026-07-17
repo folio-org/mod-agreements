@@ -1,0 +1,25 @@
+get:
+  tags:
+    - Admin
+  summary: Trigger an activation update of the remote KB package cache
+  operationId: getAdminTriggerActivationUpdate
+  parameters:
+    - $ref: ../common/parameters/x-okapi-tenant.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            description: Currently always an empty object -- no status field is set
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

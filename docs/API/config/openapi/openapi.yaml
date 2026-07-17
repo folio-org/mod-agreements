@@ -243,7 +243,6 @@ paths:
      $ref: paths/jobs_{jobId}_downloadFileObject.yaml
 
 #   # ===== Files =====
-#   # GET (list), POST (upload), GET/DELETE (individual) — no PUT/PATCH
 #   /erm/files:
 #     $ref: paths/files.yaml
 #   /erm/files/{fileId}:
@@ -275,9 +274,24 @@ paths:
    /erm/settings/appSettings/{settingId}:
      $ref: paths/settings_appSettings_{settingId}.yaml
 
-#   # ===== Admin =====
-#   /erm/admin/{action}:
-#     $ref: paths/admin_{action}.yaml
+  # ===== Admin =====
+  # One path per action, matching the module descriptor's literal handlers
+   /erm/admin/loadPackage:
+     $ref: paths/admin_loadPackage.yaml
+   /erm/admin/triggerCacheUpdate:
+     $ref: paths/admin_triggerCacheUpdate.yaml
+   /erm/admin/triggerSync:
+     $ref: paths/admin_triggerSync.yaml
+   /erm/admin/triggerActivationUpdate:
+     $ref: paths/admin_triggerActivationUpdate.yaml
+   /erm/admin/triggerHousekeeping:
+     $ref: paths/admin_triggerHousekeeping.yaml
+   /erm/admin/triggerEntitlementLogUpdate:
+     $ref: paths/admin_triggerEntitlementLogUpdate.yaml
+   /erm/admin/triggerDocMigration:
+     $ref: paths/admin_triggerDocMigration.yaml
+   /erm/admin/triggerEntitlementEholdings:
+     $ref: paths/admin_triggerEntitlementEholdings.yaml
 
 #   # ===== Statistics =====
 #   /erm/statistics/kbCount:
@@ -367,6 +381,12 @@ paths:
 #     $ref: paths/codex-instances.yaml
 #   /codex-instances/{id}:
 #     $ref: paths/codex-instances_{id}.yaml
+
+##  # ===== Admin =====
+#  non-functional under any currently active configuration
+# /erm/admin/pullPackage:
+  #   $ref: paths/admin_pullPackage.yaml
+  
 
 
 components:

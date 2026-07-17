@@ -1,0 +1,21 @@
+type: object
+properties:
+  startTime:
+    type: integer
+  updateTime:
+    type: integer
+  packageId:
+    type: string
+    format: uuid
+  titleCount:
+    type: integer
+  newTitles:
+    type: integer
+  removedTitles:
+    type: integer
+  updatedTitles:
+    type: integer
+  updatedAccessStart:
+    type: integer
+  updatedAccessEnd:
+    type: integer

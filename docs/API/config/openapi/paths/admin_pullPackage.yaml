@@ -1,0 +1,41 @@
+get:
+  tags:
+    - Admin
+  summary: Pull a package directly from a named remote KB
+  description: >-
+    Looks up the RemoteKB by name and delegates to its adapter's
+    importPackage implementation. Not currently functional for any active
+    configuration: every adapter compiled into the module (generic, GOKb,
+    KB+, KIJPF) implements importPackage as `throw new RuntimeException("Not
+    yet implemented")`; the one adapter that does implement it (EBSCO) lives
+    under src/legacy, which is not a registered Gradle source set and so is
+    not compiled into the running module. The resulting exception is caught,
+    logged, and swallowed rather than surfaced in the response, so calling
+    this currently always falls through to an empty body; an unrecognised kb
+    name does the same
+  operationId: getAdminPullPackage
+  parameters:
+    - $ref: ../common/parameters/x-okapi-tenant.yaml
+    - in: query
+      name: kb
+      description: Name of the RemoteKB record to pull from
+      required: true
+      schema:
+        type: string
+  responses:
+    '200':
+      description: OK -- response shape is determined by the remote KB adapter
+      content:
+        application/json:
+          schema:
+            type: object
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

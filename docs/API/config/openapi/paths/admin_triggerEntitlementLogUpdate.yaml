@@ -1,0 +1,28 @@
+get:
+  tags:
+    - Admin
+  summary: Trigger an update of the entitlement log
+  operationId: getAdminTriggerEntitlementLogUpdate
+  parameters:
+    - $ref: ../common/parameters/x-okapi-tenant.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                example: OK
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml
