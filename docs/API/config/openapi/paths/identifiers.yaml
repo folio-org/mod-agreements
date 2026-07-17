@@ -1,0 +1,44 @@
+description: >-
+  Supports search of Identifier records. GET only: identifiers are created
+  implicitly when linked elsewhere (e.g. on a Title or Package), not through
+  this path directly.
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+get:
+  tags:
+    - Identifiers
+  summary: Get a set of Identifier records
+  operationId: getIdentifiers
+  parameters:
+    - $ref: ../common/parameters/filters.yaml
+    - $ref: ../common/parameters/match.yaml
+    - $ref: ../common/parameters/term.yaml
+    - $ref: ../common/parameters/sort.yaml
+    - $ref: ../common/parameters/stats.yaml
+    - $ref: ../common/parameters/perPage.yaml
+    - $ref: ../common/parameters/offset.yaml
+    - $ref: ../common/parameters/page.yaml
+    - in: query
+      name: minOccurrenceCount
+      description: Only return identifiers with at least this many occurrences.
+      schema:
+        type: integer
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/IdentifierResults.yaml
+              - $ref: ../components/schemas/IdentifierResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

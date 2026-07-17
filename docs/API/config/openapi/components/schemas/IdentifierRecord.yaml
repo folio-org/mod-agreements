@@ -1,0 +1,40 @@
+description: >-
+  Shape of an Identifier as returned by GET /erm/identifiers/{identifierId}.
+  Distinct from the plain Identifier schema, which is what's embedded when
+  an identifier appears nested inside another resource (e.g. via
+  IdentifierOccurrence on an ErmResource) -- id and occurrences are only
+  rendered when an identifier is fetched directly through its own endpoint.
+type: object
+allOf:
+  - $ref: ./Identifier.yaml
+  - type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      occurrences:
+        type: array
+        description: Titles/resources this identifier occurs against.
+        items:
+          type: object
+          properties:
+            status:
+              $ref: ../../common/schemas/Refdata.yaml
+            dateCreated:
+              type: string
+              format: date-time
+            lastUpdated:
+              type: string
+              format: date-time
+            resource:
+              type: object
+              description: The title/resource this identifier is linked to.
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                class:
+                  type: string
+                  description: >-
+                    Fully-qualified class name of the linked resource (e.g.
+                    a Work or Package subtype).
