@@ -16,12 +16,12 @@ properties:
       format: date
       readOnly: true
   endDate:
-      type: string
+      type: [string,"null"]
       format: date
       readOnly: true
   isPerpetual:
     oneOf:
-      - type: string
+      - type: [string,"null"]
       - $ref: ../../common/schemas/Refdata.yaml
   agreementStatus:
     oneOf:
