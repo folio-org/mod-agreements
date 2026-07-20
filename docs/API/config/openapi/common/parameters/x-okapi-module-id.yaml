@@ -6,3 +6,4 @@ description: >-
   backed by an `interfaceType: multiple` interface
 schema:
   type: string
+  example: mod-agreements-7.4.0-SNAPSHOT
