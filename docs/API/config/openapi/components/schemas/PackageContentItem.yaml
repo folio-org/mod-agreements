@@ -5,7 +5,8 @@ allOf:
   - $ref: ./ErmResource.yaml
   - properties:
       class:
-        const: org.olf.kb.PackageContentItem
+        enum:
+          - org.olf.kb.PackageContentItem
       accessStart:
         type: string
         format: date

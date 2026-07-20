@@ -8,7 +8,8 @@ allOf:
   - $ref: ./ErmResource.yaml
   - properties:
       class:
-        const: org.olf.kb.Pkg
+        enum:
+          - org.olf.kb.Pkg
       source:
         type: string
       sourceDataCreated:
