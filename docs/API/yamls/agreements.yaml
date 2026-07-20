@@ -5256,6 +5256,7 @@ components:
       description: 'ID of the specific module to route this request to. Required on paths  backed by an `interfaceType: multiple` interface'
       schema:
         type: string
+        example: mod-agreements-7.4.0-SNAPSHOT
   schemas:
     ResultsMeta:
       type: object
@@ -7275,15 +7276,13 @@ components:
         started:
           description: Null until the job begins running
           type:
-            - string
+            - integer
             - 'null'
-          format: integer
         ended:
           description: Null until the job finishes
           type:
-            - string
+            - integer
             - 'null'
-          format: integer
         status:
           oneOf:
             - type: string
