@@ -1,23 +1,39 @@
 type: object
+required:
+  - name
+  - rule
 properties:
   id:
     type: string
     format: uuid
+    readOnly: true
   dateCreated:
-    type: integer
-  rule:
     type: string
-  context:
-    oneOf:
-      - type: string
-      - $ref: ./Refdata.yaml
+    format: date-time
+    readOnly: true
   lastUpdated:
     type: string
-    format: date
+    format: date-time
+    readOnly: true
   name:
     type: string
+  rule:
+    type: string
+    description: >-
+      A Handlebars template rendered against a binding of `inputUrl` and
+      `platformLocalCode` to produce a customised or proxied URL.
+  context:
+    description: >-
+      Whether this template customises the platform's URL (`urlCustomiser`)
+      or proxies it (`urlProxier`). Defaults to `urlProxier` if not supplied.
+    oneOf:
+      - type: string
+      - $ref: ../../common/schemas/Refdata.yaml
   idScopes:
     type: array
+    description: >-
+      Scopes the template to (or, for `urlProxier` context, excludes it
+      from) a set of resource ids -- in practice, Platform ids.
     items:
       type: string
       format: uuid

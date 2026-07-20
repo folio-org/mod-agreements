@@ -1,0 +1,38 @@
+get:
+  tags:
+    - Admin
+  summary: Upload and upsert a package file
+  description: >-
+    Developer helper for uploading a package JSON file directly (e.g. via
+    curl) rather than through the normal harvest pipeline. If no
+    package_file part is present, or it fails to bind, the response body is
+    empty
+  operationId: getAdminLoadPackage
+  parameters:
+    - $ref: ../common/parameters/x-okapi-tenant.yaml
+  requestBody:
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            package_file:
+              type: string
+              format: binary
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PackageIngestResult.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

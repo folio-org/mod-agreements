@@ -1,0 +1,28 @@
+description: Returns the list of entitlements (agreement lines) which offer access to the same title as the specified resource, but on other platform/package combinations. Only valid for package content item and platform title instance resources; returns an empty list for title instance resources
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/ermResourceId.yaml
+get:
+  tags:
+    - Resources
+  summary: Get related entitlements for a specified resource
+  operationId: getResourceRelatedEntitlements
+  parameters:
+    $ref: ../common/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/EntitlementResults.yaml
+              - $ref: ../components/schemas/EntitlementResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error -- resource does not exist, or is not a package content item or platform title instance
+    '500':
+      description: Internal server error

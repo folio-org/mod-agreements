@@ -1,0 +1,15 @@
+type: object
+description: Envelope header used by public API lookup/import endpoints to self-describe the response's data schema
+required:
+  - dataSchema
+properties:
+  dataSchema:
+    type: object
+    required:
+      - name
+      - version
+    properties:
+      name:
+        type: string
+      version:
+        type: number

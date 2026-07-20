@@ -1,9 +1,13 @@
 type: object
 required:
   - name
+  - class
 allOf:
   - $ref: ./ErmResource.yaml
   - properties:
+      class:
+        enum:
+          - org.olf.kb.TitleInstance
       dateMonographPublished:
         type: string
         pattern: '^\d{4}(-((0[0-9])|(1[0-2]))(-(([0-2][0-9])|3[0-1]))?)?\$'
@@ -32,4 +36,4 @@ allOf:
         type: array
         readOnly: true
         items:
-          $ref: ./TitleInstance.yaml
+          $ref: ./TitleInstanceRef.yaml

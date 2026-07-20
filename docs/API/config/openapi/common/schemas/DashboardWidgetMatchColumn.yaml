@@ -1,0 +1,16 @@
+type: object
+description: A field the widget's free-text quick search matches against.
+properties:
+  name:
+    type: string
+    description: Internal field identifier.
+  label:
+    type: string
+    description: Display label for the field.
+  accessPath:
+    type: string
+    description: Dot-path into the resource record to match the search term against.
+  default:
+    type: boolean
+    description: Whether this field is matched by default.
+additionalProperties: true

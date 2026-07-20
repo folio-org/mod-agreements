@@ -1,0 +1,25 @@
+description: Supports search of resources (packages, package content items, platform title instances, and title instances) in the Agreements local knowledgebase
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+get:
+  tags:
+    - Resources
+  summary: Get a set of resource records
+  operationId: getResources
+  parameters:
+    $ref: ../common/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/ErmResourceResults.yaml
+              - $ref: ../components/schemas/ErmResourceResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

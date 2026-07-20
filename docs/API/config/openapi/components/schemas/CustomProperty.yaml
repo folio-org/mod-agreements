@@ -18,4 +18,4 @@ properties:
   weight:
     type: integer
   category:
-    $ref: ./RefdataCategory.yaml
+    $ref: ../../common/schemas/RefdataCategory.yaml

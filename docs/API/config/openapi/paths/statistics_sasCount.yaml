@@ -1,0 +1,33 @@
+get:
+  tags:
+    - Statistics
+  summary: Get record counts for agreements and their entitlements
+  operationId: getSasCountStatistics
+  description: >-
+    Counts every row in each of the listed tables -- not scoped to any
+    particular agreement.
+  parameters:
+    - $ref: ../common/parameters/x-okapi-tenant.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            description: Total record count per resource type.
+            properties:
+              SubscriptionAgreement:
+                type: integer
+              Entitlement:
+                type: integer
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

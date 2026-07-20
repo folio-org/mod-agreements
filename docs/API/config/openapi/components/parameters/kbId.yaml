@@ -1,0 +1,7 @@
+in: path
+name: kbId
+description: UUID for a remote Knowledge Base
+required: true
+schema:
+  type: string
+  format: uuid

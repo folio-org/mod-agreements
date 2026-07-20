@@ -17,6 +17,10 @@ properties:
     type: string
     format: date-time
     readOnly: true
+  version:
+    type: integer
+    readOnly: true
+    description: GORM optimistic-locking version, incremented on every update.
   name:
     type: string
     maxLength: 255
@@ -26,19 +30,19 @@ properties:
   agreementStatus:
     oneOf:
       - type: string
-      - $ref: ./Refdata.yaml
+      - $ref: ../../common/schemas/Refdata.yaml
   isPerpetual:
     oneOf:
       - type: string
-      - $ref: ./Refdata.yaml
+      - $ref: ../../common/schemas/Refdata.yaml
   reasonForClosure:
     oneOf:
       - type: string
-      - $ref: ./Refdata.yaml
+      - $ref: ../../common/schemas/Refdata.yaml
   renewalPriority:
     oneOf:
       - type: string
-      - $ref: ./Refdata.yaml
+      - $ref: ../../common/schemas/Refdata.yaml
   alternateNames:
     type: array
     items:
@@ -79,13 +83,15 @@ properties:
       format: date
       readOnly: true
   endDate:
-      type: string
+      type: [string, "null"]
       format: date
       readOnly: true
+      description: Null if any period on the agreement is open-ended (has no end date)
   cancellationDeadline:
-      type: string
+      type: [string, "null"]
       format: date
       readOnly: true
+      description: Null if no period on the agreement has a cancellation deadline set
   contacts:
     type: array
     items:

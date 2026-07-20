@@ -1,0 +1,60 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  class:
+    type: string
+    description: Fully-qualified class name identifying the concrete job type
+    enum:
+      - org.olf.general.jobs.ComparisonJob
+      - org.olf.general.jobs.CoverageRegenerationJob
+      - org.olf.general.jobs.PackageImportJob
+      - org.olf.general.jobs.KbartImportJob
+      - org.olf.general.jobs.PackageIngestJob
+      - org.olf.general.jobs.SupplementaryDocumentsCleaningJob
+      - org.olf.general.jobs.ExternalEntitlementSyncJob
+      - org.olf.general.jobs.PackageTriggerResyncJob
+      - org.olf.general.jobs.TitleIngestJob
+      - org.olf.general.jobs.ResourceDeletionJob
+      - org.olf.general.jobs.EHoldingsEntitlementSyncJob
+      - org.olf.general.jobs.IdentifierReassignmentJob
+  name:
+    type: string
+  runnerId:
+    description: Only present for comparison jobs (class ComparisonJob)
+    type: string
+  dateCreated:
+    type: integer
+  started:
+    description: Null until the job begins running
+    type: [integer, "null"]
+  ended:
+    description: Null until the job finishes
+    type: [integer, "null"]
+  status:
+    oneOf:
+      - type: string
+      - $ref: ../../common/schemas/Refdata.yaml
+  result:
+    description: Null until the job finishes
+    oneOf:
+      - type: string
+      - $ref: ../../common/schemas/Refdata.yaml
+      - type: "null"
+  fileUpload:
+    description: Present only for job types that accept a file upload (e.g. packageImport, kbartImport)
+    oneOf:
+      - $ref: ./File.yaml
+      - type: "null"
+  fullLogCount:
+    type: integer
+  errorLogCount:
+    type: integer
+  infoLogCount:
+    type: integer
+  comparisonPoints:
+    description: Only present for comparison jobs (class ComparisonJob)
+    type: array
+    items:
+      $ref: ./ComparisonPoint.yaml

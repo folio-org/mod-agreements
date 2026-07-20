@@ -1,5 +1,5 @@
 parameters:
-  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
 post:
   tags:
   - Packages

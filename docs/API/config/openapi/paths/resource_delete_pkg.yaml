@@ -1,0 +1,45 @@
+description: Queues a background job that deletes the specified packages, along with their package content items, and any platform title instances, title instances, and works that become orphaned as a result. A resource is only deleted if it has no active entitlements. Deletion happens asynchronously -- the response is a job record whose progress can be tracked via the persistent job endpoints
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+post:
+  tags:
+    - Resources
+  summary: Delete a set of packages
+  operationId: deletePackages
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/DeleteBody.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ResourceDeletionJob.yaml
+    '400':
+      description: Bad request error -- missing or empty request body
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              statusCode:
+                type: integer
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              statusCode:
+                type: integer

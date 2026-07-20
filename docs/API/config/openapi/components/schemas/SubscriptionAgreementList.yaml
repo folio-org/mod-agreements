@@ -16,17 +16,17 @@ properties:
       format: date
       readOnly: true
   endDate:
-      type: string
+      type: [string,"null"]
       format: date
       readOnly: true
   isPerpetual:
     oneOf:
-      - type: string
-      - $ref: ./Refdata.yaml
+      - type: [string,"null"]
+      - $ref: ../../common/schemas/Refdata.yaml
   agreementStatus:
     oneOf:
       - type: string
-      - $ref: ./Refdata.yaml
+      - $ref: ../../common/schemas/Refdata.yaml
   linkedLicenses:
     type: array
     items:

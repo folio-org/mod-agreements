@@ -1,0 +1,39 @@
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/jobId.yaml
+get:
+  tags:
+    - Jobs
+  summary: Download the file object attached to a specified job
+  operationId: getJobFileObject
+  description: >-
+    Only meaningful for comparison jobs -- the underlying implementation looks
+    up the record as a ComparisonJob regardless of the job's actual type, so
+    ids for other job types will return a 404. Only available once the job
+    has ended; returns a 405 otherwise
+  responses:
+    '200':
+      description: OK
+      content:
+        text/json:
+          schema:
+            type: string
+            format: binary
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/HttpError.yaml
+    '405':
+      description: Method not allowed - this job has not yet ended
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

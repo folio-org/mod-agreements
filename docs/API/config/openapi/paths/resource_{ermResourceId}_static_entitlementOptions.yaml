@@ -1,0 +1,26 @@
+description: Returns the packages and package content items already resolved as entitlement options for the specified resource, without recalculating the full entitlement options lookup
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/ermResourceId.yaml
+get:
+  tags:
+    - Resources
+  summary: Get static (pre-resolved) entitlement options for a specified resource
+  operationId: getResourceStaticEntitlementOptions
+  parameters:
+    $ref: ../common/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/EntitlementOptionResults.yaml
+              - $ref: ../components/schemas/EntitlementOptionResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error

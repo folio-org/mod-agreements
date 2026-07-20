@@ -79,8 +79,11 @@ paths:
 #   # Package collection-level operations
    /erm/packages/import:
      $ref: paths/packages_import.yaml
-   /erm/packages/tsvParse:
-     $ref: paths/packages_tsvParse.yaml
+#   # /erm/packages/tsvParse: exists in UrlMappings.groovy and the controller, but is NOT registered in
+#   # ModuleDescriptor-template.json's provides[].handlers[] (unlike its sibling /erm/packages/import).
+#   # Okapi will 404 any request to it since it has no handler entry -- not documenting an unreachable route.
+#   /erm/packages/tsvParse:
+#     $ref: paths/packages_tsvParse.yaml
    /erm/packages/sources:
      $ref: paths/packages_sources.yaml
    /erm/packages/controlSync:
@@ -118,214 +121,198 @@ paths:
    /erm/titles/electronic:
      $ref: paths/titles_electronic.yaml
 
-#   # ===== ERM Resources =====
-#   # GET only (list and individual)
-#   /erm/resource:
-#     $ref: paths/resource.yaml
-#   /erm/resource/{resourceId}:
-#     $ref: paths/resource_{resourceId}.yaml
-#   /erm/resource/electronic:
-#     $ref: paths/resource_electronic.yaml
-#   /erm/resource/{resourceId}/entitlementOptions:
-#     $ref: paths/resource_{resourceId}_entitlementOptions.yaml
-#   /erm/resource/{resourceId}/static/entitlementOptions:
-#     $ref: paths/resource_{resourceId}_static_entitlementOptions.yaml
-#   /erm/resource/{resourceId}/entitlements:
-#     $ref: paths/resource_{resourceId}_entitlements.yaml
-#   /erm/resource/{resourceId}/entitlements/related:
-#     $ref: paths/resource_{resourceId}_entitlements_related.yaml
-#   # Resource deletion operations
-#   /erm/resource/markForDelete/pkg:
-#     $ref: paths/resource_markForDelete_pkg.yaml
-#   /erm/resource/markForDelete/pci:
-#     $ref: paths/resource_markForDelete_pci.yaml
-#   /erm/resource/markForDelete/pti:
-#     $ref: paths/resource_markForDelete_pti.yaml
-#   /erm/resource/markForDelete/ti:
-#     $ref: paths/resource_markForDelete_ti.yaml
-#   /erm/resource/delete/pkg:
-#     $ref: paths/resource_delete_pkg.yaml
-#   /erm/resource/delete/pci:
-#     $ref: paths/resource_delete_pci.yaml
-#   /erm/resource/delete/pti:
-#     $ref: paths/resource_delete_pti.yaml
-#   /erm/resource/delete/ti:
-#     $ref: paths/resource_delete_ti.yaml
+  # ===== ERM Resources =====
+  # GET only (list and individual)
+   /erm/resource:
+     $ref: paths/resource.yaml
+   /erm/resource/{ermResourceId}:
+     $ref: paths/resource_{ermResourceId}.yaml
+   /erm/resource/electronic:
+     $ref: paths/resource_electronic.yaml
+   /erm/resource/{ermResourceId}/entitlementOptions:
+     $ref: paths/resource_{ermResourceId}_entitlementOptions.yaml
+   /erm/resource/{ermResourceId}/static/entitlementOptions:
+     $ref: paths/resource_{ermResourceId}_static_entitlementOptions.yaml
+   /erm/resource/{ermResourceId}/entitlements:
+     $ref: paths/resource_{ermResourceId}_entitlements.yaml
+   /erm/resource/{ermResourceId}/entitlements/related:
+     $ref: paths/resource_{ermResourceId}_entitlements_related.yaml
+  # Resource deletion operations
+   /erm/resource/markForDelete/pkg:
+     $ref: paths/resource_markForDelete_pkg.yaml
+   /erm/resource/markForDelete/pci:
+     $ref: paths/resource_markForDelete_pci.yaml
+   /erm/resource/markForDelete/pti:
+     $ref: paths/resource_markForDelete_pti.yaml
+   /erm/resource/markForDelete/ti:
+     $ref: paths/resource_markForDelete_ti.yaml
+   /erm/resource/delete/pkg:
+     $ref: paths/resource_delete_pkg.yaml
+   /erm/resource/delete/pci:
+     $ref: paths/resource_delete_pci.yaml
+   /erm/resource/delete/pti:
+     $ref: paths/resource_delete_pti.yaml
+   /erm/resource/delete/ti:
+     $ref: paths/resource_delete_ti.yaml
 
-#   # ===== Remote Knowledge Bases (kbs) =====
-#   # Full CRUD
-#   /erm/kbs:
-#     $ref: paths/kbs.yaml
-#   /erm/kbs/{kbId}:
-#     $ref: paths/kbs_{kbId}.yaml
+  # ===== Remote Knowledge Bases (kbs) =====
+  # Full CRUD
+   /erm/kbs:
+     $ref: paths/kbs.yaml
+   /erm/kbs/{kbId}:
+     $ref: paths/kbs_{kbId}.yaml
 
-#   # ===== Organisations =====
-#   # Full CRUD
-#   /erm/org:
-#     $ref: paths/org.yaml
-#   /erm/org/{orgId}:
-#     $ref: paths/org_{orgId}.yaml
-#   /erm/org/find/{id}:
-#     $ref: paths/org_find_{id}.yaml
+  # ===== Organisations =====
+  # GET only
+   /erm/org:
+     $ref: paths/org.yaml
+   /erm/org/{orgId}:
+     $ref: paths/org_{orgId}.yaml
 
-#   # ===== Internal Contacts =====
-#   # GET only
-#   /erm/contacts:
-#     $ref: paths/contacts.yaml
-#   /erm/contacts/{contactId}:
-#     $ref: paths/contacts_{contactId}.yaml
+  # ===== Internal Contacts =====
+  # GET only
+   /erm/contacts:
+     $ref: paths/contacts.yaml
+   /erm/contacts/{contactId}:
+     $ref: paths/contacts_{contactId}.yaml
 
-#   # ===== Reference Data =====
-#   # Full CRUD
-#   /erm/refdata:
-#     $ref: paths/refdata.yaml
-#   /erm/refdata/{refdataId}:
-#     $ref: paths/refdata_{refdataId}.yaml
-#   /erm/refdata/{domain}/{property}:
-#     $ref: paths/refdata_{domain}_{property}.yaml
+  # ===== Reference Data =====
+  # Full CRUD
+   /erm/refdata:
+     $ref: paths/refdata.yaml
+   /erm/refdata/{refdataId}:
+     $ref: paths/refdata_{refdataId}.yaml
+   /erm/refdata/{domain}/{property}:
+     $ref: paths/refdata_{domain}_{property}.yaml
 
-#   # ===== Custom Property Definitions =====
-#   # Full CRUD
-#   /erm/custprops:
-#     $ref: paths/custprops.yaml
-#   /erm/custprops/{custpropId}:
-#     $ref: paths/custprops_{custpropId}.yaml
-#   /erm/custprops/contexts:
-#     $ref: paths/custprops_contexts.yaml
-
-#   # ===== String Templates =====
-#   # Full CRUD
-#   /erm/sts:
-#     $ref: paths/sts.yaml
-#   /erm/sts/{stringTemplateId}:
-#     $ref: paths/sts_{stringTemplateId}.yaml
-#   /erm/sts/template:
-#     $ref: paths/sts_template.yaml
-#   /erm/sts/template/{id}:
-#     $ref: paths/sts_template_{id}.yaml
+  # ===== Custom Property Definitions =====
+  # Full CRUD
+   /erm/custprops:
+     $ref: paths/custprops.yaml
+   /erm/custprops/{custpropId}:
+     $ref: paths/custprops_{custpropId}.yaml
+   /erm/custprops/contexts:
+     $ref: paths/custprops_contexts.yaml
 
 #   # ===== Jobs =====
-#   # GET (list), DELETE (individual) — create via /erm/jobs/{jobType}
-#   /erm/jobs:
-#     $ref: paths/jobs.yaml
-#   /erm/jobs/{jobId}:
-#     $ref: paths/jobs_{jobId}.yaml
-#   /erm/jobs/{jobType}:
-#     $ref: paths/jobs_{jobType}.yaml
-#   /erm/jobs/type/{jobType}:
-#     $ref: paths/jobs_type_{jobType}.yaml
-#   # Job log endpoints
-#   /erm/jobs/{jobId}/fullLog:
-#     $ref: paths/jobs_{jobId}_fullLog.yaml
-#   /erm/jobs/{jobId}/fullLogStream:
-#     $ref: paths/jobs_{jobId}_fullLogStream.yaml
-#   /erm/jobs/{jobId}/errorLog:
-#     $ref: paths/jobs_{jobId}_errorLog.yaml
-#   /erm/jobs/{jobId}/errorLogStream:
-#     $ref: paths/jobs_{jobId}_errorLogStream.yaml
-#   /erm/jobs/{jobId}/infoLog:
-#     $ref: paths/jobs_{jobId}_infoLog.yaml
-#   /erm/jobs/{jobId}/infoLogStream:
-#     $ref: paths/jobs_{jobId}_infoLogStream.yaml
-#   /erm/jobs/{jobId}/downloadFileObject:
-#     $ref: paths/jobs_{jobId}_downloadFileObject.yaml
+#   # GET (list), DELETE (individual) — create via one of the per-type paths below
+   /erm/jobs:
+     $ref: paths/jobs.yaml
+   /erm/jobs/{jobId}:
+     $ref: paths/jobs_{jobId}.yaml
+   /erm/jobs/type/{jobType}:
+     $ref: paths/jobs_type_{jobType}.yaml
+   # Job creation, one path per job type
+   /erm/jobs/comparison:
+     $ref: paths/jobs_comparison.yaml
+   /erm/jobs/coverageRegeneration:
+     $ref: paths/jobs_coverageRegeneration.yaml
+   /erm/jobs/packageImport:
+     $ref: paths/jobs_packageImport.yaml
+   /erm/jobs/kbartImport:
+     $ref: paths/jobs_kbartImport.yaml
+   /erm/jobs/packageIngest:
+     $ref: paths/jobs_packageIngest.yaml
+   /erm/jobs/supplementaryDocumentsCleaning:
+     $ref: paths/jobs_supplementaryDocumentsCleaning.yaml
+   # Job log endpoints
+   /erm/jobs/{jobId}/fullLog:
+     $ref: paths/jobs_{jobId}_fullLog.yaml
+   /erm/jobs/{jobId}/fullLogStream:
+     $ref: paths/jobs_{jobId}_fullLogStream.yaml
+   /erm/jobs/{jobId}/errorLog:
+     $ref: paths/jobs_{jobId}_errorLog.yaml
+   /erm/jobs/{jobId}/errorLogStream:
+     $ref: paths/jobs_{jobId}_errorLogStream.yaml
+   /erm/jobs/{jobId}/infoLog:
+     $ref: paths/jobs_{jobId}_infoLog.yaml
+   /erm/jobs/{jobId}/infoLogStream:
+     $ref: paths/jobs_{jobId}_infoLogStream.yaml
+   /erm/jobs/{jobId}/downloadFileObject:
+     $ref: paths/jobs_{jobId}_downloadFileObject.yaml
 
-#   # ===== Files =====
-#   # GET (list), POST (upload), GET/DELETE (individual) — no PUT/PATCH
-#   /erm/files:
-#     $ref: paths/files.yaml
-#   /erm/files/{fileId}:
-#     $ref: paths/files_{fileId}.yaml
-#   /erm/files/{fileId}/raw:
-#     $ref: paths/files_{fileId}_raw.yaml
+   # ===== Files =====
+   /erm/files:
+     $ref: paths/files.yaml
+   /erm/files/{fileId}:
+     $ref: paths/files_{fileId}.yaml
+   /erm/files/{fileId}/raw:
+     $ref: paths/files_{fileId}_raw.yaml
 
-#   # ===== Identifiers =====
-#   # GET only
-#   /erm/identifiers:
-#     $ref: paths/identifiers.yaml
-#   /erm/identifiers/{identifierId}:
-#     $ref: paths/identifiers_{identifierId}.yaml
-#   /erm/identifiers/namespaces:
-#     $ref: paths/identifiers_namespaces.yaml
+   # ===== Identifiers =====
+   /erm/identifiers:
+     $ref: paths/identifiers.yaml
+   /erm/identifiers/{identifierId}:
+     $ref: paths/identifiers_{identifierId}.yaml
+   /erm/identifiers/namespaces:
+     $ref: paths/identifiers_namespaces.yaml
 
-#   # ===== Comparison =====
-#   /erm/compare:
-#     $ref: paths/compare.yaml
+   # ===== Validation =====
+   /erm/validate/subscriptionAgreement:
+     $ref: paths/validate_subscriptionAgreement.yaml
+   /erm/validate/subscriptionAgreement/{prop}:
+     $ref: paths/validate_subscriptionAgreement_{prop}.yaml
+   /erm/validate/remoteKB:
+     $ref: paths/validate_remoteKB.yaml
+   /erm/validate/remoteKB/{prop}:
+     $ref: paths/validate_remoteKB_{prop}.yaml
 
-#   # ===== Validation =====
-#   /erm/validate/{domain}/{prop}:
-#     $ref: paths/validate_{domain}_{prop}.yaml
+  # ===== Settings =====
+  # Full CRUD
+   /erm/settings/appSettings:
+     $ref: paths/settings_appSettings.yaml
+   /erm/settings/appSettings/{settingId}:
+     $ref: paths/settings_appSettings_{settingId}.yaml
 
-#   # ===== Settings =====
-#   # Full CRUD
-#   /erm/settings/appSettings:
-#     $ref: paths/settings_appSettings.yaml
-#   /erm/settings/appSettings/{settingId}:
-#     $ref: paths/settings_appSettings_{settingId}.yaml
+  # ===== Admin =====
+  # One path per action, matching the module descriptor's literal handlers
+   /erm/admin/loadPackage:
+     $ref: paths/admin_loadPackage.yaml
+   /erm/admin/triggerCacheUpdate:
+     $ref: paths/admin_triggerCacheUpdate.yaml
+   /erm/admin/triggerSync:
+     $ref: paths/admin_triggerSync.yaml
+   /erm/admin/triggerActivationUpdate:
+     $ref: paths/admin_triggerActivationUpdate.yaml
+   /erm/admin/triggerHousekeeping:
+     $ref: paths/admin_triggerHousekeeping.yaml
+   /erm/admin/triggerEntitlementLogUpdate:
+     $ref: paths/admin_triggerEntitlementLogUpdate.yaml
+   /erm/admin/triggerDocMigration:
+     $ref: paths/admin_triggerDocMigration.yaml
+   /erm/admin/triggerEntitlementEholdings:
+     $ref: paths/admin_triggerEntitlementEholdings.yaml
 
-#   # ===== Admin =====
-#   /erm/admin/{action}:
-#     $ref: paths/admin_{action}.yaml
+   # ===== Statistics =====
+   /erm/statistics/kbCount:
+     $ref: paths/statistics_kbCount.yaml
+   /erm/statistics/sasCount:
+     $ref: paths/statistics_sasCount.yaml
 
-#   # ===== Statistics =====
-#   /erm/statistics/kbCount:
-#     $ref: paths/statistics_kbCount.yaml
-#   /erm/statistics/sasCount:
-#     $ref: paths/statistics_sasCount.yaml
+   # ===== String Templates =====
+   # Full CRUD
+   /erm/sts:
+     $ref: paths/sts.yaml
+   /erm/sts/{stringTemplateId}:
+     $ref: paths/sts_{stringTemplateId}.yaml
+   /erm/sts/template:
+     $ref: paths/sts_template.yaml
+   /erm/sts/template/{platformId}:
+     $ref: paths/sts_template_{platformId}.yaml
 
-#   # ===== PushKB =====
-#   /erm/pushKB/pkg:
-#     $ref: paths/pushKB_pkg.yaml
-#   /erm/pushKB/pci:
-#     $ref: paths/pushKB_pci.yaml
-#   # PushKB sessions (GET only)
-#   /erm/pushKB/sessions:
-#     $ref: paths/pushKB_sessions.yaml
-#   /erm/pushKB/sessions/{sessionId}:
-#     $ref: paths/pushKB_sessions_{sessionId}.yaml
-#   # PushKB chunks (GET only, with log sub-endpoints)
-#   /erm/pushKB/chunks:
-#     $ref: paths/pushKB_chunks.yaml
-#   /erm/pushKB/chunks/{chunkId}:
-#     $ref: paths/pushKB_chunks_{chunkId}.yaml
-#   /erm/pushKB/chunks/{chunkId}/fullLog:
-#     $ref: paths/pushKB_chunks_{chunkId}_fullLog.yaml
-#   /erm/pushKB/chunks/{chunkId}/fullLogStream:
-#     $ref: paths/pushKB_chunks_{chunkId}_fullLogStream.yaml
-#   /erm/pushKB/chunks/{chunkId}/errorLog:
-#     $ref: paths/pushKB_chunks_{chunkId}_errorLog.yaml
-#   /erm/pushKB/chunks/{chunkId}/errorLogStream:
-#     $ref: paths/pushKB_chunks_{chunkId}_errorLogStream.yaml
-#   /erm/pushKB/chunks/{chunkId}/infoLog:
-#     $ref: paths/pushKB_chunks_{chunkId}_infoLog.yaml
-#   /erm/pushKB/chunks/{chunkId}/infoLogStream:
-#     $ref: paths/pushKB_chunks_{chunkId}_infoLogStream.yaml
+   # ===== Top-level Export =====
+   /export:
+     $ref: paths/export.yaml
+   /export/{format}:
+     $ref: paths/export_{format}.yaml
+   /export/current:
+     $ref: paths/export_current.yaml
+   /export/current/{format}:
+     $ref: paths/export_current_{format}.yaml
 
-#   # ===== Subscribed Content =====
-#   /erm/content:
-#     $ref: paths/content.yaml
-#   /erm/content/{action}:
-#     $ref: paths/content_{action}.yaml
-
-#   # ===== Codex =====
-#   /codex-instances:
-#     $ref: paths/codex-instances.yaml
-#   /codex-instances/{id}:
-#     $ref: paths/codex-instances_{id}.yaml
-
-#   # ===== Top-level Export =====
-#   /export:
-#     $ref: paths/export.yaml
-#   /export/{format}:
-#     $ref: paths/export_{format}.yaml
-#   /export/current:
-#     $ref: paths/export_current.yaml
-#   /export/current/{format}:
-#     $ref: paths/export_current_{format}.yaml
-
-#   # ===== Dashboard =====
-#   /dashboard/definitions:
-#     $ref: paths/dashboard_definitions.yaml
+   # ===== Dashboard =====
+   /dashboard/definitions:
+     $ref: paths/dashboard_definitions.yaml
 
 #   # ===== Left undocumented =====
 #   The following Agreement export paths are left undocumented as they replicate the 
@@ -355,6 +342,56 @@ paths:
 #   it does not seem to be active currently
 #   /erm/entitlements/external:
 #     $ref: paths/entitlements_external.yaml
+
+#   # ===== Subscribed Content =====
+#   /erm/content:
+#     $ref: paths/content.yaml
+#   /erm/content/{action}:
+#     $ref: paths/content_{action}.yaml
+
+#   # ===== Codex =====
+#   /codex-instances:
+#     $ref: paths/codex-instances.yaml
+#   /codex-instances/{id}:
+#     $ref: paths/codex-instances_{id}.yaml
+
+##  # ===== Admin =====
+#  non-functional under any currently active configuration
+# /erm/admin/pullPackage:
+  #   $ref: paths/admin_pullPackage.yaml
+
+# ===== Comparison =====
+#   /erm/compare:
+#     $ref: paths/compare.yaml
+
+#   # ===== PushKB =====
+#   /erm/pushKB/pkg:
+#     $ref: paths/pushKB_pkg.yaml
+#   /erm/pushKB/pci:
+#     $ref: paths/pushKB_pci.yaml
+#   # PushKB sessions (GET only)
+#   /erm/pushKB/sessions:
+#     $ref: paths/pushKB_sessions.yaml
+#   /erm/pushKB/sessions/{sessionId}:
+#     $ref: paths/pushKB_sessions_{sessionId}.yaml
+#   # PushKB chunks (GET only, with log sub-endpoints)
+#   /erm/pushKB/chunks:
+#     $ref: paths/pushKB_chunks.yaml
+#   /erm/pushKB/chunks/{chunkId}:
+#     $ref: paths/pushKB_chunks_{chunkId}.yaml
+#   /erm/pushKB/chunks/{chunkId}/fullLog:
+#     $ref: paths/pushKB_chunks_{chunkId}_fullLog.yaml
+#   /erm/pushKB/chunks/{chunkId}/fullLogStream:
+#     $ref: paths/pushKB_chunks_{chunkId}_fullLogStream.yaml
+#   /erm/pushKB/chunks/{chunkId}/errorLog:
+#     $ref: paths/pushKB_chunks_{chunkId}_errorLog.yaml
+#   /erm/pushKB/chunks/{chunkId}/errorLogStream:
+#     $ref: paths/pushKB_chunks_{chunkId}_errorLogStream.yaml
+#   /erm/pushKB/chunks/{chunkId}/infoLog:
+#     $ref: paths/pushKB_chunks_{chunkId}_infoLog.yaml
+#   /erm/pushKB/chunks/{chunkId}/infoLogStream:
+#     $ref: paths/pushKB_chunks_{chunkId}_infoLogStream.yaml
+  
 
 
 components:

@@ -1,0 +1,63 @@
+description: Supports search and creation of custom property definitions
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+get:
+  tags:
+    - Custom Property Definitions
+  summary: Get a set of custom property definition records
+  operationId: getCustomPropertyDefinitions
+  parameters:
+    $ref: ../common/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/CustomPropertyDefinitionResults.yaml
+              - $ref: ../components/schemas/CustomPropertyDefinitionResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml
+post:
+  tags:
+    - Custom Property Definitions
+  summary: Create custom property definition record
+  operationId: postCustomPropertyDefinition
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CustomPropertyDefinition.yaml
+    required: true
+  responses:
+    '201':
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CustomPropertyDefinition.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ApplicationError.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

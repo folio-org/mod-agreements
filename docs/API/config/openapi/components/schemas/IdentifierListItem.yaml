@@ -1,0 +1,17 @@
+description: >-
+  Shape of an Identifier as returned by GET /erm/identifiers. Distinct from
+  the plain Identifier schema, which is what's embedded when an identifier
+  appears nested inside another resource (e.g. via IdentifierOccurrence on
+  an ErmResource) -- id and occurrenceCount are only rendered when an
+  identifier is fetched directly through its own endpoint.
+type: object
+allOf:
+  - $ref: ./Identifier.yaml
+  - type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      occurrenceCount:
+        type: integer
+        description: Number of occurrences of this identifier.

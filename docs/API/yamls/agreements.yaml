@@ -69,6 +69,12 @@ paths:
           description: Bad request error
         '403':
           description: Forbidden
+        '422':
+          description: Unprocessable entity -- validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
         '500':
           description: Internal server error
   /erm/sas/{agreementId}:
@@ -448,6 +454,7 @@ paths:
         '500':
           description: Internal server error
   /erm/sas/{agreementId}/resources/export/{subset}/{format}:
+    description: 'Backed by the same controller/actions as the top-level `/export` family -- `subset: all` calls the same code as `/export`, `subset: current` calls the same code as `/export/current`, just pre-scoped to this one agreement. Returns an empty result set (not a 404) if `agreementId` does not match any agreement -- existence of the agreement is not checked.'
     parameters:
       - $ref: '#/components/parameters/x-okapi-tenant'
       - $ref: '#/components/parameters/agreementId'
@@ -457,6 +464,7 @@ paths:
       tags:
         - Agreements
       summary: Returns a list of either current or all resources in the internal KB associated with specified agreement using the specified format
+      description: '`format: kbart` returns a tab-separated KBART file (one row per Package Content Item; Platform Title Instances and directly-entitled Title Instances are silently skipped). Any other `format` value returns a JSON array.'
       operationId: exportAgreementResourcesSubsetFormat
       responses:
         '200':
@@ -464,19 +472,17 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/ErmResourceResults'
-                  - $ref: '#/components/schemas/ErmResourceResultsArray'
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExportEntry'
+            text/tab-separated-value;charset=UTF-8:
+              schema:
+                type: string
+                description: KBART-formatted TSV, with a header row followed by one row per Package Content Item.
         '400':
           description: Bad request error
         '403':
           description: Forbidden
-        '404':
-          description: Not found error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HttpError'
         '500':
           description: Internal server error
   /erm/sas/{agreementId}/export/current:
@@ -486,7 +492,7 @@ paths:
     get:
       tags:
         - Agreements
-      summary: Retuns JSON for an Agreement including a list of resources currently available via the agreement
+      summary: Returns JSON for an Agreement including a list of resources currently available via the agreement
       operationId: exportAgreementCurrent
       responses:
         '200':
@@ -790,6 +796,12 @@ paths:
           description: Bad request error
         '403':
           description: Forbidden
+        '422':
+          description: Unprocessable entity -- validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
         '500':
           description: Internal server error
   /erm/entitlements/{entitlementId}:
@@ -1118,6 +1130,12 @@ paths:
           description: Bad request error
         '403':
           description: Forbidden
+        '404':
+          description: Not found error -- no ingress metadata exists for the specified package
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
         '500':
           description: Internal server error
   /erm/packages/import:
@@ -1143,39 +1161,6 @@ paths:
                 $ref: '#/components/schemas/ImportPackageSuccess'
         '400':
           description: Bad request error
-        '403':
-          description: Forbidden
-        '500':
-          description: Internal server error
-  /erm/packages/tsvParse:
-    parameters:
-      - $ref: '#/components/parameters/x-okapi-tenant'
-    post:
-      tags:
-        - Packages
-      summary: Synchronously import a package from a KBART TSV file
-      operationId: postPackagesTsvParse
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              allOf:
-                - $ref: '#/components/schemas/KbartPackageMetadata'
-                - type: object
-                  required:
-                    - upload
-                  properties:
-                    upload:
-                      type: string
-                      format: binary
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
         '403':
           description: Forbidden
         '500':
@@ -1735,6 +1720,3221 @@ paths:
           description: Forbidden
         '500':
           description: Internal server error
+  /erm/resource:
+    description: Supports search of resources (packages, package content items, platform title instances, and title instances) in the Agreements local knowledgebase
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Resources
+      summary: Get a set of resource records
+      operationId: getResources
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErmResourceResults'
+                  - $ref: '#/components/schemas/ErmResourceResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+  /erm/resource/{ermResourceId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/ermResourceId'
+    get:
+      tags:
+        - Resources
+      summary: Get a specified resource record
+      operationId: getResource
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErmResource'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+  /erm/resource/electronic:
+    description: Supports search of electronic resources (packages and electronic title instances) in the Agreements local knowledgebase
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Resources
+      summary: Get a set of electronic resource records
+      operationId: getElectronicResources
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErmResourceResults'
+                  - $ref: '#/components/schemas/ErmResourceResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+  /erm/resource/{ermResourceId}/entitlementOptions:
+    description: Returns the list of entitlement options (ways of acquiring the specified resource) -- packages or package content items that this resource could be entitled through
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/ermResourceId'
+    get:
+      tags:
+        - Resources
+      summary: Get entitlement options for a specified resource
+      operationId: getResourceEntitlementOptions
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EntitlementOptionResults'
+                  - $ref: '#/components/schemas/EntitlementOptionResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+  /erm/resource/{ermResourceId}/static/entitlementOptions:
+    description: Returns the packages and package content items already resolved as entitlement options for the specified resource, without recalculating the full entitlement options lookup
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/ermResourceId'
+    get:
+      tags:
+        - Resources
+      summary: Get static (pre-resolved) entitlement options for a specified resource
+      operationId: getResourceStaticEntitlementOptions
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EntitlementOptionResults'
+                  - $ref: '#/components/schemas/EntitlementOptionResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+  /erm/resource/{ermResourceId}/entitlements:
+    description: Returns the list of entitlements (agreement lines) which include the specified resource, directly or indirectly (e.g. as part of a package)
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/ermResourceId'
+    get:
+      tags:
+        - Resources
+      summary: Get entitlements for a specified resource
+      operationId: getResourceEntitlements
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EntitlementResults'
+                  - $ref: '#/components/schemas/EntitlementResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error -- resource does not exist, or is not a type that can carry entitlements
+        '500':
+          description: Internal server error
+  /erm/resource/{ermResourceId}/entitlements/related:
+    description: Returns the list of entitlements (agreement lines) which offer access to the same title as the specified resource, but on other platform/package combinations. Only valid for package content item and platform title instance resources; returns an empty list for title instance resources
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/ermResourceId'
+    get:
+      tags:
+        - Resources
+      summary: Get related entitlements for a specified resource
+      operationId: getResourceRelatedEntitlements
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EntitlementResults'
+                  - $ref: '#/components/schemas/EntitlementResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error -- resource does not exist, or is not a package content item or platform title instance
+        '500':
+          description: Internal server error
+  /erm/resource/markForDelete/pkg:
+    description: Marks the package content items belonging to the specified packages for deletion, cascading to platform title instances, title instances, and works that would become orphaned as a result. A resource is only marked for deletion if it has no active entitlements. This is a dry-run/staging step -- see /erm/resource/delete/pkg to actually perform the deletion
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/includeIds'
+    post:
+      tags:
+        - Resources
+      summary: Mark the resources belonging to a set of packages for deletion
+      operationId: markPackageResourcesForDelete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkForDeleteResponse'
+        '400':
+          description: Bad request error -- missing or empty request body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+  /erm/resource/markForDelete/pci:
+    description: Marks the specified package content items for deletion, cascading to platform title instances, title instances, and works that would become orphaned as a result. A resource is only marked for deletion if it has no active entitlements. This is a dry-run/staging step -- see /erm/resource/delete/pci to actually perform the deletion
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/includeIds'
+    post:
+      tags:
+        - Resources
+      summary: Mark package content items for deletion
+      operationId: markPcisForDelete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkForDeleteResponse'
+        '400':
+          description: Bad request error -- missing or empty request body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+  /erm/resource/markForDelete/pti:
+    description: Marks the specified platform title instances for deletion, cascading to title instances and works that would become orphaned as a result. A resource is only marked for deletion if it has no active entitlements. This is a dry-run/staging step -- see /erm/resource/delete/pti to actually perform the deletion
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/includeIds'
+    post:
+      tags:
+        - Resources
+      summary: Mark platform title instances for deletion
+      operationId: markPtisForDelete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkForDeleteResponse'
+        '400':
+          description: Bad request error -- missing or empty request body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+  /erm/resource/markForDelete/ti:
+    description: Marks the specified title instances for deletion, cascading to works that would become orphaned as a result. A resource is only marked for deletion if it has no active entitlements. This is a dry-run/staging step -- see /erm/resource/delete/ti to actually perform the deletion
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/includeIds'
+    post:
+      tags:
+        - Resources
+      summary: Mark title instances for deletion
+      operationId: markTisForDelete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkForDeleteResponse'
+        '400':
+          description: Bad request error -- missing or empty request body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+  /erm/resource/delete/pkg:
+    description: Queues a background job that deletes the specified packages, along with their package content items, and any platform title instances, title instances, and works that become orphaned as a result. A resource is only deleted if it has no active entitlements. Deletion happens asynchronously -- the response is a job record whose progress can be tracked via the persistent job endpoints
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    post:
+      tags:
+        - Resources
+      summary: Delete a set of packages
+      operationId: deletePackages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceDeletionJob'
+        '400':
+          description: Bad request error -- missing or empty request body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+  /erm/resource/delete/pci:
+    description: Marks the specified package content items for deletion and immediately deletes them, cascading to platform title instances, title instances, and works that become orphaned as a result. A resource is only deleted if it has no active entitlements
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/includeIds'
+    post:
+      tags:
+        - Resources
+      summary: Delete package content items
+      operationId: deletePcis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          description: Bad request error -- missing or empty request body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+  /erm/resource/delete/pti:
+    description: Marks the specified platform title instances for deletion and immediately deletes them, cascading to title instances and works that become orphaned as a result. A resource is only deleted if it has no active entitlements
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/includeIds'
+    post:
+      tags:
+        - Resources
+      summary: Delete platform title instances
+      operationId: deletePtis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          description: Bad request error -- missing or empty request body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+  /erm/resource/delete/ti:
+    description: Marks the specified title instances for deletion and immediately deletes them, cascading to works that become orphaned as a result. A resource is only deleted if it has no active entitlements
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/includeIds'
+    post:
+      tags:
+        - Resources
+      summary: Delete title instances
+      operationId: deleteTis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          description: Bad request error -- missing or empty request body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  statusCode:
+                    type: integer
+  /erm/kbs:
+    description: Supports search and creation of remote Knowledge Base records. A remote KB is a repository (e.g. a package/title resolver) that this module can harvest coverage, package, and title data from.
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Remote Knowledge Bases
+      summary: Get a set of remote Knowledge Base records
+      operationId: getKbs
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/KbResults'
+                  - $ref: '#/components/schemas/KbResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    post:
+      tags:
+        - Remote Knowledge Bases
+      summary: Create a remote Knowledge Base record
+      operationId: postKb
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Kb'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Kb'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/kbs/{kbId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/kbId'
+    get:
+      tags:
+        - Remote Knowledge Bases
+      summary: Get a specified remote Knowledge Base record
+      operationId: getKb
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Kb'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    put:
+      tags:
+        - Remote Knowledge Bases
+      summary: Update a remote Knowledge Base record
+      description: Some fields cannot be changed once a KB is marked `readonly` (e.g. the local KB) — `trustedSourceTI` remains editable, but other property changes are rejected.
+      operationId: putKb
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Kb'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Kb'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    delete:
+      tags:
+        - Remote Knowledge Bases
+      summary: Delete a specified remote Knowledge Base record
+      description: Rejected if the KB is marked `readonly`, e.g. the local KB.
+      operationId: deleteKb
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/org:
+    description: 'Supports search of Org records — a local reference to an organisation held in the FOLIO Organizations app. GET only: creation happens implicitly when an org is linked elsewhere (e.g. on a Subscription Agreement), not through this path directly.'
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Organisations
+      summary: Get a set of Org records
+      operationId: getOrgs
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/OrgResults'
+                  - $ref: '#/components/schemas/OrgResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/org/{orgId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/orgId'
+    get:
+      tags:
+        - Organisations
+      summary: Get a specified Org record
+      operationId: getOrg
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Org'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/contacts:
+    description: 'Supports search of Internal Contact records — a FOLIO user assigned a role (e.g. subject specialist) against a Subscription Agreement. GET only: contacts are created/updated/deleted through the owning agreement, not through this path directly.'
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Internal Contacts
+      summary: Get a set of Internal Contact records
+      operationId: getContacts
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/InternalContactResults'
+                  - $ref: '#/components/schemas/InternalContactResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/contacts/{contactId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/contactId'
+    get:
+      tags:
+        - Internal Contacts
+      summary: Get a specified Internal Contact record
+      operationId: getContact
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalContact'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/refdata:
+    description: Supports search and creation of reference data categories.
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Reference data
+      summary: Get a set of reference data category records.
+      operationId: getRefdataCategories
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/RefdataCategoryResults'
+                  - $ref: '#/components/schemas/RefdataCategoryResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    post:
+      tags:
+        - Reference data
+      summary: Create reference data category record
+      operationId: postRefdataCategory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefdataCategory'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefdataCategory'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/refdata/{refdataId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/refdataId'
+    get:
+      tags:
+        - Reference data
+      summary: Get a specified reference data category record
+      operationId: getRefdataCategory
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefdataCategory'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    put:
+      tags:
+        - Reference data
+      summary: Update reference data category record
+      operationId: putRefdataCategory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefdataCategory'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefdataCategory'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    delete:
+      tags:
+        - Reference data
+      summary: Delete a specified reference data category record. Categories marked internal cannot be deleted and will return a 405.
+      operationId: deleteRefdataCategory
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '405':
+          description: Method not allowed - this reference data category is internal and cannot be deleted
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/refdata/{domain}/{property}:
+    description: Look up the reference data values for a single property of a domain class, e.g. the valid `agreementStatus` values for `SubscriptionAgreement`. The domain and property are combined into a reference data category name internally. An unrecognised `domain` returns a 404; an unrecognised `property` on a valid `domain` does not error, it returns a 200 with an empty result set, since a category name is always derived even when nothing matches it.
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/refdataDomain'
+      - $ref: '#/components/parameters/refdataProperty'
+    get:
+      tags:
+        - Reference data
+      summary: Get the reference data values for a domain class property.
+      operationId: getRefdataValuesForProperty
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/RefdataResults'
+                  - $ref: '#/components/schemas/RefdataResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: 'Not found error: `domain` does not match any known domain class. Note an unrecognised `property` on a valid `domain` does not trigger this; it returns 200 with an empty result set instead. This action does not write its own error body, so the response has no content.'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/custprops:
+    description: Supports search and creation of custom property definitions
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Custom Property Definitions
+      summary: Get a set of custom property definition records
+      operationId: getCustomPropertyDefinitions
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/CustomPropertyDefinitionResults'
+                  - $ref: '#/components/schemas/CustomPropertyDefinitionResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    post:
+      tags:
+        - Custom Property Definitions
+      summary: Create custom property definition record
+      operationId: postCustomPropertyDefinition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomPropertyDefinition'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomPropertyDefinition'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/custprops/{custpropId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/custpropId'
+    get:
+      tags:
+        - Custom Property Definitions
+      summary: Get a specified custom property definition record
+      operationId: getCustomPropertyDefinition
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomPropertyDefinition'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    put:
+      tags:
+        - Custom Property Definitions
+      summary: Update custom property definition record
+      operationId: putCustomPropertyDefinition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomPropertyDefinition'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomPropertyDefinition'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    delete:
+      tags:
+        - Custom Property Definitions
+      summary: Delete a specified custom property definition record
+      operationId: deleteCustomPropertyDefinition
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/custprops/contexts:
+    get:
+      tags:
+        - Custom Property Definitions
+      summary: Get the distinct set of contexts in use across custom property definitions
+      operationId: getCustomPropertyDefinitionContexts
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Distinct context values (the ctx field) found across custom property definitions
+                items:
+                  type: string
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs:
+    description: Supports search of persistent job records. Jobs track the progress of asynchronous background work (e.g. package imports, comparisons). Creation happens per job type via /erm/jobs/{jobType}
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Jobs
+      summary: Get a set of persistent job records
+      operationId: getJobs
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PersistentJobResults'
+                  - $ref: '#/components/schemas/PersistentJobResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/{jobId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/jobId'
+    get:
+      tags:
+        - Jobs
+      summary: Get a specified persistent job record
+      operationId: getJob
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersistentJob'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    delete:
+      tags:
+        - Jobs
+      summary: Delete a specified persistent job record. Jobs currently in progress cannot be deleted and will return a 405
+      operationId: deleteJob
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '405':
+          description: Method not allowed - this job is in progress and cannot be deleted
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/type/{jobType}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/jobType'
+    get:
+      tags:
+        - Jobs
+      summary: Get a set of persistent job records of the specified type
+      operationId: getJobsByType
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PersistentJobResults'
+                  - $ref: '#/components/schemas/PersistentJobResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error -- jobType is not a recognised job type
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/comparison:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    post:
+      tags:
+        - Jobs
+      summary: Create and queue a comparison job
+      operationId: postComparisonJob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComparisonJobBody'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComparisonJob'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/coverageRegeneration:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    post:
+      tags:
+        - Jobs
+      summary: Create and queue a coverage regeneration job
+      operationId: postCoverageRegenerationJob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSimpleJobBody'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersistentJob'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/packageImport:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    post:
+      tags:
+        - Jobs
+      summary: Create and queue a package import job
+      operationId: postPackageImportJob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePackageImportJobBody'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersistentJob'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/kbartImport:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    post:
+      tags:
+        - Jobs
+      summary: Create and queue a KBART package import job
+      operationId: postKbartImportJob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKbartImportJobBody'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersistentJob'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/packageIngest:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    post:
+      tags:
+        - Jobs
+      summary: Create and queue a package ingest job
+      operationId: postPackageIngestJob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSimpleJobBody'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersistentJob'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/supplementaryDocumentsCleaning:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    post:
+      tags:
+        - Jobs
+      summary: Create and queue a supplementary documents cleaning job
+      operationId: postSupplementaryDocumentsCleaningJob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSimpleJobBody'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersistentJob'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/{jobId}/fullLog:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/jobId'
+    get:
+      tags:
+        - Jobs
+      summary: Get the full (info and error) log for a specified job
+      operationId: getJobFullLog
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/LogEntryResults'
+                  - $ref: '#/components/schemas/LogEntryResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/{jobId}/fullLogStream:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/jobId'
+    get:
+      tags:
+        - Jobs
+      summary: Stream the full (info and error) log for a specified job
+      operationId: getJobFullLogStream
+      description: Streams results in batches rather than paginating, so the response is a plain array with no pagination metadata
+      parameters:
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/sort'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntryResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/{jobId}/errorLog:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/jobId'
+    get:
+      tags:
+        - Jobs
+      summary: Get the error-level log entries for a specified job
+      operationId: getJobErrorLog
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/LogEntryResults'
+                  - $ref: '#/components/schemas/LogEntryResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/{jobId}/errorLogStream:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/jobId'
+    get:
+      tags:
+        - Jobs
+      summary: Stream the error-level log entries for a specified job
+      operationId: getJobErrorLogStream
+      description: Streams results in batches rather than paginating, so the response is a plain array with no pagination metadata
+      parameters:
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/sort'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntryResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/{jobId}/infoLog:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/jobId'
+    get:
+      tags:
+        - Jobs
+      summary: Get the info-level log entries for a specified job
+      operationId: getJobInfoLog
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/LogEntryResults'
+                  - $ref: '#/components/schemas/LogEntryResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/{jobId}/infoLogStream:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/jobId'
+    get:
+      tags:
+        - Jobs
+      summary: Stream the info-level log entries for a specified job
+      operationId: getJobInfoLogStream
+      description: Streams results in batches rather than paginating, so the response is a plain array with no pagination metadata
+      parameters:
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/sort'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntryResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/jobs/{jobId}/downloadFileObject:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/jobId'
+    get:
+      tags:
+        - Jobs
+      summary: Download the file object attached to a specified job
+      operationId: getJobFileObject
+      description: Only meaningful for comparison jobs -- the underlying implementation looks up the record as a ComparisonJob regardless of the job's actual type, so ids for other job types will return a 404. Only available once the job has ended; returns a 405 otherwise
+      responses:
+        '200':
+          description: OK
+          content:
+            text/json:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '405':
+          description: Method not allowed - this job has not yet ended
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/files:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Files
+      summary: Get a set of File records
+      operationId: getFiles
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/FileResults'
+                  - $ref: '#/components/schemas/FileResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    post:
+      tags:
+        - Files
+      summary: Upload a file
+      operationId: postFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - upload
+              properties:
+                upload:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/files/{fileId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/fileId'
+    get:
+      tags:
+        - Files
+      summary: Get a specified File record
+      operationId: getFile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    delete:
+      tags:
+        - Files
+      summary: Delete a specified File record
+      operationId: deleteFile
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/files/{fileId}/raw:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/fileId'
+    get:
+      tags:
+        - Files
+      summary: Download the raw contents of a specified File record
+      operationId: getFileRaw
+      description: Streams the stored file bytes back with the content type recorded against the File record (rather than a fixed content type).
+      responses:
+        '200':
+          description: OK
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/identifiers:
+    description: 'Supports search of Identifier records. GET only: identifiers are created implicitly when linked elsewhere (e.g. on a Title or Package), not through this path directly.'
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Identifiers
+      summary: Get a set of Identifier records
+      operationId: getIdentifiers
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+        - in: query
+          name: minOccurrenceCount
+          description: Only return identifiers with at least this many occurrences.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/IdentifierResults'
+                  - $ref: '#/components/schemas/IdentifierResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/identifiers/{identifierId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/identifierId'
+    get:
+      tags:
+        - Identifiers
+      summary: Get a specified Identifier record
+      operationId: getIdentifier
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentifierRecord'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/identifiers/namespaces:
+    description: 'Supports search of Identifier Namespace records (e.g. ISBN, ISSN, DOI). GET only: namespaces are created implicitly when an identifier using a new namespace is linked elsewhere, not through this path directly.'
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Identifiers
+      summary: Get a set of Identifier Namespace records
+      operationId: getIdentifierNamespaces
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/IdentifierNamespaceResults'
+                  - $ref: '#/components/schemas/IdentifierNamespaceResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/validate/subscriptionAgreement:
+    description: Validates a full Subscription Agreement record against domain constraints without persisting it.
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    post:
+      tags:
+        - Validation
+      summary: Validate a full record against the SubscriptionAgreement domain
+      operationId: postValidateSubscriptionAgreement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Agreement'
+      responses:
+        '204':
+          description: No content -- the record is valid.
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/validate/subscriptionAgreement/{prop}:
+    description: 'Validates a single named property on a Subscription Agreement record against domain constraints without persisting it. This is what the FOLIO UI actually uses in practice: ui-agreements posts here with `prop=name` on blur, to asynchronously check a proposed agreement name.'
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/validateProp'
+    post:
+      tags:
+        - Validation
+      summary: Validate a single property on a SubscriptionAgreement record
+      operationId: postValidateSubscriptionAgreementProperty
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: 'Should contain at least the property named in the `prop` path parameter, keyed by its field name, e.g. `{ "name": "..." }`.'
+      responses:
+        '204':
+          description: No content -- the property is valid.
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/validate/remoteKB:
+    description: Validates a full Remote Knowledge Base record against domain constraints without persisting it.
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    post:
+      tags:
+        - Validation
+      summary: Validate a full record against the RemoteKB domain
+      operationId: postValidateRemoteKB
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Kb'
+      responses:
+        '204':
+          description: No content -- the record is valid.
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/validate/remoteKB/{prop}:
+    description: Validates a single named property on a Remote Knowledge Base record against domain constraints without persisting it.
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/validateProp'
+    post:
+      tags:
+        - Validation
+      summary: Validate a single property on a RemoteKB record
+      operationId: postValidateRemoteKBProperty
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Should contain at least the property named in the `prop` path parameter, keyed by its field name.
+      responses:
+        '204':
+          description: No content -- the property is valid.
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/settings/appSettings:
+    description: Supports search and creation of application settings. AppSetting is a generic key/value settings record from the shared web-toolkit library, not specific to this module.
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - Settings
+      summary: Get a set of application setting records
+      operationId: getAppSettings
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AppSettingResults'
+                  - $ref: '#/components/schemas/AppSettingResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    post:
+      tags:
+        - Settings
+      summary: Create application setting record
+      operationId: postAppSetting
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppSetting'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSetting'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/settings/appSettings/{settingId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/settingId'
+    get:
+      tags:
+        - Settings
+      summary: Get a specified application setting record
+      operationId: getAppSetting
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSetting'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    put:
+      tags:
+        - Settings
+      summary: Update application setting record
+      operationId: putAppSetting
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppSetting'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSetting'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    delete:
+      tags:
+        - Settings
+      summary: Delete a specified application setting record
+      operationId: deleteAppSetting
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/admin/loadPackage:
+    get:
+      tags:
+        - Admin
+      summary: Upload and upsert a package file
+      description: Developer helper for uploading a package JSON file directly (e.g. via curl) rather than through the normal harvest pipeline. If no package_file part is present, or it fails to bind, the response body is empty
+      operationId: getAdminLoadPackage
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                package_file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageIngestResult'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/admin/triggerCacheUpdate:
+    get:
+      tags:
+        - Admin
+      summary: Trigger an update of the remote KB package cache
+      operationId: getAdminTriggerCacheUpdate
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      responses:
+        '200':
+          description: OK -- returns no response body
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/admin/triggerSync:
+    get:
+      tags:
+        - Admin
+      summary: Trigger a remote KB harvest sync
+      operationId: getAdminTriggerSync
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/admin/triggerActivationUpdate:
+    get:
+      tags:
+        - Admin
+      summary: Trigger an activation update of the remote KB package cache
+      operationId: getAdminTriggerActivationUpdate
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Currently always an empty object -- no status field is set
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/admin/triggerHousekeeping:
+    get:
+      tags:
+        - Admin
+      summary: Trigger ERM housekeeping
+      description: Also run automatically every 24 hours via Okapi's timer interface
+      operationId: getAdminTriggerHousekeeping
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/admin/triggerEntitlementLogUpdate:
+    get:
+      tags:
+        - Admin
+      summary: Trigger an update of the entitlement log
+      operationId: getAdminTriggerEntitlementLogUpdate
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/admin/triggerDocMigration:
+    get:
+      tags:
+        - Admin
+      summary: Trigger migration of uploaded documents to object storage
+      description: Migrates uploaded file attachments still stored in the Postgres database (LOB) to the configured S3/MinIO object store
+      operationId: getAdminTriggerDocMigration
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/admin/triggerEntitlementEholdings:
+    get:
+      tags:
+        - Admin
+      summary: Trigger an eHoldings entitlement sync
+      description: Also run automatically every hour via Okapi's timer interface, which never sets force, always honouring the entitlement sync buffer window
+      operationId: getAdminTriggerEntitlementEholdings
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+        - in: query
+          name: force
+          description: Bypass the entitlement sync buffer window
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/statistics/kbCount:
+    get:
+      tags:
+        - Statistics
+      summary: Get record counts for knowledge base resource types
+      operationId: getKbCountStatistics
+      description: Counts every row in each of the listed tables -- not scoped to any particular agreement or package.
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Total record count per resource type.
+                properties:
+                  ErmResource:
+                    type: integer
+                  Pkg:
+                    type: integer
+                  PackageContentItem:
+                    type: integer
+                  PlatformTitleInstance:
+                    type: integer
+                  TitleInstance:
+                    type: integer
+                  Work:
+                    type: integer
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/statistics/sasCount:
+    get:
+      tags:
+        - Statistics
+      summary: Get record counts for agreements and their entitlements
+      operationId: getSasCountStatistics
+      description: Counts every row in each of the listed tables -- not scoped to any particular agreement.
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Total record count per resource type.
+                properties:
+                  SubscriptionAgreement:
+                    type: integer
+                  Entitlement:
+                    type: integer
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/sts:
+    description: String templates are Handlebars rules used to customise or proxy Platform Title Instance URLs (e.g. to insert an institution's proxy prefix, or swap in a locally-preferred domain).
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+    get:
+      tags:
+        - String Templates
+      summary: Get a set of string templates
+      operationId: getStringTemplates
+      parameters:
+        - $ref: '#/components/parameters/filters'
+        - $ref: '#/components/parameters/match'
+        - $ref: '#/components/parameters/term'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/stats'
+        - $ref: '#/components/parameters/perPage'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/page'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/StringTemplateResults'
+                  - $ref: '#/components/schemas/StringTemplateResultsArray'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    post:
+      tags:
+        - String Templates
+      summary: Create a string template
+      operationId: postStringTemplate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StringTemplate'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringTemplate'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/sts/{stringTemplateId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/stringTemplateId'
+    get:
+      tags:
+        - String Templates
+      summary: Get a specified string template
+      operationId: getStringTemplate
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringTemplate'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    put:
+      tags:
+        - String Templates
+      summary: Update a string template
+      operationId: putStringTemplate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StringTemplate'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringTemplate'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+    delete:
+      tags:
+        - String Templates
+      summary: Delete a specified string template
+      operationId: deleteStringTemplate
+      responses:
+        '204':
+          description: No content
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/sts/template:
+    get:
+      tags:
+        - String Templates
+      summary: Refresh templated URLs
+      description: 'Intended to trigger a background refresh of templated URLs for every Platform, re-running all applicable string templates. Currently a no-op: the refresh logic is disabled in the module, and this always returns an empty object.'
+      operationId: refreshTemplatedUrls
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/sts/template/{platformId}:
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/platformId'
+    get:
+      tags:
+        - String Templates
+      summary: Get the string templates applicable to a Platform
+      description: Resolves which string templates (both `urlProxier` and `urlCustomiser` context) apply to the given Platform id, based on each template's `idScopes` allowlist/denylist.
+      operationId: getStringTemplatesForPlatform
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringTemplatesForPlatform'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /export:
+    description: Exports resources entitled (directly or via a package) across every agreement in the tenant. To scope this to a single agreement instead, use `/erm/sas/{agreementId}/resources/export/all/{format}`.
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - in: query
+        name: subscriptionAgreementId
+        description: Undocumented in the module descriptor, but honoured by the implementation -- if supplied, scopes the export to this one agreement, equivalent to using the agreement-scoped export path.
+        required: false
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Export
+      summary: Export all entitled resources as JSON
+      operationId: exportAll
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExportEntry'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /export/{format}:
+    description: Exports resources entitled (directly or via a package) across every agreement in the tenant, in the given format. To scope this to a single agreement instead, use `/erm/sas/{agreementId}/resources/export/all/{format}`.
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/format'
+      - in: query
+        name: subscriptionAgreementId
+        description: Undocumented in the module descriptor, but honoured by the implementation -- if supplied, scopes the export to this one agreement, equivalent to using the agreement-scoped export path.
+        required: false
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Export
+      summary: Export all entitled resources in a specified format
+      description: '`format: kbart` returns a tab-separated KBART file (one row per Package Content Item; Platform Title Instances and directly-entitled Title Instances are silently skipped). Any other `format` value returns the same JSON shape as the plain `/export` path.'
+      operationId: exportAllFormat
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExportEntry'
+            text/tab-separated-value;charset=UTF-8:
+              schema:
+                type: string
+                description: KBART-formatted TSV, with a header row followed by one row per Package Content Item.
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /export/current:
+    description: Exports resources currently entitled (directly or via a package) across every agreement in the tenant -- i.e. `coverage`/`accessStart`/`accessEnd` windows that are active today. To scope this to a single agreement instead, use `/erm/sas/{agreementId}/resources/export/current/{format}`.
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - in: query
+        name: subscriptionAgreementId
+        description: Undocumented in the module descriptor, but honoured by the implementation -- if supplied, scopes the export to this one agreement, equivalent to using the agreement-scoped export path.
+        required: false
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Export
+      summary: Export currently entitled resources as JSON
+      operationId: exportCurrent
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExportEntry'
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /export/current/{format}:
+    description: Exports resources currently entitled (directly or via a package) across every agreement in the tenant, in the given format. To scope this to a single agreement instead, use `/erm/sas/{agreementId}/resources/export/current/{format}`.
+    parameters:
+      - $ref: '#/components/parameters/x-okapi-tenant'
+      - $ref: '#/components/parameters/format'
+      - in: query
+        name: subscriptionAgreementId
+        description: Undocumented in the module descriptor, but honoured by the implementation -- if supplied, scopes the export to this one agreement, equivalent to using the agreement-scoped export path.
+        required: false
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Export
+      summary: Export currently entitled resources in a specified format
+      description: '`format: kbart` returns a tab-separated KBART file (one row per Package Content Item; Platform Title Instances and directly-entitled Title Instances are silently skipped). Any other `format` value returns the same JSON shape as the plain `/export/current` path.'
+      operationId: exportCurrentFormat
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExportEntry'
+            text/tab-separated-value;charset=UTF-8:
+              schema:
+                type: string
+                description: KBART-formatted TSV, with a header row followed by one row per Package Content Item.
+        '400':
+          description: Bad request error
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
+  /dashboard/definitions:
+    get:
+      tags:
+        - Dashboard
+      summary: List dashboard widget definitions
+      description: |-
+        Returns the dashboard widget definitions bundled with this module, describing the self-service search/list widgets (e.g. simple agreement search) that can be added to a FOLIO dashboard. Definitions are cached in memory after the first request, for the lifetime of the running instance. No specific permission is required beyond a valid tenant/token.
+
+        This path is provided under the `dashboard` interface, declared as `interfaceType: multiple` in the module descriptor, because other dashboard-capable modules (e.g. mod-licenses) expose the same path for their own widget definitions. Since more than one module enabled for a tenant can answer this exact path, a plain request is ambiguous — Okapi needs an `X-Okapi-Module-Id` header naming which one to route to. Discover the candidate module ids first with `GET /_/proxy/tenants/{tenant}/modules?provide=dashboard`, then pass one of them back on this request.
+      operationId: getDashboardDefinitions
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+        - $ref: '#/components/parameters/x-okapi-module-id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DashboardWidgetDefinition'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrailsErrorResponse'
 components:
   securitySchemes:
     okapiToken:
@@ -1913,6 +5113,150 @@ components:
       schema:
         type: string
         format: uuid
+    ermResourceId:
+      in: path
+      name: ermResourceId
+      description: UUID for an ERM resource
+      required: true
+      schema:
+        type: string
+        format: uuid
+    includeIds:
+      in: query
+      name: includeIds
+      description: Whether to include the ids of affected resources in the response. Defaults to false
+      required: false
+      schema:
+        type: boolean
+        default: false
+    kbId:
+      in: path
+      name: kbId
+      description: UUID for a remote Knowledge Base
+      required: true
+      schema:
+        type: string
+        format: uuid
+    orgId:
+      in: path
+      name: orgId
+      description: UUID for an Org
+      required: true
+      schema:
+        type: string
+        format: uuid
+    contactId:
+      in: path
+      name: contactId
+      description: UUID for an Internal Contact
+      required: true
+      schema:
+        type: string
+        format: uuid
+    refdataId:
+      in: path
+      name: refdataId
+      description: UUID for a reference data category
+      required: true
+      schema:
+        type: string
+        format: uuid
+    refdataDomain:
+      in: path
+      name: domain
+      description: Simple (case-insensitive) name of the domain class that owns the property, e.g. `SubscriptionAgreement`, `Pkg`
+      required: true
+      schema:
+        type: string
+    refdataProperty:
+      in: path
+      name: property
+      description: Name of the refdata-backed property on the domain class, e.g. `agreementStatus` (on `SubscriptionAgreement`)
+      required: true
+      schema:
+        type: string
+    custpropId:
+      in: path
+      name: custpropId
+      description: UUID for a custom property definition
+      required: true
+      schema:
+        type: string
+        format: uuid
+    jobId:
+      in: path
+      name: jobId
+      description: UUID for a persistent job
+      required: true
+      schema:
+        type: string
+        format: uuid
+    jobType:
+      in: path
+      name: jobType
+      description: Unlike job creation, listing by type is not restricted to the types postable via /erm/jobs/{jobType} -- any PersistentJob subtype can be filtered on here, including types only ever created internally
+      required: true
+      schema:
+        type: string
+        enum:
+          - comparison
+          - coverageRegeneration
+          - packageImport
+          - kbartImport
+          - packageIngest
+          - supplementaryDocumentsCleaning
+          - externalEntitlementSync
+          - packageTriggerResync
+          - titleIngest
+          - resourceDeletion
+          - eHoldingsEntitlementSync
+          - identifierReassignment
+    fileId:
+      in: path
+      name: fileId
+      description: UUID for a file
+      required: true
+      schema:
+        type: string
+        format: uuid
+    identifierId:
+      in: path
+      name: identifierId
+      description: UUID for an Identifier
+      required: true
+      schema:
+        type: string
+        format: uuid
+    validateProp:
+      in: path
+      name: prop
+      description: Name of the single property to validate, e.g. `name` on `subscriptionAgreement`. Only this property is checked -- other constraints on the domain class (e.g. other required fields not present in the request body) are not evaluated.
+      required: true
+      schema:
+        type: string
+    settingId:
+      in: path
+      name: settingId
+      description: Identifier for an application setting
+      required: true
+      schema:
+        type: string
+    stringTemplateId:
+      in: path
+      name: stringTemplateId
+      description: UUID for a string template
+      required: true
+      schema:
+        type: string
+        format: uuid
+    x-okapi-module-id:
+      in: header
+      name: X-Okapi-Module-Id
+      required: true
+      description: 'ID of the specific module to route this request to. Required on paths  backed by an `interfaceType: multiple` interface'
+      schema:
+        type: string
+        example: mod-agreements-7.4.0-SNAPSHOT
   schemas:
     ResultsMeta:
       type: object
@@ -1934,7 +5278,6 @@ components:
       properties:
         id:
           type: string
-          format: uuid
         label:
           type: string
         value:
@@ -2048,19 +5391,28 @@ components:
                 type: string
     File:
       type: object
+      required:
+        - id
+        - name
+        - size
       properties:
         id:
           type: string
           format: uuid
+          readOnly: true
         contentType:
           type: string
+          description: MIME type of the uploaded file
         modified:
           type: string
           format: date-time
+          readOnly: true
         name:
           type: string
+          description: Original filename of the uploaded file
         size:
           type: integer
+          description: Size of the uploaded file in bytes
     DocumentAttachment:
       type: object
       required:
@@ -2116,7 +5468,6 @@ components:
             $ref: '#/components/schemas/LinkedAmendment'
         id:
           type: string
-          format: uuid
         owner:
           type: string
           format: uuid
@@ -2129,6 +5480,115 @@ components:
           oneOf:
             - type: string
             - $ref: '#/components/schemas/Refdata'
+    UsageDataProvider:
+      type: object
+      properties:
+        id:
+          type: string
+        owner:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+        remoteId:
+          type: string
+          format: uuid
+        remoteId_object:
+          type: object
+    AgreementRelationshipAgreement:
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        agreementStatus:
+          $ref: '#/components/schemas/Refdata'
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+    AgreementRelationship:
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Refdata'
+        outward:
+          $ref: '#/components/schemas/AgreementRelationshipAgreement'
+        inward:
+          $ref: '#/components/schemas/AgreementRelationshipAgreement'
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+        normValue:
+          type: string
+        value:
+          type: string
+    RefdataCategory:
+      type: object
+      properties:
+        desc:
+          type: string
+        id:
+          type: string
+        internal:
+          type: boolean
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/Refdata'
+    CustomPropertyDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        primary:
+          type: boolean
+        defaultInternal:
+          type: boolean
+        retired:
+          type: boolean
+        weight:
+          type: integer
+        type:
+          type: string
+          description: Java class name indicating the property type (e.g. CustomPropertyInteger, CustomPropertyText, CustomPropertyRefdata)
+        category:
+          $ref: '#/components/schemas/RefdataCategory'
+    CustomPropertyValue:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        internal:
+          type: boolean
+        note:
+          type: string
+        publicNote:
+          type: string
+        value:
+          oneOf:
+            - type: string
+            - type: integer
+            - $ref: '#/components/schemas/Refdata'
+        type:
+          $ref: '#/components/schemas/CustomPropertyDefinition'
     Agreement:
       type: object
       required:
@@ -2149,6 +5609,10 @@ components:
           type: string
           format: date-time
           readOnly: true
+        version:
+          type: integer
+          readOnly: true
+          description: GORM optimistic-locking version, incremented on every update.
         name:
           type: string
           maxLength: 255
@@ -2211,13 +5675,19 @@ components:
           format: date
           readOnly: true
         endDate:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date
           readOnly: true
+          description: Null if any period on the agreement is open-ended (has no end date)
         cancellationDeadline:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date
           readOnly: true
+          description: Null if no period on the agreement has a cancellation deadline set
         contacts:
           type: array
           items:
@@ -2262,113 +5732,6 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/CustomPropertyValue'
-    UsageDataProvider:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        owner:
-          $ref: '#/components/schemas/Agreement'
-        remoteId:
-          type: string
-          format: uuid
-        remoteId_object:
-          type: object
-    AgreementRelationshipAgreement:
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        agreementStatus:
-          $ref: '#/components/schemas/Refdata'
-        startDate:
-          type: string
-          format: date
-        endDate:
-          type: string
-          format: date
-    AgreementRelationship:
-      properties:
-        id:
-          type: string
-          format: uuid
-        type:
-          oneOf:
-            - type: string
-            - $ref: '#/components/schemas/Refdata'
-        outward:
-          $ref: '#/components/schemas/AgreementRelationshipAgreement'
-        inward:
-          $ref: '#/components/schemas/AgreementRelationshipAgreement'
-    Tag:
-      type: object
-      properties:
-        id:
-          type: integer
-        normValue:
-          type: string
-        value:
-          type: string
-    RefdataCategory:
-      type: object
-      properties:
-        desc:
-          type: string
-        id:
-          type: string
-          format: uuid
-        internal:
-          type: boolean
-        values:
-          type: array
-          items:
-            $ref: '#/components/schemas/Refdata'
-    CustomPropertyDefinition:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        label:
-          type: string
-        description:
-          type: string
-        primary:
-          type: boolean
-        defaultInternal:
-          type: boolean
-        retired:
-          type: boolean
-        weight:
-          type: integer
-        type:
-          type: string
-          description: Java class name indicating the property type (e.g. CustomPropertyInteger, CustomPropertyText, CustomPropertyRefdata)
-        category:
-          $ref: '#/components/schemas/RefdataCategory'
-    CustomPropertyValue:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        internal:
-          type: boolean
-        note:
-          type: string
-        publicNote:
-          type: string
-        value:
-          oneOf:
-            - type: string
-            - type: integer
-            - $ref: '#/components/schemas/Refdata'
-        type:
-          $ref: '#/components/schemas/CustomPropertyDefinition'
     AgreementResultsArray:
       type: array
       items:
@@ -2383,6 +5746,24 @@ components:
         - properties:
             results:
               $ref: '#/components/schemas/AgreementResultsArray'
+    ApplicationError:
+      type: object
+      properties:
+        total:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              i18n_code:
+                type: string
+              message:
+                type: string
+              object:
+                type: string
     HttpError:
       type: object
       properties:
@@ -2454,6 +5835,11 @@ components:
           format: uuid
         class:
           type: string
+          enum:
+            - org.olf.kb.TitleInstance
+            - org.olf.kb.PlatformTitleInstance
+            - org.olf.kb.PackageContentItem
+            - org.olf.kb.Pkg
         coverage:
           type: array
           items:
@@ -2499,35 +5885,132 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IdentifierOccurrence'
-    ErmResourceResultsArray:
-      type: array
-      items:
-        $ref: '#/components/schemas/ErmResource'
-    ErmResourceResults:
+        _object:
+          description: The full, type-specific representation of this resource (fields vary depending on `class`)
+          oneOf:
+            - $ref: '#/components/schemas/TitleInstance'
+            - $ref: '#/components/schemas/PlatformTitleInstance'
+            - $ref: '#/components/schemas/PackageContentItem'
+            - $ref: '#/components/schemas/Package'
+          discriminator:
+            propertyName: class
+            mapping:
+              org.olf.kb.TitleInstance: '#/components/schemas/TitleInstance'
+              org.olf.kb.PlatformTitleInstance: '#/components/schemas/PlatformTitleInstance'
+              org.olf.kb.PackageContentItem: '#/components/schemas/PackageContentItem'
+              org.olf.kb.Pkg: '#/components/schemas/Package'
+    TitleInstanceRef:
+      description: A lightweight representation of a title instance, used where a title references another title (e.g. `TitleInstance.relatedTitles`). Unlike the full `TitleInstance` representation, fields such as `class`, `dateCreated` and `coverage` are not populated on this partial view, and it does not nest further `relatedTitles`.
+      allOf:
+        - $ref: '#/components/schemas/ErmResource'
+        - properties:
+            dateMonographPublished:
+              type: string
+              pattern: ^\d{4}(-((0[0-9])|(1[0-2]))(-(([0-2][0-9])|3[0-1]))?)?\$
+            firstAuthor:
+              type: string
+            firstEditor:
+              type: string
+            longName:
+              type: string
+              readOnly: true
+            monographEdition:
+              type: string
+            monographVolume:
+              type: string
+            work:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+    TitleInstance:
       type: object
       required:
-        - results
+        - name
+        - class
       allOf:
-        - $ref: '#/components/schemas/ResultsMeta'
-        - type: object
+        - $ref: '#/components/schemas/ErmResource'
         - properties:
-            results:
-              $ref: '#/components/schemas/ErmResourceResultsArray'
-    PurchaseOrderLine:
+            class:
+              enum:
+                - org.olf.kb.TitleInstance
+            dateMonographPublished:
+              type: string
+              pattern: ^\d{4}(-((0[0-9])|(1[0-2]))(-(([0-2][0-9])|3[0-1]))?)?\$
+            firstAuthor:
+              type: string
+            firstEditor:
+              type: string
+            identifiers:
+              type: array
+              items:
+                $ref: '#/components/schemas/IdentifierOccurrence'
+            longName:
+              type: string
+              readOnly: true
+            monographEdition:
+              type: string
+            monographVolume:
+              type: string
+            work:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+            relatedTitles:
+              type: array
+              readOnly: true
+              items:
+                $ref: '#/components/schemas/TitleInstanceRef'
+    Platform:
       type: object
+      required:
+        - name
       properties:
         id:
           type: string
           format: uuid
-        owner:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-        poLineId:
+        name:
           type: string
-          format: uuid
+        dateCreated:
+          type: string
+          format: date-time
+        lastUpdated:
+          type: string
+          format: date-time
+        locators:
+          type: array
+          items:
+            type: object
+            properties:
+              domainName:
+                type: string
+              id:
+                type: string
+                format: uuid
+    PlatformTitleInstance:
+      type: object
+      required:
+        - platform
+        - titleInstance
+        - class
+      allOf:
+        - $ref: '#/components/schemas/ErmResource'
+        - properties:
+            class:
+              enum:
+                - org.olf.kb.PlatformTitleInstance
+            longName:
+              type: string
+            platform:
+              $ref: '#/components/schemas/Platform'
+            titleInstance:
+              $ref: '#/components/schemas/TitleInstance'
+            url:
+              type: string
+              format: uri
     EmbargoStatement:
       type: object
       properties:
@@ -2549,32 +6032,6 @@ components:
           $ref: '#/components/schemas/EmbargoStatement'
         movingWallEnd:
           $ref: '#/components/schemas/EmbargoStatement'
-    Platform:
-      type: object
-      required:
-        - name
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        dateCreated:
-          type: string
-          format: date
-        lastUpdated:
-          type: string
-          format: date
-        locators:
-          type: array
-          items:
-            type: object
-            properties:
-              domainName:
-                type: string
-              id:
-                type: string
-                format: uuid
     PackageDescriptionUrl:
       type: object
       required:
@@ -2618,9 +6075,13 @@ components:
         - name
         - source
         - reference
+        - class
       allOf:
         - $ref: '#/components/schemas/ErmResource'
         - properties:
+            class:
+              enum:
+                - org.olf.kb.Pkg
             source:
               type: string
             sourceDataCreated:
@@ -2661,64 +6122,16 @@ components:
                 $ref: '#/components/schemas/AvailabilityConstraint'
             resourceCount:
               type: integer
-    TitleInstance:
-      type: object
-      required:
-        - name
-      allOf:
-        - $ref: '#/components/schemas/ErmResource'
-        - properties:
-            dateMonographPublished:
-              type: string
-              pattern: ^\d{4}(-((0[0-9])|(1[0-2]))(-(([0-2][0-9])|3[0-1]))?)?\$
-            firstAuthor:
-              type: string
-            firstEditor:
-              type: string
-            identifiers:
-              type: array
-              items:
-                $ref: '#/components/schemas/IdentifierOccurrence'
-            longName:
-              type: string
-              readOnly: true
-            monographEdition:
-              type: string
-            monographVolume:
-              type: string
-            work:
-              type: object
-              properties:
-                id:
-                  type: string
-                  format: uuid
-            relatedTitles:
-              type: array
-              readOnly: true
-              items:
-                $ref: '#/components/schemas/TitleInstance'
-    PlatformTitleInstance:
-      type: object
-      required:
-        - platform
-        - titleInstance
-      allOf:
-        - $ref: '#/components/schemas/ErmResource'
-        - properties:
-            longName:
-              type: string
-            platform:
-              $ref: '#/components/schemas/Platform'
-            titleInstance:
-              $ref: '#/components/schemas/TitleInstance'
-            url:
-              type: string
-              format: uri
     PackageContentItem:
       type: object
+      required:
+        - class
       allOf:
         - $ref: '#/components/schemas/ErmResource'
         - properties:
+            class:
+              enum:
+                - org.olf.kb.PackageContentItem
             accessStart:
               type: string
               format: date
@@ -2743,179 +6156,118 @@ components:
               $ref: '#/components/schemas/Package'
             pti:
               $ref: '#/components/schemas/PlatformTitleInstance'
-    EntitlementOption:
-      allOf:
-        - oneOf:
-            - $ref: '#/components/schemas/PackageContentItem'
-            - $ref: '#/components/schemas/Package'
-        - type: object
-          properties:
-            _object:
-              oneOf:
-                - $ref: '#/components/schemas/TitleInstance'
-                - $ref: '#/components/schemas/PlatformTitleInstance'
-                - $ref: '#/components/schemas/PackageContentItem'
-                - $ref: '#/components/schemas/Package'
-              discriminator:
-                propertyName: class
-    Entitlement:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        dateCreated:
-          type: string
-          format: date-time
-        lastUpdated:
-          type: string
-          format: date-time
-        activeFrom:
-          type: string
-          format: date
-        activeTo:
-          type: string
-          format: date
-        authority:
-          type: string
-          enum:
-            - GOKB-RESOURCE
-            - EKB-PACKAGE
-            - EKB-TITLE
-        contentUpdated:
-          type: string
-          format: date-time
-        customCoverage:
-          type: boolean
-        coverage:
-          type: array
-          items:
-            $ref: '#/components/schemas/CoverageStatement'
-        docs:
-          type: array
-          items:
-            $ref: '#/components/schemas/DocumentAttachment'
-        endDate:
-          type: string
-          format: date
-          readOnly: true
-          description: Duplicates activeTo date
-        explanation:
-          type: string
-        haveAccess:
-          type: boolean
-        note:
-          type: string
-        description:
-          type: string
-        owner:
-          $ref: '#/components/schemas/Agreement'
-          readOnly: true
-        poLines:
-          type: array
-          items:
-            $ref: '#/components/schemas/PurchaseOrderLine'
-        resource:
-          $ref: '#/components/schemas/EntitlementOption'
-        reference:
-          type: string
-        reference_object:
-          type: object
-        startDate:
-          type: string
-          format: date
-          readOnly: true
-          description: Duplicates activeFrom date
-        suppressFromDiscovery:
-          type: boolean
-        tags:
-          type: array
-          items:
-            $ref: '#/components/schemas/Tag'
-        type:
-          type: string
-          enum:
-            - detached
-            - external
-            - internal
-    TemplatedUrl:
+    ErmResourceResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/ErmResource'
+    ErmResourceResults:
       type: object
       required:
-        - id
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        url:
-          type: string
-          format: uri
-    resourceInAgreementExport:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/ErmResourceResultsArray'
+    ExportEntry:
       type: object
+      description: One exported resource, paired with the agreement entitlement (and, if entitled via a package, the package) it was exported for. The same resource can appear more than once if it is entitled through more than one package/agreement, or both directly and via a package.
+      required:
+        - agreementLine
+        - title
+        - coverage
+        - customCoverage
       properties:
-        agreementLine:
-          $ref: '#/components/schemas/Entitlement'
-        coverage:
-          type: array
-          items:
-            $ref: '#/components/schemas/CoverageStatement'
-        customCoverage:
-          type: boolean
-        depth:
-          type: string
-        embargo:
-          $ref: '#/components/schemas/Embargo'
-        note:
-          type: string
-        package:
-          $ref: '#/components/schemas/Package'
-        platform:
-          $ref: '#/components/schemas/Platform'
-        suppressFromDiscovery:
-          type: boolean
         tags:
           type: array
           items:
             $ref: '#/components/schemas/Tag'
-        templatedUrls:
-          type: array
-          items:
-            $ref: '#/components/schemas/TemplatedUrl'
-        title:
-          $ref: '#/components/schemas/TitleInstance'
-        relatedTitles:
-          type: array
-          items:
-            $ref: '#/components/schemas/TitleInstance'
+        package:
+          type: object
+          description: Present only when this resource was reached via a package entitlement.
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            identifiers:
+              type: array
+              items:
+                $ref: '#/components/schemas/IdentifierOccurrence'
+        agreementLine:
+          type: object
+          description: The entitlement (agreement line) this row was exported for. Only a minimal subset of the entitlement is included here -- for the full record, look it up via `id` against `/erm/entitlements/{entitlementId}`.
+          properties:
+            id:
+              type: string
+              format: uuid
+            suppressFromDiscovery:
+              type: boolean
+            tags:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tag'
+        platform:
+          allOf:
+            - $ref: '#/components/schemas/Platform'
+          description: Present when the resource is a Platform Title Instance or Package Content Item.
+        suppressFromDiscovery:
+          type: boolean
+          description: Present when the resource is a Platform Title Instance or Package Content Item.
+        embargo:
+          allOf:
+            - $ref: '#/components/schemas/Embargo'
+          description: Present only for Package Content Item resources with an embargo.
+        note:
+          type: string
+          description: Present only for Package Content Item resources with a note.
         url:
           type: string
-          format: uri
+          description: Present when the resource is a Platform Title Instance or Package Content Item and has a URL.
+        templatedUrls:
+          type: array
+          description: URLs generated from String Templates (see `/erm/sts`) applicable to this resource's platform. Present when the resource is a Platform Title Instance or Package Content Item.
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              url:
+                type: string
+        depth:
+          type: string
+          description: Present only for Package Content Item resources.
+        coverage:
+          type: array
+          description: Coverage statements for this resource, or a custom coverage override if one applies (see `customCoverage`). Empty if there is no coverage.
+          items:
+            $ref: '#/components/schemas/CoverageStatement'
+        customCoverage:
+          type: boolean
+          description: True if `coverage` is a custom override rather than the resource's own coverage statements.
+        relatedTitles:
+          type: array
+          description: Related title instances, present only if the title has any.
+          items:
+            allOf:
+              - $ref: '#/components/schemas/TitleInstance'
+            description: A minimal title representation -- only id, name, type, publicationType, subType, identifiers and longName are populated.
+        title:
+          allOf:
+            - $ref: '#/components/schemas/TitleInstance'
+          description: The title instance for this resource. The `entitlements`, `coverage`, `work` and `platformInstances` relations are always omitted here, even where the full TitleInstance representation would include them.
     resourcesInAgreementExport:
       type: object
       properties:
         resources:
           type: array
           items:
-            $ref: '#/components/schemas/resourceInAgreementExport'
-    ApplicationError:
-      type: object
-      properties:
-        total:
-          type: integer
-        errors:
-          type: array
-          items:
-            type: object
-            properties:
-              code:
-                type: string
-              i18n_code:
-                type: string
-              message:
-                type: string
-              object:
-                type: string
+            $ref: '#/components/schemas/ExportEntry'
     LinkedLicensesResultsArray:
       type: array
       items:
@@ -2944,6 +6296,22 @@ components:
         - properties:
             results:
               $ref: '#/components/schemas/UsageDataProvidersResultsArray'
+    DataSchemaHeader:
+      type: object
+      description: Envelope header used by public API lookup/import endpoints to self-describe the response's data schema
+      required:
+        - dataSchema
+      properties:
+        dataSchema:
+          type: object
+          required:
+            - name
+            - version
+          properties:
+            name:
+              type: string
+            version:
+              type: number
     SubscriptionAgreementList:
       type: object
       required:
@@ -2963,12 +6331,16 @@ components:
           format: date
           readOnly: true
         endDate:
-          type: string
+          type:
+            - string
+            - 'null'
           format: date
           readOnly: true
         isPerpetual:
           oneOf:
-            - type: string
+            - type:
+                - string
+                - 'null'
             - $ref: '#/components/schemas/Refdata'
         agreementStatus:
           oneOf:
@@ -2985,19 +6357,136 @@ components:
         - records
       properties:
         header:
-          type: object
-          required:
-            - name
-            - version
-          properties:
-            name:
-              type: string
-            version:
-              type: number
+          $ref: '#/components/schemas/DataSchemaHeader'
         records:
           type: array
           items:
             $ref: '#/components/schemas/SubscriptionAgreementList'
+    PurchaseOrderLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        owner:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+        poLineId:
+          type: string
+          format: uuid
+    EntitlementOption:
+      allOf:
+        - oneOf:
+            - $ref: '#/components/schemas/PackageContentItem'
+            - $ref: '#/components/schemas/Package'
+        - type: object
+          properties:
+            _object:
+              oneOf:
+                - $ref: '#/components/schemas/TitleInstance'
+                - $ref: '#/components/schemas/PlatformTitleInstance'
+                - $ref: '#/components/schemas/PackageContentItem'
+                - $ref: '#/components/schemas/Package'
+              discriminator:
+                propertyName: class
+                mapping:
+                  org.olf.kb.TitleInstance: '#/components/schemas/TitleInstance'
+                  org.olf.kb.PlatformTitleInstance: '#/components/schemas/PlatformTitleInstance'
+                  org.olf.kb.PackageContentItem: '#/components/schemas/PackageContentItem'
+                  org.olf.kb.Pkg: '#/components/schemas/Package'
+    Entitlement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        dateCreated:
+          type: string
+          format: date-time
+        lastUpdated:
+          type: string
+          format: date-time
+        activeFrom:
+          type:
+            - string
+            - 'null'
+          format: date
+        activeTo:
+          type:
+            - string
+            - 'null'
+          format: date
+        authority:
+          type: string
+          enum:
+            - GOKB-RESOURCE
+            - EKB-PACKAGE
+            - EKB-TITLE
+        contentUpdated:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        customCoverage:
+          type: boolean
+        coverage:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoverageStatement'
+        docs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentAttachment'
+        endDate:
+          type:
+            - string
+            - 'null'
+          format: date
+          readOnly: true
+          description: Duplicates activeTo date
+        explanation:
+          type: string
+        haveAccess:
+          type: boolean
+        note:
+          type: string
+        description:
+          type: string
+        owner:
+          $ref: '#/components/schemas/Agreement'
+          readOnly: true
+        poLines:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrderLine'
+        resource:
+          $ref: '#/components/schemas/EntitlementOption'
+        reference:
+          type: string
+        reference_object:
+          type: object
+        startDate:
+          type:
+            - string
+            - 'null'
+          format: date
+          readOnly: true
+          description: Duplicates activeFrom date
+        suppressFromDiscovery:
+          type: boolean
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        type:
+          type: string
+          enum:
+            - detached
+            - external
+            - internal
     EntitlementResultsArray:
       type: array
       items:
@@ -3012,6 +6501,19 @@ components:
         - properties:
             results:
               $ref: '#/components/schemas/EntitlementResultsArray'
+    TemplatedUrl:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
     EntitlementLogEntry:
       type: object
       properties:
@@ -3048,9 +6550,13 @@ components:
         type:
           type: string
         license:
-          type: string
+          type:
+            - string
+            - 'null'
         licenseId:
-          type: string
+          type:
+            - string
+            - 'null'
           format: uuid
         eventType:
           type: string
@@ -3144,12 +6650,10 @@ components:
           type: string
           format: uri
         dateCreated:
-          type: string
-          format: date-time
+          type: integer
           readOnly: true
         lastUpdated:
-          type: string
-          format: date-time
+          type: integer
           readOnly: true
     ImportIdentifier:
       type: object
@@ -3363,23 +6867,6 @@ components:
         packageId:
           type: string
           format: uuid
-    KbartPackageMetadata:
-      type: object
-      required:
-        - packageName
-        - packageSource
-        - packageReference
-      properties:
-        packageName:
-          type: string
-        packageSource:
-          type: string
-        packageReference:
-          type: string
-        packageProvider:
-          type: string
-        trustedSourceTI:
-          type: boolean
     PackageIngressMetadataResultsArray:
       type: array
       items:
@@ -3436,3 +6923,973 @@ components:
         - properties:
             results:
               $ref: '#/components/schemas/TitleInstanceResultsArray'
+    EntitlementOptionResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/EntitlementOption'
+    EntitlementOptionResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/EntitlementOptionResultsArray'
+    DeleteBody:
+      type: object
+      required:
+        - resources
+      properties:
+        resources:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+    MarkForDeleteMap:
+      type: object
+      properties:
+        pci:
+          type: array
+          items:
+            type: string
+            format: uuid
+        pti:
+          type: array
+          items:
+            type: string
+            format: uuid
+        ti:
+          type: array
+          items:
+            type: string
+            format: uuid
+        work:
+          type: array
+          items:
+            type: string
+            format: uuid
+    DeletionCounts:
+      type: object
+      properties:
+        pci:
+          type: integer
+        pti:
+          type: integer
+        ti:
+          type: integer
+        work:
+          type: integer
+    MarkForDeleteResponse:
+      type: object
+      properties:
+        resourceIds:
+          description: Omitted (null) unless the `includeIds` query parameter is set to true
+          oneOf:
+            - $ref: '#/components/schemas/MarkForDeleteMap'
+            - type: 'null'
+        statistics:
+          $ref: '#/components/schemas/DeletionCounts'
+    ResourceDeletionJob:
+      description: An asynchronous job tracking a package deletion. Deletion is queued and processed in the background; poll this resource's id via the persistent job endpoints to check progress
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        class:
+          type: string
+          enum:
+            - org.olf.general.jobs.ResourceDeletionJob
+        name:
+          type: string
+        dateCreated:
+          type: integer
+        started:
+          description: Null until the job begins running
+          type:
+            - string
+            - 'null'
+          format: date-time
+        ended:
+          description: Null until the job finishes
+          type:
+            - string
+            - 'null'
+          format: date-time
+        status:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Refdata'
+        result:
+          description: Null until the job finishes
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Refdata'
+            - type: 'null'
+        fileUpload:
+          $ref: '#/components/schemas/File'
+        fullLogCount:
+          type: integer
+        errorLogCount:
+          type: integer
+        infoLogCount:
+          type: integer
+        deletionJobType:
+          type: string
+          enum:
+            - PackageDeletionJob
+            - PciDeletionJob
+        resourceInputs:
+          description: JSON-encoded list of the resource ids submitted for deletion
+          type: string
+    DeleteResponse:
+      type: object
+      properties:
+        markedForDeletion:
+          $ref: '#/components/schemas/MarkForDeleteResponse'
+        deleted:
+          $ref: '#/components/schemas/MarkForDeleteResponse'
+    Kb:
+      type: object
+      required:
+        - name
+        - trustedSourceTI
+      properties:
+        activationEnabled:
+          description: If activation is supported, is recording activation in this remote KB enabled. Not currently used
+          type: boolean
+        activationSupported:
+          description: Does this remote KB support content activation. Not currently used
+          type: boolean
+        active:
+          description: If harvesting is supported, is harvesting from this remote KB activated
+          type: boolean
+        credentials:
+          description: Credentials used to authenticate with the remote KB. Not currently used
+          type: string
+        cursor:
+          description: Marks progress through a harvest. May be a timestamp, a transaction id, or another service-specific value depending on `type`
+          type: string
+        fullPrefix:
+          type: string
+        id:
+          type: string
+          format: uuid
+        lastCheck:
+          type: integer
+        listPrefix:
+          type: string
+        name:
+          type: string
+        principal:
+          description: Identity/username used to authenticate with the remote KB. Not currently used
+          type: string
+        readonly:
+          description: Marks the KB as protected/read-only, Used to prevent deletion the "LOCAL" source representing the local KB.
+          type: boolean
+        rectype:
+          description: The kind of record this KB primarily deals in
+          type: integer
+          enum:
+            - 1
+            - 2
+          x-enum-varnames:
+            - PACKAGE
+            - TITLE
+        supportsHarvesting:
+          description: Does this remote KB support harvesting
+          type: boolean
+        syncStatus:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Refdata'
+        trustedSourceTI:
+          description: Marks the KB as a trusted source of title instance metadata
+          type: boolean
+        type:
+          description: Name of the Spring bean that implements this KB's adapter
+          type: string
+        uri:
+          type: string
+          format: uri
+    KbResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/Kb'
+    KbResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/KbResultsArray'
+    GrailsErrorResponse:
+      type: object
+      description: Error-handler body for an uncaught exception raised during request processing. `exception` and `stackTrace` usually suppressed in production systems
+      required:
+        - error
+        - timestamp
+        - message
+      properties:
+        error:
+          type: integer
+          description: HTTP status code
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+        exception:
+          type: string
+          description: Exception class and message.
+        stackTrace:
+          type: array
+          items:
+            type: string
+    Org:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        orgsUuid:
+          description: UUID of the corresponding record in the FOLIO Organizations app (mod-organizations-storage), if this org has been linked to one
+          type: string
+          format: uuid
+        orgsUuid_object:
+          description: The linked Organizations app record, fetched live from mod-organizations-storage at request time. Only present when fetching a single org (not in list results). If the lookup fails, this holds `error`/`message` fields describing the failure instead
+          type: object
+          readOnly: true
+          additionalProperties: true
+    OrgResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/Org'
+    OrgResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/OrgResultsArray'
+    InternalContactResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/InternalContact'
+    InternalContactResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/InternalContactResultsArray'
+    RefdataCategoryResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/RefdataCategory'
+    RefdataCategoryResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/RefdataCategoryResultsArray'
+    RefdataResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/Refdata'
+    RefdataResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/RefdataResultsArray'
+    CustomPropertyDefinitionResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/CustomPropertyDefinition'
+    CustomPropertyDefinitionResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/CustomPropertyDefinitionResultsArray'
+    ComparisonPoint:
+      type: object
+      properties:
+        titleList:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date-time
+    PersistentJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        class:
+          type: string
+          description: Fully-qualified class name identifying the concrete job type
+          enum:
+            - org.olf.general.jobs.ComparisonJob
+            - org.olf.general.jobs.CoverageRegenerationJob
+            - org.olf.general.jobs.PackageImportJob
+            - org.olf.general.jobs.KbartImportJob
+            - org.olf.general.jobs.PackageIngestJob
+            - org.olf.general.jobs.SupplementaryDocumentsCleaningJob
+            - org.olf.general.jobs.ExternalEntitlementSyncJob
+            - org.olf.general.jobs.PackageTriggerResyncJob
+            - org.olf.general.jobs.TitleIngestJob
+            - org.olf.general.jobs.ResourceDeletionJob
+            - org.olf.general.jobs.EHoldingsEntitlementSyncJob
+            - org.olf.general.jobs.IdentifierReassignmentJob
+        name:
+          type: string
+        runnerId:
+          description: Only present for comparison jobs (class ComparisonJob)
+          type: string
+        dateCreated:
+          type: integer
+        started:
+          description: Null until the job begins running
+          type:
+            - integer
+            - 'null'
+        ended:
+          description: Null until the job finishes
+          type:
+            - integer
+            - 'null'
+        status:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Refdata'
+        result:
+          description: Null until the job finishes
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Refdata'
+            - type: 'null'
+        fileUpload:
+          description: Present only for job types that accept a file upload (e.g. packageImport, kbartImport)
+          oneOf:
+            - $ref: '#/components/schemas/File'
+            - type: 'null'
+        fullLogCount:
+          type: integer
+        errorLogCount:
+          type: integer
+        infoLogCount:
+          type: integer
+        comparisonPoints:
+          description: Only present for comparison jobs (class ComparisonJob)
+          type: array
+          items:
+            $ref: '#/components/schemas/ComparisonPoint'
+    PersistentJobResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/PersistentJob'
+    PersistentJobResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/PersistentJobResultsArray'
+    CreateComparisonJobBody:
+      type: object
+      description: Used for jobType comparison
+      required:
+        - name
+        - comparisonPoints
+      properties:
+        name:
+          type: string
+        comparisonPoints:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/ComparisonPoint'
+    ComparisonJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        class:
+          type: string
+          enum:
+            - org.olf.general.jobs.ComparisonJob
+        name:
+          type: string
+        runnerId:
+          type: string
+        dateCreated:
+          type: integer
+        started:
+          description: Null until the job begins running
+          type:
+            - string
+            - 'null'
+          format: date-time
+        ended:
+          description: Null until the job finishes
+          type:
+            - string
+            - 'null'
+          format: date-time
+        status:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Refdata'
+        result:
+          description: Null until the job finishes
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Refdata'
+            - type: 'null'
+        fileUpload:
+          oneOf:
+            - $ref: '#/components/schemas/File'
+            - type: 'null'
+        fullLogCount:
+          type: integer
+        errorLogCount:
+          type: integer
+        infoLogCount:
+          type: integer
+        comparisonPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComparisonPoint'
+    CreateSimpleJobBody:
+      type: object
+      description: Used for jobType values coverageRegeneration, packageIngest, and supplementaryDocumentsCleaning -- these job types take no extra input beyond a name
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    CreatePackageImportJobBody:
+      type: object
+      description: Used for jobType packageImport. Requires either fileUpload or payload to supply the package file
+      properties:
+        name:
+          description: Derived from the uploaded file's name if omitted
+          type: string
+        fileUpload:
+          description: Reference to a file already uploaded via /erm/files
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+        payload:
+          description: Raw JSON payload. If provided without fileUpload, it is automatically wrapped into a file server-side
+          type: object
+        fileTitle:
+          description: Optional file name to use when payload is supplied instead of fileUpload
+          type: string
+    CreateKbartImportJobBody:
+      type: object
+      description: Used for jobType kbartImport. Requires either fileUpload or payload to supply the KBART file, plus package identification fields
+      required:
+        - packageName
+        - packageSource
+        - packageReference
+      properties:
+        name:
+          description: Derived from the uploaded file's name if omitted
+          type: string
+        fileUpload:
+          description: Reference to a file already uploaded via /erm/files
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+        payload:
+          description: Raw JSON payload. If provided without fileUpload, it is automatically wrapped into a file server-side
+          type: object
+        fileTitle:
+          description: Optional file name to use when payload is supplied instead of fileUpload
+          type: string
+        packageName:
+          type: string
+        packageSource:
+          type: string
+        packageReference:
+          type: string
+        packageProvider:
+          type: string
+        trustedSourceTI:
+          type: boolean
+    LogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        message:
+          type: string
+        dateCreated:
+          type: integer
+        origin:
+          type: string
+          format: uuid
+        type:
+          type: string
+        additionalInfo:
+          type: object
+          properties:
+            jobId:
+              type: string
+              format: uuid
+            tenant:
+              type: string
+            tenantId:
+              type: string
+    LogEntryResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/LogEntry'
+    LogEntryResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/LogEntryResultsArray'
+    FileResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/File'
+    FileResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/FileResultsArray'
+    IdentifierListItem:
+      description: Shape of an Identifier as returned by GET /erm/identifiers. Distinct from the plain Identifier schema, which is what's embedded when an identifier appears nested inside another resource (e.g. via IdentifierOccurrence on an ErmResource) -- id and occurrenceCount are only rendered when an identifier is fetched directly through its own endpoint.
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Identifier'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            occurrenceCount:
+              type: integer
+              description: Number of occurrences of this identifier.
+    IdentifierResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/IdentifierListItem'
+    IdentifierResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/IdentifierResultsArray'
+    IdentifierRecord:
+      description: Shape of an Identifier as returned by GET /erm/identifiers/{identifierId}. Distinct from the plain Identifier schema, which is what's embedded when an identifier appears nested inside another resource (e.g. via IdentifierOccurrence on an ErmResource) -- id and occurrences are only rendered when an identifier is fetched directly through its own endpoint.
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/Identifier'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            occurrences:
+              type: array
+              description: Titles/resources this identifier occurs against.
+              items:
+                type: object
+                properties:
+                  status:
+                    $ref: '#/components/schemas/Refdata'
+                  dateCreated:
+                    type: string
+                    format: date-time
+                  lastUpdated:
+                    type: string
+                    format: date-time
+                  resource:
+                    type: object
+                    description: The title/resource this identifier is linked to.
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      class:
+                        type: string
+                        description: Fully-qualified class name of the linked resource (e.g. a Work or Package subtype).
+    IdentifierNamespace:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        value:
+          type: string
+    IdentifierNamespaceResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/IdentifierNamespace'
+    IdentifierNamespaceResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/IdentifierNamespaceResultsArray'
+    AppSetting:
+      type: object
+      required:
+        - id
+        - key
+      properties:
+        id:
+          type: string
+          readOnly: true
+        section:
+          type: string
+        key:
+          type: string
+        settingType:
+          type: string
+        vocab:
+          type: string
+        defValue:
+          type: string
+        value:
+          type: string
+        hidden:
+          type: boolean
+          description: If true, this setting is excluded from filter/search results but is otherwise still retrievable and modifiable normally.
+    AppSettingResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/AppSetting'
+    AppSettingResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/AppSettingResultsArray'
+    PackageIngestResult:
+      type: object
+      properties:
+        startTime:
+          type: integer
+        updateTime:
+          type: integer
+        packageId:
+          type: string
+          format: uuid
+        titleCount:
+          type: integer
+        newTitles:
+          type: integer
+        removedTitles:
+          type: integer
+        updatedTitles:
+          type: integer
+        updatedAccessStart:
+          type: integer
+        updatedAccessEnd:
+          type: integer
+    StringTemplate:
+      type: object
+      required:
+        - name
+        - rule
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        dateCreated:
+          type: string
+          format: date-time
+          readOnly: true
+        lastUpdated:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+        rule:
+          type: string
+          description: A Handlebars template rendered against a binding of `inputUrl` and `platformLocalCode` to produce a customised or proxied URL.
+        context:
+          description: Whether this template customises the platform's URL (`urlCustomiser`) or proxies it (`urlProxier`). Defaults to `urlProxier` if not supplied.
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Refdata'
+        idScopes:
+          type: array
+          description: Scopes the template to (or, for `urlProxier` context, excludes it from) a set of resource ids -- in practice, Platform ids.
+          items:
+            type: string
+            format: uuid
+    StringTemplateResultsArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/StringTemplate'
+    StringTemplateResults:
+      type: object
+      required:
+        - results
+      allOf:
+        - $ref: '#/components/schemas/ResultsMeta'
+        - type: object
+        - properties:
+            results:
+              $ref: '#/components/schemas/StringTemplateResultsArray'
+    StringTemplatesForPlatform:
+      type: object
+      description: String templates applicable to a given Platform, split by how they're applied when generating a templated URL.
+      properties:
+        urlProxiers:
+          type: array
+          description: Templates with context `urlProxier` applicable to this platform.
+          items:
+            $ref: '#/components/schemas/StringTemplate'
+        urlCustomisers:
+          type: array
+          description: Templates with context `urlCustomiser` applicable to this platform.
+          items:
+            $ref: '#/components/schemas/StringTemplate'
+    DashboardWidgetResultColumn:
+      type: object
+      description: A single column in a dashboard widget's results table.
+      properties:
+        name:
+          type: string
+          description: Internal column identifier.
+        label:
+          type: string
+          description: Display label for the column.
+        accessPath:
+          type: string
+          description: Dot-path into the resource record used to derive the cell value.
+        valueType:
+          type: string
+          description: How the UI should render the cell value.
+          enum:
+            - String
+            - Link
+            - Date
+            - Boolean
+            - Array
+        arrayDisplayPath:
+          type: string
+          description: 'For `valueType: Array` columns, the dot-path within each array item to display.'
+      additionalProperties: true
+    DashboardWidgetMatchColumn:
+      type: object
+      description: A field the widget's free-text quick search matches against.
+      properties:
+        name:
+          type: string
+          description: Internal field identifier.
+        label:
+          type: string
+          description: Display label for the field.
+        accessPath:
+          type: string
+          description: Dot-path into the resource record to match the search term against.
+        default:
+          type: boolean
+          description: Whether this field is matched by default.
+      additionalProperties: true
+    DashboardWidgetFilterColumn:
+      type: object
+      description: A field available for building a structured filter.
+      properties:
+        name:
+          type: string
+          description: Internal field identifier.
+        label:
+          type: string
+          description: Display label for the field.
+        filterPath:
+          type: string
+          description: Dot-path/query field the filter is applied to.
+        valueType:
+          type: string
+          description: Value type the filter compares, e.g. `String`, `UUID`, `Date`, `Enum`, `Array`.
+        resource:
+          type: string
+          description: 'For `valueType: UUID` reference filters, the related resource type to look up candidate values from.'
+        comparators:
+          type: array
+          description: Comparison operators the UI may offer for this filter.
+          items:
+            type: string
+        enumValues:
+          type: array
+          description: 'For `valueType: Enum` filters, the allowed values.'
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              label:
+                type: string
+      additionalProperties: true
+    DashboardWidgetSortColumn:
+      type: object
+      description: A field the widget's results table can be sorted by.
+      properties:
+        name:
+          type: string
+          description: Internal field identifier.
+        label:
+          type: string
+          description: Display label for the field.
+        sortPath:
+          type: string
+          description: Dot-path/query field used when sorting.
+        sortTypes:
+          type: array
+          description: Supported sort directions.
+          items:
+            type: string
+            enum:
+              - asc
+              - desc
+      additionalProperties: true
+    DashboardWidgetDefinition:
+      type: object
+      description: A single dashboard widget definition, describing a self-service search/list widget that a dashboard-capable FOLIO app can render against one of its own resources. The `definition` block configures the columns available for the results table, quick-search matching, structured filtering, and sorting.
+      required:
+        - type
+        - version
+        - name
+        - definition
+      properties:
+        type:
+          type: object
+          description: The widget implementation this definition targets.
+          properties:
+            name:
+              type: string
+              description: Widget type name, e.g. `SimpleSearch`.
+            version:
+              type: string
+              description: Version of the widget type's own configuration format.
+        version:
+          type: string
+          description: Version of this specific widget definition.
+        name:
+          type: string
+          description: Display name of the widget, e.g. `ERM Licenses`.
+        definition:
+          type: object
+          properties:
+            baseUrl:
+              type: string
+              description: API path the widget queries for `resource` records.
+            resource:
+              type: string
+              description: Name of the resource type the widget lists/searches.
+            results:
+              type: object
+              description: Columns available in the widget's results table.
+              properties:
+                columns:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DashboardWidgetResultColumn'
+            matches:
+              type: object
+              description: Fields the widget's free-text quick search matches against.
+              properties:
+                columns:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DashboardWidgetMatchColumn'
+                termConfigurable:
+                  type: boolean
+                  description: Whether the user can choose which of these fields to search.
+            filters:
+              type: object
+              description: Fields available for building structured filters.
+              properties:
+                columns:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DashboardWidgetFilterColumn'
+            sort:
+              type: object
+              description: Fields the results table can be sorted by.
+              properties:
+                columns:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/DashboardWidgetSortColumn'
+            configurableProperties:
+              type: object
+              description: Per-instance widget settings a user can override when adding this widget to a dashboard, keyed by property name.
+              additionalProperties:
+                type: object
+                properties:
+                  configurable:
+                    type: boolean
+                    description: Whether the user may override this property.
+                  defValue:
+                    description: Default value. Type depends on the property.

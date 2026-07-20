@@ -1,10 +1,10 @@
 parameters:
-  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
   - $ref: ../components/parameters/agreementId.yaml
 get:
   tags:
     - Agreements
-  summary: Retuns JSON for an Agreement including a list of resources currently available via the agreement
+  summary: Returns JSON for an Agreement including a list of resources currently available via the agreement
   operationId: exportAgreementCurrent
   responses:
     '200':
@@ -24,6 +24,6 @@ get:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/HttpError.yaml
+            $ref: ../common/schemas/HttpError.yaml
     '500':
       description: Internal server error

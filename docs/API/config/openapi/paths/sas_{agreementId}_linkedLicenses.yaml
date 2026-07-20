@@ -1,5 +1,5 @@
 parameters:
-  - $ref: ../components/parameters/x-okapi-tenant.yaml
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
   - $ref: ../components/parameters/agreementId.yaml
 get:
   tags:
@@ -7,7 +7,7 @@ get:
   summary: Retrieves the licenses and amendments for a specified agreement from the licenses module
   operationId: getAgreementLinkedLicenses
   parameters:
-    $ref: ../components/parameters/queryParameters.yaml
+    $ref: ../common/parameters/queryParameters.yaml
   responses:
     '200':
       description: Success
@@ -26,6 +26,6 @@ get:
       content:
         application/json:
           schema:
-            $ref: ../components/schemas/HttpError.yaml
+            $ref: ../common/schemas/HttpError.yaml
     '500':
       description: Internal server error

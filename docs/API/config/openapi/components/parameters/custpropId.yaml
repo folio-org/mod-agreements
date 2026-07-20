@@ -1,0 +1,7 @@
+in: path
+name: custpropId
+description: UUID for a custom property definition
+required: true
+schema:
+  type: string
+  format: uuid

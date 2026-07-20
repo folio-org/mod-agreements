@@ -1,0 +1,27 @@
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/ermResourceId.yaml
+get:
+  tags:
+    - Resources
+  summary: Get a specified resource record
+  operationId: getResource
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ErmResource.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/HttpError.yaml
+    '500':
+      description: Internal server error

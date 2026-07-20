@@ -1,0 +1,13 @@
+type: object
+description: Used for jobType comparison
+required:
+  - name
+  - comparisonPoints
+properties:
+  name:
+    type: string
+  comparisonPoints:
+    type: array
+    minItems: 2
+    items:
+      $ref: ./ComparisonPoint.yaml

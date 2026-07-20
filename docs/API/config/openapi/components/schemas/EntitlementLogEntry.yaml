@@ -33,9 +33,9 @@ properties:
   type:
     type: string
   license:
-    type: string
+    type: [string, "null"]
   licenseId:
-    type: string
+    type: [string, "null"]
     format: uuid
   eventType:
     type: string

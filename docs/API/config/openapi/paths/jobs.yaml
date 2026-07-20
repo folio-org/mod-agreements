@@ -1,0 +1,32 @@
+description: >-
+  Supports search of persistent job records. Jobs track the progress of
+  asynchronous background work (e.g. package imports, comparisons). Creation
+  happens per job type via /erm/jobs/{jobType}
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+get:
+  tags:
+    - Jobs
+  summary: Get a set of persistent job records
+  operationId: getJobs
+  parameters:
+    $ref: ../common/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/PersistentJobResults.yaml
+              - $ref: ../components/schemas/PersistentJobResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

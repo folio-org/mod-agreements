@@ -1,0 +1,27 @@
+type: object
+description: A single column in a dashboard widget's results table.
+properties:
+  name:
+    type: string
+    description: Internal column identifier.
+  label:
+    type: string
+    description: Display label for the column.
+  accessPath:
+    type: string
+    description: Dot-path into the resource record used to derive the cell value.
+  valueType:
+    type: string
+    description: How the UI should render the cell value.
+    enum:
+      - String
+      - Link
+      - Date
+      - Boolean
+      - Array
+  arrayDisplayPath:
+    type: string
+    description: >-
+      For `valueType: Array` columns, the dot-path within each array item to
+      display.
+additionalProperties: true

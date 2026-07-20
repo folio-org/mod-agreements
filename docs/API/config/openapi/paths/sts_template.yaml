@@ -1,0 +1,29 @@
+get:
+  tags:
+    - String Templates
+  summary: Refresh templated URLs
+  description: >-
+    Intended to trigger a background refresh of templated URLs for every
+    Platform, re-running all applicable string templates. Currently a no-op:
+    the refresh logic is disabled in the module, and this always returns an
+    empty object.
+  operationId: refreshTemplatedUrls
+  parameters:
+    - $ref: ../common/parameters/x-okapi-tenant.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

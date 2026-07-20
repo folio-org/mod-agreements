@@ -1,6 +1,0 @@
-in: path
-name: jobUUID
-required: true
-schema:
-  type: string
-  format: uuid

@@ -2,9 +2,13 @@ type: object
 required:
   - platform
   - titleInstance
+  - class
 allOf:
   - $ref: ./ErmResource.yaml
   - properties:
+      class:
+        enum:
+          - org.olf.kb.PlatformTitleInstance
       longName:
         type: string
       platform:

@@ -1,12 +1,23 @@
 type: object
+required:
+  - name
+  - trustedSourceTI
 properties:
   activationEnabled:
+    description: If activation is supported, is recording activation in this remote KB enabled. Not currently used
+    type: boolean
+  activationSupported:
+    description: Does this remote KB support content activation. Not currently used
     type: boolean
   active:
+    description: If harvesting is supported, is harvesting from this remote KB activated
     type: boolean
-  cursor:
+  credentials:
+    description: Credentials used to authenticate with the remote KB. Not currently used
     type: string
-    format: date-time
+  cursor:
+    description: Marks progress through a harvest. May be a timestamp, a transaction id, or another service-specific value depending on `type`
+    type: string
   fullPrefix:
     type: string
   id:
@@ -14,21 +25,37 @@ properties:
     format: uuid
   lastCheck:
     type: integer
+  listPrefix:
+    type: string
   name:
     type: string
+  principal:
+    description: Identity/username used to authenticate with the remote KB. Not currently used
+    type: string
   readonly:
+    description: Marks the KB as protected/read-only, Used to prevent deletion the "LOCAL" source representing the local KB. 
     type: boolean
   rectype:
+    description: The kind of record this KB primarily deals in
     type: integer
+    enum:
+      - 1
+      - 2
+    x-enum-varnames:
+      - PACKAGE
+      - TITLE
   supportsHarvesting:
+    description: Does this remote KB support harvesting
     type: boolean
   syncStatus:
     oneOf:
       - type: string
-      - $ref: ./Refdata.yaml
+      - $ref: ../../common/schemas/Refdata.yaml
   trustedSourceTI:
+    description: Marks the KB as a trusted source of title instance metadata
     type: boolean
   type:
+    description: Name of the Spring bean that implements this KB's adapter
     type: string
   uri:
     type: string

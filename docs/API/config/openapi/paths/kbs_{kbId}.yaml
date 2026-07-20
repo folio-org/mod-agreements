@@ -1,0 +1,100 @@
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/kbId.yaml
+get:
+  tags:
+    - Remote Knowledge Bases
+  summary: Get a specified remote Knowledge Base record
+  operationId: getKb
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Kb.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/HttpError.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml
+put:
+  tags:
+    - Remote Knowledge Bases
+  summary: Update a remote Knowledge Base record
+  description: >-
+    Some fields cannot be changed once a KB is marked `readonly` (e.g. the
+    local KB) — `trustedSourceTI` remains editable, but other property
+    changes are rejected.
+  operationId: putKb
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/Kb.yaml
+    required: true
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Kb.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/HttpError.yaml
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ApplicationError.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml
+delete:
+  tags:
+    - Remote Knowledge Bases
+  summary: Delete a specified remote Knowledge Base record
+  description: Rejected if the KB is marked `readonly`, e.g. the local KB.
+  operationId: deleteKb
+  responses:
+    '204':
+      description: No content
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/HttpError.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

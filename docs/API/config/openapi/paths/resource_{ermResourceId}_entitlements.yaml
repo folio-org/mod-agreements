@@ -1,0 +1,28 @@
+description: Returns the list of entitlements (agreement lines) which include the specified resource, directly or indirectly (e.g. as part of a package)
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/ermResourceId.yaml
+get:
+  tags:
+    - Resources
+  summary: Get entitlements for a specified resource
+  operationId: getResourceEntitlements
+  parameters:
+    $ref: ../common/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/EntitlementResults.yaml
+              - $ref: ../components/schemas/EntitlementResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '404':
+      description: Not found error -- resource does not exist, or is not a type that can carry entitlements
+    '500':
+      description: Internal server error

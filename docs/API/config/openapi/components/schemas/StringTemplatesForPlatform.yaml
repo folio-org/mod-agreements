@@ -1,0 +1,15 @@
+type: object
+description: >-
+  String templates applicable to a given Platform, split by how they're
+  applied when generating a templated URL.
+properties:
+  urlProxiers:
+    type: array
+    description: Templates with context `urlProxier` applicable to this platform.
+    items:
+      $ref: ./StringTemplate.yaml
+  urlCustomisers:
+    type: array
+    description: Templates with context `urlCustomiser` applicable to this platform.
+    items:
+      $ref: ./StringTemplate.yaml

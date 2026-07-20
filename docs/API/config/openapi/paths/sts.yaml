@@ -1,0 +1,66 @@
+description: >-
+  String templates are Handlebars rules used to customise or proxy Platform
+  Title Instance URLs (e.g. to insert an institution's proxy prefix, or swap
+  in a locally-preferred domain).
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+get:
+  tags:
+    - String Templates
+  summary: Get a set of string templates
+  operationId: getStringTemplates
+  parameters:
+    $ref: ../common/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/StringTemplateResults.yaml
+              - $ref: ../components/schemas/StringTemplateResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml
+post:
+  tags:
+    - String Templates
+  summary: Create a string template
+  operationId: postStringTemplate
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/StringTemplate.yaml
+    required: true
+  responses:
+    '201':
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/StringTemplate.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ApplicationError.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

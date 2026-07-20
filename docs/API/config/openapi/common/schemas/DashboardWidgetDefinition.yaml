@@ -1,0 +1,85 @@
+type: object
+description: >-
+  A single dashboard widget definition, describing a self-service search/list
+  widget that a dashboard-capable FOLIO app can render against one of its own
+  resources. The `definition` block configures the columns available for the
+  results table, quick-search matching, structured filtering, and sorting.
+required:
+  - type
+  - version
+  - name
+  - definition
+properties:
+  type:
+    type: object
+    description: The widget implementation this definition targets.
+    properties:
+      name:
+        type: string
+        description: Widget type name, e.g. `SimpleSearch`.
+      version:
+        type: string
+        description: Version of the widget type's own configuration format.
+  version:
+    type: string
+    description: Version of this specific widget definition.
+  name:
+    type: string
+    description: Display name of the widget, e.g. `ERM Licenses`.
+  definition:
+    type: object
+    properties:
+      baseUrl:
+        type: string
+        description: API path the widget queries for `resource` records.
+      resource:
+        type: string
+        description: Name of the resource type the widget lists/searches.
+      results:
+        type: object
+        description: Columns available in the widget's results table.
+        properties:
+          columns:
+            type: array
+            items:
+              $ref: DashboardWidgetResultColumn.yaml
+      matches:
+        type: object
+        description: Fields the widget's free-text quick search matches against.
+        properties:
+          columns:
+            type: array
+            items:
+              $ref: DashboardWidgetMatchColumn.yaml
+          termConfigurable:
+            type: boolean
+            description: Whether the user can choose which of these fields to search.
+      filters:
+        type: object
+        description: Fields available for building structured filters.
+        properties:
+          columns:
+            type: array
+            items:
+              $ref: DashboardWidgetFilterColumn.yaml
+      sort:
+        type: object
+        description: Fields the results table can be sorted by.
+        properties:
+          columns:
+            type: array
+            items:
+              $ref: DashboardWidgetSortColumn.yaml
+      configurableProperties:
+        type: object
+        description: >-
+          Per-instance widget settings a user can override when adding this
+          widget to a dashboard, keyed by property name.
+        additionalProperties:
+          type: object
+          properties:
+            configurable:
+              type: boolean
+              description: Whether the user may override this property.
+            defValue:
+              description: Default value. Type depends on the property.

@@ -1,0 +1,63 @@
+description: Supports search and creation of reference data categories.
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+get:
+  tags:
+    - Reference data
+  summary: Get a set of reference data category records.
+  operationId: getRefdataCategories
+  parameters:
+    $ref: ../common/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../common/schemas/RefdataCategoryResults.yaml
+              - $ref: ../common/schemas/RefdataCategoryResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml
+post:
+  tags:
+    - Reference data
+  summary: Create reference data category record
+  operationId: postRefdataCategory
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../common/schemas/RefdataCategory.yaml
+    required: true
+  responses:
+    '201':
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/RefdataCategory.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '422':
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ApplicationError.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

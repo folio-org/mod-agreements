@@ -1,0 +1,10 @@
+in: path
+name: prop
+description: >-
+  Name of the single property to validate, e.g. `name` on
+  `subscriptionAgreement`. Only this property is checked -- other
+  constraints on the domain class (e.g. other required fields not present
+  in the request body) are not evaluated.
+required: true
+schema:
+  type: string

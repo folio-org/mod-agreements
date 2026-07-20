@@ -4,22 +4,9 @@ required:
   - records
 properties:
   header:
-    type: object
-    required:
-      - dataSchema
-    properties:
-      dataSchema:
-        type: object
-      required:
-        - name
-        - version
-      properties:
-        name:
-          type: string
-        version:
-          type: string
+    $ref: ./DataSchemaHeader.yaml
   records:
     type: array
     items:
       $ref: ./ImportPackageRecords.yaml
-    
+

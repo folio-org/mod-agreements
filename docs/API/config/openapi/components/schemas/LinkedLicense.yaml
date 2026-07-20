@@ -6,7 +6,6 @@ properties:
       $ref: ./LinkedAmendment.yaml
   id:
     type: string
-    format: uuid
   owner:
     type: string
     format: uuid
@@ -18,4 +17,4 @@ properties:
   status:
     oneOf:
       - type: string
-      - $ref: ./Refdata.yaml
+      - $ref: ../../common/schemas/Refdata.yaml

@@ -1,0 +1,53 @@
+description: >-
+  Exports resources entitled (directly or via a package) across every
+  agreement in the tenant, in the given format. To scope this to a single
+  agreement instead, use
+  `/erm/sas/{agreementId}/resources/export/all/{format}`.
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+  - $ref: ../components/parameters/format.yaml
+  - in: query
+    name: subscriptionAgreementId
+    description: >-
+      Undocumented in the module descriptor, but honoured by the
+      implementation -- if supplied, scopes the export to this one
+      agreement, equivalent to using the agreement-scoped export path.
+    required: false
+    schema:
+      type: string
+      format: uuid
+get:
+  tags:
+    - Export
+  summary: Export all entitled resources in a specified format
+  description: >-
+    `format: kbart` returns a tab-separated KBART file (one row per Package
+    Content Item; Platform Title Instances and directly-entitled Title
+    Instances are silently skipped). Any other `format` value returns the
+    same JSON shape as the plain `/export` path.
+  operationId: exportAllFormat
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/ExportEntry.yaml
+        text/tab-separated-value;charset=UTF-8:
+          schema:
+            type: string
+            description: >-
+              KBART-formatted TSV, with a header row followed by one row per
+              Package Content Item.
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

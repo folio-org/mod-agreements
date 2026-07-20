@@ -3,9 +3,13 @@ required:
   - name
   - source
   - reference
+  - class
 allOf:
   - $ref: ./ErmResource.yaml
   - properties:
+      class:
+        enum:
+          - org.olf.kb.Pkg
       source:
         type: string
       sourceDataCreated:
@@ -27,11 +31,11 @@ allOf:
       lifecycleStatus:
         oneOf:
         - type: string
-        - $ref: ./Refdata.yaml
+        - $ref: ../../common/schemas/Refdata.yaml
       availabilityScope:
         oneOf:
         - type: string
-        - $ref: ./Refdata.yaml
+        - $ref: ../../common/schemas/Refdata.yaml
       packageDescriptionUrls:
         type: array
         items:

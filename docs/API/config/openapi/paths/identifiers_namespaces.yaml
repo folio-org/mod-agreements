@@ -1,0 +1,32 @@
+description: >-
+  Supports search of Identifier Namespace records (e.g. ISBN, ISSN, DOI).
+  GET only: namespaces are created implicitly when an identifier using a
+  new namespace is linked elsewhere, not through this path directly.
+parameters:
+  - $ref: ../common/parameters/x-okapi-tenant.yaml
+get:
+  tags:
+    - Identifiers
+  summary: Get a set of Identifier Namespace records
+  operationId: getIdentifierNamespaces
+  parameters:
+    $ref: ../common/parameters/queryParameters.yaml
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/IdentifierNamespaceResults.yaml
+              - $ref: ../components/schemas/IdentifierNamespaceResultsArray.yaml
+    '400':
+      description: Bad request error
+    '403':
+      description: Forbidden
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../common/schemas/GrailsErrorResponse.yaml

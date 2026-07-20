@@ -1,0 +1,37 @@
+type: object
+description: >-
+  Used for jobType kbartImport. Requires either fileUpload or payload to
+  supply the KBART file, plus package identification fields
+required:
+  - packageName
+  - packageSource
+  - packageReference
+properties:
+  name:
+    description: Derived from the uploaded file's name if omitted
+    type: string
+  fileUpload:
+    description: Reference to a file already uploaded via /erm/files
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+  payload:
+    description: >-
+      Raw JSON payload. If provided without fileUpload, it is automatically
+      wrapped into a file server-side
+    type: object
+  fileTitle:
+    description: Optional file name to use when payload is supplied instead of fileUpload
+    type: string
+  packageName:
+    type: string
+  packageSource:
+    type: string
+  packageReference:
+    type: string
+  packageProvider:
+    type: string
+  trustedSourceTI:
+    type: boolean

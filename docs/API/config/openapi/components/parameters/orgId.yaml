@@ -1,0 +1,7 @@
+in: path
+name: orgId
+description: UUID for an Org
+required: true
+schema:
+  type: string
+  format: uuid

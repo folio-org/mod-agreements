@@ -1,0 +1,10 @@
+type: object
+properties:
+  pci:
+    type: integer
+  pti:
+    type: integer
+  ti:
+    type: integer
+  work:
+    type: integer
