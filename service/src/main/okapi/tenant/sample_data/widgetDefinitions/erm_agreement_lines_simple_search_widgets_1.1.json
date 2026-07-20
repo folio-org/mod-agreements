@@ -11,6 +11,12 @@
     "results": {
       "columns": [
         {
+          "name": "parentAgreement",
+          "label": "Parent agreement",
+          "accessPath": "owner.name",
+          "valueType": "Link"
+        },
+        {
           "name": "agreementLineResourceName",
           "label": "Agreement line resource name",
           "accessPath": "resourceName",
@@ -18,7 +24,7 @@
         },
         {
           "name": "resourceName",
-          "label": "Resource name",
+          "label": "Local KB resource name",
           "accessPath": "resource.name",
           "valueType": "Link"
         },
@@ -32,12 +38,6 @@
           "name": "resourceDescription",
           "label": "Resource description",
           "accessPath": "description",
-          "valueType": "Link"
-        },
-        {
-          "name": "parentAgreement",
-          "label": "Parent agreement",
-          "accessPath": "owner.name",
           "valueType": "Link"
         },
         {
@@ -78,7 +78,7 @@
         },
         {
           "name": "resourceName",
-          "label": "Resource name",
+          "label": "Local KB resource name",
           "filterPath": "resource.name",
           "valueType": "String",
           "comparators": ["==", "!=", "=~", "!~"]
@@ -163,7 +163,7 @@
         },
         {
           "name": "resourceName",
-          "label": "Resource name",
+          "label": "Local KB resource name",
           "accessPath": "resource.name",
           "default": true
         },
