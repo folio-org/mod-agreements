@@ -29,11 +29,11 @@ properties:
   started:
     description: Null until the job begins running
     type: [string, "null"]
-    format: date-time
+    format: integer
   ended:
     description: Null until the job finishes
     type: [string, "null"]
-    format: date-time
+    format: integer
   status:
     oneOf:
       - type: string
