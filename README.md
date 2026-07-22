@@ -17,8 +17,8 @@ Developers looking to access the services exposed by mod-agreements can find mor
 
 ## Module installation and upgrade notes
 
-The module has important dependences on reference data. initial installations and module upgrades should specify loadReference=true. The module
-may not work as expected if this is omitted.
+The module has important dependences on reference data. **Initial installations and module upgrades should specify loadReference=true. The module
+may not work as expected if this is omitted.**
 
 While this README and the module description template offer some guidance on how to run this module and the resourcing required, it is not possible to anticipate all possible environmental configurations and deployment processes. Determining the exact resourcing, deployment processes and other aspects such as the size of database conneciton pools needed in any particular environment is down to those running the module and it is recommended that all such practices are fully documented by those responsible
 ### Environment variables 
