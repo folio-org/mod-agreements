@@ -26,9 +26,7 @@ class AgreementEventService {
   /**
    * Snapshot the agreement then {@code discard()} it so any dirty session
    * state left by walking lazy collections cannot participate in a subsequent
-   * flush. Used by the UPDATE flow — see the {@code update()} docblock in
-   * {@code SubscriptionAgreementController} for why discard is required over
-   * {@code withNewSession} isolation.
+   * flush.
    */
   Map<String, Object> captureSnapshotAndDiscard(SubscriptionAgreement sa) {
     if (sa == null) return null
@@ -37,16 +35,12 @@ class AgreementEventService {
     return snapshot
   }
 
-  // CREATE path: entity is NOT discarded — other PostInsertEvent listeners
-  // in the same flush cycle may still reference it.
   void publishCreate(SubscriptionAgreement sa) {
     if (sa == null) return
     try {
       Map<String, Object> snapshot = AgreementSnapshotBuilder.snapshot(sa)
-      DomainEvent<Map> event = DomainEvent.createEvent(
-        snapshot, tenantContext.currentTenant())
-      eventPublisherService.publishAfterCommit(
-        topicNameResolver.topicFor(ENTITY), event)
+      DomainEvent<Map> event = DomainEvent.createEvent(snapshot, tenantContext.currentTenant())
+      eventPublisherService.publishAfterCommit(topicNameResolver.topicFor(ENTITY), event)
     } catch (Exception e) {
       log.error("Failed to enqueue CREATE event for SubscriptionAgreement ${sa?.id}", e)
     }
@@ -55,10 +49,8 @@ class AgreementEventService {
   void publishUpdate(Map<String, Object> oldSnapshot, Map<String, Object> newSnapshot) {
     if (oldSnapshot == null || newSnapshot == null) return
     try {
-      DomainEvent<Map> event = DomainEvent.updateEvent(
-        oldSnapshot, newSnapshot, tenantContext.currentTenant())
-      eventPublisherService.publishAfterCommit(
-        topicNameResolver.topicFor(ENTITY), event)
+      DomainEvent<Map> event = DomainEvent.updateEvent(oldSnapshot, newSnapshot, tenantContext.currentTenant())
+      eventPublisherService.publishAfterCommit(topicNameResolver.topicFor(ENTITY), event)
     } catch (Exception e) {
       log.error("Failed to enqueue UPDATE event for SubscriptionAgreement id=${newSnapshot?.id}", e)
     }

@@ -53,10 +53,7 @@ class EventPublisherService {
         }
       })
     } else {
-      // Cannot honour the post-commit contract without an active transaction —
-      // publishing anyway would risk phantom events if the caller's subsequent
-      // work fails. Callers that need immediate publish should be explicit
-      // about it (not offered today; add a distinct method if the need arises).
+      // No active tx — skip rather than publish, to avoid phantom events on later rollback.
       log.warn("publishAfterCommit called with no active transaction — skipping publish to {}", topic)
     }
   }
