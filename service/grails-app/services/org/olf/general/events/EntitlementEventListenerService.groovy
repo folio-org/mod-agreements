@@ -12,17 +12,6 @@ import org.springframework.context.ApplicationListener
  * Publishes DELETE events for {@link Entitlement} via a GORM PreDeleteEvent
  * listener.
  *
- * A controller hook on {@code EntitlementController.delete()} would miss the
- * only path users actually exercise: ui-agreements removes an agreement line
- * with {@code PUT /erm/sas/{id}} carrying {@code items: [{id, _delete: true}]}
- * (AgreementLineViewRoute.js), which orphan-deletes the row through
- * {@code SubscriptionAgreement.items cascade: 'all-delete-orphan'} without ever
- * entering that controller. Listening for the delete itself covers every path —
- * REST endpoint, orphan removal, and anything added later.
- *
- * Pre-delete state is free here: the entity is still in the session, so there
- * is no extra SELECT to capture the projection.
- *
  * {@code ApplicationListener} is intentionally generic + instanceof-filtered —
  * narrowing to {@code PreDeleteEvent} is unreliable under Spring's
  * type-erasure dispatch.
