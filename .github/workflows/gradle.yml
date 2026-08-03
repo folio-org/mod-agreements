@@ -14,5 +14,4 @@ jobs:
     secrets: inherit
     with:
       artifact-id: mod-agreements
-      docker-health-command: 'wget --no-verbose --tries=1 --spider http://localhost:8080/admin/health || exit 1'
       docker-label-documentation: https://github.com/folio-org/mod-agreements/tree/master/docs
