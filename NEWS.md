@@ -1,4 +1,6 @@
 ## 7.4.0 IN PROGRESS
+  * ERM-4123: Agreement Line (Entitlement) create domain events
+  * ERM-4133: Agreement Line (Entitlement) update domain events
   * ERM-4126: Publish Kafka DELETE events for agreement lines (entitlements)
 
 ## 7.3.2 2026-06-04
