@@ -78,16 +78,19 @@ class AgreementCreateEventSpec extends AgreementEventBaseSpec {
       caught
 
     when: 'we drain the topic for a few seconds'
-      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 3_000L)
+      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 6_000L)
 
     then: 'no event newer than our snapshot slipped onto the topic'
-      events.findAll { (it.eventTs as long) >= snapshotTs }.isEmpty()
+      // Scoped to this spec's tenant: with KAFKA_TENANT_COLLECTION=ALL every
+      // spec shares folio.ALL.agreements.agreement, and integrationTest runs
+      // them in parallel forks — an unscoped filter catches siblings' events.
+      events.findAll { it.tenant == tenantId && (it.eventTs as long) >= snapshotTs }.isEmpty()
   }
 
   private Map pollForEventByAgreementId(String topic, String agreementId, long timeoutMs) {
     long deadline = System.currentTimeMillis() + timeoutMs
     while (System.currentTimeMillis() < deadline) {
-      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 2_000L)
+      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 6_000L)
       Map match = events.find { it.new?.id == agreementId }
       if (match != null) return match
     }

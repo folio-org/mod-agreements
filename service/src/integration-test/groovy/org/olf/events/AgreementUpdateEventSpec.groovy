@@ -150,7 +150,7 @@ class AgreementUpdateEventSpec extends AgreementEventBaseSpec {
       caught || true
 
     when: 'we drain the topic for a few seconds'
-      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 3_000L)
+      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 6_000L)
 
     then: 'no UPDATE event for our agreement appeared after the snapshot'
       events.findAll {
@@ -161,7 +161,7 @@ class AgreementUpdateEventSpec extends AgreementEventBaseSpec {
   private Map pollForUpdateEvent(String topic, String agreementId, long timeoutMs) {
     long deadline = System.currentTimeMillis() + timeoutMs
     while (System.currentTimeMillis() < deadline) {
-      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 2_000L)
+      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 6_000L)
       Map match = events.find { it.type == 'UPDATE' && it.new?.id == agreementId }
       if (match != null) return match
     }

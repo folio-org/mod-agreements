@@ -142,7 +142,7 @@ class EntitlementDeleteEventSpec extends AgreementEventBaseSpec {
           status.setRollbackOnly()
         }
       }
-      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 3_000L)
+      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 6_000L)
 
     then: 'afterCommit never fired, so nothing reached the topic'
       events.findAll {
@@ -204,7 +204,7 @@ class EntitlementDeleteEventSpec extends AgreementEventBaseSpec {
   private Map pollForDeleteEvent(String topic, String entitlementId, long timeoutMs) {
     long deadline = System.currentTimeMillis() + timeoutMs
     while (System.currentTimeMillis() < deadline) {
-      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 2_000L)
+      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 6_000L)
       Map match = events.find { it.type == 'DELETE' && it.old?.id == entitlementId }
       if (match != null) return match
     }
