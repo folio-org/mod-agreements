@@ -186,8 +186,8 @@ class AgreementSnapshotBuilder {
    * Deterministic collection order, so a consumer diffing two successive
    * snapshots sees only real changes.
    */
-  private static List sortById(List rows) {
-    rows.findAll { it != null }.sort(false) { ((Map) it).id?.toString() ?: '' }
+  private static List sortById(List items) {
+    items.sort { Object item -> (String) (((Map) item)?.id ?: '') }
   }
 
   // ISO-8601, seconds precision, UTC — matches the REST GET representation.
