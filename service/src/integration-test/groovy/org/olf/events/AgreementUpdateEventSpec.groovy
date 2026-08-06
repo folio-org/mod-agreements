@@ -123,6 +123,41 @@ class AgreementUpdateEventSpec extends AgreementEventBaseSpec {
       event.old.description != 'Updated description'
   }
 
+  void 'UPDATE snapshots make a supplementaryDocs change diffable'() {
+    given: 'an agreement created without supplementary docs'
+      Map postPayload = [
+        name           : "kafka-update-docs-${System.currentTimeMillis()}".toString(),
+        agreementStatus: 'active',
+        periods        : [[
+          startDate: LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
+          endDate  : LocalDate.now().plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE)
+        ]]
+      ]
+      def created = doPost('/erm/sas/', postPayload)
+      created?.id != null
+
+    when: 'we PUT a supplementary doc onto it'
+      def updated = doPut("/erm/sas/${created.id}", [
+        supplementaryDocs: [[name: 'Added doc', note: 'added note']]
+      ])
+
+    then: 'the PUT succeeded'
+      updated?.id == created.id
+
+    when: 'we consume the UPDATE event'
+      Map event = pollForUpdateEvent(topicFor('agreement'), created.id as String, 15_000L)
+
+    then: 'the collection is empty on old and populated on new'
+      event != null
+      (event.old?.supplementaryDocs as List)?.isEmpty()
+      (event.new?.supplementaryDocs as List)?.size() == 1
+
+    and: 'the post-update read resolves the persisted doc, id included'
+      event.new.supplementaryDocs[0].id != null
+      event.new.supplementaryDocs[0].name == 'Added doc'
+      event.new.supplementaryDocs[0].note == 'added note'
+  }
+
   void 'PUT /erm/sas/{id} with invalid payload produces no UPDATE event'() {
     given: 'a freshly created agreement'
       String name = "kafka-update-bad-${System.currentTimeMillis()}".toString()
@@ -150,7 +185,7 @@ class AgreementUpdateEventSpec extends AgreementEventBaseSpec {
       caught || true
 
     when: 'we drain the topic for a few seconds'
-      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 3_000L)
+      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 6_000L)
 
     then: 'no UPDATE event for our agreement appeared after the snapshot'
       events.findAll {
@@ -161,7 +196,7 @@ class AgreementUpdateEventSpec extends AgreementEventBaseSpec {
   private Map pollForUpdateEvent(String topic, String agreementId, long timeoutMs) {
     long deadline = System.currentTimeMillis() + timeoutMs
     while (System.currentTimeMillis() < deadline) {
-      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 2_000L)
+      List<Map> events = pollForEvents(topic, Integer.MAX_VALUE, 6_000L)
       Map match = events.find { it.type == 'UPDATE' && it.new?.id == agreementId }
       if (match != null) return match
     }
