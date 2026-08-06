@@ -65,21 +65,21 @@ class AgreementSnapshotBuilder {
 
     out.vendor                = orgWrapper(sa.vendor)
 
-    out.periods               = (sa.periods ?: []).collect { period((Period) it) }
-    out.contacts              = (sa.contacts ?: []).collect { contact((InternalContact) it) }
-    out.orgs                  = (sa.orgs ?: []).collect { agreementOrg((SubscriptionAgreementOrg) it) }
-    out.alternateNames        = (sa.alternateNames ?: []).collect { altName((AlternateName) it) }
-    out.tags                  = (sa.tags ?: []).collect { tag((Tag) it) }
+    out.periods               = sortById((sa.periods ?: []).collect { period((Period) it) })
+    out.contacts              = sortById((sa.contacts ?: []).collect { contact((InternalContact) it) })
+    out.orgs                  = sortById((sa.orgs ?: []).collect { agreementOrg((SubscriptionAgreementOrg) it) })
+    out.alternateNames        = sortById((sa.alternateNames ?: []).collect { altName((AlternateName) it) })
+    out.tags                  = sortById((sa.tags ?: []).collect { tag((Tag) it) })
 
-    out.docs                  = (sa.docs ?: []).collect { doc((DocumentAttachment) it) }
-    out.supplementaryDocs     = (sa.supplementaryDocs ?: []).collect { doc((DocumentAttachment) it) }
-    out.externalLicenseDocs   = (sa.externalLicenseDocs ?: []).collect { doc((DocumentAttachment) it) }
+    out.docs                  = sortById((sa.docs ?: []).collect { doc((DocumentAttachment) it) })
+    out.supplementaryDocs     = sortById((sa.supplementaryDocs ?: []).collect { doc((DocumentAttachment) it) })
+    out.externalLicenseDocs   = sortById((sa.externalLicenseDocs ?: []).collect { doc((DocumentAttachment) it) })
 
-    out.inwardRelationships   = (sa.inwardRelationships ?: []).collect { relationship((AgreementRelationship) it) }
-    out.outwardRelationships  = (sa.outwardRelationships ?: []).collect { relationship((AgreementRelationship) it) }
+    out.inwardRelationships   = sortById((sa.inwardRelationships ?: []).collect { relationship((AgreementRelationship) it) })
+    out.outwardRelationships  = sortById((sa.outwardRelationships ?: []).collect { relationship((AgreementRelationship) it) })
 
-    out.items                 = (sa.items ?: []).collect { [id: ((Entitlement) it).id] }
-    out.linkedLicenses        = (sa.linkedLicenses ?: []).collect { linkedLicense((RemoteLicenseLink) it) }
+    out.items                 = sortById((sa.items ?: []).collect { [id: ((Entitlement) it).id] })
+    out.linkedLicenses        = sortById((sa.linkedLicenses ?: []).collect { linkedLicense((RemoteLicenseLink) it) })
 
     return out
   }
@@ -100,7 +100,7 @@ class AgreementSnapshotBuilder {
       id        : sao.id,
       primaryOrg: sao.primaryOrg,
       note      : sao.note,
-      roles     : (sao.roles ?: []).collect { saoRole((SubscriptionAgreementOrgRole) it) },
+      roles     : sortById((sao.roles ?: []).collect { saoRole((SubscriptionAgreementOrgRole) it) }),
       org       : orgWrapper(sao.org)
     ]
   }
@@ -180,6 +180,14 @@ class AgreementSnapshotBuilder {
       remoteId : link.remoteId,
       status   : refdata(link.status)
     ]
+  }
+
+  /**
+   * Deterministic collection order, so a consumer diffing two successive
+   * snapshots sees only real changes.
+   */
+  private static List sortById(List rows) {
+    rows.findAll { it != null }.sort(false) { ((Map) it).id?.toString() ?: '' }
   }
 
   // ISO-8601, seconds precision, UTC — matches the REST GET representation.

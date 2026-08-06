@@ -49,10 +49,10 @@ class EntitlementSnapshotBuilder {
     out.dateCreated           = asString(ent.dateCreated)
     out.lastUpdated           = asString(ent.lastUpdated)
 
-    out.coverage              = (ent.coverage ?: []).collect { coverage((HoldingsCoverage) it) }
-    out.poLines               = (ent.poLines ?: []).collect { poLine((OrderLine) it) }
-    out.tags                  = (ent.tags ?: []).collect { tag((Tag) it) }
-    out.docs                  = (ent.docs ?: []).collect { doc((DocumentAttachment) it) }
+    out.coverage              = sortById((ent.coverage ?: []).collect { coverage((HoldingsCoverage) it) })
+    out.poLines               = sortById((ent.poLines ?: []).collect { poLine((OrderLine) it) })
+    out.tags                  = sortById((ent.tags ?: []).collect { tag((Tag) it) })
+    out.docs                  = sortById((ent.docs ?: []).collect { doc((DocumentAttachment) it) })
 
     return out
   }
@@ -119,6 +119,14 @@ class EntitlementSnapshotBuilder {
   private static Map refdata(RefdataValue rv) {
     if (rv == null) return null
     [id: rv.id, value: rv.value, label: rv.label]
+  }
+
+  /**
+   * Deterministic collection order, so a consumer diffing two successive
+   * snapshots sees only real changes.
+   */
+  private static List sortById(List rows) {
+    rows.findAll { it != null }.sort(false) { ((Map) it).id?.toString() ?: '' }
   }
 
   // ISO-8601, seconds precision, UTC — matches the REST GET representation.
