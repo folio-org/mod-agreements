@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit
 import com.k_int.web.toolkit.refdata.RefdataValue
 import com.k_int.web.toolkit.tags.Tag
 import groovy.transform.CompileStatic
+import org.olf.erm.AgreementRelationship
 import org.olf.erm.Entitlement
 import org.olf.erm.InternalContact
 import org.olf.erm.Period
@@ -14,16 +15,20 @@ import org.olf.erm.SubscriptionAgreement
 import org.olf.erm.SubscriptionAgreementOrg
 import org.olf.erm.SubscriptionAgreementOrgRole
 import org.olf.erm.AlternateName
+import org.olf.general.DocumentAttachment
 import org.olf.general.Org
 
 /**
  * Builds the JSON-ready Map payload for a {@link SubscriptionAgreement} domain
  * event.
  *
- * Local {@code hasMany} collections (periods, orgs, contacts, alternateNames)
- * are serialized as full nested objects. First-class children with their own
- * event stream ({@code items}, {@code linkedLicenses}) are ID-refs only — see
- * {@code stories/kafka-events-design.md} §4.3.
+ * Local {@code hasMany} collections (periods, orgs, contacts, alternateNames,
+ * docs, supplementaryDocs, externalLicenseDocs, relationships) are serialized
+ * as full nested objects. First-class children with their own event stream
+ * ({@code items}, {@code linkedLicenses}) are ID-refs only — see
+ * {@code stories/kafka-events-design.md} §4.3. Agreements on the far side of a
+ * relationship are ID-refs for the same reason, and because nesting them would
+ * recurse.
  *
  * Must be invoked while the Hibernate session is active so lazy collections
  * resolve rather than throwing later.
@@ -40,6 +45,7 @@ class AgreementSnapshotBuilder {
     out.description           = sa.description
     out.localReference        = sa.localReference
     out.vendorReference       = sa.vendorReference
+    out.attachedLicenceId     = sa.attachedLicenceId
     out.licenseNote           = sa.licenseNote
     out.enabled               = sa.enabled
     out.renewalDate           = asString(sa.renewalDate)
@@ -64,6 +70,13 @@ class AgreementSnapshotBuilder {
     out.orgs                  = (sa.orgs ?: []).collect { agreementOrg((SubscriptionAgreementOrg) it) }
     out.alternateNames        = (sa.alternateNames ?: []).collect { altName((AlternateName) it) }
     out.tags                  = (sa.tags ?: []).collect { tag((Tag) it) }
+
+    out.docs                  = (sa.docs ?: []).collect { doc((DocumentAttachment) it) }
+    out.supplementaryDocs     = (sa.supplementaryDocs ?: []).collect { doc((DocumentAttachment) it) }
+    out.externalLicenseDocs   = (sa.externalLicenseDocs ?: []).collect { doc((DocumentAttachment) it) }
+
+    out.inwardRelationships   = (sa.inwardRelationships ?: []).collect { relationship((AgreementRelationship) it) }
+    out.outwardRelationships  = (sa.outwardRelationships ?: []).collect { relationship((AgreementRelationship) it) }
 
     out.items                 = (sa.items ?: []).collect { [id: ((Entitlement) it).id] }
     out.linkedLicenses        = (sa.linkedLicenses ?: []).collect { linkedLicense((RemoteLicenseLink) it) }
@@ -121,6 +134,43 @@ class AgreementSnapshotBuilder {
   private static Map tag(Tag t) {
     if (t == null) return null
     [id: t.id, value: t.value]
+  }
+
+  // Same projection as EntitlementSnapshotBuilder.doc() — the two event streams
+  // must expose an identical docs[] shape. fileUpload is deliberately omitted:
+  // the payload carries metadata, not file content.
+  private static Map doc(DocumentAttachment d) {
+    if (d == null) return null
+    [
+      id      : d.id,
+      name    : d.name,
+      location: d.location,
+      url     : d.url,
+      note    : d.note,
+      atType  : refdata(d.atType)
+    ]
+  }
+
+  /**
+   * Both ends are emitted so consumers need not infer which side the snapshot
+   * sits on — for an entry of {@code inwardRelationships}, {@code inward} is
+   * this agreement and {@code outward} is the far side (and vice versa).
+   * Reading the id off the proxy does not initialise it.
+   */
+  private static Map relationship(AgreementRelationship rel) {
+    if (rel == null) return null
+    [
+      id     : rel.id,
+      type   : refdata(rel.type),
+      note   : rel.note,
+      inward : agreementRef(rel.inward),
+      outward: agreementRef(rel.outward)
+    ]
+  }
+
+  private static Map agreementRef(SubscriptionAgreement sa) {
+    if (sa == null) return null
+    [id: sa.id]
   }
 
   private static Map linkedLicense(RemoteLicenseLink link) {
