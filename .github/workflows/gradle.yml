@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   gradle:
     uses: folio-org/.github/.github/workflows/gradle.yml@FOLIO-4554-gradle-workflows
