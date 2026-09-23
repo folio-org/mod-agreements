@@ -324,9 +324,14 @@ missing GOKB identifiers, and duplicate pending pulls return `409`.
 Monitor `/erm/jobs` for resync and pull jobs and any errors; a successful status
 change confirms the setting was saved, not that its contents have arrived. If the
 package is paused again before the resync runs, that resync skips the pull.
-If the package is paused after a pull is queued,
-its source changes, or a source harvest is already running when the job starts,
-the job fails without retrieving the package. Upstream errors and rejected or
-unchecked records also fail the job. Retry after resolving the reported cause.
+If a source harvest is already running when the pull starts, the same pull job
+returns to `Queued` and retries on subsequent job-runner ticks until the source is
+idle. Its info log explains why it is waiting. Waiting does not occupy a worker,
+claim the source, or require an operator to retry.
+
+Each attempt rechecks the package and source. If the package is paused after a
+pull is queued or its source changes, the job fails without retrieving the package.
+Upstream errors and rejected or unchecked records also fail the job. These failures
+still require a retry after resolving the reported cause.
 The source cursor and `lastCheck` remain unchanged, so normal incremental
 harvesting continues on its existing schedule.

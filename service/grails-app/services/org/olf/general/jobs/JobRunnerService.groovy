@@ -157,6 +157,18 @@ order by pj.dateCreated
     pj.save( failOnError: true, flush:true )
   }
   
+  /** Release the worker and leave the same job available for a later runner tick. */
+  @Transactional(propagation=REQUIRES_NEW)
+  public void deferJob(final String jid) {
+    PersistentJob pj = PersistentJob.get(jid)
+    pj.setStatusFromString('Queued')
+    pj.runnerId = null
+    pj.started = null
+    pj.ended = null
+    pj.result = null
+    pj.save(failOnError: true, flush: true)
+  }
+
   @Transactional(propagation=REQUIRES_NEW)
   public void failJob(final String jid = null) {
     PersistentJob pj = PersistentJob.get(jid ?: JobContext.current.get().jobId)
@@ -535,6 +547,12 @@ order by pj.dateCreated
         Tenants.withId(tid) {
           endJob(jid)
         }
+      } catch (JobDeferredException e) {
+        Tenants.withId(tid) {
+          deferJob(jid)
+        }
+        log.info("Job deferred: ${e.message}")
+        notify('jobs:log_info', tid, jid, "Job deferred: ${e.message}")
       } catch (Exception e) {
         log.error (e.message)
         log.error ("Job execution failed", e)

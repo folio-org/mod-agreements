@@ -363,20 +363,44 @@ class PackagePullSpec extends BaseSpec {
       endHeldJob(jobId)
   }
 
-  void 'An active source harvest prevents overlapping retrieval'() {
+  @Unroll
+  void 'A busy source defers the pull and retries with pause state #pauseBeforeRetry'() {
     given:
-      String jobId = heldJob()
       withTenantNewTransaction { RemoteKB.get(sourceId).syncStatus = 'in-process' }
       int before = requests.size()
+      List previousPulls = pullJobIds()
     when:
-      withTenant { packagePullService.pull(jobId) }
+      Map response = postPull([packageId: packageId])
+      jobRunnerService.droneTick(jobRunnerService.appFederationService.instanceId)
+      jobRunnerService.droneTick(jobRunnerService.appFederationService.instanceId)
     then:
-      PackagePullException e = thrown()
-      e.message.contains('already being harvested')
+      response.status == 202
+      new PollingConditions(timeout: 30).eventually {
+        assertDeferred(response.body.jobId)
+      }
       requests.size() == before
-    cleanup:
+      sourceStatus() == 'in-process'
+      pullJobIds() - previousPulls == [response.body.jobId]
+      postPull([packageId: packageId]).status == 409
+
+    when: 'The regular harvest finishes before the next runner tick'
+      setPaused(pauseBeforeRetry)
       withTenantNewTransaction { RemoteKB.get(sourceId).syncStatus = 'idle' }
-      endHeldJob(jobId)
+      jobRunnerService.droneTick(jobRunnerService.appFederationService.instanceId)
+    then:
+      new PollingConditions(timeout: 30).eventually {
+        assert jobState(response.body.jobId) == [status: 'ended',
+          result: pauseBeforeRetry ? 'failure' : 'success']
+      }
+      requests.size() == before + (pauseBeforeRetry ? 0 : 1)
+      pullJobIds() - previousPulls == [response.body.jobId]
+      assertImported(!pauseBeforeRetry)
+      assertSourceUnchanged()
+    cleanup:
+      setPaused(false)
+      withTenantNewTransaction { RemoteKB.get(sourceId).syncStatus = 'idle' }
+    where:
+      pauseBeforeRetry << [false, true]
   }
 
   void 'Upstream failures are reported by the background job'() {
@@ -502,6 +526,20 @@ class PackagePullSpec extends BaseSpec {
 
   private int resyncJobCount() {
     withTenantNewTransaction { PackageTriggerResyncJob.countByPackageId(packageId) }
+  }
+
+  private void assertDeferred(String id) {
+    withTenantNewTransaction {
+      PackagePullJob job = PackagePullJob.get(id)
+      assert job.status.value == 'queued'
+      assert job.runnerId == null
+      assert job.started == null
+      assert job.ended == null
+      assert job.result == null
+      assert !job.sourceClaimed
+      assert job.errorLogCount == 0
+      assert job.infoLog.any { it.message.contains('Job deferred:') }
+    }
   }
 
   private Map jobState(String id) {

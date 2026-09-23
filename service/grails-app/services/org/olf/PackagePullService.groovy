@@ -4,6 +4,7 @@ import grails.gorm.multitenancy.CurrentTenant
 import groovy.util.logging.Slf4j
 import org.olf.dataimport.internal.KBManagementBean
 import org.olf.general.StringUtils
+import org.olf.general.jobs.JobDeferredException
 import org.olf.general.jobs.PackagePullJob
 import org.olf.kb.PackagePullException
 import org.olf.kb.Pkg
@@ -92,7 +93,7 @@ class PackagePullService {
       // Validation has already loaded this source; refresh after acquiring the lock.
       source.refresh()
       if (source.syncStatus == 'in-process') {
-        throw new PackagePullException(409, 'RemoteKB is already being harvested; retry after it finishes')
+        throw new JobDeferredException('RemoteKB is already being harvested; waiting for the source to become idle')
       }
       source.syncStatus = 'in-process'
       source.save(failOnError: true, flush: true)
