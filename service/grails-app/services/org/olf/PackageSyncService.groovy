@@ -78,7 +78,7 @@ class PackageSyncService {
               resyncPushKBPackage(pkg, pim);
               break;
             case ResourceIngressType.HARVEST:
-              log.error("Package resync is not currently automatically triggered for packages with ingress type: ${pim.ingressType}. A resync will require either the package to come in via PushKB, or a cursor reset on remoteKb ${pim.ingressId} to be done manually.")
+              log.error("Automatic package resync is not implemented for Harvest ingress. Use POST /erm/admin/pullPackage with packageId ${packageId}, or manually reset the cursor on RemoteKB ${pim.ingressId}.")
               break;
             default:
               log.error("Package resync is not available for packages with ingress type: ${pim.ingressType}")

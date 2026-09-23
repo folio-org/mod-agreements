@@ -1,41 +1,60 @@
-get:
+post:
   tags:
     - Admin
-  summary: Pull a package directly from a named remote KB
+  summary: Queue a one-time OAI-PMH harvest of an enabled package
   description: >-
-    Looks up the RemoteKB by name and delegates to its adapter's
-    importPackage implementation. Not currently functional for any active
-    configuration: every adapter compiled into the module (generic, GOKb,
-    KB+, KIJPF) implements importPackage as `throw new RuntimeException("Not
-    yet implemented")`; the one adapter that does implement it (EBSCO) lives
-    under src/legacy, which is not a registered Gradle source set and so is
-    not compiled into the running module. The resulting exception is caught,
-    logged, and swallowed rather than surfaced in the response, so calling
-    this currently always falls through to an empty body; an unrecognised kb
-    name does the same
-  operationId: getAdminPullPackage
+    Requires Harvest ingress mode and an existing tenant-local package with Harvest
+    ingress metadata pointing to an active GOKB OAI package source. The source and
+    GOKB UUID are derived from the package; callers cannot supply a source URL.
+    Explicitly paused packages are rejected; a legacy null synchronization flag is
+    treated as enabled. Duplicate queued or running pulls are rejected.
+    Returns a background job ID; inspect GET /erm/jobs/{jobId} for completion and
+    errors. The job rechecks synchronization state and refuses to overlap an active
+    source harvest. It fetches GetRecord with metadataPrefix=gokb and applies the
+    same package eligibility rules as bulk harvesting. Neither the synchronization
+    setting nor the RemoteKB cursor or lastCheck is changed. Missing, deleted,
+    ineligible or invalid upstream records fail the job without ingesting contents.
+  operationId: postAdminPullPackage
   parameters:
     - $ref: ../common/parameters/x-okapi-tenant.yaml
-    - in: query
-      name: kb
-      description: Name of the RemoteKB record to pull from
-      required: true
-      schema:
-        type: string
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - packageId
+          properties:
+            packageId:
+              type: string
+              format: uuid
+              description: Tenant-local package ID, not the GOKB UUID
   responses:
-    '200':
-      description: OK -- response shape is determined by the remote KB adapter
+    '202':
+      description: Package pull queued
+      headers:
+        Location:
+          description: URL of the background job
+          schema:
+            type: string
       content:
         application/json:
           schema:
             type: object
+            required:
+              - jobId
+            properties:
+              jobId:
+                type: string
+                format: uuid
     '400':
-      description: Bad request error
+      description: Missing or invalid packageId
     '403':
       description: Forbidden
+    '404':
+      description: Package not found in this tenant
+    '409':
+      description: Paused package, unsupported mode or source, missing identifier, or duplicate pull
     '500':
       description: Internal server error
-      content:
-        application/json:
-          schema:
-            $ref: ../common/schemas/GrailsErrorResponse.yaml

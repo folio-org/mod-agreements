@@ -288,3 +288,35 @@ This will create a file called `validate_module_descriptor_output.txt` containin
 
 ### Resourcing
 The "Memory" requirement listed in the module descriptor for this module is unusually high. This is because the memory requirement is made assuming full range of module functionality is in use, including GOKb Harvest and processing of thousands of TIPPs. Installations not making use of the harvest functionality can run with substantially lower memory.
+
+### Pull a single GOKB package through OAI-PMH
+
+In Harvest mode, an existing package with content synchronization enabled can be
+retrieved once without resetting the source's incremental harvest cursor:
+
+```sh
+curl -fsS -X POST 'http://localhost:8080/erm/admin/pullPackage' \
+  -H 'X-Okapi-Tenant: test1' \
+  -H 'Content-Type: application/json' \
+  -d '{"packageId":"TENANT-LOCAL-PACKAGE-ID"}'
+```
+
+The response is `202 Accepted` with `{"jobId":"..."}` and a `Location` header
+pointing to `/erm/jobs/{jobId}`. The endpoint requires the existing
+`erm.admin.action.pullPackage.execute` permission when accessed through Okapi.
+Use the tenant-local package ID, not the GOKB UUID. The package's Harvest ingress
+metadata identifies its RemoteKB, and its approved `gokb_uuid` identifier is used
+for `GetRecord`.
+
+Paused packages return `409 Conflict`; enable them with `/erm/packages/controlSync`
+first. Legacy packages with a null synchronization flag are treated as enabled.
+The request does not enable synchronization, discover new packages, or support
+PushKB. Unknown local packages return `404`; unsupported source configurations,
+missing GOKB identifiers, and duplicate pending pulls return `409`.
+
+Monitor the job for completion and errors. If the package is paused after queuing,
+its source changes, or a source harvest is already running when the job starts,
+the job fails without retrieving the package. Upstream errors and rejected or
+unchecked records also fail the job. Retry after resolving the reported cause.
+The source cursor and `lastCheck` remain unchanged, so normal incremental
+harvesting continues on its existing schedule.

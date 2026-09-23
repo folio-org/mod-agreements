@@ -59,6 +59,7 @@ class JobRunnerService implements EventPublisher {
   ComparisonService comparisonService
   IdentifierService identifierService
   SessionFactory sessionFactory
+  org.olf.PackagePullService packagePullService
   PackageSyncService packageSyncService
   ErmResourceService ermResourceService
   EntitlementService entitlementService

@@ -1,0 +1,14 @@
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/">
+  <GetRecord><record>
+    <header><identifier>org.gokb.cred.Package:123</identifier><datestamp>2026-01-02T00:00:00Z</datestamp></header>
+    <metadata><gokb><package id="123" uuid="460f55bf-d1b1-45bb-a7be-54aa313535fe">
+      <name>OAI pull test package</name><status>Current</status><editStatus>Approved</editStatus><listStatus>Checked</listStatus>
+      <lastUpdated>2026-01-02T00:00:00Z</lastUpdated><global>Global</global>
+      <TIPPs><TIPP id="456"><status>Current</status><medium>Electronic</medium>
+        <title id="789" uuid="b8186d5f-6a04-409a-a309-e1384ee00ba8"><name>OAI pull test title</name><type>BookInstance</type></title>
+        <platform><name>OAI pull platform</name><primaryUrl>https://pull-test.example.org</primaryUrl></platform>
+        <url>https://pull-test.example.org/title</url>
+      </TIPP></TIPPs>
+    </package></gokb></metadata>
+  </record></GetRecord>
+</OAI-PMH>
