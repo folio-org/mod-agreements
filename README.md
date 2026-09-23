@@ -308,13 +308,23 @@ Use the tenant-local package ID, not the GOKB UUID. The package's Harvest ingres
 metadata identifies its RemoteKB, and its approved `gokb_uuid` identifier is used
 for `GetRecord`.
 
-Paused packages return `409 Conflict`; enable them with `/erm/packages/controlSync`
-first. Legacy packages with a null synchronization flag are treated as enabled.
+Changing a harvested package from `PAUSED` to `SYNCHRONIZING` through
+`/erm/packages/controlSync` automatically requests this pull. The existing package
+resync job queues a pull job after the status change commits; both run through the
+background job runner without waiting for the hourly harvest. An unchanged enabled
+status does not request another resync. A pending pull is reused if one already
+exists. No additional UI request or cursor reset is needed.
+
+Paused packages return `409 Conflict` from the manual pull endpoint. Legacy
+packages with a null synchronization flag are treated as enabled.
 The request does not enable synchronization, discover new packages, or support
 PushKB. Unknown local packages return `404`; unsupported source configurations,
 missing GOKB identifiers, and duplicate pending pulls return `409`.
 
-Monitor the job for completion and errors. If the package is paused after queuing,
+Monitor `/erm/jobs` for resync and pull jobs and any errors; a successful status
+change confirms the setting was saved, not that its contents have arrived. If the
+package is paused again before the resync runs, that resync skips the pull.
+If the package is paused after a pull is queued,
 its source changes, or a source harvest is already running when the job starts,
 the job fails without retrieving the package. Upstream errors and rejected or
 unchecked records also fail the job. Retry after resolving the reported cause.

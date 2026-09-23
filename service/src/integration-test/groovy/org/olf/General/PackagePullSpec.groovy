@@ -5,11 +5,13 @@ import grails.testing.mixin.integration.Integration
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import org.olf.BaseSpec
+import org.olf.PackageSyncService
 import org.olf.PackagePullService
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierNamespace
 import org.olf.kb.IdentifierOccurrence
 import org.olf.general.jobs.JobRunnerService
+import org.olf.general.jobs.PackageTriggerResyncJob
 import org.olf.general.jobs.PackagePullJob
 import org.olf.kb.PackageContentItem
 import org.olf.kb.PackagePullException
@@ -30,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference
 @Integration
 @Stepwise
 class PackagePullSpec extends BaseSpec {
+  PackageSyncService packageSyncService
   PackagePullService packagePullService
   JobRunnerService jobRunnerService
 
@@ -90,6 +93,85 @@ class PackagePullSpec extends BaseSpec {
       }
     then:
       packageId != null
+  }
+
+  void 'Enabling a paused harvested package automatically imports its contents'() {
+    given:
+      setPaused(true)
+      int before = requests.size()
+      List previousPulls = pullJobIds()
+    when:
+      Map response = requestJson('POST', '/erm/packages/controlSync',
+        [packageIds: [packageId], syncState: 'SYNCHRONIZING'], currentTenant)
+    then:
+      response.status == 200
+      response.body == [packagesUpdated: 1, packagesSkipped: 0, success: true]
+      new PollingConditions(timeout: 60, delay: 0.5).eventually {
+        // Run both the existing resync job and the pull it queues.
+        jobRunnerService.droneTick(jobRunnerService.appFederationService.instanceId)
+        List created = pullJobIds() - previousPulls
+        assert created.size() == 1
+        assert jobState(created[0]) == [status: 'ended', result: 'success']
+      }
+      requests.size() == before + 1
+      requests.last().split('&').toList().toSet() == [
+        'verb=GetRecord', 'metadataPrefix=gokb', "identifier=${GOKB_UUID}".toString()
+      ].toSet()
+      assertImported(true)
+      assertSourceUnchanged()
+
+    when: 'The UI sends the same enabled status again'
+      int resyncs = resyncJobCount()
+      List pulls = pullJobIds()
+      Map unchanged = requestJson('POST', '/erm/packages/controlSync',
+        [packageIds: [packageId], syncState: 'SYNCHRONIZING'], currentTenant)
+    then:
+      unchanged.status == 200
+      unchanged.body == [packagesUpdated: 0, packagesSkipped: 1, success: true]
+      resyncJobCount() == resyncs
+      pullJobIds() == pulls
+
+    when: 'The package is paused through the same endpoint'
+      Map paused = requestJson('POST', '/erm/packages/controlSync',
+        [packageIds: [packageId], syncState: 'PAUSED'], currentTenant)
+    then:
+      paused.status == 200
+      paused.body == [packagesUpdated: 1, packagesSkipped: 0, success: true]
+      resyncJobCount() == resyncs
+      pullJobIds() == pulls
+      requests.size() == before + 1
+    cleanup:
+      setPaused(false)
+  }
+
+  void 'Automatic resync skips a package paused again before it runs'() {
+    given:
+      setPaused(true)
+      List before = pullJobIds()
+      int requestCount = requests.size()
+    when:
+      withTenant { packageSyncService.resyncPackage(packageId) }
+    then:
+      pullJobIds() == before
+      requests.size() == requestCount
+      assertSourceUnchanged()
+    cleanup:
+      setPaused(false)
+  }
+
+  void 'Automatic resync reuses a pending manual pull'() {
+    given:
+      String jobId = heldJob()
+      List before = pullJobIds()
+      int requestCount = requests.size()
+    when:
+      withTenant { packageSyncService.resyncPackage(packageId) }
+    then:
+      pullJobIds() == before
+      jobState(jobId).status == 'in_progress'
+      requests.size() == requestCount
+    cleanup:
+      endHeldJob(jobId)
   }
 
   @Unroll
@@ -409,6 +491,17 @@ class PackagePullSpec extends BaseSpec {
                   body: text && connection.contentType?.contains('json') ? new JsonSlurper().parseText(text) : text]
     connection.disconnect()
     return result
+  }
+
+  private List pullJobIds() {
+    withTenantNewTransaction {
+      PackagePullJob.executeQuery('select j.id from PackagePullJob j where j.packageId = :id order by j.id',
+        [id: packageId])
+    }
+  }
+
+  private int resyncJobCount() {
+    withTenantNewTransaction { PackageTriggerResyncJob.countByPackageId(packageId) }
   }
 
   private Map jobState(String id) {

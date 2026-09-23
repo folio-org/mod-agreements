@@ -20,26 +20,32 @@ class PackagePullService {
   KnowledgeBaseCacheService knowledgeBaseCacheService
   PackageIngestService packageIngestService
 
-  String enqueue(String packageId) {
+  /** Automatic resync may reuse pending work; explicit API requests reject duplicates. */
+  String enqueue(String packageId, boolean reusePending = false) {
     if (!packageId?.trim()) {
       throw new PackagePullException(400, 'packageId is required')
     }
-    PackagePullJob.withNewTransaction {
-      // Serialize requests for this package so duplicate jobs cannot be queued.
-      Pkg pkg = Pkg.lock(packageId)
-      Map target = validateTarget(pkg)
-      if (PackagePullJob.executeQuery("""
-        select j.id from PackagePullJob j
-        where j.packageId = :packageId and j.status.value in ('queued', 'in_progress')
-      """, [packageId: packageId])) {
-        throw new PackagePullException(409, 'A pull for this package is already queued or running')
+    // Resync callers already have a session; validate committed state in a fresh one.
+    Pkg.withNewSession {
+      PackagePullJob.withNewTransaction {
+        // Serialize requests for this package so duplicate jobs cannot be queued.
+        Pkg pkg = Pkg.lock(packageId)
+        Map target = validateTarget(pkg)
+        List pending = PackagePullJob.executeQuery("""
+          select j.id from PackagePullJob j
+          where j.packageId = :packageId and j.status.value in ('queued', 'in_progress')
+        """, [packageId: packageId])
+        if (pending) {
+          if (reusePending) return pending[0]
+          throw new PackagePullException(409, 'A pull for this package is already queued or running')
+        }
+        PackagePullJob job = new PackagePullJob(
+          name: StringUtils.truncate("OAI pull for ${pkg.name}"), packageId: pkg.id, remoteKbId: target.remoteKbId
+        )
+        job.setStatusFromString('Queued')
+        job.save(failOnError: true, flush: true)
+        return job.id
       }
-      PackagePullJob job = new PackagePullJob(
-        name: StringUtils.truncate("OAI pull for ${pkg.name}"), packageId: pkg.id, remoteKbId: target.remoteKbId
-      )
-      job.setStatusFromString('Queued')
-      job.save(failOnError: true, flush: true)
-      return job.id
     }
   }
 

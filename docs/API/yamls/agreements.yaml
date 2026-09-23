@@ -1196,6 +1196,7 @@ paths:
       tags:
         - Packages
       summary: Change the synchronisation status of a package
+      description: In Harvest mode, changing a harvested package from PAUSED to SYNCHRONIZING requests a background resync that queues a one-time OAI GetRecord pull. This does not reset the source cursor or wait for the hourly harvest. An unchanged status does not request another resync. The response confirms the status change; monitor /erm/jobs for resync and pull completion or errors.
       operationId: postPackagecontrolSync
       requestBody:
         required: true
