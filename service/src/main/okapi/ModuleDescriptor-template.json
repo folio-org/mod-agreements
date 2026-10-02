@@ -1062,7 +1062,7 @@
         },
         {
           "methods": [
-            "GET"
+            "POST"
           ],
           "pathPattern": "/erm/admin/pullPackage",
           "permissionsRequired": [

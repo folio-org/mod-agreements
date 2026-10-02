@@ -1,0 +1,7 @@
+import org.olf.general.jobs.PackagePullJob
+import groovy.transform.Field
+
+@Field
+PackagePullJob packagePullJob
+
+json tmpl."/persistentJob/persistentJob" (persistentJob: packagePullJob)

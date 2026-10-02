@@ -227,25 +227,12 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     oai_page.ListRecords.record.eachWithIndex { record, idx ->
       def record_identifier = record?.header?.identifier?.text()
       def package_name = record?.metadata?.gokb?.package?.name?.text()
-      def primary_slug = record?.metadata?.gokb?.package?.find {
-        it.@uuid?.text() != null && it.@uuid?.text()?.trim() != ''
-      }?.@uuid?.text()
       def datestamp = record?.header?.datestamp?.text()
-      def editStatus = record?.metadata?.gokb?.package?.editStatus?.text()
-      def listStatus = record?.metadata?.gokb?.package?.listStatus?.text()
-      def packageStatus = record?.metadata?.gokb?.package?.status?.text()
-
       log.debug("Processing OAI record :: ${idx} ${record_identifier} ${package_name}")
-      PackageSchema json_package_description = null;
-
-      if (!package_name) {
-        log.info("Ignoring Package '${record_identifier}' because package_name is missing")
-      } else if (!primary_slug) {
-        log.info("Ignoring Package '${record_identifier}' because primary_slug is missing")
-      } else if (editStatus.toLowerCase() == 'rejected') {
-        log.info("Ignoring Package '${package_name}' because editStatus=='${editStatus}'")
-      } else if (listStatus.toLowerCase() != 'checked') {
-        log.info("Ignoring Package '${package_name}' because listStatus=='${listStatus}' (required: 'checked')")
+      String rejection = packageRejectionReason(record)
+      PackageSchema json_package_description = null
+      if (rejection) {
+        log.info("Ignoring package '${record_identifier}': ${rejection}")
       } else {
         json_package_description = gokbToERM(record, trustedSourceTI, cache.kbManagementBean)
       }
@@ -611,10 +598,54 @@ public class GOKbOAIAdapter extends WebSourceAdapter implements KBCacheUpdater, 
     pkg
   }
 
-  public Map importPackage(Map params,
-                            KBCache cache) {
-    throw new RuntimeException("Not yet implemented")
+  @CompileStatic(SKIP)
+  protected String packageRejectionReason(GPathResult record) {
+    def pkg = record.metadata.gokb.package
+    if (!pkg.name.text()?.trim()) return 'Package name is missing'
+    if (!pkg.@uuid.text()?.trim()) return 'Package UUID is missing'
+    if (pkg.editStatus.text().equalsIgnoreCase('Rejected')) return 'Package editStatus is Rejected'
+    if (!pkg.listStatus.text().equalsIgnoreCase('Checked')) return 'Package listStatus must be Checked'
     return null
+  }
+
+  /** Fetch one package without touching the incremental harvest cursor. */
+  @CompileStatic(SKIP)
+  public Map importPackage(Map params, KBCache cache) {
+    if (!params.baseUrl || !params.identifier || !params.sourceName) {
+      throw new IllegalArgumentException('baseUrl, identifier and sourceName are required')
+    }
+    String url = params.baseUrl.replaceAll('/+$', '') + PATH_PACKAGES
+    def xml = getSync(url, [verb: 'GetRecord', metadataPrefix: 'gokb', identifier: params.identifier]) {
+      response.failure { FromServer server ->
+        throw new IllegalStateException("OAI GetRecord failed with HTTP ${server.statusCode}")
+      }
+    }
+    if (!(xml instanceof GPathResult) || xml.name() != 'OAI-PMH') {
+      throw new IllegalStateException('Invalid OAI GetRecord response')
+    }
+    if (xml.error.size()) {
+      throw new IllegalStateException("OAI GetRecord ${xml.error[0].@code.text()}: ${xml.error[0].text()}")
+    }
+    if (xml.GetRecord.record.size() != 1) {
+      throw new IllegalStateException('OAI GetRecord must return exactly one record')
+    }
+    def record = xml.GetRecord.record[0]
+    if (record.header.@status.text() == 'deleted' || record.header.status.text() == 'deleted') {
+      throw new IllegalStateException('OAI package record is deleted')
+    }
+    if (record.metadata.gokb.package.@uuid.text() != params.identifier) {
+      throw new IllegalStateException('OAI GetRecord returned a different package UUID')
+    }
+    String rejection = packageRejectionReason(record)
+    if (rejection) throw new IllegalStateException(rejection)
+    PackageSchema packageData = gokbToERM(record, params.trustedSourceTI == true, cache.kbManagementBean)
+    if (params.beforeIngest) params.beforeIngest.call(packageData)
+    TitleEnricherService.enrichedIds.remove()
+    try {
+      return cache.onPackageChange(params.sourceName, packageData)
+    } finally {
+      TitleEnricherService.enrichedIds.remove()
+    }
   }
 
   public boolean activate(Map params, KBCache cache) {
