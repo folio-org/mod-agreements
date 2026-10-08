@@ -288,3 +288,50 @@ This will create a file called `validate_module_descriptor_output.txt` containin
 
 ### Resourcing
 The "Memory" requirement listed in the module descriptor for this module is unusually high. This is because the memory requirement is made assuming full range of module functionality is in use, including GOKb Harvest and processing of thousands of TIPPs. Installations not making use of the harvest functionality can run with substantially lower memory.
+
+### Pull a single GOKB package through OAI-PMH
+
+In Harvest mode, an existing package with content synchronization enabled can be
+retrieved once without resetting the source's incremental harvest cursor:
+
+```sh
+curl -fsS -X POST 'http://localhost:8080/erm/admin/pullPackage' \
+  -H 'X-Okapi-Tenant: test1' \
+  -H 'Content-Type: application/json' \
+  -d '{"packageId":"TENANT-LOCAL-PACKAGE-ID"}'
+```
+
+The response is `202 Accepted` with `{"jobId":"..."}` and a `Location` header
+pointing to `/erm/jobs/{jobId}`. The endpoint requires the existing
+`erm.admin.action.pullPackage.execute` permission when accessed through Okapi.
+Use the tenant-local package ID, not the GOKB UUID. The package's Harvest ingress
+metadata identifies its RemoteKB, and its approved `gokb_uuid` identifier is used
+for `GetRecord`.
+
+Changing a harvested package from `PAUSED` to `SYNCHRONIZING` through
+`/erm/packages/controlSync` automatically requests this pull. The existing package
+resync job queues a pull job after the status change commits; both run through the
+background job runner without waiting for the hourly harvest. An unchanged enabled
+status does not request another resync. A pending pull is reused if one already
+exists. No additional UI request or cursor reset is needed.
+
+Paused packages return `409 Conflict` from the manual pull endpoint. Legacy
+packages with a null synchronization flag are treated as enabled.
+The request does not enable synchronization, discover new packages, or support
+PushKB. Unknown local packages return `404`; unsupported source configurations,
+missing GOKB identifiers, and duplicate pending pulls return `409`.
+
+Monitor `/erm/jobs` for resync and pull jobs and any errors; a successful status
+change confirms the setting was saved, not that its contents have arrived. If the
+package is paused again before the resync runs, that resync skips the pull.
+If a source harvest is already running when the pull starts, the same pull job
+returns to `Queued` and retries on subsequent job-runner ticks until the source is
+idle. Its info log explains why it is waiting. Waiting does not occupy a worker,
+claim the source, or require an operator to retry.
+
+Each attempt rechecks the package and source. If the package is paused after a
+pull is queued or its source changes, the job fails without retrieving the package.
+Upstream errors and rejected or unchecked records also fail the job. These failures
+still require a retry after resolving the reported cause.
+The source cursor and `lastCheck` remain unchanged, so normal incremental
+harvesting continues on its existing schedule.

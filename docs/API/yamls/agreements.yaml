@@ -1196,6 +1196,7 @@ paths:
       tags:
         - Packages
       summary: Change the synchronisation status of a package
+      description: In Harvest mode, changing a harvested package from PAUSED to SYNCHRONIZING requests a background resync that queues a one-time OAI GetRecord pull. This does not reset the source cursor or wait for the hourly harvest. An unchanged status does not request another resync. The response confirms the status change; monitor /erm/jobs for resync and pull completion or errors.
       operationId: postPackagecontrolSync
       requestBody:
         required: true
@@ -4280,6 +4281,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GrailsErrorResponse'
+  /erm/admin/pullPackage:
+    post:
+      tags:
+        - Admin
+      summary: Queue a one-time OAI-PMH harvest of an enabled package
+      description: Requires Harvest ingress mode and an existing tenant-local package with Harvest ingress metadata pointing to an active GOKB OAI package source. The source and GOKB UUID are derived from the package; callers cannot supply a source URL. Explicitly paused packages are rejected; a legacy null synchronization flag is treated as enabled. Duplicate queued or running pulls are rejected. Returns a background job ID; inspect GET /erm/jobs/{jobId} for completion and errors. If the source is being harvested, the same job returns to Queued and retries on later job-runner ticks without occupying a worker. Each attempt rechecks synchronization state before fetching. It fetches GetRecord with metadataPrefix=gokb and applies the same package eligibility rules as bulk harvesting. Neither the synchronization setting nor the RemoteKB cursor or lastCheck is changed. Missing, deleted, ineligible or invalid upstream records fail the job without ingesting contents.
+      operationId: postAdminPullPackage
+      parameters:
+        - $ref: '#/components/parameters/x-okapi-tenant'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - packageId
+              properties:
+                packageId:
+                  type: string
+                  format: uuid
+                  description: Tenant-local package ID, not the GOKB UUID
+      responses:
+        '202':
+          description: Package pull queued
+          headers:
+            Location:
+              description: URL of the background job
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - jobId
+                properties:
+                  jobId:
+                    type: string
+                    format: uuid
+        '400':
+          description: Missing or invalid packageId
+        '403':
+          description: Forbidden
+        '404':
+          description: Package not found in this tenant
+        '409':
+          description: Paused package, unsupported mode or source, missing identifier, or duplicate pull
+        '500':
+          description: Internal server error
   /erm/admin/triggerSync:
     get:
       tags:

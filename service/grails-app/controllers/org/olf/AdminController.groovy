@@ -6,10 +6,8 @@ import groovy.json.JsonSlurper
 import groovy.util.logging.Slf4j
 import grails.converters.JSON
 
-import org.olf.kb.RemoteKB
 import org.springframework.validation.BindingResult
 import org.olf.dataimport.internal.InternalPackageImplWithPackageContents
-import org.olf.kb.KBCacheUpdater
 import grails.gorm.transactions.Transactional
 
 @Slf4j
@@ -23,6 +21,9 @@ class AdminController implements DataBinder{
   def fileUploadService
   def kbManagementService
   def kbHarvestService
+  def packagePullService
+
+  static allowedMethods = [pullPackage: 'POST']
 
   public AdminController() {
   }
@@ -72,29 +73,26 @@ class AdminController implements DataBinder{
     render result as JSON
   }
 
-  // I don't believe this is used... I think the direct `importPackage` is not implemented for GOKBAdapter
+  /** Queue a one-off OAI harvest for an existing synchronizing package. */
   public pullPackage() {
-    def result = [:]
-    RemoteKB rkb = RemoteKB.findByName(params.kb)
-
-    if ( rkb ) {
-      log.debug("Located KB record -- name=${rkb.name} type=${rkb.type}");
-      try {
-        def import_params = [:]
-        import_params << params
-        import_params.principal = rkb.principal
-        import_params.credentials = rkb.credentials
-        Class cls = Class.forName(rkb.type)
-        KBCacheUpdater cache_updater = cls.newInstance();
-        log.debug("Import package: kb=${import_params.kb} vendorid=${import_params.vendorid} packageid=${import_params.packageid} [principal and credentials redacted]");
-        result = cache_updater.importPackage(import_params, knowledgeBaseCacheService);
-      }
-      catch ( Exception e ) {
-        log.error("Problem pulling package from ${params.kb}",e);
-      }
+    def body
+    try {
+      body = request.JSON
+    } catch (Exception e) {
+      render status: 400, contentType: 'application/json', text: ([error: 'Invalid JSON body'] as JSON).toString()
+      return
     }
-
-    render result as JSON
+    if (!(body instanceof Map) || !(body.packageId instanceof String) || !body.packageId.trim()) {
+      render status: 400, contentType: 'application/json', text: ([error: 'A JSON packageId is required'] as JSON).toString()
+      return
+    }
+    try {
+      String jobId = packagePullService.enqueue(body.packageId)
+      response.setHeader('Location', "/erm/jobs/${jobId}")
+      render status: 202, contentType: 'application/json', text: ([jobId: jobId] as JSON).toString()
+    } catch (org.olf.kb.PackagePullException e) {
+      render status: e.status, contentType: 'application/json', text: ([error: e.message] as JSON).toString()
+    }
   }
 
   public triggerActivationUpdate() {
