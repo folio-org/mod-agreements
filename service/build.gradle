@@ -396,6 +396,7 @@ task createDockerfile(type: Dockerfile, dependsOn: prepareDocker) {
   destFile = project.file("${dockerBuildDir}/Dockerfile")
 
   from 'folioci/alpine-jre-openjdk17:latest'
+  instruction 'ENV JAVA_TOOL_OPTIONS="-Daccesscontrol.acqunits.enabled=false"'
   instruction 'LABEL maintainer="Knowledge Integration"'
 
   exposePort 8080
