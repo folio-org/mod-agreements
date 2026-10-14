@@ -1333,7 +1333,7 @@
   "optional": [
     {
       "id": "usage-data-providers",
-      "version": "3.0"
+      "version": "3.0 4.0"
     },
     {
       "id": "licenses",
