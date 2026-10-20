@@ -1,4 +1,4 @@
-## 7.4.0 IN PROGRESS
+## 7.4.0 2026-10-20
 
   * ERM-4161 pull package, refresh (#1053)
   * ERM-4142 (#1048) Gradle Workflows
