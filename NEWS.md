@@ -1,4 +1,9 @@
-## 7.4.0 IN PROGRESS
+## 7.4.0 2026-10-20
+
+  * ERM-4161 pull package, refresh (#1053)
+  * ERM-4142 (#1048) Gradle Workflows
+  * ERM-4140: Use eholdings v5.0 API (#1047)
+  * ERM-4089: Extending API Documentation (#1043)
 
 ## 7.3.2 2026-06-04
   * ERM-4087: Agreements: Bump access-control-grails version to handle jackson vulnerability
