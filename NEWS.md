@@ -1,3 +1,7 @@
+## 7.5.0 In-Process
+
+  * Return package content item ID after saving it
+
 ## 7.4.0 2026-10-20
 
   * ERM-4161 pull package, refresh (#1053)
