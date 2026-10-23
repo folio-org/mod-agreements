@@ -206,6 +206,23 @@ class PackagePullSpec extends BaseSpec {
       ].toSet()
       assertImported(syncFlag)
       assertSourceUnchanged()
+
+    and: 'The successful OAI pull exposes persisted ingest messages through the info log API'
+      // Job completion does not wait for JobLoggingService's asynchronous writes.
+      // Exercise the real appender and persistence path, without injecting log entries.
+      new PollingConditions(timeout: 30, delay: 0.5).eventually {
+        Map infoLog = doGet("/erm/jobs/${response.body.jobId}/infoLog",
+          [stats: true, page: 1, perPage: 100])
+        assert infoLog.page == 1
+        assert infoLog.pageSize == 100
+        assert infoLog.totalRecords > 0
+        assert infoLog.results.any { it.message.startsWith('Package titles summary::Processed/') }
+        assert infoLog.results.every { it.type == 'info' && it.origin == response.body.jobId }
+
+        Map loggedJob = doGet("/erm/jobs/${response.body.jobId}")
+        assert loggedJob.infoLogCount >= infoLog.results.size()
+        assert loggedJob.fullLogCount >= loggedJob.infoLogCount
+      }
     where:
       syncFlag << [true, null]
   }
