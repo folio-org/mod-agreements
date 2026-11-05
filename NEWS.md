@@ -1,6 +1,6 @@
 ## 7.4.1 In-Process
 
-  * ERM-4168: Backfill missing legacy GOKb package ingress metadata during Harvest tenant upgrades
+  * ERM-4168: Backfill missing legacy GOKb package ingress metadata on Harvest tenant enable, including re-enables without module_from
   * Return package content item ID after saving it
 
 ## 7.4.0 2026-10-20

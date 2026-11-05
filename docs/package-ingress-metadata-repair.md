@@ -1,8 +1,12 @@
 # Repairing legacy package ingress metadata
 
-Tenant upgrades automatically repair missing package ingress metadata (PIM) when
+Tenant enables automatically repair missing package ingress metadata (PIM) when
 the module runs with `INGRESS_TYPE=Harvest`. This repairs packages that predate
 the introduction of PIM in 7.2 without resetting the OAI cursor or re-harvesting.
+The repair runs on upgrades and re-enables, even when the tenant request omits
+`module_from`. A disabled module can retain tenant data, so the request's upgrade
+flag does not determine whether repair is needed. Fresh tenants have no packages
+to backfill.
 
 The repair requires exactly one configured, non-readonly RemoteKB with the GOKb
 OAI adapter and package record type. Inactive sources count too: an inactive source
@@ -22,7 +26,7 @@ manual review rather than selecting the currently active source arbitrarily.
 
 The module logs a per-tenant result and warnings for unresolved sources or missing
 identifiers. After correcting source configuration or identifiers, another tenant
-upgrade can safely repeat the repair; it only fills missing records. Processing
+enable can safely repeat the repair; it only fills missing records. Processing
 uses batches of 100 and commits each batch independently.
 
 After repair, enabled packages can be refreshed using

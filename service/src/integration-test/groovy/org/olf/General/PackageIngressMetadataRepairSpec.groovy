@@ -13,6 +13,7 @@ import org.olf.kb.adapters.GOKbOAIAdapter
 import org.olf.kb.metadata.PackageIngressMetadata
 import org.olf.kb.metadata.ResourceIngressType
 import spock.lang.Stepwise
+import spock.util.concurrent.PollingConditions
 
 @Integration
 @Stepwise
@@ -87,6 +88,46 @@ class PackageIngressMetadataRepairSpec extends BaseSpec {
       }
   }
 
+  void 'Tenant enable without module_from repairs retained data and can be repeated'() {
+    given:
+      String packageId
+      String originalMetadataId
+      withTenantNewTransaction {
+        packageId = legacyPackage('Retained package after disable', false).id
+        assert !PackageIngressMetadata.findByResource(Pkg.get(packageId))
+      }
+
+    when: 'Okapi enables the tenant without identifying a previous module'
+      def response = doPost('/_/tenant', {
+        module_to('mod-agreements-7.4.1')
+      })
+
+    then:
+      response != null
+      new PollingConditions(timeout: 20).eventually {
+        withTenantNewTransaction {
+          Pkg pkg = Pkg.get(packageId)
+          PackageIngressMetadata pim = PackageIngressMetadata.findByResource(pkg)
+          assert pim?.ingressType == ResourceIngressType.HARVEST
+          assert pim.ingressId == RemoteKB.findByName('Repair source').id
+          assert pkg.syncContentsFromSource == false
+          originalMetadataId = pim.id
+        }
+      }
+
+    when: 'The same enable request is repeated'
+      response = doPost('/_/tenant', {
+        module_to('mod-agreements-7.4.1')
+      })
+
+    then:
+      response != null
+      withTenantNewTransaction {
+        assert PackageIngressMetadata.findAllByResource(Pkg.get(packageId))*.id == [originalMetadataId]
+        true
+      }
+  }
+
   void 'Multiple sources including inactive ones are ambiguous'() {
     given:
       String packageId
@@ -119,14 +160,13 @@ class PackageIngressMetadataRepairSpec extends BaseSpec {
   }
 
   // Do not change the shared application bean: this instance exercises the event guards.
-  void 'Fresh tenant enable and PushKB upgrades do not attempt a Harvest repair'() {
+  void 'PushKB tenant enables and upgrades do not attempt a Harvest repair'() {
     given:
       def repair = Spy(PackageIngressMetadataRepairService)
-      repair.kbManagementBean = new KBManagementBean(ingressType: ResourceIngressType.HARVEST)
+      repair.kbManagementBean = new KBManagementBean(ingressType: ResourceIngressType.PUSHKB)
 
     when:
       repair.onTenantEnabled(currentTenant, false, false, '7.5.0', null)
-      repair.kbManagementBean.ingressType = ResourceIngressType.PUSHKB
       repair.onTenantEnabled(currentTenant, true, true, '7.5.0', '7.4.0')
 
     then:

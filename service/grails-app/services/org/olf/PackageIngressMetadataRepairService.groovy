@@ -21,7 +21,8 @@ class PackageIngressMetadataRepairService {
   @Subscriber('okapi:tenant_enabled')
   void onTenantEnabled(String tenantId, boolean existingTenant, boolean upgrading,
                        String toVersion, String fromVersion) {
-    if (upgrading && kbManagementBean.ingressType == ResourceIngressType.HARVEST) {
+    // A re-enabled tenant may retain legacy data even without module_from.
+    if (kbManagementBean.ingressType == ResourceIngressType.HARVEST) {
       Tenants.withId(OkapiTenantResolver.getTenantSchemaName(tenantId)) {
         Map result = repairMissingMetadata()
         log.info("Package ingress metadata repair for tenant ${tenantId}: ${result}")
@@ -30,7 +31,7 @@ class PackageIngressMetadataRepairService {
   }
 
   /**
-   * Run in a tenant context. Repeat on upgrades so an interrupted repair can resume.
+   * Run in a tenant context. Repeat on enables so an interrupted repair can resume.
    * Package.source is the adapter's label (GOKb), NOT the RemoteKB name or ID.
    * Count inactive sources too: disabling a source does not remove its provenance.
    */
