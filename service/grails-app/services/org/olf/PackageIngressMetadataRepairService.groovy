@@ -5,6 +5,9 @@ import grails.events.annotation.Subscriber
 import grails.gorm.multitenancy.Tenants
 import groovy.util.logging.Slf4j
 import org.olf.dataimport.internal.KBManagementBean
+import org.olf.kb.Identifier
+import org.olf.kb.IdentifierNamespace
+import org.olf.kb.IdentifierOccurrence
 import org.olf.kb.Pkg
 import org.olf.kb.RemoteKB
 import org.olf.kb.adapters.GOKbOAIAdapter
@@ -72,13 +75,16 @@ class PackageIngressMetadataRepairService {
               List<String> uuids = pkg.approvedIdentifierOccurrences.findAll {
                 it.identifier.ns.value == 'gokb_uuid'
               }.collect { it.identifier.value }.unique()
+              if (!uuids && restoreIdentifierFromReference(pkg)) {
+                uuids = [pkg.reference]
+              }
               if (uuids.size() == 1 && uuids[0]?.trim()) {
                 new PackageIngressMetadata(resource: pkg, ingressType: ResourceIngressType.HARVEST,
                   ingressId: sourceIds[0]).save(failOnError: true)
                 result.created++
               } else {
                 result.skipped++
-                log.warn("Cannot backfill package ingress metadata for ${id}: expected exactly one approved gokb_uuid identifier")
+                log.warn("Cannot backfill package ingress metadata for ${id}: expected exactly one approved gokb_uuid identifier, or no gokb_uuid occurrences and a UUID reference")
               }
             }
           }
@@ -87,5 +93,29 @@ class PackageIngressMetadataRepairService {
       lastId = ids[-1]
     }
     return result
+  }
+
+  /** Older GOKb packages may retain their upstream UUID only in reference. */
+  private boolean restoreIdentifierFromReference(Pkg pkg) {
+    // UUID.fromString alone also accepts shortened groups; require the full form.
+    if (!(pkg.reference ==~ /(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/)) {
+      return false
+    }
+    // Never override an identifier marked ERROR or any other non-approved status.
+    Long existing = IdentifierOccurrence.executeQuery('''
+      select count(io.id) from IdentifierOccurrence io
+      where io.resource.id = :packageId and io.identifier.ns.value = :namespace
+    ''', [packageId: pkg.id, namespace: 'gokb_uuid'])[0]
+    if (existing != 0) return false
+
+    IdentifierNamespace ns = IdentifierNamespace.findByValue('gokb_uuid') ?:
+      new IdentifierNamespace(value: 'gokb_uuid').save(failOnError: true)
+    Identifier identifier = Identifier.findByNsAndValue(ns, pkg.reference) ?:
+      // Make a new identifier visible to subsequent lookups in this batch.
+      new Identifier(ns: ns, value: pkg.reference).save(failOnError: true, flush: true)
+    new IdentifierOccurrence(resource: pkg, identifier: identifier,
+      status: IdentifierOccurrence.lookupOrCreateStatus('approved')).save(failOnError: true)
+    log.info("Restored approved gokb_uuid from reference for package ${pkg.id}")
+    return true
   }
 }

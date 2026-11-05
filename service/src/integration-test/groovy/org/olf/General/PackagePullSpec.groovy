@@ -7,6 +7,7 @@ import groovy.json.JsonSlurper
 import org.olf.BaseSpec
 import org.olf.PackageSyncService
 import org.olf.PackagePullService
+import org.olf.PackageIngressMetadataRepairService
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierNamespace
 import org.olf.kb.IdentifierOccurrence
@@ -34,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference
 class PackagePullSpec extends BaseSpec {
   PackageSyncService packageSyncService
   PackagePullService packagePullService
+  PackageIngressMetadataRepairService packageIngressMetadataRepairService
   JobRunnerService jobRunnerService
 
   @Shared HttpServer oaiServer
@@ -93,6 +95,34 @@ class PackagePullSpec extends BaseSpec {
       }
     then:
       packageId != null
+  }
+
+  void 'Repair recovers a missing GOKB identifier from reference before pulling'() {
+    given:
+      String originalIdentifierId
+      withTenantNewTransaction {
+        Pkg pkg = Pkg.get(packageId)
+        originalIdentifierId = pkg.approvedIdentifierOccurrences.find {
+          it.identifier.ns.value == 'gokb_uuid'
+        }.identifier.id
+        PackageIngressMetadata.executeUpdate('delete from PackageIngressMetadata where resource.id = :id', [id: packageId])
+        IdentifierOccurrence.executeUpdate('delete from IdentifierOccurrence where resource.id = :id', [id: packageId])
+      }
+
+    when:
+      Map result = withTenant { packageIngressMetadataRepairService.repairMissingMetadata() }
+
+    then:
+      result == [created: 1, skipped: 0]
+      withTenantNewTransaction {
+        Pkg pkg = Pkg.get(packageId)
+        assert PackageIngressMetadata.findByResource(pkg).ingressId == sourceId
+        assert pkg.approvedIdentifierOccurrences.size() == 1
+        assert pkg.approvedIdentifierOccurrences.first().identifier.id == originalIdentifierId
+        assert pkg.approvedIdentifierOccurrences.first().identifier.value == GOKB_UUID
+        true
+      }
+    // The following feature enables this repaired package and imports from the local OAI server.
   }
 
   void 'Enabling a paused harvested package automatically imports its contents'() {

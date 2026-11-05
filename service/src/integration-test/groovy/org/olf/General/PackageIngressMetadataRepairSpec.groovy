@@ -128,6 +128,97 @@ class PackageIngressMetadataRepairSpec extends BaseSpec {
       }
   }
 
+  void 'Reference fallback restores only absent identifiers and is idempotent'() {
+    given:
+      String sharedReference = UUID.randomUUID().toString()
+      List<Map> cases = [
+        [reference: UUID.randomUUID().toString(), restore: true],
+        [reference: UUID.randomUUID().toString(), restore: true, reuse: true],
+        [reference: sharedReference, restore: true, source: 'GOKb'],
+        [reference: sharedReference, restore: true, source: 'gokb'],
+        [reference: '1-1-1-1-1', restore: false],
+        [reference: 'dfbfa79f-ba78-4fde-af92-d41ce9592f2g', restore: false],
+        [reference: ' ' + UUID.randomUUID().toString(), restore: false],
+        [reference: UUID.randomUUID().toString(), restore: false, statuses: ['error']],
+        [reference: UUID.randomUUID().toString(), restore: false, statuses: ['approved', 'approved']],
+        [reference: UUID.randomUUID().toString(), restore: false, source: 'LOCAL'],
+        [reference: UUID.randomUUID().toString(), restore: false, existingPim: true]
+      ]
+      withTenantNewTransaction {
+        IdentifierNamespace ns = IdentifierNamespace.findByValue('gokb_uuid')
+        cases.eachWithIndex { Map entry, int i ->
+          Pkg pkg = new Pkg(name: "Reference fallback ${i}", source: entry.source ?: 'gokb',
+            reference: entry.reference, syncContentsFromSource: false).save(failOnError: true)
+          entry.id = pkg.id
+          if (entry.reuse) {
+            entry.identifierId = new Identifier(ns: ns, value: entry.reference).save(failOnError: true).id
+          }
+          entry.statuses?.each { String status ->
+            Identifier identifier = new Identifier(ns: ns, value: UUID.randomUUID().toString())
+              .save(failOnError: true)
+            new IdentifierOccurrence(resource: pkg, identifier: identifier,
+              status: IdentifierOccurrence.lookupOrCreateStatus(status)).save(failOnError: true)
+          }
+          if (entry.existingPim) {
+            new PackageIngressMetadata(resource: pkg, ingressType: ResourceIngressType.JSON_IMPORT)
+              .save(failOnError: true)
+          }
+        }
+      }
+      // Domain validation trims strings. After inserting, retain legacy whitespace via HQL.
+      withTenantNewTransaction {
+        cases.each { Map entry ->
+          entry.originalIdentifiers = IdentifierOccurrence.findAllByResource(Pkg.get(entry.id))*.id
+        }
+        cases.findAll { it.reference.startsWith(' ') }.each { Map entry ->
+          assert Pkg.executeUpdate('update Pkg set reference = :reference where id = :id',
+            [reference: entry.reference, id: entry.id]) == 1
+        }
+      }
+
+    when:
+      withTenant { packageIngressMetadataRepairService.repairMissingMetadata() }
+
+    then:
+      withTenantNewTransaction {
+        cases.each { Map entry ->
+          Pkg pkg = Pkg.get(entry.id)
+          List<IdentifierOccurrence> occurrences = IdentifierOccurrence.findAllByResource(pkg)
+          PackageIngressMetadata pim = PackageIngressMetadata.findByResource(pkg)
+          assert pkg.reference == entry.reference
+          assert pkg.syncContentsFromSource == false
+          if (entry.restore) {
+            assert occurrences.size() == 1
+            assert occurrences[0].identifier.ns.value == 'gokb_uuid'
+            assert occurrences[0].identifier.value == entry.reference
+            assert Identifier.countByNsAndValue(occurrences[0].identifier.ns, entry.reference) == 1
+            assert occurrences[0].status.value == 'approved'
+            assert pim?.ingressType == ResourceIngressType.HARVEST
+            if (entry.reuse) assert occurrences[0].identifier.id == entry.identifierId
+          } else {
+            assert occurrences*.id == entry.originalIdentifiers
+            assert entry.existingPim ? pim?.ingressType == ResourceIngressType.JSON_IMPORT : pim == null
+          }
+          entry.repairedIdentifiers = occurrences*.id
+          entry.metadataId = pim?.id
+        }
+        true
+      }
+
+    when:
+      withTenant { packageIngressMetadataRepairService.repairMissingMetadata() }
+
+    then:
+      withTenantNewTransaction {
+        cases.each { Map entry ->
+          Pkg pkg = Pkg.get(entry.id)
+          assert IdentifierOccurrence.findAllByResource(pkg)*.id == entry.repairedIdentifiers
+          assert PackageIngressMetadata.findByResource(pkg)?.id == entry.metadataId
+        }
+        true
+      }
+  }
+
   void 'Multiple sources including inactive ones are ambiguous'() {
     given:
       String packageId
@@ -135,7 +226,8 @@ class PackageIngressMetadataRepairSpec extends BaseSpec {
         new RemoteKB(name: 'Second repair source', type: GOKbOAIAdapter.name,
           uri: 'https://other.example.org/oai/', active: false, rectype: RemoteKB.RECTYPE_PACKAGE)
           .save(failOnError: true)
-        packageId = legacyPackage('Ambiguous source', true).id
+        packageId = new Pkg(name: 'Ambiguous fallback source', source: 'GOKb',
+          reference: UUID.randomUUID().toString()).save(failOnError: true).id
       }
 
     when:
@@ -144,6 +236,7 @@ class PackageIngressMetadataRepairSpec extends BaseSpec {
     then:
       withTenantNewTransaction {
         assert !PackageIngressMetadata.findByResource(Pkg.get(packageId))
+        assert IdentifierOccurrence.countByResource(Pkg.get(packageId)) == 0
         true
       }
   }
