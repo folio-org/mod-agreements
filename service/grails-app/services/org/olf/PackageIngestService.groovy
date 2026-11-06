@@ -281,6 +281,21 @@ AccessEnd/${result.updatedAccessEnd}\
 
   // This WILL NOT update or create a package from the data.
   public Pkg lookupPkg(PackageSchema package_data) {
+    if ('GOKb'.equalsIgnoreCase(package_data.header.packageSource)) {
+      // Historical GOKb source labels vary in case; references remain exact.
+      Pkg pkg = lookupGokbPackage([package_data.header.packageSlug])
+      if (pkg == null) {
+        List<String> references = package_data.header.alternateSlugs?.collect {
+          it.toString()
+        } ?: []
+        pkg = lookupGokbPackage(references)
+        if (pkg != null) {
+          pkg.reference = package_data.header.packageSlug
+        }
+      }
+      return pkg
+    }
+
     Pkg pkg = null
 
     // header.packageSlug contains the package maintainers authoritative identifier for this package.
@@ -297,6 +312,20 @@ AccessEnd/${result.updatedAccessEnd}\
     }
 
     return pkg;
+  }
+
+  private Pkg lookupGokbPackage(List<String> references) {
+    if (!references) {
+      return null
+    }
+    List<Pkg> matches = Pkg.executeQuery(
+      'from Pkg p where lower(p.source) = :source and p.reference in (:references)',
+      [source: 'gokb', references: references], [max: 2]
+    )
+    if (matches.size() > 1) {
+      throw new IllegalStateException("Ambiguous GOKb package lookup for references ${references}: multiple local packages match")
+    }
+    return matches ? matches.first() : null
   }
 
   public Org getVendorFromPackageData(PackageSchema package_data) {
