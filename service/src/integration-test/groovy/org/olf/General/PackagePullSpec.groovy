@@ -7,6 +7,7 @@ import groovy.json.JsonSlurper
 import org.olf.BaseSpec
 import org.olf.PackageSyncService
 import org.olf.PackagePullService
+import org.olf.PackageIngressMetadataRepairService
 import org.olf.kb.Identifier
 import org.olf.kb.IdentifierNamespace
 import org.olf.kb.IdentifierOccurrence
@@ -34,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference
 class PackagePullSpec extends BaseSpec {
   PackageSyncService packageSyncService
   PackagePullService packagePullService
+  PackageIngressMetadataRepairService packageIngressMetadataRepairService
   JobRunnerService jobRunnerService
 
   @Shared HttpServer oaiServer
@@ -80,7 +82,7 @@ class PackagePullSpec extends BaseSpec {
           lastCheck: lastCheck, syncStatus: 'idle'
         ).save(failOnError: true, flush: true)
         sourceId = source.id
-        Pkg pkg = new Pkg(name: 'Before pull'.padRight(255, 'x'), source: 'GOKb', reference: GOKB_UUID,
+        Pkg pkg = new Pkg(name: 'Before pull'.padRight(255, 'x'), source: 'gokb', reference: GOKB_UUID,
           syncContentsFromSource: true).save(failOnError: true, flush: true)
         packageId = pkg.id
         IdentifierNamespace ns = IdentifierNamespace.findByValue('gokb_uuid') ?:
@@ -93,6 +95,35 @@ class PackagePullSpec extends BaseSpec {
       }
     then:
       packageId != null
+  }
+
+  void 'Repair recovers a missing GOKB identifier from reference before pulling'() {
+    given:
+      String originalIdentifierId
+      withTenantNewTransaction {
+        Pkg pkg = Pkg.get(packageId)
+        originalIdentifierId = pkg.approvedIdentifierOccurrences.find {
+          it.identifier.ns.value == 'gokb_uuid'
+        }.identifier.id
+        PackageIngressMetadata.executeUpdate('delete from PackageIngressMetadata where resource.id = :id', [id: packageId])
+        IdentifierOccurrence.executeUpdate('delete from IdentifierOccurrence where resource.id = :id', [id: packageId])
+      }
+
+    when:
+      Map result = withTenant { packageIngressMetadataRepairService.repairMissingMetadata() }
+
+    then:
+      result == [created: 1, skipped: 0]
+      withTenantNewTransaction {
+        Pkg pkg = Pkg.get(packageId)
+        assert pkg.source == 'gokb'
+        assert PackageIngressMetadata.findByResource(pkg).ingressId == sourceId
+        assert pkg.approvedIdentifierOccurrences.size() == 1
+        assert pkg.approvedIdentifierOccurrences.first().identifier.id == originalIdentifierId
+        assert pkg.approvedIdentifierOccurrences.first().identifier.value == GOKB_UUID
+        true
+      }
+    // The following feature enables this repaired package and imports from the local OAI server.
   }
 
   void 'Enabling a paused harvested package automatically imports its contents'() {
@@ -465,6 +496,30 @@ class PackagePullSpec extends BaseSpec {
       'Checked'     | 'Rejected' | false
   }
 
+  void 'Ambiguous GOKb source labels reject a pull before changing contents'() {
+    given:
+      String duplicateId
+      withTenantNewTransaction {
+        duplicateId = new Pkg(name: 'Duplicate GOKb identity', source: 'GOKb', reference: GOKB_UUID)
+          .save(failOnError: true, flush: true).id
+      }
+      String jobId = heldJob()
+    when:
+      withTenant { packagePullService.pull(jobId) }
+    then:
+      IllegalStateException e = thrown()
+      e.message.contains('Ambiguous GOKb package lookup')
+      assertSourceUnchanged()
+      assertImported(true)
+      withTenantNewTransaction {
+        assert PackageContentItem.countByPkg(Pkg.get(duplicateId)) == 0
+        true
+      }
+    cleanup:
+      endHeldJob(jobId)
+      withTenantNewTransaction { Pkg.get(duplicateId)?.delete(flush: true) }
+  }
+
   @Unroll
   void 'Upstream #scenario causes job failure and releases the source'() {
     given:
@@ -556,7 +611,8 @@ class PackagePullSpec extends BaseSpec {
       assert pkg.syncContentsFromSource == syncFlag
       assert PackageContentItem.countByPkg(pkg) == 1
       assert PackageContentItem.findByPkg(pkg).pti.titleInstance.name == 'OAI pull test title'
-      assert Pkg.countBySourceAndReference('GOKb', GOKB_UUID) == 1
+      assert pkg.source == 'gokb'
+      assert Pkg.countBySourceAndReference('gokb', GOKB_UUID) == 1
     }
   }
 
