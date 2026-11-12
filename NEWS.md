@@ -1,7 +1,16 @@
-## 7.4.0 IN PROGRESS
+## 7.5.0 In-Process
+
+  * Return package content item ID after saving it
   * ERM-4123: Agreement Line (Entitlement) create domain events
   * ERM-4133: Agreement Line (Entitlement) update domain events
   * ERM-4126: Publish Kafka DELETE events for agreement lines (entitlements)
+
+## 7.4.0 2026-10-20
+
+  * ERM-4161 pull package, refresh (#1053)
+  * ERM-4142 (#1048) Gradle Workflows
+  * ERM-4140: Use eholdings v5.0 API (#1047)
+  * ERM-4089: Extending API Documentation (#1043)
 
 ## 7.3.2 2026-06-04
   * ERM-4087: Agreements: Bump access-control-grails version to handle jackson vulnerability

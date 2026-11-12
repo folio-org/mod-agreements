@@ -691,9 +691,6 @@ AccessEnd/${result.updatedAccessEnd}\
         result.pciStatus = 'new'
       }
 
-      // ADD PTI AND PCI ID TO RESULT
-      result.pciId = pci.id;
-
       // If the row has a coverage statement, check that the range of coverage we know about for this title on this platform
       // extends to include the supplied information. It is a contract with the KB that we assume this is correct info.
       // We store this generally for the title on the platform, and specifically for this title in this package on this platform.
@@ -707,6 +704,9 @@ AccessEnd/${result.updatedAccessEnd}\
       }
 
       pci.save(failOnError: true, flush: true)
+
+      // ADD PCI ID TO RESULT AFTER SAVE
+      result.pciId = pci.id;
     }
     else {
       throw new IngestException("Unable to identify platform from ${platform_url_to_use} and ${pc.platformName}");

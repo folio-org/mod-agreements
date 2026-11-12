@@ -270,6 +270,8 @@ paths:
      $ref: paths/admin_loadPackage.yaml
    /erm/admin/triggerCacheUpdate:
      $ref: paths/admin_triggerCacheUpdate.yaml
+   /erm/admin/pullPackage:
+     $ref: paths/admin_pullPackage.yaml
    /erm/admin/triggerSync:
      $ref: paths/admin_triggerSync.yaml
    /erm/admin/triggerActivationUpdate:
@@ -354,11 +356,6 @@ paths:
 #     $ref: paths/codex-instances.yaml
 #   /codex-instances/{id}:
 #     $ref: paths/codex-instances_{id}.yaml
-
-##  # ===== Admin =====
-#  non-functional under any currently active configuration
-# /erm/admin/pullPackage:
-  #   $ref: paths/admin_pullPackage.yaml
 
 # ===== Comparison =====
 #   /erm/compare:

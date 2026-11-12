@@ -160,7 +160,7 @@ public class EntitlementService {
               }
             } else {
               log.info("Set package ({}) in local KB matching GOKB Package with UUID: {} to synchronize.", packageInLocalKb.name, packageGokbId)
-              // If we find the package in the local KB, but it's not set to sync, set it to sync and wait for next harvest to pull in titles.
+              // Enabling the local package requests a background resync to pull in its titles.
               packageSyncService.controlSyncStatus([packageInLocalKb.id], true)
             }
           } else {

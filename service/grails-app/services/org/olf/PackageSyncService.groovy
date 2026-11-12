@@ -20,6 +20,8 @@ import groovy.util.logging.Slf4j
 @CurrentTenant
 class PackageSyncService {
 
+  PackagePullService packagePullService
+
   public Map controlSyncStatus(List<String> packageIds, boolean syncStatusBool) {
     // Convert each package in packageId to syncStatus
     boolean returnVal = false;
@@ -57,9 +59,8 @@ class PackageSyncService {
   }
 
   /*
-   * Handed a package Id, read ingress metadata and perform resync-package logic, either
-   * warning that the package ingress is not type pushKB, or actually making the call to pushKB
-   * to setup a temporary push task
+   * Read ingress metadata and request a resync through the appropriate source.
+   * This runs after the synchronization status change has committed.
    */
 
   public void resyncPackage(String packageId) {
@@ -78,7 +79,13 @@ class PackageSyncService {
               resyncPushKBPackage(pkg, pim);
               break;
             case ResourceIngressType.HARVEST:
-              log.error("Package resync is not currently automatically triggered for packages with ingress type: ${pim.ingressType}. A resync will require either the package to come in via PushKB, or a cursor reset on remoteKb ${pim.ingressId} to be done manually.")
+              if (pkg.syncContentsFromSource == false) {
+                log.info("Skipping OAI resync for paused package ${packageId}")
+              } else {
+                // Reuse a pending pull if enabling and a manual request overlap.
+                String jobId = packagePullService.enqueue(packageId, true)
+                log.info("OAI resync for package ${packageId} uses pull job ${jobId}")
+              }
               break;
             default:
               log.error("Package resync is not available for packages with ingress type: ${pim.ingressType}")
