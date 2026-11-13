@@ -1,11 +1,17 @@
 package org.olf.general.events
 
+import java.nio.charset.StandardCharsets
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.util.logging.Slf4j
+import javax.servlet.http.HttpServletRequest
+import org.apache.kafka.clients.producer.ProducerRecord
+import org.grails.web.servlet.mvc.GrailsWebRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
+import org.springframework.web.context.request.RequestContextHolder
 
 /**
  * Publishes {@link DomainEvent} messages to Kafka after the current transaction
@@ -20,9 +26,17 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *
  * Partition key is the entity id so per-entity CREATE → UPDATE → DELETE order
  * is preserved on the same partition.
+ *
+ * The tenant, user id and request id headers of the originating request are
+ * copied to the Kafka record headers, so consumers know who made the change and
+ * which request it belongs to. Only these are copied: the request also carries
+ * credentials (the user's token, the sidecar's signature) that must not leave
+ * it. Events published outside a request (background jobs) carry none.
  */
 @Slf4j
 class EventPublisherService {
+
+  private static final List<String> FORWARDED_HEADERS = ['x-okapi-tenant', 'x-okapi-user-id', 'x-okapi-request-id']
 
   @Autowired
   KafkaTemplate<String, String> kafkaTemplate
@@ -45,11 +59,13 @@ class EventPublisherService {
       return
     }
 
+    Map<String, String> headers = okapiHeaders()
+
     if (TransactionSynchronizationManager.isSynchronizationActive()) {
       TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
         @Override
         void afterCommit() {
-          sendToKafka(topic, key, payload)
+          sendToKafka(topic, key, payload, headers)
         }
       })
     } else {
@@ -67,9 +83,27 @@ class EventPublisherService {
     return event.eventId?.toString()
   }
 
-  private void sendToKafka(String topic, String key, String payload) {
+  private Map<String, String> okapiHeaders() {
+    def attributes = RequestContextHolder.getRequestAttributes()
+    if (!(attributes instanceof GrailsWebRequest)) return [:]
+    HttpServletRequest request = ((GrailsWebRequest) attributes).currentRequest
+    Map<String, String> headers = [:]
+    for (String name : FORWARDED_HEADERS) {
+      String value = request.getHeader(name)
+      if (value != null) {
+        headers[name] = value
+      }
+    }
+    return headers
+  }
+
+  private void sendToKafka(String topic, String key, String payload, Map<String, String> headers) {
     try {
-      kafkaTemplate.send(topic, key, payload)
+      ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, payload)
+      headers.each { String name, String value ->
+        record.headers().add(name, value.getBytes(StandardCharsets.UTF_8))
+      }
+      kafkaTemplate.send(record)
     } catch (Exception e) {
       log.error("Failed to publish DomainEvent to topic ${topic}", e)
     }

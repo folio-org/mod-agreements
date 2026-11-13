@@ -1,5 +1,6 @@
 package org.olf.events
 
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -28,16 +29,8 @@ abstract class AgreementEventBaseSpec extends BaseSpec {
   }
 
   List<Map> pollForEvents(String topic, int minRecords = 1, long timeoutMs = 10_000L) {
-    Properties props = new Properties()
-    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers)
-    props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-${UUID.randomUUID()}".toString())
-    props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, 'earliest')
-    props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, 'false')
-    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.name)
-    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.name)
-
     List<Map> events = []
-    KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)
+    KafkaConsumer<String, String> consumer = newConsumer()
     try {
       consumer.subscribe([topic])
       long deadline = System.currentTimeMillis() + timeoutMs
@@ -52,5 +45,39 @@ abstract class AgreementEventBaseSpec extends BaseSpec {
       consumer.close(Duration.ofSeconds(5))
     }
     return events
+  }
+
+  /**
+   * Kafka headers of the record keyed {@code entityId} (records are keyed by entity id), or null when none
+   * arrives in time.
+   */
+  Map<String, String> pollForHeaders(String topic, String entityId, long timeoutMs = 10_000L) {
+    KafkaConsumer<String, String> consumer = newConsumer()
+    try {
+      consumer.subscribe([topic])
+      long deadline = System.currentTimeMillis() + timeoutMs
+      while (System.currentTimeMillis() < deadline) {
+        for (ConsumerRecord<String, String> r : consumer.poll(Duration.ofMillis(500))) {
+          if (r.key() == entityId) {
+            return r.headers().collectEntries { [(it.key()): new String(it.value(), StandardCharsets.UTF_8)] }
+          }
+        }
+      }
+    } finally {
+      consumer.close(Duration.ofSeconds(5))
+    }
+    return null
+  }
+
+  private KafkaConsumer<String, String> newConsumer() {
+    Properties props = new Properties()
+    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootstrapServers)
+    props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-${UUID.randomUUID()}".toString())
+    props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, 'earliest')
+    props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, 'false')
+    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.name)
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.name)
+
+    return new KafkaConsumer<>(props)
   }
 }

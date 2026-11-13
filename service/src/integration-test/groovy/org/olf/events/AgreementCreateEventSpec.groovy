@@ -55,6 +55,27 @@ class AgreementCreateEventSpec extends AgreementEventBaseSpec {
       event.new.periods[0].startDate ==~ /\d{4}-\d{2}-\d{2}/
   }
 
+  void 'the event carries the tenant, user and request id of the request, and no credentials'() {
+    given: 'a request carrying a request id and a token'
+      String requestId = UUID.randomUUID().toString()
+      setHeaders(['X-Okapi-Request-Id': requestId, 'X-Okapi-Token': 'secret-token'])
+
+    when: 'we POST an agreement'
+      def response = doPost('/erm/sas/', [
+        name           : "kafka-headers-${System.currentTimeMillis()}".toString(),
+        agreementStatus: 'active',
+        periods        : [[startDate: LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)]]
+      ])
+      Map<String, String> headers = pollForHeaders(topicFor('agreement'), response.id as String, 15_000L)
+
+    then: 'tenant, user and request id travel as record headers; the token does not'
+      headers != null
+      headers['x-okapi-tenant'] == currentTenant
+      headers['x-okapi-user-id'] == "${this.class.simpleName}_user".toString()
+      headers['x-okapi-request-id'] == requestId
+      !headers.containsKey('x-okapi-token')
+  }
+
   void 'CREATE snapshot carries doc collections, relationships and attachedLicenceId'() {
     given: 'a relationship type and an existing agreement to relate to'
       List relationshipTypes = doGet('/erm/refdata/AgreementRelationship/type')
