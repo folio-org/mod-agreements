@@ -1,9 +1,16 @@
 import org.olf.dataimport.internal.titleInstanceResolvers.*
 import org.olf.dataimport.internal.KBManagementBean
+import org.olf.general.events.OkapiTenantContext
+import org.olf.general.events.TopicNameResolver
 import org.olf.kb.metadata.ResourceIngressType
 
 // Place your Spring DSL code here
 beans = {
+  // Kafka domain-event plumbing — the classes live in src/main/groovy and are
+  // not scanned by Grails convention; register them explicitly.
+  tenantContext(OkapiTenantContext)
+  topicNameResolver(TopicNameResolver, ref('tenantContext'))
+
   /* --- Swapping these will change the way mod-agreements handles resolution of TitleInstances --- */
   String TIRS = System.getenv("TIRS")
   switch (TIRS) {

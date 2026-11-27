@@ -1,6 +1,9 @@
 ## 7.5.0 In-Process
 
   * Return package content item ID after saving it
+  * ERM-4123: Agreement Line (Entitlement) create domain events
+  * ERM-4133: Agreement Line (Entitlement) update domain events
+  * ERM-4126: Publish Kafka DELETE events for agreement lines (entitlements)
 
 ## 7.4.0 2026-10-20
 

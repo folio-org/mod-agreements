@@ -7,6 +7,7 @@ import java.time.LocalDate
 import org.grails.web.json.JSONObject
 import org.hibernate.sql.JoinType
 import org.olf.erm.SubscriptionAgreement
+import org.olf.general.events.AgreementEventService
 import org.olf.kb.ErmResource
 import org.olf.kb.PackageContentItem
 import org.olf.kb.Pkg
@@ -34,9 +35,32 @@ class SubscriptionAgreementController extends AccessPolicyAwareController<Subscr
   
   CoverageService coverageService
   ExportService exportService
-  
+
+  AgreementEventService agreementEventService
+
   SubscriptionAgreementController() {
     super(SubscriptionAgreement)
+  }
+
+  /**
+   * Wraps {@code super.update()} to publish a Kafka UPDATE domain event
+   * carrying pre- and post- snapshots. Delegates snapshot capture and
+   * publish to {@link AgreementEventService} — this method's only job is
+   * orchestration around {@code super.update()}.
+   */
+  @Transactional
+  def update() {
+    Map<String, Object> oldSnapshot = agreementEventService.captureSnapshotAndDiscard(
+      SubscriptionAgreement.get(params.id))
+
+    super.update()
+
+    if (oldSnapshot == null) return
+    if (response.status < 200 || response.status >= 300) return
+
+    Map<String, Object> newSnapshot = agreementEventService.captureSnapshotAndDiscard(
+      SubscriptionAgreement.get(params.id))
+    agreementEventService.publishUpdate(oldSnapshot, newSnapshot)
   }
 
   @Transactional(readOnly=true)
