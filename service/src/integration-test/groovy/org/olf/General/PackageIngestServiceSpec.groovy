@@ -3,6 +3,9 @@ package org.olf.General
 import grails.testing.mixin.integration.Integration
 import org.olf.BaseSpec
 import org.olf.PackageIngestService
+import org.olf.dataimport.internal.HeaderImpl
+import org.olf.dataimport.internal.InternalPackageImpl
+import org.olf.dataimport.erm.AlternateSlug
 import org.olf.dataimport.internal.PackageContentImpl
 import org.olf.kb.PackageContentItem
 import org.olf.kb.Pkg
@@ -13,6 +16,76 @@ import spock.lang.Stepwise
 @Stepwise
 class PackageIngestServiceSpec extends BaseSpec {
   PackageIngestService packageIngestService
+
+  void 'GOKb lookup preserves source case and matches exact primary or alternate references'() {
+    expect:
+      withTenantNewTransaction {
+        Pkg pkg = new Pkg(name: 'Case lookup', source: 'gokb', reference: 'CaseSensitive')
+          .save(failOnError: true, flush: true)
+        assert packageIngestService.lookupPkg(packageData('GOKb', 'casesensitive')) == null
+        assert packageIngestService.lookupPkg(packageData('GOKb', 'CaseSensitive')).id == pkg.id
+        assert packageIngestService.lookupPkg(packageData('GOKB', 'NewReference',
+          ['CaseSensitive', 'CaseSensitive'])).id == pkg.id
+        assert pkg.reference == 'NewReference'
+        assert pkg.source == 'gokb'
+        assert packageIngestService.lookupPkg(packageData('Other', 'NewReference')) == null
+        new Pkg(name: 'Other source', source: 'Other', reference: 'OtherReference')
+          .save(failOnError: true, flush: true)
+        assert packageIngestService.lookupPkg(packageData('other', 'OtherReference')) == null
+        true
+      }
+  }
+
+  void 'GOKb lookup rejects ambiguous primary and alternate references'() {
+    given:
+      String reference = UUID.randomUUID().toString()
+      withTenantNewTransaction {
+        ['GOKb', 'gokb'].each { source ->
+          new Pkg(name: 'Ambiguous lookup', source: source, reference: reference)
+            .save(failOnError: true, flush: true)
+        }
+      }
+    when:
+      withTenantNewTransaction {
+        packageIngestService.lookupPkg(packageData('GOKb', reference))
+      }
+    then:
+      IllegalStateException primary = thrown()
+      primary.message.contains('Ambiguous GOKb package lookup')
+    when:
+      withTenantNewTransaction {
+        packageIngestService.lookupPkg(packageData('GOKb', 'Replacement', [reference]))
+      }
+    then:
+      IllegalStateException alternate = thrown()
+      alternate.message.contains('Ambiguous GOKb package lookup')
+  }
+
+  void 'Different alternate references must not select different GOKb packages'() {
+    given:
+      List<String> references = [UUID.randomUUID().toString(), UUID.randomUUID().toString()]
+      withTenantNewTransaction {
+        references.each { reference ->
+          new Pkg(name: 'Alternate lookup', source: 'gokb', reference: reference)
+            .save(failOnError: true, flush: true)
+        }
+      }
+    when:
+      withTenantNewTransaction {
+        packageIngestService.lookupPkg(packageData('GOKb', 'Replacement', references))
+      }
+    then:
+      thrown(IllegalStateException)
+      withTenantNewTransaction {
+        assert Pkg.countBySourceAndReferenceInList('gokb', references) == 2
+        true
+      }
+  }
+
+  private InternalPackageImpl packageData(String source, String reference, List<String> alternates = []) {
+    new InternalPackageImpl(header: new HeaderImpl(packageSource: source, packageSlug: reference,
+      alternateSlugs: alternates.collect { new AlternateSlug(slug: it) }))
+  }
 
   void 'Title hierarchy returns the persisted PCI ID for both creation and update'() {
     given: 'A package and title with no existing content item'

@@ -1,5 +1,7 @@
-## 7.5.0 In-Process
+## 7.4.1 In-Process
 
+  * ERM-4168: Backfill missing legacy GOKb package ingress metadata on Harvest tenant enable, including re-enables without module_from
+  * ERM-4168: Recover absent GOKb UUID identifiers from UUID references during PIM repair
   * Return package content item ID after saving it
 
 ## 7.4.0 2026-10-20
