@@ -247,6 +247,9 @@ bootRun {
 }
 
 integrationTest {
+  // Exercise persisted job logging with the application's JOB appender. Configure
+  // this for the whole task so individual specs do not create extra Spring contexts.
+  systemProperty 'logging.config', 'classpath:logback.xml'
   maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
 	jvmArgs(
     '-Xmx1592m',
